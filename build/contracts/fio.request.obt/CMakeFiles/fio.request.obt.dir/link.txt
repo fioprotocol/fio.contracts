@@ -1,1 +1,0 @@
-/usr/local/eosio.cdt/bin/eosio-ld  CMakeFiles/fio.request.obt.dir/fio.request.obt.cpp.obj -o fio.request.obt.wasm 

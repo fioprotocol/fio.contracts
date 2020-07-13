@@ -1,1 +1,0 @@
-/usr/local/eosio.cdt/bin/eosio-ld  CMakeFiles/fio.fee.dir/fio.fee.cpp.obj -o fio.fee.wasm 

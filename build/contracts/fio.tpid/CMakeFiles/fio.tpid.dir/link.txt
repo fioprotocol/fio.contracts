@@ -1,1 +1,0 @@
-/usr/local/eosio.cdt/bin/eosio-ld  CMakeFiles/fio.tpid.dir/fio.tpid.cpp.obj -o fio.tpid.wasm 
