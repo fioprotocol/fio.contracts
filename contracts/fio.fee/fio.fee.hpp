@@ -25,7 +25,7 @@ namespace fioio {
     struct feevalue {
         string end_point; //this is the name of the endpoint, which is by convention the same as the
                           //url to which the signed transaction is sent.
-        uint64_t value;   //this it the value of the fee in FIO SUFs (Smallest unit of FIO).
+        int64_t value;   //this it the value of the fee in FIO SUFs (Smallest unit of FIO).
 
         EOSLIB_SERIALIZE( feevalue, (end_point)(value))
     };
@@ -42,19 +42,20 @@ namespace fioio {
         uint128_t end_point_hash;
         uint64_t type;      // this is the fee type from the feetype enumeration.
         uint64_t suf_amount;
+        eosio::binary_extension<bool> votes_pending = false;
 
         uint64_t primary_key() const { return fee_id; }
         uint128_t by_endpoint() const { return end_point_hash; }
         uint64_t by_type() const { return type; }
 
-        EOSLIB_SERIALIZE(fiofee, (fee_id)(end_point)(end_point_hash)(type)(suf_amount)
+        EOSLIB_SERIALIZE(fiofee, (fee_id)(end_point)(end_point_hash)(type)(suf_amount)(votes_pending)
         )
     };
 
     typedef multi_index<"fiofees"_n, fiofee,
             indexed_by<"byendpoint"_n, const_mem_fun < fiofee, uint128_t, &fiofee::by_endpoint>>,
-            indexed_by<"bytype"_n, const_mem_fun<fiofee, uint64_t, &fiofee::by_type>
-    >>
+            indexed_by<"bytype"_n, const_mem_fun<fiofee, uint64_t, &fiofee::by_type>>
+    >
     fiofee_table;
 
 
