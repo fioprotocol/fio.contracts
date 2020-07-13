@@ -20,7 +20,7 @@ The following unprivileged contract(s) are also part of the system.
    * [fio.treasury](./contracts/fio.treasury)
 
 Dependencies:
-* [fio.cdt v1.7.x](https://github.com/fioprotocol/fio.cdt/
+* [fio.cdt v1.5.x](https://github.com/fioprotocol/fio.cdt/)
 
 ## License
 
