@@ -1,0 +1,3 @@
+/Users/casey/Desktop/fio.contracts/build/tests/CMakeFiles/rebuild_cache.dir
+/Users/casey/Desktop/fio.contracts/build/tests/CMakeFiles/edit_cache.dir
+/Users/casey/Desktop/fio.contracts/build/tests/CMakeFiles/test.dir
