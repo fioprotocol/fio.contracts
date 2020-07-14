@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.5)
 project(fio.contracts)
 
 set(VERSION_MAJOR 1)
-set(VERSION_MINOR 1)
+set(VERSION_MINOR 2)
 set(VERSION_PATCH 0)
 #set(VERSION_SUFFIX 0)
 
