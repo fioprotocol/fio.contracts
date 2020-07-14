@@ -22,84 +22,29 @@ namespace fioio {
 
     private:
         reqledgers_table ledgerTable;
-        fiotrxt_contexts_table fioTransactionsTable; //Migration Table
-        fiorequest_contexts_table fiorequestContextsTable;
-        fiorequest_status_table fiorequestStatusTable;
+        fiotrxt_contexts_table fioTransactionsTable;
         fionames_table fionames;
         domains_table domains;
         eosio_names_table clientkeys;
         fiofee_table fiofees;
         config appConfig;
         tpids_table tpids;
-        recordobt_table recordObtTable;
-
-        eosiosystem::producers_table producers; // Temp reference used for migration
 
     public:
         explicit FioRequestObt(name s, name code, datastream<const char *> ds)
                 : contract(s, code, ds),
                   ledgerTable(_self, _self.value),
                   fioTransactionsTable(_self, _self.value),
-                  fiorequestContextsTable(_self, _self.value),
-                  fiorequestStatusTable(_self, _self.value),
                   fionames(AddressContract, AddressContract.value),
                   domains(AddressContract, AddressContract.value),
                   fiofees(FeeContract, FeeContract.value),
                   clientkeys(AddressContract, AddressContract.value),
-                  tpids(AddressContract, AddressContract.value),
-                  producers(SYSTEMACCOUNT, SYSTEMACCOUNT.value), //Temp
-                  recordObtTable(_self,_self.value) {
+                  tpids(AddressContract, AddressContract.value) {
             configs_singleton configsSingleton(FeeContract, FeeContract.value);
             appConfig = configsSingleton.get_or_default(config());
         }
 
-        //TEMP MIGRATION ACTION
-        // @abi action
-        [[eosio::action]]
-        void migrtrx(const uint16_t amount, const string &actor) {
-            name executor = name("fio.reqobt");
-            name aactor = name(actor);
-            require_auth(aactor);
-
-            auto prodbyowner = producers.get_index<"byowner"_n>();
-            auto proditer = prodbyowner.find(aactor.value);
-
-            fio_400_assert(proditer != prodbyowner.end(), "actor", actor,
-                           "Actor not active producer", ErrorNoFioAddressProducer);
-
-            uint16_t limit = amount;
-            uint16_t count = 0;
-            bool isSuccessful = false;
-            if (amount > 25) { limit = 25; }
-            auto obtTable = recordObtTable.begin();
-            auto reqTable = fiorequestContextsTable.begin();
-            auto statTable = fiorequestStatusTable.begin();
-            auto trxTable = fioTransactionsTable.begin();
-
-            while (obtTable != recordObtTable.end()) { //obt record migrate
-                recordObtTable.erase(obtTable);
-                count++;
-                if (count == limit) { return; }
-            }
-
-            if (count != limit) { //request table migrate
-                while (reqTable != fiorequestContextsTable.end()) {
-                    fiorequestContextsTable.erase(reqTable);
-                    count++;
-                    if (count == limit) { return; }
-                }
-            }
-
-            if (count != limit) { //status table migrate
-                while (statTable != fiorequestStatusTable.end()) {
-                    fiorequestStatusTable.erase(statTable);
-                    count++;
-                    if (count == limit) { return; }
-                }
-            }
-        }
-
-         /*******
+        /*******
           * This action will record the send of funds from one FIO address to another, either
           * in response to a request for funds or as a result of a direct send of funds from
           * one user to another
@@ -856,6 +801,6 @@ namespace fioio {
         }
     };
 
-    EOSIO_DISPATCH(FioRequestObt, (migrtrx)(recordobt)(newfundsreq)(rejectfndreq)
+    EOSIO_DISPATCH(FioRequestObt, (recordobt)(newfundsreq)(rejectfndreq)
     (cancelfndreq))
 }
