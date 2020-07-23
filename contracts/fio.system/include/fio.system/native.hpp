@@ -126,7 +126,6 @@ namespace eosiosystem {
         [[eosio::action]]
         void remaction(const name &action,
                        const name &actor);
-        
 
         [[eosio::action]]
         void updateauth(const name &account,
