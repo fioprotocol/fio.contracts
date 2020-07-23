@@ -635,7 +635,23 @@ namespace eosiosystem {
         auto namesbyname = _fionames.get_index<"byname"_n>();
         auto domainsbyname = _domains.get_index<"byname"_n>();
         uint64_t bundleeligiblecountdown = 0;
-        uint64_t account = name(actor).value;
+        uint128_t proxyHash = string_to_uint128_hash(proxy.c_str());
+        auto proxy_iter = namesbyname.find(proxyHash);
+        fio_400_assert(proxy_iter != namesbyname.end(), "fio_address", proxy,
+                       "FIO address not registered", ErrorFioNameNotRegistered);
+        uint64_t account = proxy_iter->owner_account;
+        auto votersbyowner = _voters.get_index<"byowner"_n>();
+        auto voter_proxy_iter = votersbyowner.find(account);
+
+        //the first opportunity to throw this error is when the owner account is not present
+        //in the table.
+        fio_400_assert(voter_proxy_iter != votersbyowner.end(), "fio_address", proxy,
+                       "This address is not a proxy", AddressNotProxy);
+
+        //the second opportunity to throw this error is when the row is present and is not a proxy
+        fio_400_assert(voter_proxy_iter->is_proxy, "fio_address", proxy,
+                       "This address is not a proxy", AddressNotProxy);
+
         if (!fio_address.empty()) {
           uint128_t voterHash = string_to_uint128_hash(fio_address.c_str());
           uint128_t voterDomainHash = string_to_uint128_hash(va.fiodomain.c_str());
@@ -666,18 +682,18 @@ namespace eosiosystem {
           uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
           uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
           auto fioname_iter = namesbyname.find(nameHash);
-          fio_400_assert(fioname_iter != namesbyname.end(), "proxy", proxy,
+          fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
                          "FIO Address not registered", ErrorFioNameNotReg);
 
           //check that the name is not expired
           uint32_t name_expiration = fioname_iter->expiration;
-          account = fioname_iter->owner_account;
-          fio_400_assert(present_time <= name_expiration, "proxy", proxy,
+
+          fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
                          "FIO Address expired", ErrorFioNameExpired);
 
           auto domains_iter = domainsbyname.find(domainHash);
 
-          fio_400_assert(domains_iter != domainsbyname.end(), "proxy", proxy,
+          fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
                          "FIO Address not registered", ErrorFioNameNotReg);
 
           uint32_t expiration = domains_iter->expiration;
@@ -685,22 +701,10 @@ namespace eosiosystem {
           //add 30 days to the domain expiration, this call will work until 30 days past expire.
           expiration = get_time_plus_seconds(expiration,SECONDS30DAYS);
           bundleeligiblecountdown = voter_iter->bundleeligiblecountdown;
-          fio_400_assert(present_time <= expiration, "proxy", proxy, "FIO Domain expired",
+          fio_400_assert(present_time <= expiration, "fio_address", fio_address, "FIO Domain expired",
                          ErrorDomainExpired);
 
         }
-        auto proxy_name = name{account};
-        auto votersbyowner = _voters.get_index<"byowner"_n>();
-        auto voter_proxy_iter = votersbyowner.find(account);
-
-        //the first opportunity to throw this error is when the owner account is not present
-        //in the table.
-        fio_400_assert(voter_proxy_iter != votersbyowner.end(), "fio_address", proxy,
-                       "This address is not a proxy", AddressNotProxy);
-
-        //the second opportunity to throw this error is when the row is present and is not a proxy
-        fio_400_assert(voter_proxy_iter->is_proxy, "fio_address", proxy,
-                       "This address is not a proxy", AddressNotProxy);
 
 
         std::vector<name> producers{}; // Empty
@@ -718,7 +722,7 @@ namespace eosiosystem {
 
         eosio::token::computeremaininglockedtokens(actor,true);
 
-        update_votes(actor, proxy_name, producers, true);
+        update_votes(actor, name{account}, producers, true);
 
         uint128_t endpoint_hash = string_to_uint128_hash("vote_producer");
         auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
