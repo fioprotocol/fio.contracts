@@ -623,24 +623,33 @@ namespace eosiosystem {
 
         fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                        ErrorMaxFeeInvalid);
-        FioAddress fa, va;
-        getFioAddressStruct(proxy, fa);
-        getFioAddressStruct(fio_address, va);
 
-        fio_400_assert(validateFioNameFormat(fa), "proxy", proxy, "Invalid FIO Address format",
+        FioAddress proxyAddressObj, fioAddressObj;
+        getFioAddressStruct(proxy, proxyAddressObj);
+        getFioAddressStruct(fio_address, fioAddressObj);
+
+        fio_400_assert(validateFioNameFormat(proxyAddressObj), "proxy", proxy, "Invalid FIO Address format",
                        ErrorDomainAlreadyRegistered);
-        fio_400_assert(fio_address == "" || validateFioNameFormat(va), "fio_address", fio_address, "Invalid FIO Address format",
+
+        fio_400_assert(fio_address == "" || validateFioNameFormat(fioAddressObj), "fio_address", fio_address, "Invalid FIO Address format",
                        ErrorDomainAlreadyRegistered);
 
         auto namesbyname = _fionames.get_index<"byname"_n>();
         auto domainsbyname = _domains.get_index<"byname"_n>();
+
         uint64_t bundleeligiblecountdown = 0;
-        uint128_t proxyHash = string_to_uint128_hash(proxy.c_str());
+
+        uint128_t proxyHash = string_to_uint128_hash(proxyAddressObj.fioaddress.c_str());
+        uint128_t proxyDomainHash = string_to_uint128_hash(proxyAddressObj.fiodomain.c_str());
         auto proxy_iter = namesbyname.find(proxyHash);
-        fio_400_assert(proxy_iter != namesbyname.end(), "fio_address", proxy,
+
+        fio_400_assert(proxy_iter != namesbyname.end(), "proxy", proxy,
                        "FIO address not registered", ErrorFioNameNotRegistered);
+
         uint64_t account = proxy_iter->owner_account;
+
         auto votersbyowner = _voters.get_index<"byowner"_n>();
+
         auto voter_proxy_iter = votersbyowner.find(account);
 
         //the first opportunity to throw this error is when the owner account is not present
@@ -652,63 +661,48 @@ namespace eosiosystem {
         fio_400_assert(voter_proxy_iter->is_proxy, "fio_address", proxy,
                        "This address is not a proxy", AddressNotProxy);
 
+        //check that the proxy name is not expired
+        uint32_t present_time = now();
+        fio_400_assert(present_time <= proxy_iter->expiration, "proxy", proxy,
+                      "FIO Address expired", ErrorFioNameExpired);
+
+        auto domains_iter = domainsbyname.find(proxyDomainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "proxy", proxy,
+                      "FIO Address not registered", ErrorFioNameNotReg);
+
+        fio_400_assert(present_time <= get_time_plus_seconds( domains_iter->expiration, SECONDS30DAYS),
+                     "proxy", proxy, "FIO Domain expired", ErrorDomainExpired);
+
+
         if (!fio_address.empty()) {
-          uint128_t voterHash = string_to_uint128_hash(fio_address.c_str());
-          uint128_t voterDomainHash = string_to_uint128_hash(va.fiodomain.c_str());
+          uint128_t voterHash = string_to_uint128_hash(fioAddressObj.fioaddress.c_str());
+          uint128_t voterDomainHash = string_to_uint128_hash(fioAddressObj.fiodomain.c_str());
 
           // compare fio_address owner and compare to actor
 
           auto voter_iter = namesbyname.find(voterHash);
 
+          fio_403_assert(voter_iter->owner_account == actor.value, ErrorSignature);
+
           fio_400_assert(voter_iter != namesbyname.end(), "fio_address", fio_address,
                          "FIO address not registered", ErrorFioNameNotRegistered);
 
-          uint32_t voter_expiration = voter_iter->expiration;
-          uint32_t present_time = now();
-
-          fio_400_assert(present_time <= voter_expiration, "fio_address", fio_address, "FIO Address expired",
+          fio_400_assert(present_time <= voter_iter->expiration, "fio_address", fio_address, "FIO Address expired",
                          ErrorDomainExpired);
-
 
           auto voterdomain_iter = domainsbyname.find(voterDomainHash);
           fio_400_assert(voterdomain_iter != domainsbyname.end(), "fio_address", fio_address,
                          "FIO Address not registered", ErrorFioNameNotReg);
-          fio_403_assert(voter_iter->owner_account == actor.value, ErrorSignature);
 
-          uint32_t voterdomain_expiration = voterdomain_iter->expiration;
-          fio_400_assert(present_time <= voterdomain_expiration, "fio_address", fio_address, "FIO Domain expired",
+          fio_400_assert(present_time <= voterdomain_iter->expiration, "fio_address", fio_address, "FIO Domain expired",
                          ErrorDomainExpired);
 
-          uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
-          uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
-          auto fioname_iter = namesbyname.find(nameHash);
-          fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
-                         "FIO Address not registered", ErrorFioNameNotReg);
-
-          //check that the name is not expired
-          uint32_t name_expiration = fioname_iter->expiration;
-
-          fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
-                         "FIO Address expired", ErrorFioNameExpired);
-
-          auto domains_iter = domainsbyname.find(domainHash);
-
-          fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
-                         "FIO Address not registered", ErrorFioNameNotReg);
-
-          uint32_t expiration = domains_iter->expiration;
-
-          //add 30 days to the domain expiration, this call will work until 30 days past expire.
-          expiration = get_time_plus_seconds(expiration,SECONDS30DAYS);
           bundleeligiblecountdown = voter_iter->bundleeligiblecountdown;
-          fio_400_assert(present_time <= expiration, "fio_address", fio_address, "FIO Domain expired",
-                         ErrorDomainExpired);
 
         }
 
-
         std::vector<name> producers{}; // Empty
-
 
         voter_proxy_iter = votersbyowner.find(actor.value);
 
