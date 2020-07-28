@@ -152,6 +152,10 @@ namespace eosiosystem {
 
     }
 
+    void eosiosystem::native::addaction(const name &action, const string &contract, const name &actor) {
+    }
+    void eosiosystem::native::remaction(const name &action, const name &actor) {
+    }
 
     void eosiosystem::native::setabi(name acnt, const std::vector<char> &abi) {
 
