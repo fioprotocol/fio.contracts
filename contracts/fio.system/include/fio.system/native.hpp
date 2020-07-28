@@ -262,7 +262,7 @@ namespace eosiosystem {
         using deleteauth_action = eosio::action_wrapper<"deleteauth"_n, &native::deleteauth>;
         using linkauth_action = eosio::action_wrapper<"linkauth"_n, &native::linkauth>;
 
-        using adddaction_action = eosio::action_wrapper<"addaction"_n, &native::addaction>;
+        using addaction_action = eosio::action_wrapper<"addaction"_n, &native::addaction>;
         using remaction_action = eosio::action_wrapper<"remaction"_n, &native::remaction>;
 
         using unlinkauth_action = eosio::action_wrapper<"unlinkauth"_n, &native::unlinkauth>;
