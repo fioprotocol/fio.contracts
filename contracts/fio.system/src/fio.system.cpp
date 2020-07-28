@@ -152,6 +152,13 @@ namespace eosiosystem {
 
     }
 
+    void eosiosystem::native::addaction(const name &action, const string &contract, const name &actor) {
+
+    }
+    void eosiosystem::native::remaction(const name &action, const name &actor) {
+
+    }
+
 
     void eosiosystem::native::setabi(const name &acnt, const std::vector<char> &abi) {
 
@@ -214,7 +221,7 @@ namespace eosiosystem {
 
 EOSIO_DISPATCH( eosiosystem::system_contract,
 // native.hpp (newaccount definition is actually in fio.system.cpp)
-(newaccount)(updateauth)(deleteauth)(linkauth)(unlinkauth)(canceldelay)(onerror)(setabi)(addaction)(remaction)
+(newaccount)(addaction)(remaction)(updateauth)(deleteauth)(linkauth)(unlinkauth)(canceldelay)(onerror)(setabi)
 // fio.system.cpp
         (init)(addlocked)(setparams)(setpriv)
         (rmvproducer)(updtrevision)
