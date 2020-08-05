@@ -137,6 +137,35 @@
            }
       ]
     },{
+           "name": "trnsfiopubad",
+           "base": "",
+           "fields": [{
+                 "name": "payee_fio_address",
+                 "type": "string"
+                },{
+                  "name": "payer_fio_address",
+                  "type": "string"
+                },{
+                  "name": "amount",
+                  "type": "int64"
+                },{
+                  "name": "content",
+                  "type": "string"
+                },{
+                  "name": "fio_request_id",
+                  "type": "string"
+                },{
+                  "name": "max_fee",
+                  "type": "int64"
+                },{
+                  "name": "actor",
+                  "type": "string"
+                },{
+                  "name": "tpid",
+                  "type": "string"
+                }
+           ]
+         },{
        "name": "newfundsreq",
            "base": "",
            "fields": [{
@@ -198,6 +227,10 @@
   "actions": [{
       "name": "recordobt",
       "type": "recordobt",
+      "ricardian_contract": ""
+    },{
+      "name": "trnsfiopubad",
+      "type": "trnsfiopubad",
       "ricardian_contract": ""
     },{
       "name": "newfundsreq",

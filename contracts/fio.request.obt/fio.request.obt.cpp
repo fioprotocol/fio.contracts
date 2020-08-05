@@ -255,6 +255,33 @@ namespace fioio {
             send_response(response_string.c_str());
         }
 
+        [[eosio::action]]
+        void trnsfiopubad(const string &payee_fio_address,
+                                 const string &payer_fio_address,
+                                 const int64_t &amount,
+                                 const string &content,
+                                 const string &fio_request_id,
+                                 const int64_t &max_fee,
+                                 const string &actor,
+                                 const string &tpid) {
+            name aactor = name(actor);
+            require_auth(aactor);
+
+            uint128_t nameHash = string_to_uint128_hash(payee_fio_address.c_str());
+            auto namesbyname = fionames.get_index<"byname"_n>();
+            auto fioname_iter = namesbyname.find(nameHash);
+            string payee_public_key = fioname_iter->addresses[0].public_address;
+
+            recordobt(fio_request_id, payer_fio_address, payee_fio_address, content, max_fee, actor, tpid);
+
+            action(
+                    permission_level{aactor, "active"_n},
+                    "fio.token"_n,
+                    "trnsfiopubky"_n,
+                    std::make_tuple(payee_public_key, amount, max_fee, aactor, tpid)
+            ).send();
+        }
+
        /*********
         * This action will record a request for funds into the FIO protocol.
         * @param payer_fio_address this is the fio address of the payer of the request for funds.
