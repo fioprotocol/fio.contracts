@@ -1225,12 +1225,16 @@ namespace eosiosystem {
             //check(!isproxy || !pitr->proxy, "account that uses a proxy is not allowed to become a proxy");
             if (isproxy && !pitr->proxy) {
                 votersbyowner.modify(pitr, same_payer, [&](auto &p) {
+                    p.fioaddress = fio_address;
+                    p.addresshash = addresshash;
                     p.is_proxy = isproxy;
                     p.is_auto_proxy = false;
                 });
             }else if (!isproxy) { //this is how we undo/clear a proxy
                 name nm;
                 votersbyowner.modify(pitr, same_payer, [&](auto &p) {
+                    p.fioaddress = "";      // TODO: placed here to revert to same state as from regproducer, not sure if correct, verify...
+                    p.addresshash = 0;      // TODO: placed here to revert to same state as from regproducer, not sure if correct, verify...
                     p.is_proxy = isproxy;
                     p.is_auto_proxy = false;
                     p.proxy = nm; //set to a null state, an uninitialized name,
@@ -1245,7 +1249,6 @@ namespace eosiosystem {
                               //and not having a proxy, its kind of a null vote, so dont emplace unless isproxy is true.
 
             uint64_t id = _voters.available_primary_key();
-            uint128_t addresshash = string_to_uint128_hash(fio_address.c_str());
             _voters.emplace(proxy, [&](auto &p) {
                 p.id = id;
                 p.fioaddress = fio_address;
