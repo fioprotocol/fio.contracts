@@ -4,7 +4,7 @@
  *  @file fio.system.cpp
  *  @license FIO Foundation ( https://github.com/fioprotocol/fio/blob/master/LICENSE ) Dapix
  *
- *  Changes:
+ *  Changes: Adam Androulidakis - 8/10/2020 MAS-1855
  */
 #include <fio.system/fio.system.hpp>
 #include <eosiolib/dispatcher.hpp>
@@ -155,6 +155,7 @@ namespace eosiosystem {
     void eosiosystem::native::addaction(const name &action, const string &contract, const name &actor) {
 
     }
+
     void eosiosystem::native::remaction(const name &action, const name &actor) {
 
     }
@@ -220,19 +221,17 @@ namespace eosiosystem {
 
 
 EOSIO_DISPATCH( eosiosystem::system_contract,
-// native.hpp (newaccount definition is actually in fio.system.cpp)
-(newaccount)(addaction)(remaction)(updateauth)(deleteauth)(linkauth)(unlinkauth)(canceldelay)(onerror)(setabi)
-// fio.system.cpp
-        (init)(addlocked)(setparams)(setpriv)
-        (rmvproducer)(updtrevision)
-// delegate_bandwidth.cpp
-        (updatepower)
-// voting.cpp
-        (regproducer)(regiproducer)(unregprod)(voteproducer)(voteproxy)(inhibitunlck)
-        (updlocked)(unlocktokens)(setautoproxy)(crautoproxy)(burnaction)(incram)
-        (unregproxy)(regiproxy)(regproxy)
-// producer_pay.cpp
-        (onblock)
-        (resetclaim)
-(updlbpclaim)
+  // native.hpp (newaccount definition is actually in fio.system.cpp)
+  (newaccount)(addaction)(remaction)(updateauth)(deleteauth)(linkauth)(unlinkauth)(canceldelay)(onerror)(setabi)
+  // fio.system.cpp
+  (init)(addlocked)(setparams)(setpriv)
+  (rmvproducer)(updtrevision)
+  // delegate_bandwidth.cpp
+  (updatepower)
+  // voting.cpp
+  (regproducer)(regiproducer)(unregprod)(voteproducer)(voteproxy)(inhibitunlck)
+  (updlocked)(unlocktokens)(setautoproxy)(crautoproxy)(burnaction)(incram)
+  (unregproxy)(regiproxy)(regproxy)
+  //producer_pay.cpp
+  (onblock)(resetclaim)(updlbpclaim)
 )
