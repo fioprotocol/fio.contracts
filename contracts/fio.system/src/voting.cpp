@@ -580,16 +580,14 @@ namespace eosiosystem {
 
         uint64_t fee_amount = 0;
 
-        if (!fio_address.empty()) {
-          if (bundleeligiblecountdown > 0) {
+          if (bundleeligiblecountdown > 0 && !fio_address.empty()) {
             action{
                     permission_level{_self, "active"_n},
                     AddressContract,
                     "decrcounter"_n,
                     make_tuple(fio_address, 1)
             }.send();
-          }
-        } else {
+          } else if (bundleeligiblecountdown == 0) {
             fee_amount = fee_iter->suf_amount;
             fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
                            "Fee exceeds supplied maximum.",
@@ -723,16 +721,14 @@ namespace eosiosystem {
         auto fee_iter = fees_by_endpoint.find(endpoint_hash);
 
         uint64_t fee_amount = 0;
-        if (!fio_address.empty()) {
-          if (bundleeligiblecountdown > 0) {
+          if (bundleeligiblecountdown > 0 && !fio_address.empty()) {
             action{
                     permission_level{_self, "active"_n},
                     AddressContract,
                     "decrcounter"_n,
                       make_tuple(fio_address, 1)
             }.send();
-          }
-        } else {
+        } else if (bundleeligiblecountdown == 0){
             fee_amount = fee_iter->suf_amount;
             fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
                            "Fee exceeds supplied maximum.",
