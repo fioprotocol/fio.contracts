@@ -152,6 +152,13 @@ namespace eosiosystem {
 
     }
 
+    void eosiosystem::native::addaction(const name &action, const string &contract, const name &actor) {
+
+    }
+    void eosiosystem::native::remaction(const name &action, const name &actor) {
+
+    }
+
 
     void eosiosystem::native::setabi(const name &acnt, const std::vector<char> &abi) {
 
@@ -214,17 +221,18 @@ namespace eosiosystem {
 
 EOSIO_DISPATCH( eosiosystem::system_contract,
 // native.hpp (newaccount definition is actually in fio.system.cpp)
-(newaccount)(updateauth)(deleteauth)(linkauth)(unlinkauth)(canceldelay)(onerror)(setabi)
-        // fio.system.cpp
+(newaccount)(addaction)(remaction)(updateauth)(deleteauth)(linkauth)(unlinkauth)(canceldelay)(onerror)(setabi)
+// fio.system.cpp
         (init)(addlocked)(setparams)(setpriv)
         (rmvproducer)(updtrevision)
-        // delegate_bandwidth.cpp
+// delegate_bandwidth.cpp
         (updatepower)
-        // voting.cpp
+// voting.cpp
         (regproducer)(regiproducer)(unregprod)(voteproducer)(voteproxy)(inhibitunlck)
         (updlocked)(unlocktokens)(setautoproxy)(crautoproxy)(burnaction)(incram)
         (unregproxy)(regiproxy)(regproxy)
-        // producer_pay.cpp
+// producer_pay.cpp
         (onblock)
-        (resetclaim)(updlbpclaim)
+        (resetclaim)
+(updlbpclaim)
 )

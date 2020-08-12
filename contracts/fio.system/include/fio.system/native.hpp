@@ -118,6 +118,14 @@ namespace eosiosystem {
                          ignore <authority> owner,
                          ignore <authority> active);
 
+        [[eosio::action]]
+        void addaction(const name &action,
+                       const string &contract,
+                       const name &actor);
+
+        [[eosio::action]]
+        void remaction(const name &action,
+                       const name &actor);
 
         [[eosio::action]]
         void updateauth(const name &account,
@@ -253,6 +261,10 @@ namespace eosiosystem {
         using updateauth_action = eosio::action_wrapper<"updateauth"_n, &native::updateauth>;
         using deleteauth_action = eosio::action_wrapper<"deleteauth"_n, &native::deleteauth>;
         using linkauth_action = eosio::action_wrapper<"linkauth"_n, &native::linkauth>;
+
+        using addaction_action = eosio::action_wrapper<"addaction"_n, &native::addaction>;
+        using remaction_action = eosio::action_wrapper<"remaction"_n, &native::remaction>;
+
         using unlinkauth_action = eosio::action_wrapper<"unlinkauth"_n, &native::unlinkauth>;
         using canceldelay_action = eosio::action_wrapper<"canceldelay"_n, &native::canceldelay>;
         using setcode_action = eosio::action_wrapper<"setcode"_n, &native::setcode>;
