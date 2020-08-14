@@ -61,7 +61,7 @@ namespace fioio {
             vector<uint128_t> fee_hashes; //hashes for endpoints to process.
             vector<string> fee_endpoints;
             
-            int NUMBER_FEES_TO_PROCESS = 10;
+            int NUMBER_FEES_TO_PROCESS = 7;
 
             //get the fees needing processing.
             auto fee = fiofees.begin();
