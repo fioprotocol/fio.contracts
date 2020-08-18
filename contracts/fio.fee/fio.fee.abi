@@ -18,6 +18,14 @@
                 {"name":"value", "type":"int64"}
              ]
       },{
+             "name": "feevalue_ts",
+             "base": "",
+             "fields": [
+                 {"name":"end_point", "type":"string"},
+                 {"name":"value", "type":"int64"},
+                 {"name":"timastamp", "type":"uint64"}
+             ]
+      },{
         "name": "setfeevote",
         "base": "",
         "fields": [
@@ -89,7 +97,7 @@
         "fields": [
            {"name":"id", "type":"uint64"},
            {"name":"block_producer_name", "type":"name"},
-           {"name": "feevotes", "type": "feevalue[]"},
+           {"name": "feevotes", "type": "feevalue_ts[]"},
            {"name":"lastvotetimestamp", "type":"uint64"}
         ]
      },{

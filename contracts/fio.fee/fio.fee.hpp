@@ -30,6 +30,14 @@ namespace fioio {
         EOSLIB_SERIALIZE( feevalue, (end_point)(value))
     };
 
+    struct feevalue_ts {
+        string end_point = ""; //this is the name of the endpoint, which is by convention the same as the
+        //url to which the signed transaction is sent.
+        int64_t value = -1;   //this it the value of the fee in FIO SUFs (Smallest unit of FIO).
+        uint64_t timestamp = 0; //this is the timestamp when the value was last set.
+
+        EOSLIB_SERIALIZE( feevalue_ts, (end_point)(value)(timestamp))
+    };
     //this is the amount of time that must elapse for votes to be recorded into the FIO protocol for fees.
     const uint32_t TIME_BETWEEN_VOTES_SECONDS = 120;
    // const uint32_t TIME_BETWEEN_FEE_VOTES_SECONDS = 3600;
@@ -99,7 +107,7 @@ namespace fioio {
     struct [[eosio::action]] feevote {
         uint64_t id;       //unique one up id
         name block_producer_name;
-        std::vector<feevalue> feevotes; //fee votes are order dependant, the idx in this vector must match the id of the vote
+        std::vector<feevalue_ts> feevotes; //fee votes are order dependant, the idx in this vector must match the id of the vote
         uint64_t lastvotetimestamp;
 
         uint64_t primary_key() const { return id; }

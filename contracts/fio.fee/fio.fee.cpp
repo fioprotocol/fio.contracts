@@ -39,7 +39,7 @@ namespace fioio {
 
 
         vector<name> getTopProds(){
-            int NUMBER_TO_SELECT = 42;
+            int NUMBER_TO_SELECT = 150;
             auto idx = prods.get_index<"prototalvote"_n>();
 
             std::vector< name > topprods;
@@ -108,9 +108,7 @@ namespace fioio {
 
                 //compute the median from the votesufs.
                 int64_t median_fee = -1;
-                //KLUDGE for testing
-                if (votesufs.size() >= 2) {
-                    // if (votesufs.size() >= MIN_FEE_VOTERS_FOR_MEDIAN) {
+                if (votesufs.size() >= MIN_FEE_VOTERS_FOR_MEDIAN) {
                     sort(votesufs.begin(), votesufs.end());
                     int size = votesufs.size();
                     if (votesufs.size() % 2 == 0) {
@@ -175,9 +173,9 @@ namespace fioio {
 
             //check that the actor is in the top42.
             vector<name> top_prods = getTopProds();
-            //Kludge remove top 21 limit to load up with 100 voters.
-          //  fio_400_assert((std::find(top_prods.begin(), top_prods.end(), aactor)) !=
-          //      top_prods.end(), "actor", actor," Not a top 42 BP",ErrorFioNameNotReg);
+
+            fio_400_assert((std::find(top_prods.begin(), top_prods.end(), aactor)) !=
+                top_prods.end(), "actor", actor," Not a top 150 BP",ErrorFioNameNotReg);
 
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
@@ -189,12 +187,9 @@ namespace fioio {
             // auto votebyname_iter = feevotesbybpname.lower_bound(aactor.value);
             auto votebyname_iter = feevotesbybpname.find(aactor.value);
 
-            //KLudge for testing, time logic needs rethought. now all votes get the same time
-            //we need the last update time to be in the feevotes vector, and set by the system.
-          //  if(votebyname_iter != feevotesbybpname.end()){
-          //      fio_400_assert(!(votebyname_iter->lastvotetimestamp > (nowtime - TIME_BETWEEN_FEE_VOTES_SECONDS)), "", "", "Too soon since last call", ErrorTimeViolation);
-          //  }
-            vector<feevalue> feevotesv;
+
+
+            vector<feevalue_ts> feevotesv;
             bool emplacerec = true;
 
             //check for time violation.
@@ -226,7 +221,7 @@ namespace fioio {
                 if (feevotesv.size() < (feeid+1)){
                     for(int ix = feevotesv.size();ix<=(feeid+1);ix++)
                     {
-                        feevalue tfv;
+                        feevalue_ts tfv;
                         feevotesv.push_back(tfv);
                     }
                 }
@@ -234,8 +229,12 @@ namespace fioio {
                 uint64_t idtoremove;
                 bool found = false;
 
+
+                fio_400_assert(!(feevotesv[feeid].timestamp > (nowtime - TIME_BETWEEN_FEE_VOTES_SECONDS)), "", "", "Too soon since last call", ErrorTimeViolation);
+
                 feevotesv[feeid].end_point = feeval.end_point;
                 feevotesv[feeid].value = feeval.value;
+                feevotesv[feeid].timestamp = (uint64_t)now;
 
                 if(topprods.find(aactor.value) != topprods.end()) {
                     feesbyendpoint.modify(fees_iter, _self, [&](struct fiofee &a) {
@@ -431,9 +430,9 @@ namespace fioio {
 
             //check that the actor is in the top42.
             vector<name> top_prods = getTopProds();
-            //kludge, remove the top42 check to test over 100 producers recording votes.
-           // fio_400_assert((std::find(top_prods.begin(), top_prods.end(), aactor)) !=
-           //                top_prods.end(), "actor", actor," Not a top 42 BP",ErrorFioNameNotReg);
+
+           fio_400_assert((std::find(top_prods.begin(), top_prods.end(), aactor)) !=
+                           top_prods.end(), "actor", actor," Not a top 150 BP",ErrorFioNameNotReg);
 
             fio_400_assert(multiplier > 0, "multiplier", to_string(multiplier),
                            " Must be positive",
