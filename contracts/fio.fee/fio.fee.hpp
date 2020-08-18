@@ -23,7 +23,7 @@ namespace fioio {
     };
 
     struct feevalue {
-        string end_point; //this is the name of the endpoint, which is by convention the same as the
+        string end_point = ""; //this is the name of the endpoint, which is by convention the same as the
                           //url to which the signed transaction is sent.
         int64_t value;   //this it the value of the fee in FIO SUFs (Smallest unit of FIO).
 
@@ -32,7 +32,9 @@ namespace fioio {
 
     //this is the amount of time that must elapse for votes to be recorded into the FIO protocol for fees.
     const uint32_t TIME_BETWEEN_VOTES_SECONDS = 120;
-    const uint32_t TIME_BETWEEN_FEE_VOTES_SECONDS = 3600;
+   // const uint32_t TIME_BETWEEN_FEE_VOTES_SECONDS = 3600;
+   //kludge for testing.
+   const uint32_t TIME_BETWEEN_FEE_VOTES_SECONDS = 30;
 
     // This table contains the data attributes associated with a fee.
     // @abi table fiofee i64
@@ -97,21 +99,17 @@ namespace fioio {
     struct [[eosio::action]] feevote {
         uint64_t id;       //unique one up id
         name block_producer_name;
-        string end_point;
-        uint128_t end_point_hash;
-        uint64_t suf_amount;
+        std::vector<feevalue> feevotes; //fee votes are order dependant, the idx in this vector must match the id of the vote
         uint64_t lastvotetimestamp;
 
         uint64_t primary_key() const { return id; }
-        uint128_t by_endpoint() const { return end_point_hash; }
         uint64_t by_bpname() const { return block_producer_name.value; }
 
-        EOSLIB_SERIALIZE(feevote, (id)(block_producer_name)(end_point)(end_point_hash)(suf_amount)(lastvotetimestamp)
+        EOSLIB_SERIALIZE(feevote, (id)(block_producer_name)(feevotes)(lastvotetimestamp)
         )
     };
 
     typedef multi_index<"feevotes"_n, feevote,
-            indexed_by<"byendpoint"_n, const_mem_fun < feevote, uint128_t, &feevote::by_endpoint>>,
             indexed_by<"bybpname"_n, const_mem_fun<feevote, uint64_t, &feevote::by_bpname>>
     >
     feevotes_table;

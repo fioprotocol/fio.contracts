@@ -36,11 +36,6 @@ namespace fioio {
         eosiosystem::top_producers_table topprods;
         eosiosystem::producers_table prods;
 
-        struct bpfeevotes {
-            vector<uint64_t> votesufs;
-            string end_point = "";
-            name producer;
-        };
 
 
         vector<name> getTopProds(){
@@ -57,20 +52,17 @@ namespace fioio {
         }
 
         uint32_t update_fees() {
-            map<uint128_t, bpfeevotes> feevotes_by_endpoint_hash; //this is the map of computed fees that are voted
-            vector<uint128_t> fee_hashes; //hashes for endpoints to process.
-            vector<string> fee_endpoints;
+            vector<uint64_t> fee_ids; //hashes for endpoints to process.
             
-            int NUMBER_FEES_TO_PROCESS = 3;
+            int NUMBER_FEES_TO_PROCESS = 10;
 
             //get the fees needing processing.
             auto fee = fiofees.begin();
             while (fee != fiofees.end()) {
                 if(fee->votes_pending.value()){
-                    fee_hashes.push_back(fee->end_point_hash);
-                    fee_endpoints.push_back(fee->end_point);
+                    fee_ids.push_back(fee->fee_id);
                     //only get the specified number of fees to process.
-                    if (fee_hashes.size() == NUMBER_FEES_TO_PROCESS){
+                    if (fee_ids.size() == NUMBER_FEES_TO_PROCESS){
                         break;
                     }
                 }
@@ -78,98 +70,72 @@ namespace fioio {
             }
 
             //throw a 400 error if fees to process is empty.
-            fio_400_assert(fee_hashes.size() > 0, "compute fees", "compute fees",
+            fio_400_assert(fee_ids.size() > 0, "compute fees", "compute fees",
                            "No Work.", ErrorNoWork);
 
-            //loop over fee votes.
 
-            //build the voting map from the top 21 BP votes.
-            auto topprod = topprods.begin();
-            while (topprod != topprods.end()) {
-                //get the fee voters record of this BP.
-                auto voters_iter = feevoters.find(topprod->producer.value);
-                //if there is no fee voters record, then there is not a multiplier, skip this BP.
-                if (voters_iter != feevoters.end()) {
-                    //get all the fee votes made by this BP.
-                    auto votesbybpname = feevotes.get_index<"bybpname"_n>();
-                    auto bpvote_iter = votesbybpname.lower_bound(topprod->producer.value);
-                    int countem = 0;
-                    while (bpvote_iter != votesbybpname.end()) {
-                        //if the BP name changes, then exit the loop, we processed all votes for this BP
-                        if (bpvote_iter->block_producer_name != topprod->producer) {
-                            break;
-                        }
-                        //if its in the list of endpoints to process. then add the computed sufs to the list
-                        //for this endpoint.
-                        if ((std::find(fee_hashes.begin(), fee_hashes.end(), bpvote_iter->end_point_hash)) !=
-                            fee_hashes.end()) {
-                            const double dresult = voters_iter->fee_multiplier * (double) bpvote_iter->suf_amount;
-                            const uint64_t voted_fee = (uint64_t)(dresult);
-
-                            auto fveh_iter = feevotes_by_endpoint_hash.find(bpvote_iter->end_point_hash);
-                            //if its not in the map yet, then add it to the map.
-                            if (fveh_iter == feevotes_by_endpoint_hash.end()) {
-                                vector <uint64_t> t;
-                                t.push_back(voted_fee);
-                                bpfeevotes blockproducerfeevote{
-                                        t,
-                                        bpvote_iter->end_point,
-                                        topprod->producer
-                                };
-                                feevotes_by_endpoint_hash.insert(
-                                        make_pair(bpvote_iter->end_point_hash, blockproducerfeevote));
-                            } else {
-                                //just add this vote sufs to the list for averaging.
-                                fveh_iter->second.votesufs.push_back(voted_fee);
-                            }
-                            countem++;
-                            if (countem == fee_hashes.size()){
-                                break;
-                            }
-                        }
-                        bpvote_iter++;
-                    }
-                }
-                topprod++;
-            }
-
+            vector<uint64_t> votesufs;
             int processed_fees = 0;
-            //compute the median and set it
-            //loop over the endpoints to be processed.
-            for (int hix=0;hix<fee_hashes.size();hix++) {
-                //get the bp fee votes for this endpoint.
-                auto fveh_iter = feevotes_by_endpoint_hash.find(fee_hashes[hix]);
 
-                fio_400_assert(fveh_iter != feevotes_by_endpoint_hash.end(), "compute fees", "compute fees",
-                               "Failed to find endpoint hash for "+fee_endpoints[hix]+" in feevotes_by_endpoint_hash.", ErrorNoWork);
-                bpfeevotes bpfv = fveh_iter->second;
+            for(int i=0;i<fee_ids.size();i++) { //for each fee to process
+                print("EDEDEDED process fee id ",fee_ids[i]);
+                votesufs.clear();
+                auto topprod = topprods.begin();
+                while (topprod != topprods.end()) { //get the votes of the producers, compute the voted fee, and median.
+                    //get the fee voters record of this BP.
+                    auto voters_iter = feevoters.find(topprod->producer.value);
+                    //if there is no fee voters record, then there is not a multiplier, skip this BP.
+                    if (voters_iter != feevoters.end()) {
+                        //get all the fee votes made by this BP.
+                        auto votesbybpname = feevotes.get_index<"bybpname"_n>();
+                        auto bpvote_iter = votesbybpname.find(topprod->producer.value);
+                        int countem = 0;
 
-                //compute the median from teh votesufs.
+                        if (bpvote_iter != votesbybpname.end()) {
+                            //if its in the votes list, and if it has a vote, IE end_point is greater 0, then use if.
+                            if ((bpvote_iter->feevotes.size() > fee_ids[i]) &&
+                                (bpvote_iter->feevotes[fee_ids[i]].end_point.length() > 0)) {
+                                const double dresult = voters_iter->fee_multiplier *
+                                                       (double) bpvote_iter->feevotes[fee_ids[i]].value;
+                                const uint64_t voted_fee = (uint64_t)(dresult);
+                                votesufs.push_back(voted_fee);
+                                print("EDEDEDED added a value to the list for id ",fee_ids[i]);
+                            }
+                        }
+                    }else {
+                        print("EDEDEDED  fee id ",fee_ids[i]);
+                    }
+                    topprod++;
+                }
+
+                //compute the median from the votesufs.
                 int64_t median_fee = -1;
-                if (bpfv.votesufs.size() >= MIN_FEE_VOTERS_FOR_MEDIAN) {
-                    sort(bpfv.votesufs.begin(), bpfv.votesufs.end());
-                    int size = bpfv.votesufs.size();
-                    if (bpfv.votesufs.size() % 2 == 0) {
-                        median_fee = (bpfv.votesufs[size / 2 - 1] + bpfv.votesufs[size / 2]) / 2;
+                //KLUDGE for testing
+                if (votesufs.size() >= 2) {
+                    // if (votesufs.size() >= MIN_FEE_VOTERS_FOR_MEDIAN) {
+                    sort(votesufs.begin(), votesufs.end());
+                    int size = votesufs.size();
+                    if (votesufs.size() % 2 == 0) {
+                        median_fee = (votesufs[size / 2 - 1] + votesufs[size / 2]) / 2;
                     } else {
-                        median_fee = bpfv.votesufs[size / 2];
+                        median_fee = votesufs[size / 2];
                     }
                 }
 
                 //set median as the new fee amount.
                 if (median_fee > 0) {
-                    auto feesbyendpoint = fiofees.get_index<"byendpoint"_n>();
                     //update the fee.
-                    auto fee_iter = feesbyendpoint.find(fee_hashes[hix]);
-                    if (fee_iter != feesbyendpoint.end()) {
-                        feesbyendpoint.modify(fee_iter, _self, [&](struct fiofee &ff) {
+                    auto fee_iter = fiofees.find(fee_ids[i]);
+                    if (fee_iter != fiofees.end()) {
+                        fiofees.modify(fee_iter, _self, [&](struct fiofee &ff) {
                             ff.suf_amount = median_fee;
                             ff.votes_pending.emplace(false);
                         });
                         processed_fees++;
-
+                        print("EDEDEDED set final fee for id ",fee_ids[i]);
                     }
                 }
+
             }
 
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
@@ -218,7 +184,27 @@ namespace fioio {
                            ErrorMaxFeeInvalid);
             const uint32_t nowtime = now();
 
-            //check the submitted fee values.
+            //get all the votes made by this actor. go through the list
+            //and find the fee vote to update.
+            auto feevotesbybpname = feevotes.get_index<"bybpname"_n>();
+            // auto votebyname_iter = feevotesbybpname.lower_bound(aactor.value);
+            auto votebyname_iter = feevotesbybpname.find(aactor.value);
+
+            if(votebyname_iter != feevotesbybpname.end()){
+                fio_400_assert(!(votebyname_iter->lastvotetimestamp > (nowtime - TIME_BETWEEN_FEE_VOTES_SECONDS)), "", "", "Too soon since last call", ErrorTimeViolation);
+            }
+            vector<feevalue> feevotesv;
+            bool emplacerec = true;
+
+            //check for time violation.
+
+            if (votebyname_iter != feevotesbybpname.end()){
+                emplacerec = false;
+                feevotesv = votebyname_iter->feevotes;
+            }
+
+
+            // go through all the fee values passed in.
             for (auto &feeval : fee_values) {
                 //check the endpoint exists for this fee
                 const uint128_t endPointHash = string_to_uint128_hash(feeval.end_point.c_str());
@@ -232,65 +218,49 @@ namespace fioio {
                 fio_400_assert(feeval.value >= 0, "fee_value", feeval.end_point,
                                "invalid fee value", ErrorFeeInvalid);
 
-                //get all the votes made by this actor. go through the list
-                //and find the fee vote to update.
-                auto feevotesbybpname = feevotes.get_index<"bybpname"_n>();
-                auto votebyname_iter = feevotesbybpname.lower_bound(aactor.value);
+                uint64_t feeid = fees_iter->fee_id;
+
+                // if the vector doesnt have an entry at this fees id index, add items out to this index.
+                // items with an empty string for end_point will NOT be used in median calcs.
+                if (feevotesv.size() < (feeid+1)){
+                    for(int ix = feevotesv.size();ix<=(feeid+1);ix++)
+                    {
+                        feevalue tfv;
+                        feevotesv.push_back(tfv);
+                    }
+                }
 
                 uint64_t idtoremove;
                 bool found = false;
-                bool timeviolation = false;
-                while (votebyname_iter != feevotesbybpname.end())
-                {
-                    if (votebyname_iter->block_producer_name.value != aactor.value) {
-                        //if the bp name changes we have exited the items of interest, so quit.
-                        break;
-                    }
 
-                    if (votebyname_iter->end_point_hash == endPointHash) {
-                        //check the time of the last update, remove and replace if
-                        //its been longer than the time between votes
-                        const uint32_t lastupdate = votebyname_iter->lastvotetimestamp;
+                feevotesv[feeid].end_point = feeval.end_point;
+                feevotesv[feeid].value = feeval.value;
 
-                        //be silent if the time between votes has not yet elapsed.
-                        if (lastupdate > (nowtime - TIME_BETWEEN_FEE_VOTES_SECONDS)) {
-                            timeviolation = true;
-                            break;
-                        } else {
-                            idtoremove = votebyname_iter->id;
-                            found = true;
-                            break;
-                        }
-                    }
-                    votebyname_iter++;
-                }
-
-                if (found) {
-                    auto myiter = feevotes.find(idtoremove);
-                    if(myiter != feevotes.end()) {
-                        feevotes.erase(myiter);
-                    }
-                }
-
-                if (!timeviolation) {
-                    feevotes.emplace(aactor, [&](struct feevote &fv) {
-                        fv.id = feevotes.available_primary_key();
-                        fv.block_producer_name = aactor;
-                        fv.end_point = feeval.end_point;
-                        fv.end_point_hash = endPointHash;
-                        fv.suf_amount = feeval.value;
-                        fv.lastvotetimestamp = nowtime;
+                if(topprods.find(aactor.value) != topprods.end()) {
+                    feesbyendpoint.modify(fees_iter, _self, [&](struct fiofee &a) {
+                        a.votes_pending.emplace(true);
                     });
-
-                    if(topprods.find(aactor.value) != topprods.end()) {
-                        feesbyendpoint.modify(fees_iter, _self, [&](struct fiofee &a) {
-                            a.votes_pending.emplace(true);
-                        });
-                    }
-                } else {
-                    fio_400_assert(false, "", "", "Too soon since last call", ErrorTimeViolation);
                 }
+
             }
+
+            //emplace or update.
+            if (emplacerec){
+                feevotes.emplace(aactor, [&](struct feevote &fv) {
+                    fv.id = feevotes.available_primary_key();
+                    fv.block_producer_name = aactor;
+                    fv.feevotes = feevotesv;
+                    fv.lastvotetimestamp = nowtime;
+                });
+            }else {
+                feevotesbybpname.modify(votebyname_iter, aactor, [&](struct feevote &fv) {
+                    fv.feevotes = feevotesv;
+                    fv.lastvotetimestamp = nowtime;
+                });
+
+            }
+
+
 
             //begin new fees, logic for Mandatory fees.
             uint128_t endpoint_hash = string_to_uint128_hash("submit_fee_ratios");
@@ -505,6 +475,7 @@ namespace fioio {
                         //if the bp name changes we have exited the items of interest, so quit.
                         break;
                     } else {
+                        /*  just to compile...bring it back
                         auto fee_iter = fees_by_endpoint.find(votebyname_iter->end_point_hash);
                         fio_400_assert((fee_iter != fees_by_endpoint.end()), "end point", votebyname_iter->end_point,
                                        " Fee lookup error",
@@ -512,6 +483,7 @@ namespace fioio {
                         fees_by_endpoint.modify(fee_iter, _self, [&](struct fiofee &a) {
                             a.votes_pending.emplace(true);
                         });
+                         */
 
                     }
                     votebyname_iter++;
