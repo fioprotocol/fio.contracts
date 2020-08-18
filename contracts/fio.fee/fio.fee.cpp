@@ -431,8 +431,9 @@ namespace fioio {
 
             //check that the actor is in the top42.
             vector<name> top_prods = getTopProds();
-            fio_400_assert((std::find(top_prods.begin(), top_prods.end(), aactor)) !=
-                           top_prods.end(), "actor", actor," Not a top 42 BP",ErrorFioNameNotReg);
+            //kludge, remove the top42 check to test over 100 producers recording votes.
+           // fio_400_assert((std::find(top_prods.begin(), top_prods.end(), aactor)) !=
+           //                top_prods.end(), "actor", actor," Not a top 42 BP",ErrorFioNameNotReg);
 
             fio_400_assert(multiplier > 0, "multiplier", to_string(multiplier),
                            " Must be positive",
