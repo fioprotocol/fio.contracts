@@ -175,8 +175,9 @@ namespace fioio {
 
             //check that the actor is in the top42.
             vector<name> top_prods = getTopProds();
-            fio_400_assert((std::find(top_prods.begin(), top_prods.end(), aactor)) !=
-                top_prods.end(), "actor", actor," Not a top 42 BP",ErrorFioNameNotReg);
+            //Kludge remove top 21 limit to load up with 100 voters.
+          //  fio_400_assert((std::find(top_prods.begin(), top_prods.end(), aactor)) !=
+          //      top_prods.end(), "actor", actor," Not a top 42 BP",ErrorFioNameNotReg);
 
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
@@ -189,6 +190,7 @@ namespace fioio {
             auto votebyname_iter = feevotesbybpname.find(aactor.value);
 
             //KLudge for testing, time logic needs rethought. now all votes get the same time
+            //we need the last update time to be in the feevotes vector, and set by the system.
           //  if(votebyname_iter != feevotesbybpname.end()){
           //      fio_400_assert(!(votebyname_iter->lastvotetimestamp > (nowtime - TIME_BETWEEN_FEE_VOTES_SECONDS)), "", "", "Too soon since last call", ErrorTimeViolation);
           //  }
