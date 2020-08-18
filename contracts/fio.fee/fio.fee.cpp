@@ -78,7 +78,7 @@ namespace fioio {
             int processed_fees = 0;
 
             for(int i=0;i<fee_ids.size();i++) { //for each fee to process
-                print("EDEDEDED process fee id ",fee_ids[i]);
+               // print("EDEDEDED process fee id ",fee_ids[i]);
                 votesufs.clear();
                 auto topprod = topprods.begin();
                 while (topprod != topprods.end()) { //get the votes of the producers, compute the voted fee, and median.
@@ -99,11 +99,9 @@ namespace fioio {
                                                        (double) bpvote_iter->feevotes[fee_ids[i]].value;
                                 const uint64_t voted_fee = (uint64_t)(dresult);
                                 votesufs.push_back(voted_fee);
-                                print("EDEDEDED added a value to the list for id ",fee_ids[i]);
+                              //  print("EDEDEDED added a value to the list for id ",fee_ids[i]);
                             }
                         }
-                    }else {
-                        print("EDEDEDED  fee id ",fee_ids[i]);
                     }
                     topprod++;
                 }
@@ -132,7 +130,7 @@ namespace fioio {
                             ff.votes_pending.emplace(false);
                         });
                         processed_fees++;
-                        print("EDEDEDED set final fee for id ",fee_ids[i]);
+                      //  print("EDEDEDED set final fee for id ",fee_ids[i]);
                     }
                 }
 
@@ -190,9 +188,10 @@ namespace fioio {
             // auto votebyname_iter = feevotesbybpname.lower_bound(aactor.value);
             auto votebyname_iter = feevotesbybpname.find(aactor.value);
 
-            if(votebyname_iter != feevotesbybpname.end()){
-                fio_400_assert(!(votebyname_iter->lastvotetimestamp > (nowtime - TIME_BETWEEN_FEE_VOTES_SECONDS)), "", "", "Too soon since last call", ErrorTimeViolation);
-            }
+            //KLudge for testing, time logic needs rethought. now all votes get the same time
+          //  if(votebyname_iter != feevotesbybpname.end()){
+          //      fio_400_assert(!(votebyname_iter->lastvotetimestamp > (nowtime - TIME_BETWEEN_FEE_VOTES_SECONDS)), "", "", "Too soon since last call", ErrorTimeViolation);
+          //  }
             vector<feevalue> feevotesv;
             bool emplacerec = true;
 
