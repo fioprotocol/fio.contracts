@@ -466,28 +466,28 @@ namespace fioio {
 
             //get all voted fees and set votes pending.
             auto feevotesbybpname = feevotes.get_index<"bybpname"_n>();
-            auto votebyname_iter = feevotesbybpname.lower_bound(aactor.value);
+            auto votebyname_iter = feevotesbybpname.find(aactor.value);
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
 
             if(topprods.find(aactor.value) != topprods.end()) {
 
-                while (votebyname_iter != feevotesbybpname.end()) {
-                    if (votebyname_iter->block_producer_name.value != aactor.value) {
-                        //if the bp name changes we have exited the items of interest, so quit.
-                        break;
-                    } else {
-                        /*  just to compile...bring it back
-                        auto fee_iter = fees_by_endpoint.find(votebyname_iter->end_point_hash);
-                        fio_400_assert((fee_iter != fees_by_endpoint.end()), "end point", votebyname_iter->end_point,
-                                       " Fee lookup error",
-                                       ErrorNoFeesFoundForEndpoint);
-                        fees_by_endpoint.modify(fee_iter, _self, [&](struct fiofee &a) {
-                            a.votes_pending.emplace(true);
-                        });
-                         */
+                if (votebyname_iter != feevotesbybpname.end()) {
+                    //loop over all fee votes, for all voted fees set the pending flag.
+                    for(int i=0;i<votebyname_iter->feevotes.size();i++) {
+                        if (votebyname_iter->block_producer_name.value != aactor.value) {
+                            break;
+                        } else {
 
+                            auto fee_iter = fiofees.find(i);
+                            if(fee_iter != fiofees.end()) {
+                                fiofees.modify(fee_iter, _self, [&](struct fiofee &a) {
+                                    a.votes_pending.emplace(true);
+                                });
+                            }
+
+
+                        }
                     }
-                    votebyname_iter++;
                 }
             }
 
