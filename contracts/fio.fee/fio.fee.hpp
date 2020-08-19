@@ -101,10 +101,34 @@ namespace fioio {
 
     typedef multi_index<"bundlevoters"_n, bundlevoter> bundlevoters_table;
 
-    // This table holds block producer votes for fees. this table holds the vote for each fee for each block producer
-    // in SUFs. The votes here will be multiplied by the multiplier in the feevoters table.
-    // @abi table feevote i64
+
+    //this structure is retired, left here so that replays can be achieved.
     struct [[eosio::action]] feevote {
+        uint64_t id;       //unique one up id
+        name block_producer_name;
+        string end_point;
+        uint128_t end_point_hash;
+        uint64_t suf_amount;
+        uint64_t lastvotetimestamp;
+
+        uint64_t primary_key() const { return id; }
+        uint64_t by_bpname() const { return block_producer_name.value; }
+
+        EOSLIB_SERIALIZE(feevote, (id)(block_producer_name)(end_point)(end_point_hash)(suf_amount)(lastvotetimestamp)
+        )
+    };
+
+    //this table is retired, left in state so that replays can be performed.
+    typedef multi_index<"feevotes"_n, feevote,
+            indexed_by<"bybpname"_n, const_mem_fun<feevote, uint64_t, &feevote::by_bpname>>
+    >
+    feevotes_table;
+
+    // This table holds block producer votes for fees. each table entry table holds the fee ratio votes
+    // for each fee for each block producer
+    // The votes here will be multiplied by the multiplier in the feevoters table.
+    // @abi table feevote i64
+    struct [[eosio::action]] feevote2 {
         uint64_t id;       //unique one up id
         name block_producer_name;
         std::vector<feevalue_ts> feevotes; //fee votes are order dependant, the idx in this vector must match the id of the vote
@@ -113,12 +137,14 @@ namespace fioio {
         uint64_t primary_key() const { return id; }
         uint64_t by_bpname() const { return block_producer_name.value; }
 
-        EOSLIB_SERIALIZE(feevote, (id)(block_producer_name)(feevotes)(lastvotetimestamp)
+        EOSLIB_SERIALIZE(feevote2, (id)(block_producer_name)(feevotes)(lastvotetimestamp)
         )
     };
 
-    typedef multi_index<"feevotes"_n, feevote,
-            indexed_by<"bybpname"_n, const_mem_fun<feevote, uint64_t, &feevote::by_bpname>>
+    typedef multi_index<"feevotes2"_n, feevote2,
+            indexed_by<"bybpname"_n, const_mem_fun<feevote2, uint64_t, &feevote2::by_bpname>>
     >
-    feevotes_table;
+    feevotes2_table;
+
+
 } // namespace fioio

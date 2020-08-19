@@ -97,6 +97,17 @@
         "fields": [
            {"name":"id", "type":"uint64"},
            {"name":"block_producer_name", "type":"name"},
+           {"name":"end_point", "type":"string"},
+           {"name":"end_point_hash", "type":"uint128"},
+           {"name":"suf_amount", "type":"uint64"},
+           {"name":"lastvotetimestamp", "type":"uint64"}
+        ]
+     },{
+        "name": "feevote2",
+        "base": "",
+        "fields": [
+           {"name":"id", "type":"uint64"},
+           {"name":"block_producer_name", "type":"name"},
            {"name": "feevotes", "type": "feevalue_ts[]"},
            {"name":"lastvotetimestamp", "type":"uint64"}
         ]
@@ -178,7 +189,17 @@
             "uint64"
          ],
          "type": "feevote"
-      }],
+      },{
+         "name": "feevotes2",
+         "index_type": "i64",
+         "key_names": [
+            "block_producer_name"
+         ],
+         "key_types": [
+            "uint64"
+         ],
+         "type": "feevote2"
+         }],
     "ricardian_clauses": [],
     "error_messages": [],
     "abi_extensions": []

@@ -32,7 +32,7 @@ namespace fioio {
         fiofee_table fiofees;
         feevoters_table feevoters;
         bundlevoters_table bundlevoters;
-        feevotes_table feevotes;
+        feevotes2_table feevotes;
         eosiosystem::top_producers_table topprods;
         eosiosystem::producers_table prods;
 
@@ -246,14 +246,14 @@ namespace fioio {
 
             //emplace or update.
             if (emplacerec){
-                feevotes.emplace(aactor, [&](struct feevote &fv) {
+                feevotes.emplace(aactor, [&](struct feevote2 &fv) {
                     fv.id = feevotes.available_primary_key();
                     fv.block_producer_name = aactor;
                     fv.feevotes = feevotesv;
                     fv.lastvotetimestamp = nowtime;
                 });
             }else {
-                feevotesbybpname.modify(votebyname_iter, aactor, [&](struct feevote &fv) {
+                feevotesbybpname.modify(votebyname_iter, aactor, [&](struct feevote2 &fv) {
                     fv.feevotes = feevotesv;
                     fv.lastvotetimestamp = nowtime;
                 });
