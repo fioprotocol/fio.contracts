@@ -78,7 +78,6 @@ namespace fioio {
             int processed_fees = 0;
 
             for(int i=0;i<fee_ids.size();i++) { //for each fee to process
-               // print("EDEDEDED process fee id ",fee_ids[i]);
                 votesufs.clear();
                 auto topprod = topprods.begin();
                 while (topprod != topprods.end()) { //get the votes of the producers, compute the voted fee, and median.
@@ -99,7 +98,6 @@ namespace fioio {
                                                        (double) bpvote_iter->feevotes[fee_ids[i]].value;
                                 const uint64_t voted_fee = (uint64_t)(dresult);
                                 votesufs.push_back(voted_fee);
-                              //  print("EDEDEDED added a value to the list for id ",fee_ids[i]);
                             }
                         }
                     }
@@ -119,18 +117,23 @@ namespace fioio {
                 }
 
                 //set median as the new fee amount.
-                if (median_fee > 0) {
-                    //update the fee.
-                    auto fee_iter = fiofees.find(fee_ids[i]);
-                    if (fee_iter != fiofees.end()) {
+
+                //update the fee.
+                auto fee_iter = fiofees.find(fee_ids[i]);
+                if((fee_iter != fiofees.end())) {
+                    if ( median_fee > 0) {
                         fiofees.modify(fee_iter, _self, [&](struct fiofee &ff) {
                             ff.suf_amount = median_fee;
                             ff.votes_pending.emplace(false);
                         });
                         processed_fees++;
-                      //  print("EDEDEDED set final fee for id ",fee_ids[i]);
+                    }else { //just clear the pending flag, not enough votes to update the fee yet/
+                        fiofees.modify(fee_iter, _self, [&](struct fiofee &ff) {
+                            ff.votes_pending.emplace(false);
+                        });
                     }
                 }
+
 
             }
 
