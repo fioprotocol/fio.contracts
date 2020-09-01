@@ -9,7 +9,6 @@
 #pragma once
 
 #define MAX_TRX_SIZE 8098
-#define MAX_SET_ADDRESSES 200
 
 namespace fioio {
     using eosio::name;
@@ -19,6 +18,7 @@ namespace fioio {
     static const name SYSTEMACCOUNT =    name("eosio");
     static const name ASSERTACCOUNT =    name("eosio.assert");
 
+
     //these are legacy system account names from EOS, we might consider blocking these.
     static const name BPAYACCOUNT =      name("eosio.bpay");
     static const name NAMESACCOUNT =     name("eosio.names");
@@ -27,6 +27,7 @@ namespace fioio {
     static const name SAVINGACCOUNT =    name("eosio.saving");
     static const name STAKEACCOUNT =     name("eosio.stake");
     static const name VPAYACCOUNT =      name("eosio.vpay");
+
 
     static const name REQOBTACCOUNT =     name("fio.reqobt");
     static const name FeeContract =       name("fio.fee");
