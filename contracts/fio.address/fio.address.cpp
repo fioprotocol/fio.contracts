@@ -532,28 +532,18 @@ namespace fioio {
                                "Invalid public address format",
                                ErrorChainAddressEmpty);
 
-                auto it = std::find_if(fioname_iter->addresses.begin(), fioname_iter->addresses.end(),
-                                       find_token(token));
-                if ((it->token_code == token) && (it->chain_code == chaincode)) {
-                    namesbyname.modify(fioname_iter, actor, [&](struct fioname &a) {
-                        a.addresses[it - fioname_iter->addresses.begin()].public_address = tpa->public_address;
-                    });
-                    wasFound = true;
-                } else if (it->token_code == token && it->chain_code != chaincode) {
-                    for (auto it = fioname_iter->addresses.begin(); it != fioname_iter->addresses.end(); ++it) {
-                        if ((it->token_code == token) && (it->chain_code == chaincode)) {
-                            namesbyname.modify(fioname_iter, actor, [&](struct fioname &a) {
-                                a.addresses[it - fioname_iter->addresses.begin()].public_address = tpa->public_address;
-                            });
-                            wasFound = true;
-                            break;
-                        }
+                for( auto it = fioname_iter->addresses.begin(); it != fioname_iter->addresses.end(); ++it ) {
+                    if( (it->token_code == token) && (it->chain_code == chaincode)  ){
+                        namesbyname.modify(fioname_iter, actor, [&](struct fioname &a) {
+                            a.addresses[it-fioname_iter->addresses.begin()].public_address = tpa->public_address;
+                        });
+                        wasFound = true;
+                        break;
                     }
                 }
-
                 if(!wasFound){
-                    fio_400_assert(fioname_iter->addresses.size() != MAX_SET_ADDRESSES, "token_code", tpa->token_code, "Maximum token codes mapped to single FIO Address reached. Only 200 can be mapped.",
-                                   ErrorInvalidFioNameFormat); // Don't forget to set the error amount if/when changing MAX_SET_ADDRESSES
+                    fio_400_assert(fioname_iter->addresses.size() != 100, "token_code", tpa->token_code, "Maximum token codes mapped to single FIO Address reached. Only 100 can be mapped.",
+                                   ErrorInvalidFioNameFormat);
 
                     tempStruct.public_address = tpa->public_address;
                     tempStruct.token_code = tpa->token_code;
