@@ -316,7 +316,7 @@ namespace fioio {
                     }
                 }
                 if(!wasFound){
-                    fio_400_assert(fioname_iter->addresses.size() != 200, "token_code", tpa->token_code, "Maximum token codes mapped to single FIO Address reached. Only 200 can be mapped.",
+                    fio_400_assert(fioname_iter->addresses.size() != 1000, "token_code", tpa->token_code, "Maximum token codes mapped to single FIO Address reached. Only 1000 can be mapped.",
                                    ErrorInvalidFioNameFormat);
 
                     tempStruct.public_address = tpa->public_address;
