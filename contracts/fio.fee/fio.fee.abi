@@ -22,21 +22,21 @@
         "base": "",
         "fields": [
             {"name":"fee_ratios", "type":"feevalue[]"},
-            {"name":"actor", "type":"string"}
+            {"name":"actor", "type":"name"}
         ]
       },{
         "name": "bundlevote",
         "base": "",
         "fields": [
             {"name":"bundled_transactions", "type":"int64"},
-            {"name":"actor", "type":"string"}
+            {"name":"actor", "type":"name"}
         ]
       },{
         "name": "setfeemult",
         "base": "",
         "fields": [
             {"name":"multiplier", "type":"float64"},
-            {"name":"actor", "type":"string"}
+            {"name":"actor", "type":"name"}
         ]
       },{
         "name": "mandatoryfee",

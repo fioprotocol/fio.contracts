@@ -57,11 +57,9 @@ namespace fioio {
                 topprod++;
             }
 
-
-
             auto feevotesbyendpoint = feevotes.get_index<"byendpoint"_n>();
             string lastvalUsed = "";
-            uint128_t lastusedHash;
+            uint128_t lastusedHash = 0;
             vector <uint64_t> feevalues;
             //traverse all of the fee votes grouped by endpoint.
             for (const auto &vote_item : feevotesbyendpoint) {
@@ -171,15 +169,12 @@ namespace fioio {
          */
         // @abi action
         [[eosio::action]]
-        void setfeevote(const vector <feevalue> &fee_values, const string &actor) {
-
-            name aactor = name(actor.c_str());
-            require_auth(aactor);
-
+        void setfeevote(const vector <feevalue> &fee_values, const name &actor) {
+            require_auth(actor);
             bool dbgout = false;
 
             //check that the producer is active block producer
-            fio_400_assert(((topprods.find(aactor.value) != topprods.end())), "actor", actor,
+            fio_400_assert(((topprods.find(actor.value) != topprods.end())), "actor", actor.to_string(),
                            " Not an active BP",
                            ErrorFioNameNotReg);
 
@@ -190,7 +185,7 @@ namespace fioio {
                 //check the endpoint exists for this fee
                 const uint128_t endPointHash = string_to_uint128_hash(feeval.end_point.c_str());
 
-                auto feesbyendpoint = fiofees.get_index<"byendpoint"_n>();
+                const auto feesbyendpoint = fiofees.get_index<"byendpoint"_n>();
                 fio_400_assert(feesbyendpoint.find(endPointHash) != feesbyendpoint.end(), "end_point", feeval.end_point,
                                "invalid end_point", ErrorEndpointNotFound);
 
@@ -200,14 +195,14 @@ namespace fioio {
                 //get all the votes made by this actor. go through the list
                 //and find the fee vote to update.
                 auto feevotesbybpname = feevotes.get_index<"bybpname"_n>();
-                auto votebyname_iter = feevotesbybpname.lower_bound(aactor.value);
+                auto votebyname_iter = feevotesbybpname.lower_bound(actor.value);
 
                 uint64_t idtoremove;
                 bool found = false;
                 bool timeviolation = false;
                 while (votebyname_iter != feevotesbybpname.end())
                 {
-                    if (votebyname_iter->block_producer_name.value != aactor.value) {
+                    if (votebyname_iter->block_producer_name.value != actor.value) {
                         //if the bp name changes we have exited the items of interest, so quit.
                         break;
                     }
@@ -238,9 +233,9 @@ namespace fioio {
                 }
 
                 if (!timeviolation) {
-                    feevotes.emplace(aactor, [&](struct feevote &fv) {
+                    feevotes.emplace(actor, [&](struct feevote &fv) {
                         fv.id = feevotes.available_primary_key();
-                        fv.block_producer_name = aactor;
+                        fv.block_producer_name = actor;
                         fv.end_point = feeval.end_point;
                         fv.end_point_hash = endPointHash;
                         fv.suf_amount = feeval.value;
@@ -253,13 +248,12 @@ namespace fioio {
 
             const string response_string = string("{\"status\": \"OK\"}");
 
-
             if (SETFEEVOTERAM > 0) {
                 action(
                         permission_level{SYSTEMACCOUNT, "active"_n},
                         "eosio"_n,
                         "incram"_n,
-                        std::make_tuple(aactor, SETFEEVOTERAM)
+                        std::make_tuple(actor, SETFEEVOTERAM)
                 ).send();
             }
 
@@ -288,12 +282,11 @@ namespace fioio {
         [[eosio::action]]
         void bundlevote(
                 int64_t bundled_transactions,
-                const string &actor
+                const name &actor
         ) {
-            const name aactor = name(actor.c_str());
-            require_auth(aactor);
+            require_auth(actor);
 
-            fio_400_assert(((topprods.find(aactor.value) != topprods.end())), "actor", actor,
+            fio_400_assert(((topprods.find(actor.value) != topprods.end())), "actor", actor.to_string(),
                            " Not an active BP",
                            ErrorFioNameNotReg);
 
@@ -303,13 +296,13 @@ namespace fioio {
 
             const uint32_t nowtime = now();
 
-            auto voter_iter = bundlevoters.find(aactor.value);
+            auto voter_iter = bundlevoters.find(actor.value);
             if (voter_iter != bundlevoters.end()) //update if it exists
             {
                 const uint32_t lastupdate = voter_iter->lastvotetimestamp;
                 if (lastupdate <= (nowtime - TIME_BETWEEN_VOTES_SECONDS)) {
                     bundlevoters.modify(voter_iter, _self, [&](struct bundlevoter &a) {
-                        a.block_producer_name = aactor;
+                        a.block_producer_name = actor;
                         a.bundledbvotenumber = bundled_transactions;
                         a.lastvotetimestamp = nowtime;
                     });
@@ -317,8 +310,8 @@ namespace fioio {
                     fio_400_assert(false, "", "", "Too soon since last call", ErrorTimeViolation);
                 }
             } else {
-                bundlevoters.emplace(aactor, [&](struct bundlevoter &f) {
-                    f.block_producer_name = aactor;
+                bundlevoters.emplace(actor, [&](struct bundlevoter &f) {
+                    f.block_producer_name = actor;
                     f.bundledbvotenumber = bundled_transactions;
                     f.lastvotetimestamp = nowtime;
                 });
@@ -331,7 +324,7 @@ namespace fioio {
                         permission_level{SYSTEMACCOUNT, "active"_n},
                         "eosio"_n,
                         "incram"_n,
-                        std::make_tuple(aactor, BUNDLEVOTERAM)
+                        std::make_tuple(actor, BUNDLEVOTERAM)
                 ).send();
             }
 
@@ -355,13 +348,11 @@ namespace fioio {
         [[eosio::action]]
         void setfeemult(
                 double multiplier,
-                const string &actor
+                const name &actor
         ) {
+            require_auth(actor);
 
-            const name aactor = name(actor.c_str());
-            require_auth(aactor);
-
-            fio_400_assert(((topprods.find(aactor.value) != topprods.end())), "actor", actor,
+            fio_400_assert(((topprods.find(actor.value) != topprods.end())), "actor", actor.to_string(),
                            " Not an active BP",
                            ErrorFioNameNotReg);
 
@@ -371,13 +362,13 @@ namespace fioio {
 
             const uint32_t nowtime = now();
 
-            auto voter_iter = feevoters.find(aactor.value);
+            auto voter_iter = feevoters.find(actor.value);
             if (voter_iter != feevoters.end())
             {
                 const uint32_t lastupdate = voter_iter->lastvotetimestamp;
                 if (lastupdate <= (nowtime - 120)) {
                     feevoters.modify(voter_iter, _self, [&](struct feevoter &a) {
-                        a.block_producer_name = aactor;
+                        a.block_producer_name = actor;
                         a.fee_multiplier = multiplier;
                         a.lastvotetimestamp = nowtime;
                     });
@@ -385,8 +376,8 @@ namespace fioio {
                     fio_400_assert(false, "", "", "Too soon since last call", ErrorTimeViolation);
                 }
             } else {
-                feevoters.emplace(aactor, [&](struct feevoter &f) {
-                    f.block_producer_name = aactor;
+                feevoters.emplace(actor, [&](struct feevoter &f) {
+                    f.block_producer_name = actor;
                     f.fee_multiplier = multiplier;
                     f.lastvotetimestamp = nowtime;
                 });
@@ -399,7 +390,6 @@ namespace fioio {
 
             send_response(response_string.c_str());
         }
-
 
         // @abi action
         [[eosio::action]]
@@ -435,7 +425,6 @@ namespace fioio {
 
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
               "Transaction is too large", ErrorTransactionTooLarge);
-
         }
 
         // @abi action
@@ -466,7 +455,6 @@ namespace fioio {
             }
 
             reg_amount = divv * reg_amount;
-
             const uint64_t fee_type = fee_iter->type;
 
             //if its not a mandatory fee then this is an error.
@@ -524,7 +512,6 @@ namespace fioio {
             }
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
               "Transaction is too large", ErrorTransactionTooLarge);
-
         }
     };
 
