@@ -1473,18 +1473,12 @@ namespace fioio {
             fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fa.fioaddress,
                            "FIO Address not registered", ErrorFioNameAlreadyRegistered);
 
+            fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature);
+
             const uint32_t expiration = fioname_iter->expiration;
             const uint32_t present_time = now();
             fio_400_assert(present_time <= expiration, "fio_address", fio_address, "FIO Address expired. Renew first.",
                            ErrorDomainExpired);
-
-            fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature);
-            const uint128_t endpoint_hash = string_to_uint128_hash("burn_fio_address");
-
-            auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
-            auto fee_iter = fees_by_endpoint.find(endpoint_hash);
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "burn_fio_address",
-                           "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             auto producersbyaddress = producers.get_index<"byaddress"_n>();
             auto prod_iter = producersbyaddress.find(nameHash);
@@ -1504,18 +1498,24 @@ namespace fioio {
             auto tpid_iter = tpid_by_name.find(nameHash);
 
             //do the burn
+            const uint64_t bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
             namesbyname.erase(fioname_iter);
             if( tpid_iter != tpid_by_name.end() ){ tpid_by_name.erase(tpid_iter); }
 
             //fees
             uint64_t fee_amount = 0;
+            const uint128_t endpoint_hash = string_to_uint128_hash("burn_fio_address");
+            auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
+            auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "burn_fio_address",
+                           "FIO fee not found for endpoint", ErrorNoEndpoint);
+
             const uint64_t fee_type = fee_iter->type;
 
             fio_400_assert(fee_type == 1, "fee_type", to_string(fee_type),
                            "burn_fio_address unexpected fee type for endpoint burn_fio_address, expected 1",
                            ErrorNoEndpoint);
-
-            const uint64_t bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
 
             if (bundleeligiblecountdown == 0) {
                 fee_amount = fee_iter->suf_amount;
