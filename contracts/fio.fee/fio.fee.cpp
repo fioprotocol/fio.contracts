@@ -7,7 +7,7 @@
  */
 
 #include "fio.fee.hpp"
-#include "../fio.address/fio.address.hpp"
+#include <fio.address/fio.address.hpp>
 #include <fio.common/fio.common.hpp>
 #include <fio.common/fioerror.hpp>
 #include <eosio/native/intrinsics.hpp>
@@ -38,8 +38,6 @@ namespace fioio {
         void update_fees() {
             map<string, double> producer_fee_multipliers_map;
 
-            const bool dbgout = false;
-
             //Selecting only elected producers, create a map for each producer and its associated multiplier
             //for use in performing the multiplications later,
             auto topprod = topprods.begin();
@@ -49,9 +47,6 @@ namespace fioio {
                     const string v1 = topprod->producer.to_string();
 
                     if (voters_iter != feevoters.end()) {
-                        if (dbgout) {
-                            print(" adding producer to multiplier map", v1.c_str(), "\n");
-                        }
                         producer_fee_multipliers_map.insert(make_pair(v1, voters_iter->fee_multiplier));
                     }
                 topprod++;
@@ -59,15 +54,15 @@ namespace fioio {
 
             auto feevotesbyendpoint = feevotes.get_index<"byendpoint"_n>();
             string lastvalUsed = "";
-            uint128_t lastusedHash = 0;
+            uint128_t lastusedHash;
             vector <uint64_t> feevalues;
+
             //traverse all of the fee votes grouped by endpoint.
             for (const auto &vote_item : feevotesbyendpoint) {
                 //if we have changed the endpoint name then we are in the next endpoints grouping,
                 // so compute median fee for this endpoint and then clear the list.
                 if (vote_item.end_point.compare(lastvalUsed) != 0) {
                     compute_median_and_update_fees(feevalues, lastvalUsed, lastusedHash);
-
                     feevalues.clear();
                 }
                 lastvalUsed = vote_item.end_point;
@@ -107,41 +102,25 @@ namespace fioio {
         */
         void
         compute_median_and_update_fees(vector <uint64_t> feevalues, const string &fee_endpoint, const uint128_t &fee_endpoint_hash) {
-            bool dbgout = false;
-            //one more time
             if (feevalues.size() >= MIN_FEE_VOTERS_FOR_MEDIAN) {
                 uint64_t median_fee = 0;
-                //sort it.
                 sort(feevalues.begin(), feevalues.end());
+
                 //if the number of values is odd use the middle one.
                 if ((feevalues.size() % 2) == 1) {
                     const int useIdx = (feevalues.size() / 2);
-                    if (dbgout) {
-                        print(" odd size is ", feevalues.size(), " using index for median ", useIdx, "\n");
-                    }
                     median_fee = feevalues[useIdx];
                 } else {//even number in the list. use the middle 2
                     const int useIdx = (feevalues.size() / 2) - 1;
-                    if (dbgout) {
-                        print(" even size is ", feevalues.size(), " using index for median ", useIdx, "\n");
-                    }
                     median_fee = (feevalues[useIdx] + feevalues[useIdx + 1]) / 2;
                 }
                 //update the fee.
                 auto feesbyendpoint = fiofees.get_index<"byendpoint"_n>();
                 auto fee_iter = feesbyendpoint.find(fee_endpoint_hash);
                 if (fee_iter != feesbyendpoint.end()) {
-                    if (dbgout) {
-                        print(" updating ", fee_iter->end_point, " to have fee ", median_fee, "\n");
-                    }
                     feesbyendpoint.modify(fee_iter, _self, [&](struct fiofee &ff) {
                         ff.suf_amount = median_fee;
                     });
-                } else {
-                    if (dbgout) {
-                        print(" fee endpoint does not exist in fiofees for endpoint ", fee_endpoint,
-                              " computed median is ", median_fee, " failed to update fee", "\n");
-                    }
                 }
             }
         }
@@ -169,12 +148,13 @@ namespace fioio {
          */
         // @abi action
         [[eosio::action]]
-        void setfeevote(const vector <feevalue> &fee_values, const name &actor) {
-            require_auth(actor);
-            bool dbgout = false;
+        void setfeevote(const vector <feevalue> &fee_values, const string &actor) {
+
+            name aactor = name(actor.c_str());
+            require_auth(aactor);
 
             //check that the producer is active block producer
-            fio_400_assert(((topprods.find(actor.value) != topprods.end())), "actor", actor.to_string(),
+            fio_400_assert(((topprods.find(aactor.value) != topprods.end())), "actor", actor,
                            " Not an active BP",
                            ErrorFioNameNotReg);
 
@@ -185,7 +165,7 @@ namespace fioio {
                 //check the endpoint exists for this fee
                 const uint128_t endPointHash = string_to_uint128_hash(feeval.end_point.c_str());
 
-                const auto feesbyendpoint = fiofees.get_index<"byendpoint"_n>();
+                auto feesbyendpoint = fiofees.get_index<"byendpoint"_n>();
                 fio_400_assert(feesbyendpoint.find(endPointHash) != feesbyendpoint.end(), "end_point", feeval.end_point,
                                "invalid end_point", ErrorEndpointNotFound);
 
@@ -195,14 +175,14 @@ namespace fioio {
                 //get all the votes made by this actor. go through the list
                 //and find the fee vote to update.
                 auto feevotesbybpname = feevotes.get_index<"bybpname"_n>();
-                auto votebyname_iter = feevotesbybpname.lower_bound(actor.value);
+                auto votebyname_iter = feevotesbybpname.lower_bound(aactor.value);
 
                 uint64_t idtoremove;
                 bool found = false;
                 bool timeviolation = false;
                 while (votebyname_iter != feevotesbybpname.end())
                 {
-                    if (votebyname_iter->block_producer_name.value != actor.value) {
+                    if (votebyname_iter->block_producer_name.value != aactor.value) {
                         //if the bp name changes we have exited the items of interest, so quit.
                         break;
                     }
@@ -233,9 +213,9 @@ namespace fioio {
                 }
 
                 if (!timeviolation) {
-                    feevotes.emplace(actor, [&](struct feevote &fv) {
+                    feevotes.emplace(aactor, [&](struct feevote &fv) {
                         fv.id = feevotes.available_primary_key();
-                        fv.block_producer_name = actor;
+                        fv.block_producer_name = aactor;
                         fv.end_point = feeval.end_point;
                         fv.end_point_hash = endPointHash;
                         fv.suf_amount = feeval.value;
@@ -253,7 +233,7 @@ namespace fioio {
                         permission_level{SYSTEMACCOUNT, "active"_n},
                         "eosio"_n,
                         "incram"_n,
-                        std::make_tuple(actor, SETFEEVOTERAM)
+                        std::make_tuple(aactor, SETFEEVOTERAM)
                 ).send();
             }
 
@@ -282,11 +262,12 @@ namespace fioio {
         [[eosio::action]]
         void bundlevote(
                 int64_t bundled_transactions,
-                const name &actor
+                const string &actor
         ) {
-            require_auth(actor);
+            const name aactor = name(actor.c_str());
+            require_auth(aactor);
 
-            fio_400_assert(((topprods.find(actor.value) != topprods.end())), "actor", actor.to_string(),
+            fio_400_assert(((topprods.find(aactor.value) != topprods.end())), "actor", actor,
                            " Not an active BP",
                            ErrorFioNameNotReg);
 
@@ -296,13 +277,13 @@ namespace fioio {
 
             const uint32_t nowtime = now();
 
-            auto voter_iter = bundlevoters.find(actor.value);
+            auto voter_iter = bundlevoters.find(aactor.value);
             if (voter_iter != bundlevoters.end()) //update if it exists
             {
                 const uint32_t lastupdate = voter_iter->lastvotetimestamp;
                 if (lastupdate <= (nowtime - TIME_BETWEEN_VOTES_SECONDS)) {
                     bundlevoters.modify(voter_iter, _self, [&](struct bundlevoter &a) {
-                        a.block_producer_name = actor;
+                        a.block_producer_name = aactor;
                         a.bundledbvotenumber = bundled_transactions;
                         a.lastvotetimestamp = nowtime;
                     });
@@ -310,8 +291,8 @@ namespace fioio {
                     fio_400_assert(false, "", "", "Too soon since last call", ErrorTimeViolation);
                 }
             } else {
-                bundlevoters.emplace(actor, [&](struct bundlevoter &f) {
-                    f.block_producer_name = actor;
+                bundlevoters.emplace(aactor, [&](struct bundlevoter &f) {
+                    f.block_producer_name = aactor;
                     f.bundledbvotenumber = bundled_transactions;
                     f.lastvotetimestamp = nowtime;
                 });
@@ -324,7 +305,7 @@ namespace fioio {
                         permission_level{SYSTEMACCOUNT, "active"_n},
                         "eosio"_n,
                         "incram"_n,
-                        std::make_tuple(actor, BUNDLEVOTERAM)
+                        std::make_tuple(aactor, BUNDLEVOTERAM)
                 ).send();
             }
 
@@ -348,11 +329,13 @@ namespace fioio {
         [[eosio::action]]
         void setfeemult(
                 double multiplier,
-                const name &actor
+                const string &actor
         ) {
-            require_auth(actor);
 
-            fio_400_assert(((topprods.find(actor.value) != topprods.end())), "actor", actor.to_string(),
+            const name aactor = name(actor.c_str());
+            require_auth(aactor);
+
+            fio_400_assert(((topprods.find(aactor.value) != topprods.end())), "actor", actor,
                            " Not an active BP",
                            ErrorFioNameNotReg);
 
@@ -362,13 +345,13 @@ namespace fioio {
 
             const uint32_t nowtime = now();
 
-            auto voter_iter = feevoters.find(actor.value);
+            auto voter_iter = feevoters.find(aactor.value);
             if (voter_iter != feevoters.end())
             {
                 const uint32_t lastupdate = voter_iter->lastvotetimestamp;
                 if (lastupdate <= (nowtime - 120)) {
                     feevoters.modify(voter_iter, _self, [&](struct feevoter &a) {
-                        a.block_producer_name = actor;
+                        a.block_producer_name = aactor;
                         a.fee_multiplier = multiplier;
                         a.lastvotetimestamp = nowtime;
                     });
@@ -376,8 +359,8 @@ namespace fioio {
                     fio_400_assert(false, "", "", "Too soon since last call", ErrorTimeViolation);
                 }
             } else {
-                feevoters.emplace(actor, [&](struct feevoter &f) {
-                    f.block_producer_name = actor;
+                feevoters.emplace(aactor, [&](struct feevoter &f) {
+                    f.block_producer_name = aactor;
                     f.fee_multiplier = multiplier;
                     f.lastvotetimestamp = nowtime;
                 });
@@ -390,6 +373,7 @@ namespace fioio {
 
             send_response(response_string.c_str());
         }
+
 
         // @abi action
         [[eosio::action]]
@@ -426,6 +410,7 @@ namespace fioio {
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
               "Transaction is too large", ErrorTransactionTooLarge);
         }
+
 
         // @abi action
         [[eosio::action]]
@@ -469,6 +454,7 @@ namespace fioio {
             processrewardsnotpid(reg_amount, get_self());
             //end new fees, logic for Mandatory fees.
         }
+
 
         /*******
          * This action will create a new fee on the FIO protocol.

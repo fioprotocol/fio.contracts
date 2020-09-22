@@ -24,7 +24,6 @@ namespace fioio {
 
     struct feevalue {
         string end_point; //this is the name of the endpoint, which is by convention the same as the
-                          //url to which the signed transaction is sent.
         uint64_t value;   //this it the value of the fee in FIO SUFs (Smallest unit of FIO).
 
         EOSLIB_SERIALIZE( feevalue, (end_point)(value))
@@ -114,4 +113,4 @@ namespace fioio {
             indexed_by<"bybpname"_n, const_mem_fun<feevote, uint64_t, &feevote::by_bpname>>
     >
     feevotes_table;
-} // namespace fioio
+}
