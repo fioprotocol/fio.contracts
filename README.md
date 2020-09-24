@@ -1,6 +1,6 @@
 # fio.contracts
 
-## Version : 1.1.0
+## Version : 2.1.1
 
 Smart contracts that provide some of the basic functions of the FIO blockchain
 
