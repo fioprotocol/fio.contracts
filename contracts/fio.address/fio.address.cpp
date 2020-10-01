@@ -269,8 +269,7 @@ namespace fioio {
 
             auto namesbyname = fionames.get_index<"byname"_n>();
             auto fioname_iter = namesbyname.find(nameHash);
-            fio_404_assert(fioname_iter != namesbyname.end(), "FIO Address not found", ErrorFioNameNotRegistered);
-
+            fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fioaddress, "Invalid FIO Address", ErrorFioNameNotRegistered);
             const uint32_t name_expiration = fioname_iter->expiration;
             const uint32_t present_time = now();
 
@@ -1172,7 +1171,7 @@ namespace fioio {
                            ErrorPubKeyValid);
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
-            fio_400_assert(validateFioNameFormat(fa), "fio_address", fa.fioaddress, "FIO Address not found",
+            fio_400_assert(validateFioNameFormat(fa), "fio_address", fa.fioaddress, "Invalid FIO Address",
                            ErrorDomainAlreadyRegistered);
             fio_400_assert(public_addresses.size() <= 5 && public_addresses.size() > 0, "public_addresses", "public_addresses",
                            "Min 1, Max 5 public addresses are allowed",
