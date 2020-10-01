@@ -411,7 +411,8 @@ namespace fioio {
     static const uint64_t TRANSFERPUBKEYRAM = 1024; //integrated.
     static const uint64_t REJECTFUNDSRAM = 512; //integrated.
     static const uint64_t CANCELFUNDSRAM = 512; //integrated.
-    static const uint64_t SETFEEVOTERAM = 0; //integrated.
+    static const uint64_t SETFEEVOTERAM = 4000; //integrated. //note this bump allows consecutive calls to voting with
+                                                              //different fees to avoid ram limits for non top 21 producers.
     static const uint64_t BUNDLEVOTERAM = 0; //integrated.
 
 

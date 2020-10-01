@@ -18,10 +18,19 @@
                 {"name":"value", "type":"int64"}
              ]
       },{
+             "name": "feevalue_ts",
+             "base": "",
+             "fields": [
+                 {"name":"end_point", "type":"string"},
+                 {"name":"value", "type":"int64"},
+                 {"name":"timastamp", "type":"uint64"}
+             ]
+      },{
         "name": "setfeevote",
         "base": "",
         "fields": [
             {"name":"fee_ratios", "type":"feevalue[]"},
+            {"name":"max_fee", "type":"int64"},
             {"name":"actor", "type":"string"}
         ]
       },{
@@ -29,6 +38,7 @@
         "base": "",
         "fields": [
             {"name":"bundled_transactions", "type":"int64"},
+            {"name":"max_fee", "type":"int64"},
             {"name":"actor", "type":"string"}
         ]
       },{
@@ -36,6 +46,7 @@
         "base": "",
         "fields": [
             {"name":"multiplier", "type":"float64"},
+            {"name":"max_fee", "type":"int64"},
             {"name":"actor", "type":"string"}
         ]
       },{
@@ -68,7 +79,9 @@
            {"name":"end_point", "type":"string"},
            {"name":"end_point_hash", "type":"uint128"},
            {"name":"type", "type":"uint64"},
-           {"name":"suf_amount", "type":"uint64"}
+           {"name":"suf_amount", "type":"uint64"},
+           {"name":"votes_pending", "type":"bool$"}
+
         ]
      },{
         "name": "feevoter",
@@ -87,6 +100,15 @@
            {"name":"end_point", "type":"string"},
            {"name":"end_point_hash", "type":"uint128"},
            {"name":"suf_amount", "type":"uint64"},
+           {"name":"lastvotetimestamp", "type":"uint64"}
+        ]
+     },{
+        "name": "feevote2",
+        "base": "",
+        "fields": [
+           {"name":"id", "type":"uint64"},
+           {"name":"block_producer_name", "type":"name"},
+           {"name": "feevotes", "type": "feevalue_ts[]"},
            {"name":"lastvotetimestamp", "type":"uint64"}
         ]
      },{
@@ -167,7 +189,17 @@
             "uint64"
          ],
          "type": "feevote"
-      }],
+      },{
+         "name": "feevotes2",
+         "index_type": "i64",
+         "key_names": [
+            "block_producer_name"
+         ],
+         "key_types": [
+            "uint64"
+         ],
+         "type": "feevote2"
+         }],
     "ricardian_clauses": [],
     "error_messages": [],
     "abi_extensions": []
