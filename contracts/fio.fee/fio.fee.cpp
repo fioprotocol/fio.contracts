@@ -336,10 +336,10 @@ namespace fioio {
             const name aactor = name(actor.c_str());
             require_auth(aactor);
 
-            //check that the actor is in the top42.
+            //check that the actor is in the top150.
             vector<name> top_prods = getTopProds();
             fio_400_assert((std::find(top_prods.begin(), top_prods.end(), aactor)) !=
-                           top_prods.end(), "actor", actor," Not a top 42 BP",ErrorFioNameNotReg);
+                           top_prods.end(), "actor", actor," Not a top 150 BP",ErrorFioNameNotReg);
 
 
             fio_400_assert(bundled_transactions > 0, "bundled_transactions", to_string(bundled_transactions),
