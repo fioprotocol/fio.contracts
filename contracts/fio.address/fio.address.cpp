@@ -1508,7 +1508,7 @@ namespace fioio {
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
 
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "burn_fio_address",
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", BURN_FIO_ADDRESS_ENDPOINT,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             const uint64_t fee_type = fee_iter->type;
@@ -1523,7 +1523,7 @@ namespace fioio {
                                "Fee exceeds supplied maximum.",
                                ErrorMaxFeeExceeded);
 
-                fio_fees(actor, asset(fee_amount, FIOSYMBOL));
+                fio_fees(actor, asset(fee_amount, FIOSYMBOL), BURN_FIO_ADDRESS_ENDPOINT);
                 process_rewards(tpid, fee_amount, get_self(), actor);
             }
 
