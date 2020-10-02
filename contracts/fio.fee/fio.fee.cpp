@@ -7,7 +7,7 @@
  */
 
 #include "fio.fee.hpp"
-#include "../fio.address/fio.address.hpp"
+#include <fio.address/fio.address.hpp>
 #include <fio.common/fio.common.hpp>
 #include <fio.common/fioerror.hpp>
 #include <eosio/native/intrinsics.hpp>
@@ -35,8 +35,6 @@ namespace fioio {
         feevotes2_table feevotes;
         eosiosystem::top_producers_table topprods;
         eosiosystem::producers_table prods;
-
-
 
         vector<name> getTopProds(){
             int NUMBER_TO_SELECT = 150;
@@ -72,7 +70,6 @@ namespace fioio {
             //throw a 400 error if fees to process is empty.
             fio_400_assert(fee_ids.size() > 0, "compute fees", "compute fees",
                            "No Work.", ErrorNoWork);
-
 
             vector<uint64_t> votesufs;
             int processed_fees = 0;
@@ -133,8 +130,6 @@ namespace fioio {
                         });
                     }
                 }
-
-
             }
 
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
@@ -167,18 +162,15 @@ namespace fioio {
          */
         // @abi action
         [[eosio::action]]
-        void setfeevote(const vector <feevalue> &fee_values, const int64_t &max_fee, const string &actor) {
-
-            name aactor = name(actor.c_str());
-            require_auth(aactor);
+        void setfeevote(const vector <feevalue> &fee_values, const int64_t &max_fee, const name &actor) {
+            require_auth(actor);
             bool dbgout = false;
-
 
             //check that the actor is in the top42.
             vector<name> top_prods = getTopProds();
 
-            fio_400_assert((std::find(top_prods.begin(), top_prods.end(), aactor)) !=
-                top_prods.end(), "actor", actor," Not a top 150 BP",ErrorFioNameNotReg);
+            fio_400_assert((std::find(top_prods.begin(), top_prods.end(), actor)) !=
+                top_prods.end(), "actor", actor.to_string()," Not a top 150 BP",ErrorFioNameNotReg);
 
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
@@ -187,21 +179,17 @@ namespace fioio {
             //get all the votes made by this actor. go through the list
             //and find the fee vote to update.
             auto feevotesbybpname = feevotes.get_index<"bybpname"_n>();
-            // auto votebyname_iter = feevotesbybpname.lower_bound(aactor.value);
-            auto votebyname_iter = feevotesbybpname.find(aactor.value);
-
-
+            // auto votebyname_iter = feevotesbybpname.lower_bound(actor.value);
+            auto votebyname_iter = feevotesbybpname.find(actor.value);
 
             vector<feevalue_ts> feevotesv;
             bool emplacerec = true;
 
             //check for time violation.
-
             if (votebyname_iter != feevotesbybpname.end()){
                 emplacerec = false;
                 feevotesv = votebyname_iter->feevotes;
             }
-
 
             // go through all the fee values passed in.
             for (auto &feeval : fee_values) {
@@ -232,38 +220,33 @@ namespace fioio {
                 uint64_t idtoremove;
                 bool found = false;
 
-
                 fio_400_assert(!(feevotesv[feeid].timestamp > (nowtime - TIME_BETWEEN_FEE_VOTES_SECONDS)), "", "", "Too soon since last call", ErrorTimeViolation);
 
                 feevotesv[feeid].end_point = feeval.end_point;
                 feevotesv[feeid].value = feeval.value;
                 feevotesv[feeid].timestamp = (uint64_t)now;
 
-                if(topprods.find(aactor.value) != topprods.end()) {
+                if(topprods.find(actor.value) != topprods.end()) {
                     feesbyendpoint.modify(fees_iter, _self, [&](struct fiofee &a) {
                         a.votes_pending.emplace(true);
                     });
                 }
-
             }
 
             //emplace or update.
             if (emplacerec){
-                feevotes.emplace(aactor, [&](struct feevote2 &fv) {
+                feevotes.emplace(actor, [&](struct feevote2 &fv) {
                     fv.id = feevotes.available_primary_key();
-                    fv.block_producer_name = aactor;
+                    fv.block_producer_name = actor;
                     fv.feevotes = feevotesv;
                     fv.lastvotetimestamp = nowtime;
                 });
-            }else {
-                feevotesbybpname.modify(votebyname_iter, aactor, [&](struct feevote2 &fv) {
+            } else {
+                feevotesbybpname.modify(votebyname_iter, actor, [&](struct feevote2 &fv) {
                     fv.feevotes = feevotesv;
                     fv.lastvotetimestamp = nowtime;
                 });
-
             }
-
-
 
             //begin new fees, logic for Mandatory fees.
             uint128_t endpoint_hash = string_to_uint128_hash("submit_fee_ratios");
@@ -285,10 +268,9 @@ namespace fioio {
             fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
                            ErrorMaxFeeExceeded);
 
-            fio_fees(aactor, asset(reg_amount, FIOSYMBOL));
+            fio_fees(actor, asset(reg_amount, FIOSYMBOL), );
             processrewardsnotpid(reg_amount, get_self());
             //end new fees, logic for Mandatory fees.
-
 
             const string response_string = string("{\"status\": \"OK\"") +
                                            string(",\"fee_collected\":") +
@@ -299,7 +281,7 @@ namespace fioio {
                         permission_level{SYSTEMACCOUNT, "active"_n},
                         "eosio"_n,
                         "incram"_n,
-                        std::make_tuple(aactor, SETFEEVOTERAM)
+                        std::make_tuple(actor, SETFEEVOTERAM)
                 ).send();
             }
 
@@ -331,15 +313,14 @@ namespace fioio {
         void bundlevote(
                 const int64_t &bundled_transactions,
                 const int64_t &max_fee,
-                const string &actor
+                const name &actor
         ) {
-            const name aactor = name(actor.c_str());
-            require_auth(aactor);
+            require_auth(actor);
 
             //check that the actor is in the top150.
             vector<name> top_prods = getTopProds();
-            fio_400_assert((std::find(top_prods.begin(), top_prods.end(), aactor)) !=
-                           top_prods.end(), "actor", actor," Not a top 150 BP",ErrorFioNameNotReg);
+            fio_400_assert((std::find(top_prods.begin(), top_prods.end(), actor)) !=
+                           top_prods.end(), "actor", actor.to_string()," Not a top 150 BP",ErrorFioNameNotReg);
 
 
             fio_400_assert(bundled_transactions > 0, "bundled_transactions", to_string(bundled_transactions),
@@ -348,13 +329,13 @@ namespace fioio {
 
             const uint32_t nowtime = now();
 
-            auto voter_iter = bundlevoters.find(aactor.value);
+            auto voter_iter = bundlevoters.find(actor.value);
             if (voter_iter != bundlevoters.end()) //update if it exists
             {
                 const uint32_t lastupdate = voter_iter->lastvotetimestamp;
                 if (lastupdate <= (nowtime - TIME_BETWEEN_VOTES_SECONDS)) {
                     bundlevoters.modify(voter_iter, _self, [&](struct bundlevoter &a) {
-                        a.block_producer_name = aactor;
+                        a.block_producer_name = actor;
                         a.bundledbvotenumber = bundled_transactions;
                         a.lastvotetimestamp = nowtime;
                     });
@@ -362,8 +343,8 @@ namespace fioio {
                     fio_400_assert(false, "", "", "Too soon since last call", ErrorTimeViolation);
                 }
             } else {
-                bundlevoters.emplace(aactor, [&](struct bundlevoter &f) {
-                    f.block_producer_name = aactor;
+                bundlevoters.emplace(actor, [&](struct bundlevoter &f) {
+                    f.block_producer_name = actor;
                     f.bundledbvotenumber = bundled_transactions;
                     f.lastvotetimestamp = nowtime;
                 });
@@ -389,7 +370,7 @@ namespace fioio {
             fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
                            ErrorMaxFeeExceeded);
 
-            fio_fees(aactor, asset(reg_amount, FIOSYMBOL));
+            fio_fees(actor, asset(reg_amount, FIOSYMBOL));
             processrewardsnotpid(reg_amount, get_self());
             //end new fees, logic for Mandatory fees.
 
@@ -400,7 +381,7 @@ namespace fioio {
                         permission_level{SYSTEMACCOUNT, "active"_n},
                         "eosio"_n,
                         "incram"_n,
-                        std::make_tuple(aactor, BUNDLEVOTERAM)
+                        std::make_tuple(actor, BUNDLEVOTERAM)
                 ).send();
             }
 
@@ -409,7 +390,6 @@ namespace fioio {
 
             send_response(response_string.c_str());
         }
-
 
         /**********
          * This action will create a new feevoters record if the specified block producer does not yet exist in the
@@ -425,17 +405,15 @@ namespace fioio {
         void setfeemult(
                 const double &multiplier,
                 const int64_t &max_fee,
-                const string &actor
+                const name &actor
         ) {
-
-            const name aactor = name(actor.c_str());
-            require_auth(aactor);
+            require_auth(actor);
 
             //check that the actor is in the top42.
             vector<name> top_prods = getTopProds();
 
-           fio_400_assert((std::find(top_prods.begin(), top_prods.end(), aactor)) !=
-                           top_prods.end(), "actor", actor," Not a top 150 BP",ErrorFioNameNotReg);
+           fio_400_assert((std::find(top_prods.begin(), top_prods.end(), actor)) !=
+                           top_prods.end(), "actor", actor.to_string()," Not a top 150 BP",ErrorFioNameNotReg);
 
             fio_400_assert(multiplier > 0, "multiplier", to_string(multiplier),
                            " Must be positive",
@@ -446,13 +424,13 @@ namespace fioio {
 
             const uint32_t nowtime = now();
 
-            auto voter_iter = feevoters.find(aactor.value);
+            auto voter_iter = feevoters.find(actor.value);
             if (voter_iter != feevoters.end())
             {
                 const uint32_t lastupdate = voter_iter->lastvotetimestamp;
                 if (lastupdate <= (nowtime - 120)) {
                     feevoters.modify(voter_iter, _self, [&](struct feevoter &a) {
-                        a.block_producer_name = aactor;
+                        a.block_producer_name = actor;
                         a.fee_multiplier = multiplier;
                         a.lastvotetimestamp = nowtime;
                     });
@@ -460,8 +438,8 @@ namespace fioio {
                     fio_400_assert(false, "", "", "Too soon since last call", ErrorTimeViolation);
                 }
             } else {
-                feevoters.emplace(aactor, [&](struct feevoter &f) {
-                    f.block_producer_name = aactor;
+                feevoters.emplace(actor, [&](struct feevoter &f) {
+                    f.block_producer_name = actor;
                     f.fee_multiplier = multiplier;
                     f.lastvotetimestamp = nowtime;
                 });
@@ -469,15 +447,15 @@ namespace fioio {
 
             //get all voted fees and set votes pending.
             auto feevotesbybpname = feevotes.get_index<"bybpname"_n>();
-            auto votebyname_iter = feevotesbybpname.find(aactor.value);
+            auto votebyname_iter = feevotesbybpname.find(actor.value);
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
 
-            if(topprods.find(aactor.value) != topprods.end()) {
+            if(topprods.find(actor.value) != topprods.end()) {
 
                 if (votebyname_iter != feevotesbybpname.end()) {
                     //loop over all fee votes, for all voted fees set the pending flag.
                     for(int i=0;i<votebyname_iter->feevotes.size();i++) {
-                        if (votebyname_iter->block_producer_name.value != aactor.value) {
+                        if (votebyname_iter->block_producer_name.value != actor.value) {
                             break;
                         } else {
 
@@ -487,13 +465,10 @@ namespace fioio {
                                     a.votes_pending.emplace(true);
                                 });
                             }
-
-
                         }
                     }
                 }
             }
-
 
             //begin new fees, logic for Mandatory fees.
             uint128_t endpoint_hash = string_to_uint128_hash("submit_fee_multiplier");
@@ -514,10 +489,9 @@ namespace fioio {
             fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
                            ErrorMaxFeeExceeded);
 
-            fio_fees(aactor, asset(reg_amount, FIOSYMBOL));
+            fio_fees(actor, asset(reg_amount, FIOSYMBOL));
             processrewardsnotpid(reg_amount, get_self());
             //end new fees, logic for Mandatory fees.
-
 
             const string response_string = string("{\"status\": \"OK\"") +
                                            string(",\"fee_collected\":") +
@@ -528,7 +502,6 @@ namespace fioio {
 
             send_response(response_string.c_str());
         }
-
 
         // @abi action
         [[eosio::action]]
@@ -564,7 +537,6 @@ namespace fioio {
 
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
               "Transaction is too large", ErrorTransactionTooLarge);
-
         }
 
         // @abi action
@@ -575,7 +547,6 @@ namespace fioio {
                 const int64_t &max_fee,
                 const int64_t &bytesize
         ) {
-
             require_auth(account);
             //begin new fees, logic for Mandatory fees.
             const uint128_t endpoint_hash = fioio::string_to_uint128_hash(end_point.c_str());
@@ -655,7 +626,6 @@ namespace fioio {
             }
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
               "Transaction is too large", ErrorTransactionTooLarge);
-
         }
     };
 

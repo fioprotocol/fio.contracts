@@ -31,7 +31,7 @@
         "fields": [
             {"name":"fee_ratios", "type":"feevalue[]"},
             {"name":"max_fee", "type":"int64"},
-            {"name":"actor", "type":"string"}
+            {"name":"actor", "type":"name"}
         ]
       },{
         "name": "bundlevote",
@@ -39,7 +39,7 @@
         "fields": [
             {"name":"bundled_transactions", "type":"int64"},
             {"name":"max_fee", "type":"int64"},
-            {"name":"actor", "type":"string"}
+            {"name":"actor", "type":"name"}
         ]
       },{
         "name": "setfeemult",
@@ -47,7 +47,7 @@
         "fields": [
             {"name":"multiplier", "type":"float64"},
             {"name":"max_fee", "type":"int64"},
-            {"name":"actor", "type":"string"}
+            {"name":"actor", "type":"name"}
         ]
       },{
         "name": "mandatoryfee",
