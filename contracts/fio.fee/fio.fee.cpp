@@ -51,7 +51,7 @@ namespace fioio {
 
         uint32_t update_fees() {
             vector<uint64_t> fee_ids; //hashes for endpoints to process.
-            
+
             int NUMBER_FEES_TO_PROCESS = 10;
 
             //get the fees needing processing.
@@ -249,12 +249,12 @@ namespace fioio {
             }
 
             //begin new fees, logic for Mandatory fees.
-            uint128_t endpoint_hash = string_to_uint128_hash("submit_fee_ratios");
+            uint128_t endpoint_hash = string_to_uint128_hash(SUBMIT_FEE_RATIOS_ENDPOINT);
 
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
             //if the fee isnt found for the endpoint, then 400 error.
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "submit_fee_ratios",
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", SUBMIT_FEE_RATIOS_ENDPOINT,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             uint64_t reg_amount = fee_iter->suf_amount;
@@ -268,7 +268,7 @@ namespace fioio {
             fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
                            ErrorMaxFeeExceeded);
 
-            fio_fees(actor, asset(reg_amount, FIOSYMBOL), );
+            fio_fees(actor, asset(reg_amount, FIOSYMBOL), SUBMIT_FEE_RATIOS_ENDPOINT);
             processrewardsnotpid(reg_amount, get_self());
             //end new fees, logic for Mandatory fees.
 
@@ -351,12 +351,12 @@ namespace fioio {
             }
 
             //begin new fees, logic for Mandatory fees.
-            uint128_t endpoint_hash = string_to_uint128_hash("submit_bundled_transaction");
+            uint128_t endpoint_hash = string_to_uint128_hash(SUBMIT_BUNDLED_TRANSACTION_ENDPOINT);
 
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
             //if the fee isnt found for the endpoint, then 400 error.
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "submit_bundled_transaction",
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", SUBMIT_BUNDLED_TRANSACTION_ENDPOINT,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             uint64_t reg_amount = fee_iter->suf_amount;
@@ -370,7 +370,7 @@ namespace fioio {
             fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
                            ErrorMaxFeeExceeded);
 
-            fio_fees(actor, asset(reg_amount, FIOSYMBOL));
+            fio_fees(actor, asset(reg_amount, FIOSYMBOL), SUBMIT_BUNDLED_TRANSACTION_ENDPOINT);
             processrewardsnotpid(reg_amount, get_self());
             //end new fees, logic for Mandatory fees.
 
@@ -471,11 +471,11 @@ namespace fioio {
             }
 
             //begin new fees, logic for Mandatory fees.
-            uint128_t endpoint_hash = string_to_uint128_hash("submit_fee_multiplier");
+            uint128_t endpoint_hash = string_to_uint128_hash(SUBMIT_FEE_MULTIPLER_ENDPOINT);
 
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
             //if the fee isnt found for the endpoint, then 400 error.
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "submit_fee_multiplier",
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", SUBMIT_FEE_MULTIPLER_ENDPOINT,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             uint64_t reg_amount = fee_iter->suf_amount;
@@ -489,7 +489,7 @@ namespace fioio {
             fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
                            ErrorMaxFeeExceeded);
 
-            fio_fees(actor, asset(reg_amount, FIOSYMBOL));
+            fio_fees(actor, asset(reg_amount, FIOSYMBOL), SUBMIT_FEE_MULTIPLER_ENDPOINT);
             processrewardsnotpid(reg_amount, get_self());
             //end new fees, logic for Mandatory fees.
 
