@@ -23,7 +23,7 @@
              "fields": [
                  {"name":"end_point", "type":"string"},
                  {"name":"value", "type":"int64"},
-                 {"name":"timastamp", "type":"uint64"}
+                 {"name":"timestamp", "type":"uint64"}
              ]
       },{
         "name": "setfeevote",
