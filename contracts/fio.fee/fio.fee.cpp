@@ -313,7 +313,7 @@ namespace fioio {
       * This method will update the fees based upon the present votes made by producers.
       */
         [[eosio::action]]
-        void updatefees() {
+        void computefees() {
             uint32_t numberprocessed = update_fees();
             const string response_string = string("{\"status\": \"OK\",\"fees_processed\":") +
                                            to_string(numberprocessed) + string("}");
@@ -659,7 +659,7 @@ namespace fioio {
         }
     };
 
-    EOSIO_DISPATCH(FioFee, (setfeevote)(bundlevote)(setfeemult)(updatefees)
+    EOSIO_DISPATCH(FioFee, (setfeevote)(bundlevote)(setfeemult)(computefees)
                            (mandatoryfee)(bytemandfee)(createfee)
     )
 }

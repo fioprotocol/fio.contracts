@@ -67,7 +67,7 @@
             {"name":"bytesize", "type":"int64"}
         ]
       },{
-        "name": "updatefees",
+        "name": "computefees",
         "base": "",
         "fields": [
         ]
@@ -145,8 +145,8 @@
          "type": "bytemandfee",
          "ricardian_contract": ""
        },{
-         "name": "updatefees",
-         "type": "updatefees",
+         "name": "computefees",
+         "type": "computefees",
          "ricardian_contract": ""
        }],
     "tables": [{
