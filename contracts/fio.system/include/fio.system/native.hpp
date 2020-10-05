@@ -5,7 +5,6 @@
 #pragma once
 
 #include <eosio/action.hpp>
-#include <eosio/public_key.hpp>
 #include <eosio/print.hpp>
 #include <eosio/privileged.h>
 #include <eosio/producer_schedule.hpp>
