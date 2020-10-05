@@ -9,6 +9,7 @@
 #pragma once
 
 #include <eosio/eosio.hpp>
+#include <eosio/binary_extension.hpp>
 
 using std::string;
 

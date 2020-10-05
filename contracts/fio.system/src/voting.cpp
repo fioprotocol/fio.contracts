@@ -264,7 +264,7 @@ namespace eosiosystem {
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
 
-        send_response(response_string.c_str());
+        //send_response(response_string.c_str());
     }
 
     void system_contract::unregprod(
@@ -348,7 +348,7 @@ namespace eosiosystem {
 
        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
          "Transaction is too large", ErrorTransactionTooLarge);
-        send_response(response_string.c_str());
+        //send_response(response_string.c_str());
     }
 
     void system_contract::update_elected_producers(const block_timestamp& block_time) {
@@ -613,7 +613,7 @@ namespace eosiosystem {
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
 
-        send_response(response_string.c_str());
+        //send_response(response_string.c_str());
     }
 
     void system_contract::voteproxy(const string &proxy, const string &fio_address, const name &actor, const int64_t &max_fee) {
@@ -754,7 +754,7 @@ namespace eosiosystem {
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
 
-        send_response(response_string.c_str());
+        //send_response(response_string.c_str());
     }
 
 
@@ -1105,7 +1105,7 @@ namespace eosiosystem {
                                  to_string(reg_amount) + string("}");
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
          "Transaction is too large", ErrorTransactionTooLarge);
-        send_response(response_string.c_str());
+        //send_response(response_string.c_str());
     }
 
 
@@ -1198,7 +1198,7 @@ namespace eosiosystem {
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
 
-        send_response(response_string.c_str());
+        //send_response(response_string.c_str());
     }
 
 
