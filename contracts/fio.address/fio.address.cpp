@@ -71,7 +71,7 @@ namespace fioio {
                 key_to_account(owner_fio_public_key, owner_account);
                 owner_account_name = name(owner_account.c_str());
 
-                eosio_assert(owner_account.length() == 12, "Length of account name should be 12");
+                internal_use_do_not_use::eosio_assert(owner_account.length() == 12, "Length of account name should be 12");
 
                 const bool accountExists = is_account(owner_account_name);
                 auto other = accountmap.find(owner_account_name.value);
@@ -1332,7 +1332,7 @@ namespace fioio {
          **/
         [[eosio::action]]
         void bind2eosio(const name &account, const string &client_key, const bool &existing) {
-            eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(SYSTEMACCOUNT)),
+            internal_use_do_not_use::eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(SYSTEMACCOUNT)),
                          "missing required authority of fio.address,  fio.token, or eosio");
 
            fio_400_assert(isPubKeyValid(client_key), "client_key", client_key,

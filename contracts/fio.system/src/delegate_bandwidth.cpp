@@ -12,7 +12,7 @@
 #include <eosio/datastream.hpp>
 #include <eosio/serialize.hpp>
 #include <eosio/multi_index.hpp>
-#include <eosio/privileged.h>
+#include <eosio/privileged.hpp>
 #include <eosio/transaction.hpp>
 
 #include <fio.token/fio.token.hpp>

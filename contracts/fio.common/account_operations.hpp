@@ -14,7 +14,7 @@
 #include <eosio/asset.hpp>
 #include <eosio/action.hpp>
 #include <eosio/symbol.hpp>
-#include <eosio/crypto.h>
+#include <eosio/crypto.hpp>
 #include <cstring>
 
 using namespace eosio;

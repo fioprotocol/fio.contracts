@@ -8,7 +8,7 @@
  */
 #include <fio.system/fio.system.hpp>
 #include <eosio/dispatcher.hpp>
-#include <eosio/crypto.h>
+#include <eosio/crypto.hpp>
 #include "producer_pay.cpp"
 #include "delegate_bandwidth.cpp"
 #include "voting.cpp"

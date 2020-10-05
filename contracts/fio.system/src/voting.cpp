@@ -9,7 +9,7 @@
 #include <fio.system/fio.system.hpp>
 
 #include <eosio/eosio.hpp>
-#include <eosio/crypto.h>
+#include <eosio/crypto.hpp>
 #include <eosio/datastream.hpp>
 #include <eosio/serialize.hpp>
 #include <eosio/multi_index.hpp>

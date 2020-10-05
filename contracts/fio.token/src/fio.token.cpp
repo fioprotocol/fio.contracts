@@ -176,7 +176,7 @@ namespace eosio {
         if (from != SYSTEMACCOUNT && from != TREASURYACCOUNT) {
             check(to == TREASURYACCOUNT, "transfer not allowed");
         }
-        eosio_assert((has_auth(SYSTEMACCOUNT) || has_auth(TREASURYACCOUNT)),
+        internal_use_do_not_use::eosio_assert((has_auth(SYSTEMACCOUNT) || has_auth(TREASURYACCOUNT)),
                      "missing required authority of treasury or eosio");
 
 
