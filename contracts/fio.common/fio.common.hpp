@@ -392,8 +392,7 @@ namespace fioio {
         array<unsigned char, 33> pubkey_data;
         copy_n(vch.begin(), 33, pubkey_data.begin());
 
-        checksum160 check_pubkey;
-        ripemd160(reinterpret_cast<char *>(pubkey_data.data()), 33, &check_pubkey);
+        checksum160 check_pubkey = ripemd160(reinterpret_cast<char *>(pubkey_data.data()), 33);
         if (memcmp(&check_pubkey.hash, &vch.end()[-4], 4) != 0) return false;
         //end of the public key validity check.
 
