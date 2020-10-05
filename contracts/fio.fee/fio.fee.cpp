@@ -237,7 +237,7 @@ namespace fioio {
 
                 feevotesv[feeid].end_point = feeval.end_point;
                 feevotesv[feeid].value = feeval.value;
-                feevotesv[feeid].timestamp = (uint64_t)now;
+                feevotesv[feeid].timestamp = (uint64_t)nowtime;
 
                 if(topprods.find(aactor.value) != topprods.end()) {
                     feesbyendpoint.modify(fees_iter, _self, [&](struct fiofee &a) {
