@@ -4,13 +4,13 @@
  */
 #pragma once
 
-#include <eosiolib/action.hpp>
-#include <eosiolib/public_key.hpp>
-#include <eosiolib/print.hpp>
-#include <eosiolib/privileged.h>
-#include <eosiolib/producer_schedule.hpp>
-#include <eosiolib/contract.hpp>
-#include <eosiolib/ignore.hpp>
+#include <eosio/action.hpp>
+#include <eosio/public_key.hpp>
+#include <eosio/print.hpp>
+#include <eosio/privileged.h>
+#include <eosio/producer_schedule.hpp>
+#include <eosio/contract.hpp>
+#include <eosio/ignore.hpp>
 #include "fio.common/fio.accounts.hpp"
 #include "fio.common/fioerror.hpp"
 
@@ -62,9 +62,9 @@ namespace eosiosystem {
         uint32_t timestamp;
         name producer;
         uint16_t confirmed = 0;
-        capi_checksum256 previous;
-        capi_checksum256 transaction_mroot;
-        capi_checksum256 action_mroot;
+        checksum256 previous;
+        checksum256 transaction_mroot;
+        checksum256 action_mroot;
         uint32_t schedule_version = 0;
         std::optional <eosio::producer_schedule> new_producers;
 
@@ -76,7 +76,7 @@ namespace eosiosystem {
 
     struct [[eosio::table("abihash"), eosio::contract("fio.system")]] abi_hash {
         name owner;
-        capi_checksum256 hash;
+        checksum256 hash;
 
         uint64_t primary_key() const { return owner.value; }
 
@@ -241,7 +241,7 @@ namespace eosiosystem {
         }
 
         [[eosio::action]]
-        void canceldelay(ignore <permission_level> canceling_auth, ignore <capi_checksum256> trx_id) {
+        void canceldelay(ignore <permission_level> canceling_auth, ignore <checksum256> trx_id) {
             require_auth(_self);
         }
 

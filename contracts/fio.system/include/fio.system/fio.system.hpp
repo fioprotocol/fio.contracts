@@ -9,12 +9,12 @@
  */
 #pragma once
 
-#include <eosiolib/asset.hpp>
-#include <eosiolib/time.hpp>
-#include <eosiolib/privileged.hpp>
-#include <eosiolib/singleton.hpp>
+#include <eosio/asset.hpp>
+#include <eosio/time.hpp>
+#include <eosio/privileged.hpp>
+#include <eosio/singleton.hpp>
 #include <fio.address/fio.address.hpp>
-#include <eosiolib/transaction.hpp>
+#include <eosio/transaction.hpp>
 #include <fio.fee/fio.fee.hpp>
 #include "native.hpp"
 

@@ -7,9 +7,9 @@
 
 #pragma once
 
-#include <eosiolib/eosio.hpp>
-#include <eosiolib/singleton.hpp>
-#include <eosiolib/asset.hpp>
+#include <eosio/eosio.hpp>
+#include <eosio/singleton.hpp>
+#include <eosio/asset.hpp>
 #include <string>
 
 using std::string;

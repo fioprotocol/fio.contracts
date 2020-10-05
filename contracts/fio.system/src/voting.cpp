@@ -8,17 +8,17 @@
  */
 #include <fio.system/fio.system.hpp>
 
-#include <eosiolib/eosio.hpp>
-#include <eosiolib/crypto.h>
-#include <eosiolib/datastream.hpp>
-#include <eosiolib/serialize.hpp>
-#include <eosiolib/multi_index.hpp>
-#include <eosiolib/privileged.hpp>
-#include <eosiolib/singleton.hpp>
+#include <eosio/eosio.hpp>
+#include <eosio/crypto.h>
+#include <eosio/datastream.hpp>
+#include <eosio/serialize.hpp>
+#include <eosio/multi_index.hpp>
+#include <eosio/privileged.hpp>
+#include <eosio/singleton.hpp>
 #include <fio.token/fio.token.hpp>
 #include <fio.fee/fio.fee.hpp>
 #include <fio.common/fio.common.hpp>
-#include <eosiolib/asset.hpp>
+#include <eosio/asset.hpp>
 
 #include <algorithm>
 #include <cmath>

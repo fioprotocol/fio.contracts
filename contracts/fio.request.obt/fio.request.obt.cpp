@@ -8,7 +8,7 @@
  *  Changes:
  */
 
-#include <eosiolib/asset.hpp>
+#include <eosio/asset.hpp>
 #include "fio.request.obt.hpp"
 #include <fio.address/fio.address.hpp>
 #include <fio.fee/fio.fee.hpp>

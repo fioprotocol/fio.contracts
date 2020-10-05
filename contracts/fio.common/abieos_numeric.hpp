@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include <string>
 #include <string_view>
-#include <eosiolib/public_key.hpp>
+#include <eosio/public_key.hpp>
 
 namespace abieos {
 

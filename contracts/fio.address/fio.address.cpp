@@ -10,7 +10,7 @@
 #include <fio.common/fio.common.hpp>
 #include <fio.common/fiotime.hpp>
 #include <fio.token/include/fio.token/fio.token.hpp>
-#include <eosiolib/asset.hpp>
+#include <eosio/asset.hpp>
 
 namespace fioio {
 
