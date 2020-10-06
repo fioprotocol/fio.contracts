@@ -97,7 +97,7 @@ namespace fioio {
             compute_median_and_update_fees(feevalues, lastvalUsed, lastusedHash);
 
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-              "Transaction is too large", ErrorTransaction);
+              "Transaction is too large", ErrorTransactionTooLarge);
         }
 
         /*******
@@ -264,7 +264,7 @@ namespace fioio {
             }
 
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-              "Transaction is too large", ErrorTransaction);
+              "Transaction is too large", ErrorTransactionTooLarge);
 
             send_response(response_string.c_str());
         }
@@ -336,7 +336,7 @@ namespace fioio {
             }
 
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-              "Transaction is too large", ErrorTransaction);
+              "Transaction is too large", ErrorTransactionTooLarge);
 
             send_response(response_string.c_str());
         }
@@ -395,7 +395,7 @@ namespace fioio {
             const string response_string = string("{\"status\": \"OK\"}");
 
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-              "Transaction is too large", ErrorTransaction);
+              "Transaction is too large", ErrorTransactionTooLarge);
 
             send_response(response_string.c_str());
         }
@@ -434,7 +434,7 @@ namespace fioio {
             processrewardsnotpid(reg_amount, get_self());
 
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-              "Transaction is too large", ErrorTransaction);
+              "Transaction is too large", ErrorTransactionTooLarge);
 
         }
 
@@ -523,7 +523,7 @@ namespace fioio {
                 });
             }
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-              "Transaction is too large", ErrorTransaction);
+              "Transaction is too large", ErrorTransactionTooLarge);
 
         }
     };
