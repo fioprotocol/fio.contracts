@@ -165,8 +165,8 @@ namespace eosiosystem {
                 //todo add code to check that if there is a single auth key, the key matches the value in the account map.
             }
 
-            fio_400_assert(auth.waits.size() == 0, "authorization_waits", "authorization_waits",
-                           "Waits not supported", ErrorNoAuthWaits);
+            //fio_400_assert(auth.waits.size() == 0, "authorization_waits", "authorization_waits",
+            //               "Waits not supported", ErrorNoAuthWaits);
 
             if (UPDATEAUTHRAM > 0) {
                 //get the tx size and divide by 1000
@@ -199,8 +199,8 @@ namespace eosiosystem {
                    std::make_tuple(std::string("auth_delete"), account, max_fee)
             }.send();
 
-            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-              "Transaction is too large", ErrorTransactionTooLarge);
+            //fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+            //  "Transaction is too large", ErrorTransactionTooLarge);
         }
 
         [[eosio::action]]
@@ -227,8 +227,8 @@ namespace eosiosystem {
                 ).send();
             }
 
-            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-              "Transaction is too large", ErrorTransactionTooLarge);
+            //fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+            //  "Transaction is too large", ErrorTransactionTooLarge);
         }
 
         [[eosio::action]]
