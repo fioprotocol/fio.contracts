@@ -225,10 +225,10 @@ namespace fioio {
    FC_MULTILINE_MACRO_END
 
 #define fio_400_assert(test, fieldname, fieldvalue, fielderror, code) \
-   eosio_assert_message_code(test, fioio::Code_400_Result(fieldname, fieldvalue, fielderror).to_json().c_str(), code)
+   eosio::internal_use_do_not_use::eosio_assert_message_code(test, fioio::Code_400_Result(fieldname, fieldvalue, fielderror).to_json().c_str(), code)
 
 #define fio_403_assert(test, code) \
-   eosio_assert_message_code(test, fioio::Code_403_Result(code).to_json().c_str(), code)
+   eosio::internal_use_do_not_use::eosio_assert_message_code(test, fioio::Code_403_Result(code).to_json().c_str(), code)
 
 #define fio_404_assert(test, message, code) \
-   eosio_assert_message_code(test, fioio::Code_404_Result(message).to_json().c_str(), code)
+   eosio::internal_use_do_not_use::eosio_assert_message_code(test, fioio::Code_404_Result(message).to_json().c_str(), code)
