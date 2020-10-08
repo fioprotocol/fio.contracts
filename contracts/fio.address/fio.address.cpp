@@ -10,7 +10,7 @@
 #include <fio.common/fio.common.hpp>
 #include <fio.common/fiotime.hpp>
 #include <fio.token/include/fio.token/fio.token.hpp>
-#include <eosiolib/asset.hpp>
+#include <eosio/asset.hpp>
 
 namespace fioio {
 
@@ -71,7 +71,7 @@ namespace fioio {
                 key_to_account(owner_fio_public_key, owner_account);
                 owner_account_name = name(owner_account.c_str());
 
-                eosio_assert(owner_account.length() == 12, "Length of account name should be 12");
+                internal_use_do_not_use::eosio_assert(owner_account.length() == 12, "Length of account name should be 12");
 
                 const bool accountExists = is_account(owner_account_name);
                 auto other = accountmap.find(owner_account_name.value);
@@ -702,7 +702,7 @@ namespace fioio {
           fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
             "Transaction is too large", ErrorTransactionTooLarge);
 
-           send_response(response_string.c_str());
+           //send_response(response_string.c_str());
         }
 
         [[eosio::action]]
@@ -773,7 +773,7 @@ namespace fioio {
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
               "Transaction is too large", ErrorTransactionTooLarge);
 
-            send_response(response_string.c_str());
+            //send_response(response_string.c_str());
         }
 
        /***********
@@ -858,7 +858,7 @@ namespace fioio {
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
               "Transaction is too large", ErrorTransactionTooLarge);
 
-            send_response(response_string.c_str());
+            //send_response(response_string.c_str());
         }
 
         /**********
@@ -959,7 +959,7 @@ namespace fioio {
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
               "Transaction is too large", ErrorTransactionTooLarge);
 
-            send_response(response_string.c_str());
+            //send_response(response_string.c_str());
         }
 
         /*
@@ -1099,7 +1099,7 @@ namespace fioio {
            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
              "Transaction is too large", ErrorTransactionTooLarge);
 
-            send_response(response_string.c_str());
+            //send_response(response_string.c_str());
         }
 
         /***
@@ -1147,7 +1147,7 @@ namespace fioio {
                 ).send();
             }
 
-            send_response(response_string.c_str());
+            //send_response(response_string.c_str());
         } //addaddress
 
         /***
@@ -1187,7 +1187,7 @@ namespace fioio {
                            "Transaction is too large", ErrorTransactionTooLarge);
 
 
-            send_response(response_string.c_str());
+            //send_response(response_string.c_str());
         } //remaddress
 
         /***
@@ -1222,7 +1222,7 @@ namespace fioio {
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
                            "Transaction is too large", ErrorTransactionTooLarge);
 
-            send_response(response_string.c_str());
+            //send_response(response_string.c_str());
         } //remalladdr
 
 
@@ -1316,7 +1316,7 @@ namespace fioio {
           fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
             "Transaction is too large", ErrorTransactionTooLarge);
 
-            send_response(response_string.c_str());
+            //send_response(response_string.c_str());
         }
 
         /**
@@ -1332,7 +1332,7 @@ namespace fioio {
          **/
         [[eosio::action]]
         void bind2eosio(const name &account, const string &client_key, const bool &existing) {
-            eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(SYSTEMACCOUNT)),
+            internal_use_do_not_use::eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(SYSTEMACCOUNT)),
                          "missing required authority of fio.address,  fio.token, or eosio");
 
            fio_400_assert(isPubKeyValid(client_key), "client_key", client_key,
@@ -1450,7 +1450,7 @@ namespace fioio {
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
                            "Transaction is too large", ErrorTransaction);
 
-            send_response(response_string.c_str());
+            //send_response(response_string.c_str());
         }
 
         [[eosio::action]]
@@ -1533,7 +1533,7 @@ namespace fioio {
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
                            "Transaction is too large", ErrorTransaction);
 
-            send_response(response_string.c_str());
+            //send_response(response_string.c_str());
 
         }
 
@@ -1609,7 +1609,7 @@ namespace fioio {
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
                            "Transaction is too large", ErrorTransaction);
 
-            send_response(response_string.c_str());
+            //send_response(response_string.c_str());
         }
 
         void decrcounter(const string &fio_address, const int32_t &step) {

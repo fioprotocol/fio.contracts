@@ -7,8 +7,8 @@
  *  Changes:
  */
 #include <fio.system/fio.system.hpp>
-#include <eosiolib/dispatcher.hpp>
-#include <eosiolib/crypto.h>
+#include <eosio/dispatcher.hpp>
+#include <eosio/crypto.hpp>
 #include "producer_pay.cpp"
 #include "delegate_bandwidth.cpp"
 #include "voting.cpp"
@@ -73,7 +73,7 @@ namespace eosiosystem {
         require_auth(_self);
         set_privileged(account.value, ispriv);
 
-        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+        //fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
 
     }
@@ -86,7 +86,7 @@ namespace eosiosystem {
             p.deactivate();
         });
 
-        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+        //fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
 
     }
@@ -147,7 +147,7 @@ namespace eosiosystem {
 
         set_resource_limits(newact.value, INITIALACCOUNTRAM, -1, -1);
 
-        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+        //fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
 
     }

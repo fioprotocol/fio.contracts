@@ -94,7 +94,7 @@ public:
         [[eosio::action]]
         void updatetpid(const string &tpid, const name owner, const uint64_t &amount) {
 
-                eosio_assert(has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
+                internal_use_do_not_use::eosio_assert(has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
                              has_auth("fio.reqobt"_n) || has_auth("eosio"_n),
                              "missing required authority of fio.address, fio.treasury, fio.token, eosio or fio.reqobt");
             if (debugout) {
@@ -140,7 +140,7 @@ public:
         //@abi action
         [[eosio::action]]
         void updatebounty(const uint64_t &amount) {
-                eosio_assert((has_auth(TPIDContract) || has_auth(TREASURYACCOUNT)),
+                internal_use_do_not_use::eosio_assert((has_auth(TPIDContract) || has_auth(TREASURYACCOUNT)),
                              "missing required authority of fio.tpid, or fio.treasury");
                 bounties.set(bounties.exists() ? bounty{bounties.get().tokensminted + amount} : bounty{amount}, _self);
         }

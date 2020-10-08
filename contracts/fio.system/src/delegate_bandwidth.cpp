@@ -8,12 +8,12 @@
  */
 #include <fio.system/fio.system.hpp>
 
-#include <eosiolib/eosio.hpp>
-#include <eosiolib/datastream.hpp>
-#include <eosiolib/serialize.hpp>
-#include <eosiolib/multi_index.hpp>
-#include <eosiolib/privileged.h>
-#include <eosiolib/transaction.hpp>
+#include <eosio/eosio.hpp>
+#include <eosio/datastream.hpp>
+#include <eosio/serialize.hpp>
+#include <eosio/multi_index.hpp>
+#include <eosio/privileged.hpp>
+#include <eosio/transaction.hpp>
 
 #include <fio.token/fio.token.hpp>
 

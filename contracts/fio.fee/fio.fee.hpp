@@ -8,7 +8,8 @@
 
 #pragma once
 
-#include <eosiolib/eosio.hpp>
+#include <eosio/eosio.hpp>
+#include <eosio/binary_extension.hpp>
 
 using std::string;
 

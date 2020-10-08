@@ -4,13 +4,12 @@
  */
 #pragma once
 
-#include <eosiolib/action.hpp>
-#include <eosiolib/public_key.hpp>
-#include <eosiolib/print.hpp>
-#include <eosiolib/privileged.h>
-#include <eosiolib/producer_schedule.hpp>
-#include <eosiolib/contract.hpp>
-#include <eosiolib/ignore.hpp>
+#include <eosio/action.hpp>
+#include <eosio/print.hpp>
+#include <eosio/privileged.hpp>
+#include <eosio/producer_schedule.hpp>
+#include <eosio/contract.hpp>
+#include <eosio/ignore.hpp>
 #include "fio.common/fio.accounts.hpp"
 #include "fio.common/fioerror.hpp"
 
@@ -62,9 +61,9 @@ namespace eosiosystem {
         uint32_t timestamp;
         name producer;
         uint16_t confirmed = 0;
-        capi_checksum256 previous;
-        capi_checksum256 transaction_mroot;
-        capi_checksum256 action_mroot;
+        checksum256 previous;
+        checksum256 transaction_mroot;
+        checksum256 action_mroot;
         uint32_t schedule_version = 0;
         std::optional <eosio::producer_schedule> new_producers;
 
@@ -76,7 +75,7 @@ namespace eosiosystem {
 
     struct [[eosio::table("abihash"), eosio::contract("fio.system")]] abi_hash {
         name owner;
-        capi_checksum256 hash;
+        checksum256 hash;
 
         uint64_t primary_key() const { return owner.value; }
 
@@ -161,13 +160,13 @@ namespace eosiosystem {
             }
 
             if (permission == fioio::ACTIVE || permission == fioio::OWNER){
-                eosio_assert((auth.keys.size() == 0) || (auth.keys.size() == 1),
+                internal_use_do_not_use::eosio_assert((auth.keys.size() == 0) || (auth.keys.size() == 1),
                              "update auth not permitted on owner or active unless keys is empty or has a single entry matching the account public key");
                 //todo add code to check that if there is a single auth key, the key matches the value in the account map.
             }
 
-            fio_400_assert(auth.waits.size() == 0, "authorization_waits", "authorization_waits",
-                           "Waits not supported", ErrorNoAuthWaits);
+            //fio_400_assert(auth.waits.size() == 0, "authorization_waits", "authorization_waits",
+            //               "Waits not supported", ErrorNoAuthWaits);
 
             if (UPDATEAUTHRAM > 0) {
                 //get the tx size and divide by 1000
@@ -200,8 +199,8 @@ namespace eosiosystem {
                    std::make_tuple(std::string("auth_delete"), account, max_fee)
             }.send();
 
-            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-              "Transaction is too large", ErrorTransactionTooLarge);
+            //fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+            //  "Transaction is too large", ErrorTransactionTooLarge);
         }
 
         [[eosio::action]]
@@ -228,8 +227,8 @@ namespace eosiosystem {
                 ).send();
             }
 
-            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-              "Transaction is too large", ErrorTransactionTooLarge);
+            //fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+            //  "Transaction is too large", ErrorTransactionTooLarge);
         }
 
         [[eosio::action]]
@@ -241,7 +240,7 @@ namespace eosiosystem {
         }
 
         [[eosio::action]]
-        void canceldelay(ignore <permission_level> canceling_auth, ignore <capi_checksum256> trx_id) {
+        void canceldelay(ignore <permission_level> canceling_auth, ignore <checksum256> trx_id) {
             require_auth(_self);
         }
 

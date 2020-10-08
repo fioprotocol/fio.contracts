@@ -10,12 +10,12 @@
 
 #include <vector>
 #include <string>
-#include <eosiolib/eosio.hpp>
-#include <eosiolib/system.hpp>
-#include <eosiolib/singleton.hpp>
-#include <eosiolib/asset.hpp>
-#include <eosiolib/crypto.hpp>
-#include <eosiolib/transaction.hpp>
+#include <eosio/eosio.hpp>
+#include <eosio/system.hpp>
+#include <eosio/singleton.hpp>
+#include <eosio/asset.hpp>
+#include <eosio/crypto.hpp>
+#include <eosio/transaction.hpp>
 #include "keyops.hpp"
 #include "fioerror.hpp"
 #include "fio.accounts.hpp"
@@ -392,9 +392,8 @@ namespace fioio {
         array<unsigned char, 33> pubkey_data;
         copy_n(vch.begin(), 33, pubkey_data.begin());
 
-        capi_checksum160 check_pubkey;
-        ripemd160(reinterpret_cast<char *>(pubkey_data.data()), 33, &check_pubkey);
-        if (memcmp(&check_pubkey.hash, &vch.end()[-4], 4) != 0) return false;
+        checksum160 check_pubkey = ripemd160(reinterpret_cast<char *>(pubkey_data.data()), 33);
+        if (memcmp(&check_pubkey, &vch.end()[-4], 4) != 0) return false;
         //end of the public key validity check.
 
         return true;

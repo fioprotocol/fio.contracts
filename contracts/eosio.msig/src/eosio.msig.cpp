@@ -10,9 +10,9 @@
  *  @license FIO Foundation ( https://github.com/fioprotocol/fio/blob/master/LICENSE ) Dapix
  */
 #include <eosio.msig/eosio.msig.hpp>
-#include <eosiolib/action.hpp>
-#include <eosiolib/permission.hpp>
-#include <eosiolib/crypto.hpp>
+#include <eosio/action.hpp>
+#include <eosio/permission.hpp>
+#include <eosio/crypto.hpp>
 #include "fio.common/fio.accounts.hpp"
 #include "fio.common/fioerror.hpp"
 using namespace fioio;

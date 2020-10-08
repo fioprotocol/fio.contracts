@@ -105,7 +105,7 @@ public:
                fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
                  "Transaction is too large", ErrorTransactionTooLarge);
 
-                send_response(response_string.c_str());
+                //send_response(response_string.c_str());
         } //tpid_claim
 
         // @abi action
@@ -327,7 +327,7 @@ public:
                 fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
                  "Transaction is too large", ErrorTransactionTooLarge);
 
-                send_response(response_string.c_str());
+                //send_response(response_string.c_str());
         } //bpclaim
 
         // @abi action
@@ -344,7 +344,7 @@ public:
         [[eosio::action]]
         void bprewdupdate(const uint64_t &amount) {
 
-                eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
+                internal_use_do_not_use::eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
                              has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) || has_auth(FeeContract)),
                              "missing required authority of fio.address, fio.treasury, fio.fee, fio.token, eosio or fio.reqobt");
 
@@ -355,7 +355,7 @@ public:
         [[eosio::action]]
         void bppoolupdate(const uint64_t &amount) {
 
-                eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
+                internal_use_do_not_use::eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
                              has_auth(REQOBTACCOUNT)),
                              "missing required authority of fio.address, fio.treasury, fio.token, or fio.reqobt");
                 bucketrewards.set(bucketrewards.exists() ? bucketpool{bucketrewards.get().rewards + amount} : bucketpool{amount}, get_self());
@@ -365,7 +365,7 @@ public:
         [[eosio::action]]
         void fdtnrwdupdat(const uint64_t &amount) {
 
-                eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
+                internal_use_do_not_use::eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
                              has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) || has_auth(FeeContract)),
                              "missing required authority of fio.address, fio.token, fio.fee, fio.treasury or fio.reqobt");
 

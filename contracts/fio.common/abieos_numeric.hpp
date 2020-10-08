@@ -7,7 +7,6 @@
 #include <stdint.h>
 #include <string>
 #include <string_view>
-#include <eosiolib/public_key.hpp>
 
 namespace abieos {
 
@@ -34,14 +33,14 @@ namespace abieos {
         for (auto &src_digit : s) {
             int carry = get_base58_map()[src_digit];
             if (carry < 0)
-                eosio_assert(0, "invalid base-58 value");
+                internal_use_do_not_use::eosio_assert(0, "invalid base-58 value");
             for (auto &result_byte : result) {
                 int x = result_byte * 58 + carry;
                 result_byte = x;
                 carry = x >> 8;
             }
             if (carry)
-                eosio_assert(0, "base-58 value is out of range");
+                internal_use_do_not_use::eosio_assert(0, "base-58 value is out of range");
         }
         std::reverse(result.begin(), result.end());
         return result;
@@ -74,7 +73,7 @@ namespace abieos {
         } else if (s.size() >= 7 && s.substr(0, 7) == "PUB_R1_") {
             return string_to_key<eosio::public_key>(s.substr(7), key_type::r1, "R1"); //
         } else {
-            eosio_assert(0, "unrecognized public key format");
+            internal_use_do_not_use::eosio_assert(0, "unrecognized public key format");
         }
         eosio::public_key nullkey{(uint8_t) key_type::k1};
         return nullkey;

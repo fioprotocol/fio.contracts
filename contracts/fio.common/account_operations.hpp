@@ -9,12 +9,12 @@
 #include <algorithm>
 #include <cmath>
 #include "../fio.system/include/fio.system/fio.system.hpp"
-#include <eosiolib/eosio.hpp>
+#include <eosio/eosio.hpp>
 #include <string>
-#include <eosiolib/asset.hpp>
-#include <eosiolib/action.hpp>
-#include <eosiolib/symbol.hpp>
-#include <eosiolib/crypto.h>
+#include <eosio/asset.hpp>
+#include <eosio/action.hpp>
+#include <eosio/symbol.hpp>
+#include <eosio/crypto.hpp>
 #include <cstring>
 
 using namespace eosio;

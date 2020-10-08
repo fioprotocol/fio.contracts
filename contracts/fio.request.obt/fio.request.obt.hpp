@@ -10,10 +10,10 @@
 
 #pragma once
 
-#include <eosiolib/eosio.hpp>
+#include <eosio/eosio.hpp>
 #include <string>
-#include <eosiolib/singleton.hpp>
-#include <eosiolib/asset.hpp>
+#include <eosio/singleton.hpp>
+#include <eosio/asset.hpp>
 
 using std::string;
 
