@@ -329,13 +329,13 @@ namespace fioio {
             uint64_t fee_amount = 0;
 
             //begin new fees, bundle eligible fee logic
-            const uint128_t endpoint_hash = string_to_uint128_hash("remove_pub_address");
+            const uint128_t endpoint_hash = string_to_uint128_hash(REMOVE_PUB_ADDRESS_ENDPOINT);
 
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
 
             //if the fee isnt found for the endpoint, then 400 error.
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "remove_pub_address",
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", REMOVE_PUB_ADDRESS_ENDPOINT,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             const int64_t reg_amount = fee_iter->suf_amount;
@@ -358,7 +358,7 @@ namespace fioio {
 
                 //NOTE -- question here, should we always record the transfer for the fees, even when its zero,
                 //or should we do as this code does and not do a transaction when the fees are 0.
-                fio_fees(actor, asset(reg_amount, FIOSYMBOL));
+                fio_fees(actor, asset(reg_amount, FIOSYMBOL), REMOVE_PUB_ADDRESS_ENDPOINT);
                 process_rewards(tpid, reg_amount,get_self(), actor);
 
                 if (reg_amount > 0) {
@@ -436,20 +436,20 @@ namespace fioio {
             uint64_t fee_amount = 0;
 
             //begin new fees, bundle eligible fee logic
-            const uint128_t endpoint_hash = string_to_uint128_hash("remove_pub_address");
+            const uint128_t endpoint_hash = string_to_uint128_hash(REMOVE_ALL_PUB_ENDPOINT);
 
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
 
             //if the fee isnt found for the endpoint, then 400 error.
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "remove_pub_address",
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", REMOVE_ALL_PUB_ENDPOINT,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             const int64_t reg_amount = fee_iter->suf_amount;
             const uint64_t fee_type = fee_iter->type;
 
             fio_400_assert(fee_type == 1, "fee_type", to_string(fee_type),
-                           "remove_fio_address unexpected fee type for endpoint remove_pub_address, expected 1",
+                           "unexpected fee type for endpoint remove_all_pub_addresses, expected 1",
                            ErrorNoEndpoint);
 
             const uint64_t bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
@@ -465,7 +465,7 @@ namespace fioio {
 
                 //NOTE -- question here, should we always record the transfer for the fees, even when its zero,
                 //or should we do as this code does and not do a transaction when the fees are 0.
-                fio_fees(actor, asset(reg_amount, FIOSYMBOL));
+                fio_fees(actor, asset(reg_amount, FIOSYMBOL), REMOVE_ALL_PUB_ENDPOINT);
                 process_rewards(tpid, reg_amount,get_self(), actor);
 
                 if (reg_amount > 0) {
@@ -561,20 +561,20 @@ namespace fioio {
             }
 
             //begin new fees, bundle eligible fee logic
-            const uint128_t endpoint_hash = string_to_uint128_hash("add_pub_address");
+            const uint128_t endpoint_hash = string_to_uint128_hash(ADD_PUB_ADDRESS_ENDPOINT);
 
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
 
             //if the fee isnt found for the endpoint, then 400 error.
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "add_pub_address",
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", ADD_PUB_ADDRESS_ENDPOINT,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             const int64_t reg_amount = fee_iter->suf_amount;
             const uint64_t fee_type = fee_iter->type;
 
             fio_400_assert(fee_type == 1, "fee_type", to_string(fee_type),
-                           "register_fio_address unexpected fee type for endpoint add_pub_address, expected 0",
+                           "unexpected fee type for endpoint add_pub_address, expected 0",
                            ErrorNoEndpoint);
 
             const uint64_t bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
@@ -590,7 +590,7 @@ namespace fioio {
 
                 //NOTE -- question here, should we always record the transfer for the fees, even when its zero,
                 //or should we do as this code does and not do a transaction when the fees are 0.
-                fio_fees(actor, asset(reg_amount, FIOSYMBOL));
+                fio_fees(actor, asset(reg_amount, FIOSYMBOL), ADD_PUB_ADDRESS_ENDPOINT);
                 process_rewards(tpid, reg_amount,get_self(), actor);
 
                 if (reg_amount > 0) {
@@ -665,24 +665,24 @@ namespace fioio {
             fioio::convertfiotime(expiration_time, &timeinfo);
             std::string timebuffer = fioio::tmstringformat(timeinfo);
 
-            const uint128_t endpoint_hash = string_to_uint128_hash("register_fio_address");
+            const uint128_t endpoint_hash = string_to_uint128_hash(REGISTER_ADDRESS_ENDPOINT);
 
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "register_fio_address",
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", REGISTER_ADDRESS_ENDPOINT,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             const uint64_t reg_amount = fee_iter->suf_amount;
             const uint64_t fee_type = fee_iter->type;
 
             fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
-                           "register_fio_address unexpected fee type for endpoint register_fio_address, expected 0",
+                           "unexpected fee type for endpoint register_fio_address, expected 0",
                            ErrorNoEndpoint);
 
             fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
                            ErrorMaxFeeExceeded);
 
-            fio_fees(actor, asset(reg_amount, FIOSYMBOL));
+            fio_fees(actor, asset(reg_amount, FIOSYMBOL), REGISTER_ADDRESS_ENDPOINT);
             processbucketrewards(tpid, reg_amount, get_self(), nm);
 
             if (REGADDRESSRAM > 0) {
@@ -737,24 +737,24 @@ namespace fioio {
             fioio::convertfiotime(expiration_time, &timeinfo);
             std::string timebuffer = fioio::tmstringformat(timeinfo);
 
-            const uint128_t endpoint_hash = string_to_uint128_hash("register_fio_domain");
+            const uint128_t endpoint_hash = string_to_uint128_hash(REGISTER_DOMAIN_ENDPOINT);
 
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "register_fio_domain",
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", REGISTER_DOMAIN_ENDPOINT,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             const uint64_t reg_amount = fee_iter->suf_amount;
             const uint64_t fee_type = fee_iter->type;
 
             fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
-                           "register_fio_address unexpected fee type for endpoint register_fio_domain, expected 0",
+                           "unexpected fee type for endpoint register_fio_domain, expected 0",
                            ErrorNoEndpoint);
 
             fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
                            ErrorMaxFeeExceeded);
 
-            fio_fees(actor, asset(reg_amount, FIOSYMBOL));
+            fio_fees(actor, asset(reg_amount, FIOSYMBOL), REGISTER_DOMAIN_ENDPOINT);
             processbucketrewards(tpid, reg_amount, get_self(), actor);
 
             const string response_string = string("{\"status\": \"OK\",\"expiration\":\"") +
@@ -810,24 +810,24 @@ namespace fioio {
                            "FIO domain not found", ErrorDomainNotRegistered);
 
             const uint32_t expiration_time = domains_iter->expiration;
-            const uint128_t endpoint_hash = string_to_uint128_hash("renew_fio_domain");
+            const uint128_t endpoint_hash = string_to_uint128_hash(RENEW_DOMAIN_ENDPOINT);
 
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "register_fio_domain",
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", RENEW_DOMAIN_ENDPOINT,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             const uint64_t reg_amount = fee_iter->suf_amount;
             const uint64_t fee_type = fee_iter->type;
 
             fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
-                           "register_fio_address unexpected fee type for endpoint register_fio_domain, expected 0",
+                           "unexpected fee type for endpoint renew_fio_domain, expected 0",
                            ErrorNoEndpoint);
 
             fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
                            ErrorMaxFeeExceeded);
 
-            fio_fees(actor, asset(reg_amount, FIOSYMBOL));
+            fio_fees(actor, asset(reg_amount, FIOSYMBOL), RENEW_DOMAIN_ENDPOINT);
             processbucketrewards(tpid, reg_amount, get_self(),actor);
 
             const uint64_t new_expiration_time = get_time_plus_one_year(expiration_time);
@@ -911,25 +911,25 @@ namespace fioio {
 
             const uint64_t expiration_time = fioname_iter->expiration;
             const uint64_t bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
-            const uint128_t endpoint_hash = string_to_uint128_hash("renew_fio_address");
+            const uint128_t endpoint_hash = string_to_uint128_hash(RENEW_ADDRESS_ENDPOINT);
 
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
 
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "register_fio_address",
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", RENEW_ADDRESS_ENDPOINT,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             const uint64_t reg_amount = fee_iter->suf_amount;
             const uint64_t fee_type = fee_iter->type;
 
             fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
-                           "register_fio_address unexpected fee type for endpoint register_fio_address, expected 0",
+                           "unexpected fee type for endpoint renew_fio_address, expected 0",
                            ErrorNoEndpoint);
 
             fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
                            ErrorMaxFeeExceeded);
 
-            fio_fees(actor, asset(reg_amount, FIOSYMBOL));
+            fio_fees(actor, asset(reg_amount, FIOSYMBOL), RENEW_ADDRESS_ENDPOINT);
             processbucketrewards(tpid, reg_amount, get_self(),actor);
 
             const uint64_t new_expiration_time = get_time_plus_one_year(expiration_time);
@@ -1275,21 +1275,21 @@ namespace fioio {
                 a.is_public = is_public;
             });
 
-            const uint128_t endpoint_hash = string_to_uint128_hash("set_fio_domain_public");
+            const uint128_t endpoint_hash = string_to_uint128_hash(SET_DOMAIN_PUBLIC);
 
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
             const uint64_t fee_type = fee_iter->type;
             const int64_t reg_amount = fee_iter->suf_amount;
 
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "register_fio_domain",
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", SET_DOMAIN_PUBLIC,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             uint64_t fee_amount = fee_iter->suf_amount;
             fio_400_assert(max_fee >= (int64_t)fee_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
                            ErrorMaxFeeExceeded);
 
-            fio_fees(actor, asset(reg_amount, FIOSYMBOL));
+            fio_fees(actor, asset(reg_amount, FIOSYMBOL), SET_DOMAIN_PUBLIC);
             process_rewards(tpid, reg_amount,get_self(), actor);
             if (reg_amount > 0) {
                 //MAS-522 remove staking from voting.
@@ -1382,11 +1382,11 @@ namespace fioio {
                            ErrorDomainExpired);
 
             fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature);
-            const uint128_t endpoint_hash = string_to_uint128_hash("transfer_fio_address");
+            const uint128_t endpoint_hash = string_to_uint128_hash(TRANSFER_ADDRESS_ENDPOINT);
 
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "transfer_fio_address",
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", TRANSFER_ADDRESS_ENDPOINT,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             string owner_account;
@@ -1425,14 +1425,14 @@ namespace fioio {
             const uint64_t fee_type = fee_iter->type;
 
             fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
-                           "register_fio_address unexpected fee type for endpoint register_fio_address, expected 0",
+                           "unexpected fee type for endpoint transfer_fio_address, expected 0",
                            ErrorNoEndpoint);
 
             fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
                            "Fee exceeds supplied maximum.",
                            ErrorMaxFeeExceeded);
 
-            fio_fees(actor, asset(fee_amount, FIOSYMBOL));
+            fio_fees(actor, asset(fee_amount, FIOSYMBOL), TRANSFER_ADDRESS_ENDPOINT);
             processbucketrewards(tpid, fee_amount, get_self(), actor);
 
             if (XFERRAM > 0) {
@@ -1451,6 +1451,90 @@ namespace fioio {
                            "Transaction is too large", ErrorTransaction);
 
             send_response(response_string.c_str());
+        }
+
+        [[eosio::action]]
+        void burnaddress(const string &fio_address, const int64_t &max_fee, const string &tpid, const name &actor) {
+            require_auth(actor);
+            FioAddress fa;
+            getFioAddressStruct(fio_address, fa);
+
+            fio_400_assert(validateFioNameFormat(fa) && !fa.domainOnly, "fio_address", fa.fioaddress, "Invalid FIO Address",
+                           ErrorDomainAlreadyRegistered);
+            fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
+                           "TPID must be empty or valid FIO address",
+                           ErrorPubKeyValid);
+            fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                           ErrorMaxFeeInvalid);
+
+            const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+            auto namesbyname = fionames.get_index<"byname"_n>();
+            auto fioname_iter = namesbyname.find(nameHash);
+            fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fa.fioaddress,
+                           "FIO Address not registered", ErrorFioNameAlreadyRegistered);
+
+            fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature);
+
+            const uint32_t expiration = fioname_iter->expiration;
+            const uint32_t present_time = now();
+            fio_400_assert(present_time <= expiration, "fio_address", fio_address, "FIO Address expired. Renew first.",
+                           ErrorDomainExpired);
+
+            auto producersbyaddress = producers.get_index<"byaddress"_n>();
+            auto prod_iter = producersbyaddress.find(nameHash);
+            if(prod_iter != producersbyaddress.end()){
+                fio_400_assert(!prod_iter->is_active, "fio_address", fio_address,
+                               "FIO Address is active producer. Unregister first.", ErrorNoEndpoint);
+            }
+
+            auto proxybyaddress = voters.get_index<"byaddress"_n>();
+            auto proxy_iter = proxybyaddress.find(nameHash);
+            if(proxy_iter != proxybyaddress.end()){
+                fio_400_assert(!proxy_iter->is_proxy, "fio_address", fio_address,
+                               "FIO Address is proxy. Unregister first.", ErrorNoEndpoint);
+            }
+
+            auto tpid_by_name = tpids.get_index<"byname"_n>();
+            auto tpid_iter = tpid_by_name.find(nameHash);
+
+            //do the burn
+            const uint64_t bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
+            namesbyname.erase(fioname_iter);
+            if( tpid_iter != tpid_by_name.end() ){ tpid_by_name.erase(tpid_iter); }
+
+            //fees
+            uint64_t fee_amount = 0;
+            const uint128_t endpoint_hash = string_to_uint128_hash("burn_fio_address");
+            auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
+            auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", BURN_FIO_ADDRESS_ENDPOINT,
+                           "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+            const uint64_t fee_type = fee_iter->type;
+
+            fio_400_assert(fee_type == 1, "fee_type", to_string(fee_type),
+                           "burn_fio_address unexpected fee type for endpoint burn_fio_address, expected 1",
+                           ErrorNoEndpoint);
+
+            if (bundleeligiblecountdown == 0) {
+                fee_amount = fee_iter->suf_amount;
+                fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
+                               "Fee exceeds supplied maximum.",
+                               ErrorMaxFeeExceeded);
+
+                fio_fees(actor, asset(fee_amount, FIOSYMBOL), BURN_FIO_ADDRESS_ENDPOINT);
+                process_rewards(tpid, fee_amount, get_self(), actor);
+            }
+
+            const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                           to_string(fee_amount) + string("}");
+
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransaction);
+
+            send_response(response_string.c_str());
+
         }
 
         [[eosio::action]]
@@ -1480,11 +1564,11 @@ namespace fioio {
                            ErrorDomainExpired);
 
             fio_403_assert(domains_iter->account == actor.value, ErrorSignature);
-            const uint128_t endpoint_hash = string_to_uint128_hash("transfer_fio_domain");
+            const uint128_t endpoint_hash = string_to_uint128_hash(TRANSFER_DOMAIN_ENDPOINT);
 
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "transfer_fio_domain",
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", TRANSFER_DOMAIN_ENDPOINT,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             //Transfer the domain
@@ -1500,14 +1584,14 @@ namespace fioio {
             const uint64_t fee_type = fee_iter->type;
 
             fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
-                           "register_fio_address unexpected fee type for endpoint register_fio_domain, expected 0",
+                           "unexpected fee type for endpoint transfer_fio_domain, expected 0",
                            ErrorNoEndpoint);
 
             fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
                            "Fee exceeds supplied maximum.",
                            ErrorMaxFeeExceeded);
 
-            fio_fees(actor, asset(fee_amount, FIOSYMBOL));
+            fio_fees(actor, asset(fee_amount, FIOSYMBOL), TRANSFER_DOMAIN_ENDPOINT);
             processbucketrewards(tpid, fee_amount, get_self(), actor);
 
             if (XFERRAM > 0) {
@@ -1550,5 +1634,5 @@ namespace fioio {
     };
 
     EOSIO_DISPATCH(FioNameLookup, (regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(renewaddress)(setdomainpub)(burnexpired)(decrcounter)
-    (bind2eosio) (xferdomain)(xferaddress))
+    (bind2eosio)(burnaddress)(xferdomain)(xferaddress))
 }
