@@ -300,7 +300,19 @@ namespace eosio {
                     uint32_t secondsSinceGrant = (present_time - lockiter->timestamp);
 
                     uint32_t payoutsDue = 0;
+                    int64_t lastperiodduration = 0;
                     for (int i=0;i<lockiter->periods.size(); i++){
+                        if(lockiter->periods[i].duration <= lastperiodduration){
+                            //payout nothing if the locking periods are incoherent, IE they arent
+                            // specified as duration is offset from lock creation time, in ascending order
+                            //the system should not allow incoherent locking periods to exist.
+                            payoutsDue = 0;
+                            break;
+                        }
+                        else{
+                            lastperiodduration = lockiter->periods[i].duration;
+                        }
+
                         if (lockiter->periods[i].duration <= secondsSinceGrant){
                             payoutsDue++;
                         }

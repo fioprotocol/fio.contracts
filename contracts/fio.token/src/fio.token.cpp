@@ -452,6 +452,8 @@ namespace eosio {
         double totp = 0.0;
         double tv = 0.0;
         int64_t longestperiod = 0;
+        int64_t lastlockperiodduration = -1;
+
         for(int i=0;i<periods.size();i++){
             fio_400_assert(periods[i].percent > 0.0, "unlock_periods", "Invalid unlock periods",
                            "Invalid percentage value in unlock periods", ErrorInvalidUnlockPeriods);
@@ -460,6 +462,9 @@ namespace eosio {
                            "Invalid precision for percentage in unlock periods", ErrorInvalidUnlockPeriods);
             fio_400_assert(periods[i].duration > 0, "unlock_periods", "Invalid unlock periods",
                            "Invalid duration value in unlock periods", ErrorInvalidUnlockPeriods);
+            fio_400_assert(periods[i].duration > lastlockperiodduration, "unlock_periods", "Invalid unlock periods",
+                           "Invalid duration value in unlock periods", ErrorInvalidUnlockPeriods);
+            lastlockperiodduration = periods[i].duration;
             totp += periods[i].percent;
             if (periods[i].duration > longestperiod){
                 longestperiod = periods[i].duration;
