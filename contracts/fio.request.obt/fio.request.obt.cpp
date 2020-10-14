@@ -470,6 +470,12 @@ namespace fioio {
             fio_400_assert(fioreqctx_iter != fiorequestContextsTable.end(), "fio_request_id", fio_request_id,
                            "No such FIO Request", ErrorRequestContextNotFound);
 
+            //verify pending request only
+            auto statusByRequestId = fiorequestStatusTable.get_index<"byfioreqid"_n>();
+            auto fioreqstss_iter = statusByRequestId.find(requestId);
+            fio_400_assert(fioreqstss_iter->status == 0, "fio_request_id", fio_request_id,
+                           "Only pending requests can be rejected.", ErrorRequestStatusInvalid);
+
             const uint128_t payer128FioAddHashed = fioreqctx_iter->payer_fio_address;
             const uint32_t present_time = now();
 
@@ -477,6 +483,7 @@ namespace fioio {
             auto fioname_iter = namesbyname.find(payer128FioAddHashed);
 
             fio_403_assert(fioname_iter != namesbyname.end(), ErrorSignature);
+
             const uint64_t account = fioname_iter->owner_account;
             const uint64_t payernameexp = fioname_iter->expiration;
             const string payerFioAddress = fioname_iter->name;
