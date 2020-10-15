@@ -447,7 +447,7 @@ namespace eosio {
                              const name &actor,
                              const string &tpid) {
 
-        fio_400_assert(((periods.size()) >= 1 && (periods.size() <= 365)), "unlock_periods", "Invalid unlock periods",
+        fio_400_assert(((periods.size()) >= 1 && (periods.size() <= 50)), "unlock_periods", "Invalid unlock periods",
                        "Invalid number of unlock periods", ErrorTransactionTooLarge);
         double totp = 0.0;
         double tv = 0.0;
