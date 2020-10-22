@@ -301,7 +301,7 @@ namespace fioio {
                 public_address = tpa->public_address.c_str();
 
 
-                fio_400_assert(validateChainNameFormat(token), "token_code", tpa->token_code, "Invalid token code format",
+                fio_400_assert(validateTokenNameFormat(token), "token_code", tpa->token_code, "Invalid token code format",
                                ErrorInvalidFioNameFormat);
                 fio_400_assert(validateChainNameFormat(chaincode), "chain_code", tpa->chain_code, "Invalid chain code format",
                                ErrorInvalidFioNameFormat);
@@ -311,7 +311,7 @@ namespace fioio {
 
                 int idx = 0;
                 for( auto it = fioname_iter->addresses.begin(); it != fioname_iter->addresses.end(); ++it ) {
-                    if( (it->token_code == token) && (it->chain_code == chaincode)  && it->public_address == public_address ){
+                    if( (it->token_code == token) && (it->chain_code == chaincode) && it->public_address == public_address ){
                         wasFound = true;
                         break;
                     }
@@ -432,7 +432,6 @@ namespace fioio {
                 }
             }
 
-
             uint64_t fee_amount = 0;
 
             //begin new fees, bundle eligible fee logic
@@ -478,8 +477,6 @@ namespace fioio {
             return fee_amount;
         }
 
-
-
         uint64_t chain_data_update
          (const string &fioaddress, const vector<tokenpubaddr> &pubaddresses,
                           const uint64_t &max_fee, const FioAddress &fa,
@@ -523,7 +520,7 @@ namespace fioio {
                 token = tpa->token_code.c_str();
                 chaincode = tpa->chain_code.c_str();
 
-                fio_400_assert(validateChainNameFormat(token), "token_code", tpa->token_code, "Invalid token code format",
+                fio_400_assert(validateTokenNameFormat(token), "token_code", tpa->token_code, "Invalid token code format",
                                ErrorInvalidFioNameFormat);
                 fio_400_assert(validateChainNameFormat(chaincode), "chain_code", tpa->chain_code, "Invalid chain code format",
                                ErrorInvalidFioNameFormat);
