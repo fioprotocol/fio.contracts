@@ -40,7 +40,7 @@ namespace eosiosystem {
         get_blockchain_parameters(dp);
         return dp;
     }
-
+/*
     time_point eosiosystem::system_contract::current_time_point() {
         const static time_point ct{microseconds{static_cast<int64_t>( current_time())}};
         return ct;
@@ -55,7 +55,7 @@ namespace eosiosystem {
         const static block_timestamp cbt{current_time_point()};
         return cbt;
     }
-/*
+*/
     eosiosystem::system_contract::~system_contract() {
         _global.set(_gstate, _self);
         _global2.set(_gstate2, _self);
