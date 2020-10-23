@@ -76,7 +76,7 @@ namespace eosiosystem {
         int64_t ram;
         int64_t cpu;
         int64_t net;
-        get_resource_limits(accountnm.value,&ram,&net,&cpu);
+        get_resource_limits(accountnm,ram,net,cpu);
         if (ram > 0 ) {
             if (debug) {
                 print(" incremented the RAM for account ", accountnm, " saw pre-existing RAM value of  ", ram,
@@ -85,7 +85,7 @@ namespace eosiosystem {
                 print(" RAM used by account ", accountnm, " is ", ramused, "\n");
             }
             ram += amount;
-            set_resource_limits(accountnm.value, ram, net, cpu);
+            set_resource_limits(accountnm, ram, net, cpu);
             if(debug) {
                 print(" incremented the RAM for account ", accountnm, " new amount is ", ram, "\n");
             }
@@ -391,7 +391,7 @@ namespace eosiosystem {
                   print("setting producer to unlimited resources for account ", it->owner, "\n");
               }
               //it was not in the list before, set it unlimited
-              set_resource_limits(it->owner.value, -1,-1,-1);
+              set_resource_limits(it->owner, -1,-1,-1);
           }
       }
 
@@ -405,7 +405,7 @@ namespace eosiosystem {
             //increment the ram by the set amount.
             ram += ADDITIONALRAMBPDESCHEDULING;
             //set the new limits going forward.
-            set_resource_limits(prevprods[i].value, ram, -1, -1);
+            set_resource_limits(prevprods[i], ram, -1, -1);
             if(debug) {
                 print(" de-schedule producer, setting RAM limit ", ram, " for account ", prevprods[i],
                       "\n");
