@@ -73,7 +73,7 @@ namespace eosiosystem {
         require_auth(_self);
         set_privileged(account.value, ispriv);
 
-        //fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
 
     }
@@ -86,7 +86,7 @@ namespace eosiosystem {
             p.deactivate();
         });
 
-        //fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
 
     }
@@ -212,7 +212,7 @@ namespace eosiosystem {
                 a.grant_type = locktype;
                 a.inhibit_unlocking = 1;
                 a.remaining_locked_amount = amount;
-                a.timestamp = now();
+                a.timestamp = current_time_point();
             });
     }
 

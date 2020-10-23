@@ -64,7 +64,7 @@ namespace eosiosystem {
            auto proditer = prodbyowner.find(producer.value);
           // Reset producer claim info
            prodbyowner.modify(proditer, get_self(), [&](auto &p) {
-               p.last_claim_time = time_point {microseconds{static_cast<int64_t>( current_time())}};
+               p.last_claim_time = current_time_point().sec_since_epoch();
                p.unpaid_blocks = 0;
            });
     }
@@ -76,7 +76,7 @@ namespace eosiosystem {
         auto proditer = prodbyowner.find(producer.value);
         // update last_bpclaim
         prodbyowner.modify(proditer, get_self(), [&](auto &p) {
-            p.last_bpclaim = now();
+            p.last_bpclaim = current_time_point();
         });
 
 
