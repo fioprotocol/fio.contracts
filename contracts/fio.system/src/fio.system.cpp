@@ -212,7 +212,7 @@ namespace eosiosystem {
                 a.grant_type = locktype;
                 a.inhibit_unlocking = 1;
                 a.remaining_locked_amount = amount;
-                a.timestamp = current_time_point();
+                a.timestamp = now();
             });
     }
 
