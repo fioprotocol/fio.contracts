@@ -118,7 +118,7 @@ namespace eosiosystem {
         auto prodbyowner = _producers.get_index<"byowner"_n>();
         auto prod = prodbyowner.find(producer.value);
         uint128_t addresshash = string_to_uint128_hash(fio_address.c_str());
-        const uint32_t ct = current_time_point();
+        const auto ct = current_time_point();
 
         if (prod != prodbyowner.end()) {
             if (prod->is_active) {
