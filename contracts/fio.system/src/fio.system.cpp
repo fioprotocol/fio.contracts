@@ -55,7 +55,7 @@ namespace eosiosystem {
         const static block_timestamp cbt{current_time_point()};
         return cbt;
     }
-
+/*
     eosiosystem::system_contract::~system_contract() {
         _global.set(_gstate, _self);
         _global2.set(_gstate2, _self);
