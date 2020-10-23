@@ -145,7 +145,7 @@ namespace eosiosystem {
             res.cpu_weight = asset(0, FIOSYMBOL);
         });
 
-        set_resource_limits(newact.value, INITIALACCOUNTRAM, -1, -1);
+        set_resource_limits(newact, INITIALACCOUNTRAM, -1, -1);
 
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
@@ -182,11 +182,11 @@ namespace eosiosystem {
         if (itr == table.end()) {
             table.emplace(acnt, [&](auto &row) {
                 row.owner = acnt;
-                sha256(const_cast<char *>(abi.data()), abi.size(), &row.hash);
+                row.hash = sha256(const_cast<char *>(abi.data()), abi.size());
             });
         } else {
             table.modify(itr, same_payer, [&](auto &row) {
-                sha256(const_cast<char *>(abi.data()), abi.size(), &row.hash);
+                row.hash = sha256(const_cast<char *>(abi.data()), abi.size());
             });
         }
     }
