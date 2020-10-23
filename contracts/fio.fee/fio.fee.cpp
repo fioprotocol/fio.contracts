@@ -68,8 +68,8 @@ namespace fioio {
             }
 
             //throw a 400 error if fees to process is empty.
-            //fio_400_assert(fee_ids.size() > 0, "compute fees", "compute fees",
-            //               "No Work.", ErrorNoWork);
+            fio_400_assert(fee_ids.size() > 0, "compute fees", "compute fees",
+                           "No Work.", ErrorNoWork);
 
             vector<uint64_t> votesufs;
             int processed_fees = 0;
@@ -132,8 +132,8 @@ namespace fioio {
                 }
             }
 
-            //fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-            //  "Transaction is too large", ErrorTransactionTooLarge);
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+              "Transaction is too large", ErrorTransactionTooLarge);
 
             return processed_fees;
         }
@@ -174,7 +174,7 @@ namespace fioio {
 
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
-            const uint32_t nowtime = current_time_point().sec_since_epoch();
+            const uint32_t nowtime = now();
 
             //get all the votes made by this actor. go through the list
             //and find the fee vote to update.
@@ -220,7 +220,7 @@ namespace fioio {
                 uint64_t idtoremove;
                 bool found = false;
 
-                //fio_400_assert(!(feevotesv[feeid].timestamp > (nowtime - TIME_BETWEEN_FEE_VOTES_SECONDS)), "", "", "Too soon since last call", ErrorTimeViolation);
+                fio_400_assert(!(feevotesv[feeid].timestamp > (nowtime - TIME_BETWEEN_FEE_VOTES_SECONDS)), "", "", "Too soon since last call", ErrorTimeViolation);
 
                 feevotesv[feeid].end_point = feeval.end_point;
                 feevotesv[feeid].value = feeval.value;
@@ -327,7 +327,7 @@ namespace fioio {
                            " Must be positive",
                            ErrorFioNameNotReg);
 
-            const uint32_t nowtime = current_time_point().sec_since_epoch();
+            const uint32_t nowtime = now();
 
             auto voter_iter = bundlevoters.find(actor.value);
             if (voter_iter != bundlevoters.end()) //update if it exists
@@ -422,7 +422,7 @@ namespace fioio {
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
 
-            const uint32_t nowtime = current_time_point().sec_since_epoch();
+            const uint32_t nowtime = now();
 
             auto voter_iter = feevoters.find(actor.value);
             if (voter_iter != feevoters.end())
