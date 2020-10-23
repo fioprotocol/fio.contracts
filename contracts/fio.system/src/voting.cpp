@@ -44,7 +44,7 @@ namespace eosiosystem {
         uint64_t nowtime = now();
         auto namesbyname = _fionames.get_index<"byname"_n>();
         auto nameiter = namesbyname.find(fioaddrhash);
-        check(nameiter != namesbyname.end(),"unexpected error verifying expired address");
+        //check(nameiter != namesbyname.end(),"unexpected error verifying expired address");
         uint64_t expire = nameiter->expiration;
 
         if ((expire + ADDRESSWAITFORBURNDAYS) <= nowtime) {
@@ -118,7 +118,7 @@ namespace eosiosystem {
         auto prodbyowner = _producers.get_index<"byowner"_n>();
         auto prod = prodbyowner.find(producer.value);
         uint128_t addresshash = string_to_uint128_hash(fio_address.c_str());
-        const uint32_t ct = now();
+        const uint32_t ct = current_time_point();
 
         if (prod != prodbyowner.end()) {
             if (prod->is_active) {
@@ -872,7 +872,7 @@ namespace eosiosystem {
             _gstate.total_voted_fio += new_vote_weight;
 
             if( _gstate.total_voted_fio >= MINVOTEDFIO && _gstate.thresh_voted_fio_time == time_point() ) {
-                _gstate.thresh_voted_fio_time = now();
+                _gstate.thresh_voted_fio_time = current_time_point();
             }
         }
 
@@ -899,7 +899,7 @@ namespace eosiosystem {
             auto new_proxy = votersbyowner.find(proxy.value);
             check(new_proxy != votersbyowner.end(),
                   "invalid proxy specified"); //if ( !voting ) { data corruption } else { wrong vote }
-            //fio_403_assert(!voting || new_proxy->is_proxy, ErrorProxyNotFound);
+            fio_403_assert(!voting || new_proxy->is_proxy, ErrorProxyNotFound);
             if (new_vote_weight >= 0) {
                 votersbyowner.modify(new_proxy, same_payer, [&](auto &vp) {
                     vp.proxied_vote_weight += new_vote_weight;
@@ -916,7 +916,7 @@ namespace eosiosystem {
             }
         }
 
-        const auto ct = now();
+        const auto ct = current_time_point();
         double delta_change_rate = 0.0;
         double total_inactive_vpay_share = 0.0;
         auto prodbyowner = _producers.get_index<"byowner"_n>();
@@ -1222,7 +1222,7 @@ namespace eosiosystem {
             //if the values are equal and isproxy, then show this error.
             fio_400_assert((isproxy != pitr->is_proxy)|| !isproxy, "fio_address", fio_address,
                            "Already registered as proxy. ", ErrorPubAddressExist);
-            check(!isproxy || !pitr->proxy, "account that uses a proxy is not allowed to become a proxy");
+            //check(!isproxy || !pitr->proxy, "account that uses a proxy is not allowed to become a proxy");
             if (isproxy && !pitr->proxy) {
                 votersbyowner.modify(pitr, same_payer, [&](auto &p) {
                     p.is_proxy = isproxy;
@@ -1286,7 +1286,7 @@ namespace eosiosystem {
                 propagate_weight_change(*pitr);
             } else {
                 auto delta = new_weight - voter.last_vote_weight;
-                const auto ct = now();
+                const auto ct = current_time_point();
                 double delta_change_rate = 0;
                 double total_inactive_vpay_share = 0;
                 for (auto acnt : voter.producers) {
@@ -1314,7 +1314,7 @@ namespace eosiosystem {
         _gstate.total_voted_fio += new_weight;
 
         if( _gstate.total_voted_fio >= MINVOTEDFIO && _gstate.thresh_voted_fio_time == time_point() ) {
-            _gstate.thresh_voted_fio_time = now();
+            _gstate.thresh_voted_fio_time = current_time_point();
         }
 
         votersbyowner.modify(pitr, same_payer, [&](auto &v) {
