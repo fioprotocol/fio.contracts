@@ -71,7 +71,7 @@ namespace eosiosystem {
 
     void eosiosystem::system_contract::setpriv(const name &account, const uint8_t &ispriv) {
         require_auth(_self);
-        set_privileged(account.value, ispriv);
+        set_privileged(account, ispriv);
 
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
