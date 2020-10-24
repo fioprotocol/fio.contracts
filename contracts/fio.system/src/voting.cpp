@@ -433,7 +433,7 @@ namespace eosiosystem {
          producers.push_back( std::move(item.first) );
 
       auto packed_schedule = pack(producers);
-      if( set_proposed_producers(packed_schedule.data(), packed_schedule.size() ) >= 0 ) {
+      if( set_proposed_producers( producers ) >= 0 ) {
          _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>( top_producers.size() );
       }
     }
@@ -877,7 +877,7 @@ namespace eosiosystem {
         }
 
 
-        boost::container::flat_map <name, pair<double, bool /*new*/>> producer_deltas;
+      std::map<name, std::pair<double, bool /*new*/> > producer_deltas;
         if (voter->last_vote_weight > 0) {
             if (voter->proxy) {
                 auto old_proxy = votersbyowner.find(voter->proxy.value);
