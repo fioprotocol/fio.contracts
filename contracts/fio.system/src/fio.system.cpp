@@ -40,7 +40,7 @@ namespace eosiosystem {
         get_blockchain_parameters(dp);
         return dp;
     }
-
+/*
     time_point eosiosystem::system_contract::current_time_point() {
         const static time_point ct{microseconds{static_cast<int64_t>( current_time())}};
         return ct;
@@ -55,7 +55,7 @@ namespace eosiosystem {
         const static block_timestamp cbt{current_time_point()};
         return cbt;
     }
-
+*/
     eosiosystem::system_contract::~system_contract() {
         _global.set(_gstate, _self);
         _global2.set(_gstate2, _self);
@@ -71,9 +71,9 @@ namespace eosiosystem {
 
     void eosiosystem::system_contract::setpriv(const name &account, const uint8_t &ispriv) {
         require_auth(_self);
-        set_privileged(account.value, ispriv);
+        set_privileged(account, ispriv);
 
-        //fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
 
     }
@@ -86,7 +86,7 @@ namespace eosiosystem {
             p.deactivate();
         });
 
-        //fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
 
     }
@@ -145,9 +145,9 @@ namespace eosiosystem {
             res.cpu_weight = asset(0, FIOSYMBOL);
         });
 
-        set_resource_limits(newact.value, INITIALACCOUNTRAM, -1, -1);
+        set_resource_limits(newact, INITIALACCOUNTRAM, -1, -1);
 
-        //fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
 
     }
@@ -182,11 +182,11 @@ namespace eosiosystem {
         if (itr == table.end()) {
             table.emplace(acnt, [&](auto &row) {
                 row.owner = acnt;
-                sha256(const_cast<char *>(abi.data()), abi.size(), &row.hash);
+                row.hash = sha256(const_cast<char *>(abi.data()), abi.size());
             });
         } else {
             table.modify(itr, same_payer, [&](auto &row) {
-                sha256(const_cast<char *>(abi.data()), abi.size(), &row.hash);
+                row.hash = sha256(const_cast<char *>(abi.data()), abi.size());
             });
         }
     }

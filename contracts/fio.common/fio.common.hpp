@@ -1,7 +1,7 @@
 /** FioCommon implementation file
  *  Description: FioCommon is the helper directory that assists FIO is common tasks
  *  @author Adam Androulidakis, Casey Gardiner, Ed Rotthoff
- *  @modifedby
+ *  @modifedby BlockTome Ltd. October, 2020
  *  @file fio.common.cpp
  *  @license FIO Foundation ( https://github.com/fioprotocol/fio/blob/master/LICENSE ) Dapix
  */
@@ -397,6 +397,18 @@ namespace fioio {
         //end of the public key validity check.
 
         return true;
+    }
+
+    void send_response(const string &s) {
+      eosio::internal_use_do_not_use::send_response(s.c_str());
+    }
+
+    int64_t get_account_ram_usage(const name &n) {
+      return eosio::internal_use_do_not_use::get_account_ram_usage(n);
+    }
+
+    inline uint32_t now() {
+       return (current_time_point().sec_since_epoch());
     }
 
     static const uint64_t INITIALACCOUNTRAM  = 25600;

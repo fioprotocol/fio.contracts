@@ -68,8 +68,8 @@ namespace fioio {
             }
 
             //throw a 400 error if fees to process is empty.
-            //fio_400_assert(fee_ids.size() > 0, "compute fees", "compute fees",
-            //               "No Work.", ErrorNoWork);
+            fio_400_assert(fee_ids.size() > 0, "compute fees", "compute fees",
+                           "No Work.", ErrorNoWork);
 
             vector<uint64_t> votesufs;
             int processed_fees = 0;
@@ -132,8 +132,8 @@ namespace fioio {
                 }
             }
 
-            //fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-            //  "Transaction is too large", ErrorTransactionTooLarge);
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+              "Transaction is too large", ErrorTransactionTooLarge);
 
             return processed_fees;
         }
@@ -169,12 +169,12 @@ namespace fioio {
             //check that the actor is in the top42.
             vector<name> top_prods = getTopProds();
 
-            //fio_400_assert((std::find(top_prods.begin(), top_prods.end(), actor)) !=
-            //    top_prods.end(), "actor", actor.to_string()," Not a top 150 BP",ErrorFioNameNotReg);
+            fio_400_assert((std::find(top_prods.begin(), top_prods.end(), actor)) !=
+                top_prods.end(), "actor", actor.to_string()," Not a top 150 BP",ErrorFioNameNotReg);
 
-            //fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
-            //               ErrorMaxFeeInvalid);
-            const uint32_t nowtime = current_time_point().sec_since_epoch();
+            fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                           ErrorMaxFeeInvalid);
+            const uint32_t nowtime = now();
 
             //get all the votes made by this actor. go through the list
             //and find the fee vote to update.
@@ -199,11 +199,11 @@ namespace fioio {
                 auto feesbyendpoint = fiofees.get_index<"byendpoint"_n>();
                 auto fees_iter = feesbyendpoint.find(endPointHash);
 
-                //fio_400_assert(fees_iter != feesbyendpoint.end(), "end_point", feeval.end_point,
-                //               "invalid end_point", ErrorEndpointNotFound);
+                fio_400_assert(fees_iter != feesbyendpoint.end(), "end_point", feeval.end_point,
+                               "invalid end_point", ErrorEndpointNotFound);
 
-                //fio_400_assert(feeval.value >= 0, "fee_value", feeval.end_point,
-                //               "invalid fee value", ErrorFeeInvalid);
+                fio_400_assert(feeval.value >= 0, "fee_value", feeval.end_point,
+                               "invalid fee value", ErrorFeeInvalid);
 
                 uint64_t feeid = fees_iter->fee_id;
 
@@ -220,7 +220,7 @@ namespace fioio {
                 uint64_t idtoremove;
                 bool found = false;
 
-                //fio_400_assert(!(feevotesv[feeid].timestamp > (nowtime - TIME_BETWEEN_FEE_VOTES_SECONDS)), "", "", "Too soon since last call", ErrorTimeViolation);
+                fio_400_assert(!(feevotesv[feeid].timestamp > (nowtime - TIME_BETWEEN_FEE_VOTES_SECONDS)), "", "", "Too soon since last call", ErrorTimeViolation);
 
                 feevotesv[feeid].end_point = feeval.end_point;
                 feevotesv[feeid].value = feeval.value;
@@ -254,19 +254,19 @@ namespace fioio {
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
             //if the fee isnt found for the endpoint, then 400 error.
-            //fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", SUBMIT_FEE_RATIOS_ENDPOINT,
-            //               "FIO fee not found for endpoint", ErrorNoEndpoint);
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", SUBMIT_FEE_RATIOS_ENDPOINT,
+                           "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             uint64_t reg_amount = fee_iter->suf_amount;
             uint64_t fee_type = fee_iter->type;
 
             //if its not a mandatory fee then this is an error.
-            //fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
-            //               "submit_fee_ratios unexpected fee type for endpoint submit_fee_ratios, expected 0",
-            //               ErrorNoEndpoint);
+            fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                           "submit_fee_ratios unexpected fee type for endpoint submit_fee_ratios, expected 0",
+                           ErrorNoEndpoint);
 
-            //fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
-          //                 ErrorMaxFeeExceeded);
+            fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                           ErrorMaxFeeExceeded);
 
             fio_fees(actor, asset(reg_amount, FIOSYMBOL), SUBMIT_FEE_RATIOS_ENDPOINT);
             processrewardsnotpid(reg_amount, get_self());
@@ -285,10 +285,10 @@ namespace fioio {
                 ).send();
             }
 
-            //fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-            //  "Transaction is too large", ErrorTransactionTooLarge);
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+              "Transaction is too large", ErrorTransactionTooLarge);
 
-            //send_response(response_string.c_str());
+            send_response(response_string.c_str());
         }
 
         /**********
@@ -299,7 +299,7 @@ namespace fioio {
             uint32_t numberprocessed = update_fees();
             const string response_string = string("{\"status\": \"OK\",\"fees_processed\":") +
                                            to_string(numberprocessed) + string("}");
-            eosio::internal_use_do_not_use::send_response(response_string.c_str());
+            send_response(response_string.c_str());
         }
 
        /********
@@ -327,7 +327,7 @@ namespace fioio {
                            " Must be positive",
                            ErrorFioNameNotReg);
 
-            const uint32_t nowtime = current_time_point().sec_since_epoch();
+            const uint32_t nowtime = now();
 
             auto voter_iter = bundlevoters.find(actor.value);
             if (voter_iter != bundlevoters.end()) //update if it exists
@@ -388,7 +388,7 @@ namespace fioio {
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
               "Transaction is too large", ErrorTransactionTooLarge);
 
-            eosio::internal_use_do_not_use::send_response(response_string.c_str());
+            send_response(response_string.c_str());
         }
 
         /**********
@@ -422,7 +422,7 @@ namespace fioio {
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
 
-            const uint32_t nowtime = current_time_point().sec_since_epoch();
+            const uint32_t nowtime = now();
 
             auto voter_iter = feevoters.find(actor.value);
             if (voter_iter != feevoters.end())
@@ -500,7 +500,7 @@ namespace fioio {
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
               "Transaction is too large", ErrorTransactionTooLarge);
 
-            eosio::internal_use_do_not_use::send_response(response_string.c_str());
+            send_response(response_string.c_str());
         }
 
         // @abi action
