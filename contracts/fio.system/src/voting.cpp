@@ -81,7 +81,7 @@ namespace eosiosystem {
             if (debug) {
                 print(" incremented the RAM for account ", accountnm, " saw pre-existing RAM value of  ", ram,
                       "\n");
-                int64_t ramused = get_account_ram_usage(accountnm.value);
+                int64_t ramused = get_account_ram_usage(accountnm);
                 print(" RAM used by account ", accountnm, " is ", ramused, "\n");
             }
             ram += amount;
@@ -398,7 +398,7 @@ namespace eosiosystem {
         //this is the producers exiting the schedule, reset their resoource limits.
         for(int i=0; i < prevprods.size(); i++){
             //get the ram that this account has used.
-            int64_t ram = get_account_ram_usage(prevprods[i].value);
+            int64_t ram = get_account_ram_usage(prevprods[i]);
             if(debug) {
                 print(" de-schedule producer, found ram usage ", ram, " for account ", prevprods[i], "\n");
             }

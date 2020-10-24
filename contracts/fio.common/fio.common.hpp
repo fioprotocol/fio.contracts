@@ -403,6 +403,10 @@ namespace fioio {
       eosio::internal_use_do_not_use::send_response(s.c_str());
     }
 
+    int64_t get_account_ram_usage(const name &n) {
+      return eosio::internal_use_do_not_use::get_account_ram_usage(n);
+    }
+
     inline uint32_t now() {
        return (current_time_point().sec_since_epoch());
     }
