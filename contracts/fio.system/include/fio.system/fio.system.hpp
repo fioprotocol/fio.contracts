@@ -399,7 +399,7 @@ private:
 
     //defined in fio.system.cpp
     static eosio_global_state get_default_parameters();
-
+/*
     static time_point current_time_point();
 
     static time_point_sec current_time_point_sec();
@@ -409,7 +409,7 @@ private:
     // defined in delegate_bandwidth.cpp
     void changebw(name from, name receiver,
                   asset stake_net_quantity, asset stake_cpu_quantity, bool transfer);
-
+*/
     //void update_voting_power(const name &voter, const asset &total_update);
 
     // defined in voting.hpp
