@@ -252,10 +252,11 @@ namespace eosiosystem {
         [[eosio::action]]
         void setabi(const name &account, const std::vector<char> &abi);
 
+/*
         [[eosio::action]]
         void setcode(const name &account, const uint8_t &vmtype, const uint8_t &vmversion, const std::vector<char> &code);
         //special note, dont add code here, setcode will not run this code.
-
+*/
         using newaccount_action = eosio::action_wrapper<"newaccount"_n, &native::newaccount>;
         using updateauth_action = eosio::action_wrapper<"updateauth"_n, &native::updateauth>;
         using deleteauth_action = eosio::action_wrapper<"deleteauth"_n, &native::deleteauth>;
@@ -266,7 +267,7 @@ namespace eosiosystem {
 
         using unlinkauth_action = eosio::action_wrapper<"unlinkauth"_n, &native::unlinkauth>;
         using canceldelay_action = eosio::action_wrapper<"canceldelay"_n, &native::canceldelay>;
-        using setcode_action = eosio::action_wrapper<"setcode"_n, &native::setcode>;
+        //using setcode_action = eosio::action_wrapper<"setcode"_n, &native::setcode>;
         using setabi_action = eosio::action_wrapper<"setabi"_n, &native::setabi>;
     };
 }
