@@ -156,18 +156,6 @@
                                                   },{
                                                     "name": "update_time",
                                                     "type": "uint64"
-                                                  },{
-                                                    "name": "futureuse_string1",
-                                                    "type": "string"
-                                                   },{
-                                                    "name": "futureuse_string2",
-                                                    "type": "string"
-                                                   },{
-                                                    "name": "futureuse_uint64",
-                                                    "type": "uint64"
-                                                  },{
-                                                    "name": "futureuse_uint128",
-                                                    "type": "uint128"
                                                   }
                                                 ]
                                               },{

@@ -161,24 +161,17 @@ namespace fioio {
         string content = "";
         uint64_t update_time = 0;
 
-        //Future use
-        string futureuse_string1 = "";
-        string futureuse_string2 = "";
-        uint64_t futureuse_uint64 = 0;
-        uint128_t futureuse_uint128 = 0;
-
         uint64_t primary_key() const { return id; }
         uint64_t by_requestid() const { return fio_request_id; }
         uint128_t by_receiver() const { return payer_fio_addr_hex; }
         uint128_t by_originator() const { return payee_fio_addr_hex; }
         uint128_t by_payerkey() const { return payer_key_hex; }
         uint128_t by_payeekey() const { return payee_key_hex; }
-        uint128_t by_stduint128() const { return futureuse_uint128; }
 
         EOSLIB_SERIALIZE(fiotrxt,
         (id)(fio_request_id)(payer_fio_addr_hex)(payee_fio_addr_hex)(fio_data_type)(init_time)
                 (payer_fio_addr)(payee_fio_addr)(payer_key)(payee_key)(payer_key_hex)(payee_key_hex)
-                (content)(update_time)(futureuse_string1)(futureuse_string2)(futureuse_uint64)(futureuse_uint128)
+                (content)(update_time)
         )
     };
 
@@ -187,8 +180,7 @@ namespace fioio {
     indexed_by<"byreceiver"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_receiver>>,
     indexed_by<"byoriginator"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_originator>>,
     indexed_by<"bypayerkey"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_payerkey>>,
-    indexed_by<"bypayeekey"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_payeekey>>,
-    indexed_by<"bystduint"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_stduint128>
+    indexed_by<"bypayeekey"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_payeekey>
     >>
     fiotrxt_contexts_table;
 
