@@ -356,6 +356,7 @@ namespace fioio {
                 }
             }
         }
+        // END OF TEMP MIGRATION ACTION
 
 
          /*******
@@ -498,8 +499,11 @@ namespace fioio {
                 requestId = std::atoi(fio_request_id.c_str());
 
                 auto fioreqctx_iter = fiorequestContextsTable.find(requestId);
+
+                // USED FOR MIGRATION
                 auto trxtByRequestId = fioTransactionsTable.get_index<"byrequestid"_n>();
                 auto fioreqctx_iter2 = trxtByRequestId.find(requestId);
+                // USED FOR MIGRATION
 
                 fio_400_assert(fioreqctx_iter != fiorequestContextsTable.end(), "fio_request_id", fio_request_id,
                                "No such FIO Request ", ErrorRequestContextNotFound);
@@ -509,6 +513,7 @@ namespace fioio {
                 name payer_acct = name(payer_account.c_str());
                 fio_403_assert(aactor == payer_acct, ErrorSignature);
 
+                // USED FOR MIGRATION
                 if(fioreqctx_iter2 != trxtByRequestId.end()){
                     trxtByRequestId.modify(fioreqctx_iter2, _self, [&](struct fiotrxt &fr) {
                         fr.fio_data_type = static_cast<int64_t>(trxstatus::sent_to_blockchain);
@@ -532,6 +537,7 @@ namespace fioio {
                         req.transactions.obt_action_ids.insert(req.transactions.obt_action_ids.begin(), requestId);
                     });
                 }
+                // USED FOR MIGRATION
 
                 //look for other statuses for this request.
                 auto statusByRequestId = fiorequestStatusTable.get_index<"byfioreqid"_n>();
@@ -557,6 +563,8 @@ namespace fioio {
                 const string payeewtimestr = payee_fio_address + to_string(currentTime);
                 const uint128_t payeewtime = string_to_uint128_hash(payeewtimestr.c_str());
                 const uint128_t payerwtime = string_to_uint128_hash(payerwtimestr.c_str());
+
+                // USED FOR MIGRATION
                 const uint128_t payeeKeyHash = string_to_uint128_hash(payee_key.c_str());
                 const uint128_t payerKeyHash = string_to_uint128_hash(payer_key.c_str());
 
@@ -613,6 +621,7 @@ namespace fioio {
                         });
                     }
                 }
+                // USED FOR MIGRATION
 
                 recordObtTable.emplace(aactor, [&](struct recordobt_info &obtinf) {
                     obtinf.id = id;
@@ -791,8 +800,11 @@ namespace fioio {
             const uint128_t payerwtime = string_to_uint128_hash(payerwtimestr.c_str());
             const string toHashStr = "0x" + to_hex((char *) &toHash, sizeof(toHash));
             const string fromHashStr = "0x" + to_hex((char *) &fromHash, sizeof(fromHash));
+
+            // USED FOR MIGRATION
             const uint128_t payeeKeyHash = string_to_uint128_hash(payee_key.c_str());
             const uint128_t payerKeyHash = string_to_uint128_hash(payer_key.c_str());
+            // USED FOR MIGRATION
 
             fiorequestContextsTable.emplace(aActor, [&](struct fioreqctxt &frc) {
                 frc.fio_request_id = id;
@@ -810,6 +822,7 @@ namespace fioio {
                 frc.payer_key = payer_key;
             });
 
+            // USED FOR MIGRATION
             auto trxt_iter = fioTransactionsTable.begin();
             if(trxt_iter != fioTransactionsTable.end()){
                 string payer_acct;
@@ -864,6 +877,7 @@ namespace fioio {
                     });
                 }
             }
+            // USED FOR MIGRATION
 
            const string response_string = string("{\"fio_request_id\":") + to_string(id) + string(",\"status\":\"requested\"") +
                                     string(",\"fee_collected\":") + to_string(fee_amount) + string("}");
@@ -918,8 +932,12 @@ namespace fioio {
             requestId = std::atoi(fio_request_id.c_str());
 
             auto fioreqctx_iter = fiorequestContextsTable.find(requestId);
+
+            // USED FOR MIGRATION
             auto trxtByRequestId = fioTransactionsTable.get_index<"byrequestid"_n>();
             auto fioreqctx2_iter = trxtByRequestId.find(requestId);
+            // USED FOR MIGRATION
+
             fio_400_assert(fioreqctx_iter != fiorequestContextsTable.end(), "fio_request_id", fio_request_id,
                            "No such FIO Request", ErrorRequestContextNotFound);
 
@@ -930,8 +948,12 @@ namespace fioio {
                            "Only pending requests can be rejected.", ErrorRequestStatusInvalid);
 
             const uint128_t payer128FioAddHashed = fioreqctx_iter->payer_fio_address;
+
+            // USED FOR MIGRATION
             const string payer_key = fioreqctx_iter->payer_key;
             const string payee_key = fioreqctx_iter->payee_key;
+            // USED FOR MIGRATION
+
             const uint32_t present_time = now();
 
             auto namesbyname = fionames.get_index<"byname"_n>();
@@ -1014,6 +1036,7 @@ namespace fioio {
                 fr.time_stamp = currentTime;
             });
 
+            // USED FOR MIGRATION
             if(fioreqctx2_iter != trxtByRequestId.end()){
                 const uint64_t id = fioreqctx2_iter->id;
                 string payer_acct;
@@ -1031,6 +1054,7 @@ namespace fioio {
                     fr.update_time = currentTime;
                 });
             }
+            // USED FOR MIGRATION
 
             const string response_string = string("{\"status\": \"request_rejected\",\"fee_collected\":") +
                                      to_string(fee_amount) + string("}");
@@ -1084,14 +1108,22 @@ namespace fioio {
         requestId = std::atoi(fio_request_id.c_str());
 
         auto fioreqctx_iter = fiorequestContextsTable.find(requestId);
+
+        // USED FOR MIGRATION
         auto trxtByRequestId = fioTransactionsTable.get_index<"byrequestid"_n>();
         auto fioreqctx2_iter = trxtByRequestId.find(requestId);
+        // USED FOR MIGRATION
+
         fio_400_assert(fioreqctx_iter != fiorequestContextsTable.end(), "fio_request_id", fio_request_id,
                        "No such FIO Request", ErrorRequestContextNotFound);
 
         const uint128_t payee128FioAddHashed = fioreqctx_iter->payee_fio_address;
+
+        // USED FOR MIGRATION
         const string payer_key = fioreqctx_iter->payer_key;
         const string payee_key = fioreqctx_iter->payee_key;
+        // USED FOR MIGRATION
+
         const uint32_t present_time = now();
 
         //look for other statuses for this request.
@@ -1180,6 +1212,7 @@ namespace fioio {
             fr.time_stamp = currentTime;
         });
 
+        // USED FOR MIGRATION
         if(fioreqctx2_iter != trxtByRequestId.end()){
             const uint64_t id = fioreqctx2_iter->id;
             string payer_acct;
@@ -1205,6 +1238,7 @@ namespace fioio {
                 fr.update_time = currentTime;
             });
         }
+        // USED FOR MIGRATION
 
         const string response_string = string("{\"status\": \"cancelled\",\"fee_collected\":") +
                                        to_string(fee_amount) + string("}");
