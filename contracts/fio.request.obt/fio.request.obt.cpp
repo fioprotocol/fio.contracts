@@ -564,29 +564,54 @@ namespace fioio {
                 string payee_acct;
                 key_to_account(payer_key, payer_acct);
                 key_to_account(payee_key, payee_acct);
-                auto ledg_iter = ledgerTable.find(name(payer_acct.c_str()).value);
-                auto ledg_iter2 = ledgerTable.find(name(payee_acct.c_str()).value);
 
-                if (ledg_iter == ledgerTable.end()) {
-                    ledgerTable.emplace(aactor, [&](struct reqledger &req) {
-                        req.account = name(payer_acct.c_str()).value;
-                        req.transactions.obt_action_ids.insert(req.transactions.obt_action_ids.begin(), id);
-                    });
-                } else {
-                    ledgerTable.modify(ledg_iter, _self, [&](struct reqledger &req) {
-                        req.transactions.obt_action_ids.insert(req.transactions.obt_action_ids.begin(), id);
-                    });
-                }
+                auto trxt_iter = fioTransactionsTable.begin();
+                if(trxt_iter != fioTransactionsTable.end()){
+                    auto ledg_iter = ledgerTable.find(name(payer_acct.c_str()).value);
+                    auto ledg_iter2 = ledgerTable.find(name(payee_acct.c_str()).value);
 
-                if (ledg_iter2 == ledgerTable.end()) {
-                    ledgerTable.emplace(aactor, [&](struct reqledger &req) {
-                        req.account = name(payee_acct.c_str()).value;
-                        req.transactions.obt_action_ids.insert(req.transactions.obt_action_ids.begin(), id);
+                    if (ledg_iter == ledgerTable.end()) {
+                        ledgerTable.emplace(aactor, [&](struct reqledger &req) {
+                            req.account = name(payer_acct.c_str()).value;
+                            req.transactions.obt_action_ids.insert(req.transactions.obt_action_ids.begin(), id);
+                        });
+                    } else {
+                        ledgerTable.modify(ledg_iter, _self, [&](struct reqledger &req) {
+                            req.transactions.obt_action_ids.insert(req.transactions.obt_action_ids.begin(), id);
+                        });
+                    }
+
+                    if (ledg_iter2 == ledgerTable.end()) {
+                        ledgerTable.emplace(aactor, [&](struct reqledger &req) {
+                            req.account = name(payee_acct.c_str()).value;
+                            req.transactions.obt_action_ids.insert(req.transactions.obt_action_ids.begin(), id);
+                        });
+                    } else {
+                        ledgerTable.modify(ledg_iter2, _self, [&](struct reqledger &req) {
+                            req.transactions.obt_action_ids.insert(req.transactions.obt_action_ids.begin(), id);
+                        });
+                    }
+                    fioTransactionsTable.emplace(aactor, [&](struct fiotrxt &obtinf) {
+                        obtinf.id = id + 1;
+                        obtinf.payer_fio_addr_hex = fromHash;
+                        obtinf.payee_fio_addr_hex = toHash;
+                        obtinf.content = content;
+                        obtinf.fio_data_type = static_cast<int64_t>(trxstatus::obt_action);
+                        obtinf.init_time = currentTime;
+                        obtinf.payer_fio_addr = payer_fio_address;
+                        obtinf.payee_fio_addr = payee_fio_address;
+                        obtinf.payee_key = payee_key;
+                        obtinf.payer_key = payer_key;
+                        obtinf.payee_key_hex = payeeKeyHash;
+                        obtinf.payer_key_hex = payerKeyHash;
                     });
-                } else {
-                    ledgerTable.modify(ledg_iter2, _self, [&](struct reqledger &req) {
-                        req.transactions.obt_action_ids.insert(req.transactions.obt_action_ids.begin(), id);
-                    });
+
+                    auto migrTable = mgrStatsTable.begin();
+                    if (migrTable != mgrStatsTable.end() && migrTable->beginobt != -1) {
+                        mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
+                            strc.beginobt = id;
+                        });
+                    }
                 }
 
                 recordObtTable.emplace(aactor, [&](struct recordobt_info &obtinf) {
@@ -604,28 +629,6 @@ namespace fioio {
                     obtinf.payee_key = payee_key;
                     obtinf.payer_key = payer_key;
                 });
-
-                fioTransactionsTable.emplace(aactor, [&](struct fiotrxt &obtinf) {
-                    obtinf.id = id + 1;
-                    obtinf.payer_fio_addr_hex = fromHash;
-                    obtinf.payee_fio_addr_hex = toHash;
-                    obtinf.content = content;
-                    obtinf.fio_data_type = static_cast<int64_t>(trxstatus::obt_action);
-                    obtinf.init_time = currentTime;
-                    obtinf.payer_fio_addr = payer_fio_address;
-                    obtinf.payee_fio_addr = payee_fio_address;
-                    obtinf.payee_key = payee_key;
-                    obtinf.payer_key = payer_key;
-                    obtinf.payee_key_hex = payeeKeyHash;
-                    obtinf.payer_key_hex = payerKeyHash;
-                });
-
-                auto migrTable = mgrStatsTable.begin();
-                if (migrTable != mgrStatsTable.end()) {
-                    mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
-                        strc.beginobt = id;
-                    });
-                }
             }
 
             const string response_string = string("{\"status\": \"sent_to_blockchain\",\"fee_collected\":") +
@@ -807,56 +810,59 @@ namespace fioio {
                 frc.payer_key = payer_key;
             });
 
-            string payer_acct;
-            string payee_acct;
-            key_to_account(payer_key, payer_acct);
-            key_to_account(payee_key, payee_acct);
-            auto ledg_iter = ledgerTable.find(name(payer_acct.c_str()).value);
-            auto ledg_iter2 = ledgerTable.find(name(payee_acct.c_str()).value);
+            auto trxt_iter = fioTransactionsTable.begin();
+            if(trxt_iter != fioTransactionsTable.end()){
+                string payer_acct;
+                string payee_acct;
+                key_to_account(payer_key, payer_acct);
+                key_to_account(payee_key, payee_acct);
+                auto ledg_iter = ledgerTable.find(name(payer_acct.c_str()).value);
+                auto ledg_iter2 = ledgerTable.find(name(payee_acct.c_str()).value);
 
-            if (ledg_iter == ledgerTable.end()) {
-                ledgerTable.emplace(aActor, [&](struct reqledger &req) {
-                    req.account = name(payer_acct.c_str()).value;
-                    req.transactions.pending_action_ids.insert(req.transactions.pending_action_ids.begin(), id);
-                });
-            } else {
-                ledgerTable.modify(ledg_iter, _self, [&](struct reqledger &req) {
-                    req.transactions.pending_action_ids.insert(req.transactions.pending_action_ids.begin(), id);
-                });
-            }
+                if (ledg_iter == ledgerTable.end()) {
+                    ledgerTable.emplace(aActor, [&](struct reqledger &req) {
+                        req.account = name(payer_acct.c_str()).value;
+                        req.transactions.pending_action_ids.insert(req.transactions.pending_action_ids.begin(), id);
+                    });
+                } else {
+                    ledgerTable.modify(ledg_iter, _self, [&](struct reqledger &req) {
+                        req.transactions.pending_action_ids.insert(req.transactions.pending_action_ids.begin(), id);
+                    });
+                }
 
-            if (ledg_iter2 == ledgerTable.end()) {
-                ledgerTable.emplace(aActor, [&](struct reqledger &req) {
-                    req.account = name(payee_acct.c_str()).value;
-                    req.transactions.sent_action_ids.insert(req.transactions.sent_action_ids.begin(), id);
-                });
-            } else {
-                ledgerTable.modify(ledg_iter2, _self, [&](struct reqledger &req) {
-                    req.transactions.sent_action_ids.insert(req.transactions.sent_action_ids.begin(), id);
-                });
-            }
+                if (ledg_iter2 == ledgerTable.end()) {
+                    ledgerTable.emplace(aActor, [&](struct reqledger &req) {
+                        req.account = name(payee_acct.c_str()).value;
+                        req.transactions.sent_action_ids.insert(req.transactions.sent_action_ids.begin(), id);
+                    });
+                } else {
+                    ledgerTable.modify(ledg_iter2, _self, [&](struct reqledger &req) {
+                        req.transactions.sent_action_ids.insert(req.transactions.sent_action_ids.begin(), id);
+                    });
+                }
 
-            fioTransactionsTable.emplace(aActor, [&](struct fiotrxt &frc) {
-                frc.id = id;
-                frc.fio_request_id = id;
-                frc.payer_fio_addr_hex = fromHash;
-                frc.payee_fio_addr_hex = toHash;
-                frc.content = content;
-                frc.fio_data_type = static_cast<int64_t>(trxstatus::requested);
-                frc.init_time = currentTime;
-                frc.payer_fio_addr = payer_fio_address;
-                frc.payee_fio_addr = payee_fio_address;
-                frc.payee_key = payee_key;
-                frc.payer_key = payer_key;
-                frc.payee_key_hex = payeeKeyHash;
-                frc.payer_key_hex = payerKeyHash;
-            });
-
-            auto migrTable = mgrStatsTable.begin();
-            if (migrTable != mgrStatsTable.end()) {
-                mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
-                    strc.beginrq = id;
+                fioTransactionsTable.emplace(aActor, [&](struct fiotrxt &frc) {
+                    frc.id = id;
+                    frc.fio_request_id = id;
+                    frc.payer_fio_addr_hex = fromHash;
+                    frc.payee_fio_addr_hex = toHash;
+                    frc.content = content;
+                    frc.fio_data_type = static_cast<int64_t>(trxstatus::requested);
+                    frc.init_time = currentTime;
+                    frc.payer_fio_addr = payer_fio_address;
+                    frc.payee_fio_addr = payee_fio_address;
+                    frc.payee_key = payee_key;
+                    frc.payer_key = payer_key;
+                    frc.payee_key_hex = payeeKeyHash;
+                    frc.payer_key_hex = payerKeyHash;
                 });
+
+                auto migrTable = mgrStatsTable.begin();
+                if (migrTable != mgrStatsTable.end() && migrTable->beginrq != -1) {
+                    mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
+                        strc.beginrq = id;
+                    });
+                }
             }
 
            const string response_string = string("{\"fio_request_id\":") + to_string(id) + string(",\"status\":\"requested\"") +
