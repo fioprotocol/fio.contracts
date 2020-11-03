@@ -343,6 +343,27 @@
         }
       ]
     },{
+            "name": "burnaddress",
+            "base": "",
+            "fields": [
+              {
+                "name": "fio_address",
+                "type": "string"
+              },
+              {
+                "name": "max_fee",
+                "type": "int64"
+              },
+              {
+                "name": "tpid",
+                "type": "string"
+              },
+              {
+                "name": "actor",
+                "type": "name"
+              }
+            ]
+          },{
        "name": "xferdomain",
        "base": "",
        "fields": [
@@ -450,6 +471,10 @@
       "type": "bind2eosio",
       "ricardian_contract": ""
     },{
+           "name": "burnaddress",
+           "type": "burnaddress",
+           "ricardian_contract": ""
+         },{
       "name": "xferdomain",
       "type": "xferdomain",
       "ricardian_contract": ""
