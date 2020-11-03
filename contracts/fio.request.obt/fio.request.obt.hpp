@@ -195,4 +195,26 @@ namespace fioio {
     };
 
     typedef multi_index<"reqledgers"_n, reqledger> reqledgers_table;
+
+    struct [[eosio::action]] migrledger {
+
+        uint64_t id;
+
+        int beginobt = -1;
+        int currentobt = 0;
+
+        int beginrq = -1;
+        int currentrq = 0;
+
+        int beginsta = -1;
+        int currentsta = 0;
+
+        bool isFinished = false;
+
+        uint64_t primary_key() const { return id; }
+
+        EOSLIB_SERIALIZE(migrledger, (id)(beginobt)(currentobt)(beginrq)(currentrq)(beginsta)(currentsta))
+    };
+
+    typedef multi_index<"migrledgers"_n, migrledger> migrledgers_table;
 }
