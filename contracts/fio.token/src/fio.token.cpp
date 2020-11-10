@@ -304,7 +304,7 @@ namespace eosio {
                            "Account does not exist on FIO chain but is bound in eosionames",
                            ErrorPubAddressExist);
 
-            eosio_assert_message_code(payee_public_key == other->clientkey, "FIO account already bound",
+            eosio::internal_use_do_not_use::eosio_assert_message_code(payee_public_key == other->clientkey, "FIO account already bound",
                                       fioio::ErrorPubAddressExist);
         }
 
