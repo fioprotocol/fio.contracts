@@ -165,8 +165,8 @@ namespace eosiosystem {
                 //todo add code to check that if there is a single auth key, the key matches the value in the account map.
             }
 
-            //fio_400_assert(auth.waits.size() == 0, "authorization_waits", "authorization_waits",
-            //               "Waits not supported", ErrorNoAuthWaits);
+            fio_400_assert(auth.waits.size() == 0, "authorization_waits", "authorization_waits",
+                           "Waits not supported", ErrorNoAuthWaits);
 
             if (UPDATEAUTHRAM > 0) {
                 //get the tx size and divide by 1000
@@ -199,8 +199,8 @@ namespace eosiosystem {
                    std::make_tuple(std::string("auth_delete"), account, max_fee)
             }.send();
 
-            //fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-            //  "Transaction is too large", ErrorTransactionTooLarge);
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+              "Transaction is too large", ErrorTransactionTooLarge);
         }
 
         [[eosio::action]]
@@ -227,8 +227,8 @@ namespace eosiosystem {
                 ).send();
             }
 
-            //fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-            //  "Transaction is too large", ErrorTransactionTooLarge);
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+              "Transaction is too large", ErrorTransactionTooLarge);
         }
 
         [[eosio::action]]
@@ -252,10 +252,11 @@ namespace eosiosystem {
         [[eosio::action]]
         void setabi(const name &account, const std::vector<char> &abi);
 
+/*
         [[eosio::action]]
         void setcode(const name &account, const uint8_t &vmtype, const uint8_t &vmversion, const std::vector<char> &code);
         //special note, dont add code here, setcode will not run this code.
-
+*/
         using newaccount_action = eosio::action_wrapper<"newaccount"_n, &native::newaccount>;
         using updateauth_action = eosio::action_wrapper<"updateauth"_n, &native::updateauth>;
         using deleteauth_action = eosio::action_wrapper<"deleteauth"_n, &native::deleteauth>;
@@ -266,7 +267,7 @@ namespace eosiosystem {
 
         using unlinkauth_action = eosio::action_wrapper<"unlinkauth"_n, &native::unlinkauth>;
         using canceldelay_action = eosio::action_wrapper<"canceldelay"_n, &native::canceldelay>;
-        using setcode_action = eosio::action_wrapper<"setcode"_n, &native::setcode>;
+        //using setcode_action = eosio::action_wrapper<"setcode"_n, &native::setcode>;
         using setabi_action = eosio::action_wrapper<"setabi"_n, &native::setabi>;
     };
 }

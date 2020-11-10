@@ -304,7 +304,7 @@ namespace eosio {
                            "Account does not exist on FIO chain but is bound in eosionames",
                            ErrorPubAddressExist);
 
-            eosio_assert_message_code(payee_public_key == other->clientkey, "FIO account already bound",
+            eosio::internal_use_do_not_use::eosio_assert_message_code(payee_public_key == other->clientkey, "FIO account already bound",
                                       fioio::ErrorPubAddressExist);
         }
 
@@ -365,7 +365,7 @@ namespace eosio {
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
 
-        //send_response(response_string.c_str());
+        send_response(response_string.c_str());
 
     }
 
