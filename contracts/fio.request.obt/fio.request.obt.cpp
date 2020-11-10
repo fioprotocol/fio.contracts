@@ -143,17 +143,17 @@ namespace fioio {
             string payee_key = account_iter->clientkey;
 
             //begin fees, bundle eligible fee logic
-            uint128_t endpoint_hash = string_to_uint128_hash("record_obt_data");
+            uint128_t endpoint_hash = string_to_uint128_hash(RECORD_OBT_DATA_ENDPOINT);
 
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
 
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "record_obt_data",
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", RECORD_OBT_DATA_ENDPOINT,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             uint64_t fee_type = fee_iter->type;
             fio_400_assert(fee_type == 1, "fee_type", to_string(fee_type),
-                           "record_obt_data unexpected fee type for endpoint record_obt_data, expected 1", ErrorNoEndpoint);
+                           "unexpected fee type for endpoint record_obt_data, expected 1", ErrorNoEndpoint);
 
             uint64_t fee_amount = 0;
 
@@ -169,7 +169,7 @@ namespace fioio {
                 fio_400_assert(max_fee >= (int64_t)fee_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
                                ErrorMaxFeeExceeded);
 
-                fio_fees(aactor, asset(fee_amount, FIOSYMBOL));
+                fio_fees(aactor, asset(fee_amount, FIOSYMBOL), RECORD_OBT_DATA_ENDPOINT);
                 process_rewards(tpid, fee_amount, get_self(), aactor);
 
                 if (fee_amount > 0) {
@@ -189,7 +189,7 @@ namespace fioio {
                 auto fioreqctx_iter = fiorequestContextsTable.find(requestId);
                 fio_400_assert(fioreqctx_iter != fiorequestContextsTable.end(), "fio_request_id", fio_request_id,
                                "No such FIO Request ", ErrorRequestContextNotFound);
-                
+
                 string payer_account;
                 key_to_account(fioreqctx_iter->payer_key, payer_account);
                 name payer_acct = name(payer_account.c_str());
@@ -348,17 +348,17 @@ namespace fioio {
             fio_403_assert(account == aActor.value, ErrorSignature);
 
             //begin fees, bundle eligible fee logic
-            const uint128_t endpoint_hash = string_to_uint128_hash("new_funds_request");
+            const uint128_t endpoint_hash = string_to_uint128_hash(NEW_FUNDS_REQUEST_ENDPOINT);
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
 
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "new_funds_request",
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", NEW_FUNDS_REQUEST_ENDPOINT,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             const uint64_t fee_type = fee_iter->type;
 
             fio_400_assert(fee_type == 1, "fee_type", to_string(fee_type),
-                           "new_funds_request unexpected fee type for endpoint new_funds_request, expected 1",
+                           "unexpected fee type for endpoint new_funds_request, expected 1",
                            ErrorNoEndpoint);
 
             uint64_t fee_amount = 0;
@@ -375,7 +375,7 @@ namespace fioio {
                 fio_400_assert(max_fee >= (int64_t)fee_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
                                ErrorMaxFeeExceeded);
 
-                fio_fees(aActor, asset(fee_amount, FIOSYMBOL));
+                fio_fees(aActor, asset(fee_amount, FIOSYMBOL), NEW_FUNDS_REQUEST_ENDPOINT);
                 process_rewards(tpid, fee_amount, get_self(),aActor);
 
                 if (fee_amount > 0) {
@@ -470,6 +470,12 @@ namespace fioio {
             fio_400_assert(fioreqctx_iter != fiorequestContextsTable.end(), "fio_request_id", fio_request_id,
                            "No such FIO Request", ErrorRequestContextNotFound);
 
+            //verify pending request only
+            auto statusByRequestId = fiorequestStatusTable.get_index<"byfioreqid"_n>();
+            auto fioreqstss_iter = statusByRequestId.find(requestId);
+            fio_400_assert(fioreqstss_iter->status == 0, "fio_request_id", fio_request_id,
+                           "Only pending requests can be rejected.", ErrorRequestStatusInvalid);
+
             const uint128_t payer128FioAddHashed = fioreqctx_iter->payer_fio_address;
             const uint32_t present_time = now();
 
@@ -477,6 +483,7 @@ namespace fioio {
             auto fioname_iter = namesbyname.find(payer128FioAddHashed);
 
             fio_403_assert(fioname_iter != namesbyname.end(), ErrorSignature);
+
             const uint64_t account = fioname_iter->owner_account;
             const uint64_t payernameexp = fioname_iter->expiration;
             const string payerFioAddress = fioname_iter->name;
@@ -505,12 +512,12 @@ namespace fioio {
             fio_403_assert(account == aactor.value, ErrorSignature);
 
             //begin fees, bundle eligible fee logic
-            const uint128_t endpoint_hash = string_to_uint128_hash("reject_funds_request");
+            const uint128_t endpoint_hash = string_to_uint128_hash(REJECT_FUNDS_REQUEST_ENDPOINT);
 
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
 
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "reject_funds_request",
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", REJECT_FUNDS_REQUEST_ENDPOINT,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             const uint64_t fee_type = fee_iter->type;
@@ -533,7 +540,7 @@ namespace fioio {
                                "Fee exceeds supplied maximum.",
                                ErrorMaxFeeExceeded);
 
-                fio_fees(aactor, asset(fee_amount, FIOSYMBOL));
+                fio_fees(aactor, asset(fee_amount, FIOSYMBOL), REJECT_FUNDS_REQUEST_ENDPOINT);
                 process_rewards(tpid, fee_amount, get_self(), aactor);
 
                 if (fee_amount > 0) {
@@ -649,12 +656,12 @@ namespace fioio {
         fio_403_assert(account == aactor.value, ErrorSignature);
 
         //begin fees, bundle eligible fee logic
-        const uint128_t endpoint_hash = string_to_uint128_hash("cancel_funds_request");
+        const uint128_t endpoint_hash = string_to_uint128_hash(CANCEL_FUNDS_REQUEST_ENDPOINT);
 
         auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
         auto fee_iter = fees_by_endpoint.find(endpoint_hash);
 
-        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "cancel_funds_request",
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", CANCEL_FUNDS_REQUEST_ENDPOINT,
                        "FIO fee not found for endpoint", ErrorNoEndpoint);
 
         const uint64_t fee_type = fee_iter->type;
@@ -677,7 +684,7 @@ namespace fioio {
                            "Fee exceeds supplied maximum.",
                            ErrorMaxFeeExceeded);
 
-            fio_fees(aactor, asset(fee_amount, FIOSYMBOL));
+            fio_fees(aactor, asset(fee_amount, FIOSYMBOL), CANCEL_FUNDS_REQUEST_ENDPOINT);
             process_rewards(tpid, fee_amount, get_self(), aactor);
 
             if (fee_amount > 0) {
