@@ -702,7 +702,7 @@ namespace fioio {
           fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
             "Transaction is too large", ErrorTransactionTooLarge);
 
-           //send_response(response_string.c_str());
+           send_response(response_string.c_str());
         }
 
         [[eosio::action]]
@@ -773,7 +773,7 @@ namespace fioio {
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
               "Transaction is too large", ErrorTransactionTooLarge);
 
-            //send_response(response_string.c_str());
+            send_response(response_string.c_str());
         }
 
        /***********
@@ -858,7 +858,7 @@ namespace fioio {
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
               "Transaction is too large", ErrorTransactionTooLarge);
 
-            //send_response(response_string.c_str());
+            send_response(response_string.c_str());
         }
 
         /**********
@@ -959,7 +959,7 @@ namespace fioio {
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
               "Transaction is too large", ErrorTransactionTooLarge);
 
-            //send_response(response_string.c_str());
+            send_response(response_string.c_str());
         }
 
         /*
@@ -1099,7 +1099,7 @@ namespace fioio {
            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
              "Transaction is too large", ErrorTransactionTooLarge);
 
-            //send_response(response_string.c_str());
+            send_response(response_string.c_str());
         }
 
         /***
@@ -1147,7 +1147,7 @@ namespace fioio {
                 ).send();
             }
 
-            //send_response(response_string.c_str());
+            send_response(response_string.c_str());
         } //addaddress
 
         /***
@@ -1187,7 +1187,7 @@ namespace fioio {
                            "Transaction is too large", ErrorTransactionTooLarge);
 
 
-            //send_response(response_string.c_str());
+            send_response(response_string.c_str());
         } //remaddress
 
         /***
@@ -1222,7 +1222,7 @@ namespace fioio {
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
                            "Transaction is too large", ErrorTransactionTooLarge);
 
-            //send_response(response_string.c_str());
+            send_response(response_string.c_str());
         } //remalladdr
 
 
@@ -1316,7 +1316,7 @@ namespace fioio {
           fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
             "Transaction is too large", ErrorTransactionTooLarge);
 
-            //send_response(response_string.c_str());
+            send_response(response_string.c_str());
         }
 
         /**
@@ -1450,7 +1450,7 @@ namespace fioio {
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
                            "Transaction is too large", ErrorTransaction);
 
-            //send_response(response_string.c_str());
+            send_response(response_string.c_str());
         }
 
         [[eosio::action]]
@@ -1533,7 +1533,7 @@ namespace fioio {
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
                            "Transaction is too large", ErrorTransaction);
 
-            //send_response(response_string.c_str());
+            send_response(response_string.c_str());
 
         }
 
@@ -1609,7 +1609,7 @@ namespace fioio {
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
                            "Transaction is too large", ErrorTransaction);
 
-            //send_response(response_string.c_str());
+            send_response(response_string.c_str());
         }
 
         void decrcounter(const string &fio_address, const int32_t &step) {
