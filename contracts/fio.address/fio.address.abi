@@ -413,7 +413,32 @@
            "type": "name"
          }
        ]
-     }
+     },{
+        "name": "addbundles",
+        "base": "",
+        "fields": [
+          {
+            "name": "fio_address",
+            "type": "string"
+          },
+          {
+            "name": "bundle_sets",
+            "type": "int64"
+          },
+          {
+            "name": "max_fee",
+            "type": "int64"
+          },
+          {
+            "name": "tpid",
+            "type": "string"
+          },
+          {
+            "name": "actor",
+            "type": "name"
+          }
+        ]
+      }
   ],
   "actions": [
     {
@@ -481,6 +506,10 @@
     },{
       "name": "xferaddress",
       "type": "xferaddress",
+      "ricardian_contract": ""
+    },{
+      "name": "addbundles",
+      "type": "addbundles",
       "ricardian_contract": ""
     }
   ],
