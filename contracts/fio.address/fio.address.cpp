@@ -107,7 +107,7 @@ namespace fioio {
                     fio_400_assert(accountExists, "owner_account", owner_account,
                                    "Account does not exist on FIO chain but is bound in accountmap",
                                    ErrorPubAddressExist);
-                    eosio_assert_message_code(owner_fio_public_key == other->clientkey, "FIO account already bound",
+                    eosio::internal_use_do_not_use::eosio_assert_message_code(owner_fio_public_key == other->clientkey, "FIO account already bound",
                                               ErrorPubAddressExist);
                 }
             }
@@ -1339,10 +1339,10 @@ namespace fioio {
                           "Invalid FIO Public Key", ErrorPubKeyValid);
             auto other = accountmap.find(account.value);
             if (other != accountmap.end()) {
-                eosio_assert_message_code(existing && client_key == other->clientkey, "EOSIO account already bound",
+                eosio::internal_use_do_not_use::eosio_assert_message_code(existing && client_key == other->clientkey, "EOSIO account already bound",
                                           ErrorPubAddressExist);
             } else {
-                eosio_assert_message_code(!existing, "existing EOSIO account not bound to a key", ErrorPubAddressExist);
+                eosio::internal_use_do_not_use::eosio_assert_message_code(!existing, "existing EOSIO account not bound to a key", ErrorPubAddressExist);
                 accountmap.emplace(get_self(), [&](struct eosio_name &p) {
                     p.account = account.value;
                     p.clientkey = client_key;
