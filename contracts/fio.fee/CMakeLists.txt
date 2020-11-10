@@ -1,4 +1,4 @@
-add_contract(fio.system fio.fee ${CMAKE_CURRENT_SOURCE_DIR}/fio.fee.cpp)
+add_contract(fio.fee fio.fee ${CMAKE_CURRENT_SOURCE_DIR}/fio.fee.cpp)
 
 target_include_directories(fio.fee
         PUBLIC
