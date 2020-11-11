@@ -1685,7 +1685,7 @@ namespace fioio {
                            "Fee exceeds supplied maximum.",
                            ErrorMaxFeeExceeded);
 
-            fio_fees(actor, asset(fee_amount, FIOSYMBOL));
+            fio_fees(actor, asset(fee_amount, FIOSYMBOL), ADD_BUNDLED_TRANSACTION_ENDPOINT);
             processbucketrewards(tpid, fee_amount, get_self(), actor);
 
             const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
