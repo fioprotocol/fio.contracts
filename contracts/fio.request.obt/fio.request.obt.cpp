@@ -182,7 +182,7 @@ namespace fioio {
             //end fees, bundle eligible fee logic
 
             if (fio_request_id.length() > 0) {
-                uint64_t currentTime = current_time();
+                const uint64_t currentTime = static_cast<uint64_t>(now());
                 uint64_t requestId;
                 requestId = std::atoi(fio_request_id.c_str());
 
@@ -461,7 +461,7 @@ namespace fioio {
             fio_400_assert(fio_request_id.length() > 0 && fio_request_id.length() < 16, "fio_request_id", fio_request_id, "No value specified",
                            ErrorRequestContextNotFound);
 
-           const uint64_t currentTime = current_time();
+            const uint64_t currentTime = static_cast<uint64_t>(now());
             uint64_t requestId;
 
             requestId = std::atoi(fio_request_id.c_str());
@@ -599,7 +599,7 @@ namespace fioio {
         fio_400_assert(fio_request_id.length() > 0 && fio_request_id.length() < 16, "fio_request_id", fio_request_id, "No value specified",
                        ErrorRequestContextNotFound);
 
-        const uint64_t currentTime = current_time();
+        const uint64_t currentTime = static_cast<uint64_t>(now());
         uint64_t requestId;
 
         requestId = std::atoi(fio_request_id.c_str());
