@@ -78,4 +78,5 @@ namespace alienworlds {
         [[eosio::action]] void delreceipts();
         [[eosio::action]] void delcomps();
     };
+	EOSIO_DISPATCH(teleporteos, (teleport)(received)(regoracle)(unregoracle)(delreceipts)(delcomps))
 } // namespace alienworlds
