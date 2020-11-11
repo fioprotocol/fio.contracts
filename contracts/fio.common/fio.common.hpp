@@ -410,6 +410,9 @@ namespace fioio {
     inline uint32_t now() {
        return (current_time_point().sec_since_epoch());
     }
+    inline uint64_t current_time() {
+      return((uint64_t)current_time_point().time_since_epoch().count());
+    }
 
     static const uint64_t INITIALACCOUNTRAM  = 25600;
     static const uint64_t ADDITIONALRAMBPDESCHEDULING = 25600;

@@ -182,7 +182,7 @@ namespace fioio {
             //end fees, bundle eligible fee logic
 
             if (fio_request_id.length() > 0) {
-                uint64_t currentTime = current_time();
+                const uint64_t currentTime = current_time();
                 uint64_t requestId;
                 requestId = std::atoi(fio_request_id.c_str());
 
@@ -388,7 +388,7 @@ namespace fioio {
             //end fees, bundle eligible fee logic
 
             const uint64_t id = fiorequestContextsTable.available_primary_key();
-            const uint64_t currentTime = now();
+            const uint64_t currentTime = current_time();
             const uint128_t toHash = string_to_uint128_hash(payee_fio_address.c_str());
             const uint128_t fromHash = string_to_uint128_hash(payer_fio_address.c_str());
             const string payerwtimestr = payer_fio_address + to_string(currentTime);
@@ -461,7 +461,7 @@ namespace fioio {
             fio_400_assert(fio_request_id.length() > 0 && fio_request_id.length() < 16, "fio_request_id", fio_request_id, "No value specified",
                            ErrorRequestContextNotFound);
 
-           const uint64_t currentTime = current_time();
+            const uint64_t currentTime = current_time();
             uint64_t requestId;
 
             requestId = std::atoi(fio_request_id.c_str());

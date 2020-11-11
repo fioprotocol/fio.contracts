@@ -1,4 +1,4 @@
-add_contract(fio.system fio.request.obt ${CMAKE_CURRENT_SOURCE_DIR}/fio.request.obt.cpp)
+add_contract(fio.request.obt fio.request.obt ${CMAKE_CURRENT_SOURCE_DIR}/fio.request.obt.cpp)
 
 target_include_directories(fio.request.obt
         PUBLIC
