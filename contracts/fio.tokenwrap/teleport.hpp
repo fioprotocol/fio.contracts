@@ -6,10 +6,10 @@ using namespace eosio;
 using namespace std;
 
 #define ORACLE_CONFIRMATIONS 3
-#define TOKEN_CONTRACT "alien.worlds"_n
+#define TOKEN_CONTRACT "fio.token"_n
 
-namespace alienworlds {
-    class [[eosio::contract("teleporteos")]] teleporteos : public contract {
+namespace fioio {
+    class [[eosio::contract("teleportfio")]] teleportfio : public contract {
     private:
         /* Represents a user deposit before teleporting */
         struct [[eosio::table("deposits")]] deposit_item {
@@ -66,10 +66,10 @@ namespace alienworlds {
     public:
         using contract::contract;
 
-        teleporteos(name s, name code, datastream<const char *> ds);
+        teleportfio(name s, name code, datastream<const char *> ds);
 
         /* Fungible token transfer (only trilium) */
-        [[eosio::on_notify("alien.worlds::transfer")]] void transfer(name from, name to, asset quantity, string memo);
+        [[eosio::on_notify("fio.token::transfer")]] void transfer(name from, name to, asset quantity, string memo);
 
         [[eosio::action]] void teleport(name from, asset quantity, string eth_address);
         [[eosio::action]] void received(name oracle_name, name to, checksum256 ref, asset quantity);
@@ -78,5 +78,5 @@ namespace alienworlds {
         [[eosio::action]] void delreceipts();
         [[eosio::action]] void delcomps();
     };
-	EOSIO_DISPATCH(teleporteos, (teleport)(received)(regoracle)(unregoracle)(delreceipts)(delcomps))
-} // namespace alienworlds
+	EOSIO_DISPATCH(teleportfio, (teleport)(received)(regoracle)(unregoracle)(delreceipts)(delcomps))
+}

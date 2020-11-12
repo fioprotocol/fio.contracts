@@ -1,15 +1,15 @@
 #include "teleport.hpp"
 
-using namespace alienworlds;
+using namespace fioio;
 
-teleporteos::teleporteos(name s, name code, datastream<const char *> ds) : contract(s, code, ds),
+teleportfio::teleportfio(name s, name code, datastream<const char *> ds) : contract(s, code, ds),
                                                                            _deposits(get_self(), get_self().value),
                                                                            _oracles(get_self(), get_self().value),
                                                                            _receipts(get_self(), get_self().value),
                                                                            _completions(get_self(), get_self().value) {}
 
 /* Notifications for tlm transfer */
-void teleporteos::transfer(name from, name to, asset quantity, string memo) {
+void teleportfio::transfer(name from, name to, asset quantity, string memo) {
     if (to == get_self()) {
         check(quantity.amount >= 1000'0000, "Transfer is below minimum");
 
@@ -28,7 +28,7 @@ void teleporteos::transfer(name from, name to, asset quantity, string memo) {
     }
 }
 
-void teleporteos::teleport(name from, asset quantity, string eth_address) {
+void teleportfio::teleport(name from, asset quantity, string eth_address) {
     require_auth(from);
 
     check(quantity.is_valid(), "Amount is not valid");
@@ -43,7 +43,7 @@ void teleporteos::teleport(name from, asset quantity, string eth_address) {
     _deposits.erase(deposit);
 }
 
-void teleporteos::received(name oracle_name, name to, checksum256 ref, asset quantity) {
+void teleportfio::received(name oracle_name, name to, checksum256 ref, asset quantity) {
     require_oracle(oracle_name);
 
     // check it has not already been completed
@@ -97,27 +97,27 @@ void teleporteos::received(name oracle_name, name to, checksum256 ref, asset qua
     }
 }
 
-void teleporteos::regoracle(name oracle_name) {
+void teleportfio::regoracle(name oracle_actor) {
     require_auth(get_self());
 
-    check(is_account(oracle_name), "Oracle account does not exist");
+    check(is_account(oracle_actor), "Oracle account does not exist");
 
     _oracles.emplace(get_self(), [&](auto &o){
-        o.account = oracle_name;
+        o.account = oracle_actor;
     });
 }
 
-void teleporteos::unregoracle(name oracle_name) {
+void teleportfio::unregoracle(name oracle_actor) {
     require_auth(get_self());
 
-    auto oracle = _oracles.find(oracle_name.value);
+    auto oracle = _oracles.find(oracle_actor.value);
     check(oracle != _oracles.end(), "Oracle does not exist");
 
     _oracles.erase(oracle);
 }
 
 
-void teleporteos::delreceipts() {
+void teleportfio::delreceipts() {
     require_auth(get_self());
 
     auto receipt = _receipts.begin();
@@ -126,7 +126,7 @@ void teleporteos::delreceipts() {
     }
 }
 
-void teleporteos::delcomps() {
+void teleportfio::delcomps() {
     require_auth(get_self());
 
     auto comp = _completions.begin();
@@ -137,6 +137,6 @@ void teleporteos::delcomps() {
 
 /* Private */
 
-void teleporteos::require_oracle(name account) {
+void teleportfio::require_oracle(name account) {
     _oracles.get(account.value, "Account is not an oracle");
 }
