@@ -535,12 +535,10 @@ namespace fioio {
                         strc.beginrq = id;
                     });
                 }
-            }
 
             const string response_string =
                     string("{\"fio_request_id\":") + to_string(id) + string(",\"status\":\"requested\"") +
                     string(",\"fee_collected\":") + to_string(fee_amount) + string("}");
-
 
             if (NEWFUNDSREQUESTRAM > 0) {
                 action(
@@ -816,7 +814,7 @@ namespace fioio {
                                "Fee exceeds supplied maximum.",
                                ErrorMaxFeeExceeded);
 
-                fio_fees(aactor, asset(fee_amount, FIOSYMBOL));
+                fio_fees(aactor, asset(fee_amount, FIOSYMBOL), CANCEL_FUNDS_REQUEST_ENDPOINT);
                 process_rewards(tpid, fee_amount, get_self(), aactor);
 
                 if (fee_amount > 0) {
