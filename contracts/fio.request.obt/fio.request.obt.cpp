@@ -50,7 +50,7 @@ namespace fioio {
                   tpids(AddressContract, AddressContract.value),
                   producers(SYSTEMACCOUNT, SYSTEMACCOUNT.value), //Temp
                   mgrStatsTable(_self, _self.value), // Temp
-                  recordObtTable(_self,_self.value) {
+                  recordObtTable(_self, _self.value) {
             configs_singleton configsSingleton(FeeContract, FeeContract.value);
             appConfig = configsSingleton.get_or_default(config());
         }
@@ -67,7 +67,7 @@ namespace fioio {
             auto proditer = prodbyowner.find(aactor.value);
 
             fio_400_assert(proditer != prodbyowner.end(), "actor", actor,
-                        "Actor not active producer", ErrorNoFioAddressProducer);
+                           "Actor not active producer", ErrorNoFioAddressProducer);
 
             uint16_t limit = amount;
             uint16_t count = 0;
@@ -77,6 +77,9 @@ namespace fioio {
             auto reqTable = fiorequestContextsTable.begin();
             auto statTable = fiorequestStatusTable.begin();
             auto trxTable = fioTransactionsTable.begin();
+
+            auto migrLedger = mgrStatsTable.begin();
+            if (migrLedger != mgrStatsTable.end) { mgrStatsTable.erase(migrLedger); }
 
             while (obtTable != recordObtTable.end()) { //obt record migrate
                 recordObtTable.erase(obtTable);
@@ -101,18 +104,18 @@ namespace fioio {
             }
         }
 
-         /*******
-          * This action will record the send of funds from one FIO address to another, either
-          * in response to a request for funds or as a result of a direct send of funds from
-          * one user to another
-          * @param fio_request_id   This is the one up id of the fio request
-          * @param payer_fio_address The payer of the request
-          * @param payee_fio_address  The payee (recieve of funds) of the request.
-          * @param content  this is the encrypted blob of content containing details of the request.
-          * @param max_fee  this is maximum fee the user is willing to pay as a result of this transaction.
-          * @param actor  this is the actor (the account which has signed this transaction)
-          * @param tpid  this is the tpid for the owner of the domain (this is optional)
-          */
+        /*******
+         * This action will record the send of funds from one FIO address to another, either
+         * in response to a request for funds or as a result of a direct send of funds from
+         * one user to another
+         * @param fio_request_id   This is the one up id of the fio request
+         * @param payer_fio_address The payer of the request
+         * @param payee_fio_address  The payee (recieve of funds) of the request.
+         * @param content  this is the encrypted blob of content containing details of the request.
+         * @param max_fee  this is maximum fee the user is willing to pay as a result of this transaction.
+         * @param actor  this is the actor (the account which has signed this transaction)
+         * @param tpid  this is the tpid for the owner of the domain (this is optional)
+         */
         // @abi action
         [[eosio::action]]
         void recordobt(
@@ -466,7 +469,7 @@ namespace fioio {
                                ErrorMaxFeeExceeded);
 
                 fio_fees(aActor, asset(fee_amount, FIOSYMBOL), NEW_FUNDS_REQUEST_ENDPOINT);
-                process_rewards(tpid, fee_amount, get_self(),aActor);
+                process_rewards(tpid, fee_amount, get_self(), aActor);
 
                 if (fee_amount > 0) {
                     INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
@@ -491,50 +494,50 @@ namespace fioio {
             auto ledg_iter = ledgerTable.find(name(payer_acct.c_str()).value);
             auto ledg_iter2 = ledgerTable.find(name(payee_acct.c_str()).value);
 
-                if (ledg_iter == ledgerTable.end()) {
-                    ledgerTable.emplace(aActor, [&](struct reqledger &req) {
-                        req.account = name(payer_acct.c_str()).value;
-                        req.transactions.payer_action_ids.insert(req.transactions.payer_action_ids.begin(), id);
-                    });
-                } else {
-                    ledgerTable.modify(ledg_iter, _self, [&](struct reqledger &req) {
-                        req.transactions.payer_action_ids.insert(req.transactions.payer_action_ids.begin(), id);
-                    });
-                }
-
-                if (ledg_iter2 == ledgerTable.end()) {
-                    ledgerTable.emplace(aActor, [&](struct reqledger &req) {
-                        req.account = name(payee_acct.c_str()).value;
-                        req.transactions.payee_action_ids.insert(req.transactions.payee_action_ids.begin(), id);
-                    });
-                } else {
-                    ledgerTable.modify(ledg_iter2, _self, [&](struct reqledger &req) {
-                        req.transactions.payee_action_ids.insert(req.transactions.payee_action_ids.begin(), id);
-                    });
-                }
-
-                fioTransactionsTable.emplace(aActor, [&](struct fiotrxt &frc) {
-                    frc.id = id;
-                    frc.fio_request_id = id;
-                    frc.payer_fio_addr_hex = fromHash;
-                    frc.payee_fio_addr_hex = toHash;
-                    frc.content = content;
-                    frc.fio_data_type = static_cast<int64_t>(trxstatus::requested);
-                    frc.init_time = currentTime;
-                    frc.payer_fio_addr = payer_fio_address;
-                    frc.payee_fio_addr = payee_fio_address;
-                    frc.payee_key = payee_key;
-                    frc.payer_key = payer_key;
-                    frc.payee_key_hex = payeeKeyHash;
-                    frc.payer_key_hex = payerKeyHash;
+            if (ledg_iter == ledgerTable.end()) {
+                ledgerTable.emplace(aActor, [&](struct reqledger &req) {
+                    req.account = name(payer_acct.c_str()).value;
+                    req.transactions.pending_action_ids.insert(req.transactions.pending_action_ids.begin(), id);
                 });
+            } else {
+                ledgerTable.modify(ledg_iter, _self, [&](struct reqledger &req) {
+                    req.transactions.pending_action_ids.insert(req.transactions.pending_action_ids.begin(), id);
+                });
+            }
 
-                auto migrTable = mgrStatsTable.begin();
-                if (migrTable != mgrStatsTable.end() && migrTable->beginrq != -1) {
-                    mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
-                        strc.beginrq = id;
-                    });
-                }
+            if (ledg_iter2 == ledgerTable.end()) {
+                ledgerTable.emplace(aActor, [&](struct reqledger &req) {
+                    req.account = name(payee_acct.c_str()).value;
+                    req.transactions.sent_action_ids.insert(req.transactions.sent_action_ids.begin(), id);
+                });
+            } else {
+                ledgerTable.modify(ledg_iter2, _self, [&](struct reqledger &req) {
+                    req.transactions.sent_action_ids.insert(req.transactions.sent_action_ids.begin(), id);
+                });
+            }
+
+            fioTransactionsTable.emplace(aActor, [&](struct fiotrxt &frc) {
+                frc.id = id;
+                frc.fio_request_id = id;
+                frc.payer_fio_addr_hex = fromHash;
+                frc.payee_fio_addr_hex = toHash;
+                frc.content = content;
+                frc.fio_data_type = static_cast<int64_t>(trxstatus::requested);
+                frc.init_time = currentTime;
+                frc.payer_fio_addr = payer_fio_address;
+                frc.payee_fio_addr = payee_fio_address;
+                frc.payee_key = payee_key;
+                frc.payer_key = payer_key;
+                frc.payee_key_hex = payeeKeyHash;
+                frc.payer_key_hex = payerKeyHash;
+            });
+
+            auto migrTable = mgrStatsTable.begin();
+            if (migrTable != mgrStatsTable.end() && migrTable->beginrq != -1) {
+                mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
+                    strc.beginrq = id;
+                });
+            }
 
             const string response_string =
                     string("{\"fio_request_id\":") + to_string(id) + string(",\"status\":\"requested\"") +
@@ -587,7 +590,7 @@ namespace fioio {
             const uint64_t currentTime = current_time();
             uint64_t requestId;
             requestId = std::atoi(fio_request_id.c_str());
-            
+
             auto trxtByRequestId = fioTransactionsTable.get_index<"byrequestid"_n>();
             auto fioreqctx_iter = trxtByRequestId.find(requestId);
             fio_400_assert(fioreqctx_iter != trxtByRequestId.end(), "fio_request_id", fio_request_id,
@@ -595,7 +598,7 @@ namespace fioio {
 
 
             // Add check for requested only. TODO
-            
+
             const uint128_t payer128FioAddHashed = fioreqctx_iter->payer_fio_addr_hex;
             const string payer_key = fioreqctx_iter->payer_key;
             const uint32_t present_time = now();
