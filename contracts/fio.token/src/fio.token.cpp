@@ -165,7 +165,7 @@ namespace eosio {
     }
 
     bool token::can_transfer_general(const name &tokenowner, const uint64_t &transferamount) {
-        bool dbg = true;
+        bool dbg = false;
         //get fio balance for this account,
         uint32_t present_time = now();
         const auto my_balance = eosio::token::get_balance("fio.token"_n, tokenowner, FIOSYMBOL.code());
@@ -472,7 +472,7 @@ namespace eosio {
                        "Invalid can_vote value", ErrorInvalidValue);
 
 
-        bool dbg = true;
+        bool dbg = false;
 
         if (dbg) {
             print(" calling trnsloctoks ");
