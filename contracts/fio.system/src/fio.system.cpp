@@ -249,14 +249,16 @@ EOSIO_DISPATCH( eosiosystem::system_contract,
   // native.hpp (newaccount definition is actually in fio.system.cpp)
   (newaccount)(addaction)(remaction)(updateauth)(deleteauth)(linkauth)(unlinkauth)(canceldelay)(onerror)(setabi)
   // fio.system.cpp
-  (init)(addlocked)(setparams)(setpriv)
-  (rmvproducer)(updtrevision)
+  (init)(addlocked)(addgenlocked)(setparams)(setpriv)
+          (rmvproducer)(updtrevision)
   // delegate_bandwidth.cpp
-  (updatepower)
+          (updatepower)
   // voting.cpp
-  (regproducer)(regiproducer)(unregprod)(voteproducer)(voteproxy)(inhibitunlck)
-  (updlocked)(unlocktokens)(setautoproxy)(crautoproxy)(burnaction)(incram)
-  (unregproxy)(regiproxy)(regproxy)
-  //producer_pay.cpp
-  (onblock)(resetclaim)(updlbpclaim)
+          (regproducer)(regiproducer)(unregprod)(voteproducer)(voteproxy)(inhibitunlck)
+          (updlocked)(unlocktokens)(setautoproxy)(crautoproxy)(burnaction)(incram)
+          (unregproxy)(regiproxy)(regproxy)
+  // producer_pay.cpp
+          (onblock)
+          (resetclaim)
+  (updlbpclaim)
 )
