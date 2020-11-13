@@ -226,12 +226,12 @@ namespace eosiosystem {
 
         //TODO: REFACTOR FEE ( PROXY / PRODUCER )
         //begin new fees, logic for Mandatory fees.
-        uint128_t endpoint_hash = string_to_uint128_hash("register_producer");
+        uint128_t endpoint_hash = string_to_uint128_hash(REGISTER_PRODUCER_ENDPOINT);
 
         auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
         auto fee_iter = fees_by_endpoint.find(endpoint_hash);
         //if the fee isnt found for the endpoint, then 400 error.
-        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "register_producer",
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", REGISTER_PRODUCER_ENDPOINT,
                        "FIO fee not found for endpoint", ErrorNoEndpoint);
 
         uint64_t reg_amount = fee_iter->suf_amount;
@@ -239,13 +239,13 @@ namespace eosiosystem {
 
         //if its not a mandatory fee then this is an error.
         fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
-                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       "unexpected fee type for endpoint register_producer, expected 0",
                        ErrorNoEndpoint);
 
         fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
                        ErrorMaxFeeExceeded);
 
-        fio_fees(actor, asset(reg_amount, FIOSYMBOL));
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), REGISTER_PRODUCER_ENDPOINT);
         processrewardsnotpid(reg_amount, get_self());
         //end new fees, logic for Mandatory fees.
 
@@ -317,12 +317,12 @@ namespace eosiosystem {
         });
 
         //begin new fees, logic for Mandatory fees.
-        uint128_t endpoint_hash = string_to_uint128_hash("unregister_producer");
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
 
         auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
         auto fee_iter = fees_by_endpoint.find(endpoint_hash);
         //if the fee isnt found for the endpoint, then 400 error.
-        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "unregister_producer",
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
                        "FIO fee not found for endpoint", ErrorNoEndpoint);
 
         uint64_t reg_amount = fee_iter->suf_amount;
@@ -337,7 +337,7 @@ namespace eosiosystem {
                        ErrorMaxFeeExceeded);
 
 
-        fio_fees(actor, asset(reg_amount, FIOSYMBOL));
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
         processrewardsnotpid(reg_amount, get_self());
 
         //end new fees, logic for Mandatory fees.
@@ -497,66 +497,65 @@ namespace eosiosystem {
                        ErrorMaxFeeInvalid);
         name proxy;
         std::vector<name> producers_accounts;
-
         FioAddress fa;
         getFioAddressStruct(fio_address, fa);
-        fio_400_assert(validateFioNameFormat(fa), "fio_address", fio_address, "Invalid FIO Address format",
+        fio_400_assert(fio_address == "" || validateFioNameFormat(fa), "fio_address", fio_address, "Invalid FIO Address format",
                        ErrorDomainAlreadyRegistered);
-
-        uint128_t voterHash = string_to_uint128_hash(fio_address.c_str());
-        uint128_t voterDomainHash = string_to_uint128_hash(fa.fiodomain.c_str());
-
-        // compare fio_address owner and compare to actor
         auto namesbyname = _fionames.get_index<"byname"_n>();
-        auto voter_iter = namesbyname.find(voterHash);
-
-        fio_400_assert(voter_iter != namesbyname.end(), "fio_address", fio_address,
-                       "FIO address not registered", ErrorFioNameNotRegistered);
-
-        uint32_t voter_expiration = voter_iter->expiration;
-        uint32_t present_time = now();
-
-        fio_400_assert(present_time <= voter_expiration, "fio_address", fio_address, "FIO Address expired",
-                       ErrorDomainExpired);
-
         auto domainsbyname = _domains.get_index<"byname"_n>();
-        auto voterdomain_iter = domainsbyname.find(voterDomainHash);
+        uint64_t bundleeligiblecountdown = 0;
+        if (!fio_address.empty()) {
 
-        fio_400_assert(voterdomain_iter != domainsbyname.end(), "fio_address", fio_address,
-                       "FIO Address not registered", ErrorFioNameNotReg);
-        fio_403_assert(voter_iter->owner_account == actor.value, ErrorSignature);
+          uint128_t voterHash = string_to_uint128_hash(fio_address.c_str());
+          uint128_t voterDomainHash = string_to_uint128_hash(fa.fiodomain.c_str());
 
-        uint32_t voterdomain_expiration = voterdomain_iter->expiration;
-        fio_400_assert(present_time <= voterdomain_expiration, "fio_address", fio_address, "FIO Domain expired",
-                       ErrorDomainExpired);
+          // compare fio_address owner and compare to actor
+          auto voter_iter = namesbyname.find(voterHash);
+
+          fio_400_assert(voter_iter != namesbyname.end(), "fio_address", fio_address,
+                         "FIO address not registered", ErrorFioNameNotRegistered);
+
+          fio_400_assert(now() <= voter_iter->expiration, "fio_address", fio_address, "FIO Address expired",
+                      ErrorDomainExpired);
+
+          auto voterdomain_iter = domainsbyname.find(voterDomainHash);
+
+          fio_400_assert(voterdomain_iter != domainsbyname.end(), "fio_address", fio_address,
+                         "FIO Address not registered", ErrorFioNameNotReg);
+          fio_403_assert(voter_iter->owner_account == actor.value, ErrorSignature);
+
+          uint32_t voterdomain_expiration = voterdomain_iter->expiration;
+          fio_400_assert(now() <= voterdomain_expiration, "fio_address", fio_address, "FIO Domain expired",
+                         ErrorDomainExpired);
+
+          bundleeligiblecountdown = voter_iter->bundleeligiblecountdown;
+        }
 
         for (size_t i = 0; i < producers.size(); i++) {
-            getFioAddressStruct(producers[i], fa);
+          getFioAddressStruct(producers[i], fa);
+          uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+          uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
 
-            uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
-            uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+          auto fioname_iter = namesbyname.find(nameHash);
+          fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                         "FIO Address not registered", ErrorFioNameNotReg);
 
-            auto fioname_iter = namesbyname.find(nameHash);
-            fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
-                           "FIO Address not registered", ErrorFioNameNotReg);
+          uint32_t name_expiration = fioname_iter->expiration;
 
-            uint32_t name_expiration = fioname_iter->expiration;
+          uint64_t account = fioname_iter->owner_account;
+          fio_400_assert(now() <= name_expiration, "fio_address", producers[i],
+                         "FIO Address expired", ErrorFioNameExpired);
 
-            uint64_t account = fioname_iter->owner_account;
-            fio_400_assert(present_time <= name_expiration, "fio_address", producers[i],
-                           "FIO Address expired", ErrorFioNameExpired);
+          auto domains_iter = domainsbyname.find(domainHash);
 
-            auto domains_iter = domainsbyname.find(domainHash);
+          fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                         "FIO Address not registered", ErrorFioNameNotReg);
 
-            fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
-                           "FIO Address not registered", ErrorFioNameNotReg);
+          fio_400_assert(now() <= domains_iter->expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                         ErrorDomainExpired);
 
-            uint32_t expiration = domains_iter->expiration;
-            fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
-                           ErrorDomainExpired);
+          producers_accounts.push_back(name{account});
 
-            auto proxy_name = name{account};
-            producers_accounts.push_back(proxy_name);
         }
 
         auto votersbyowner = _voters.get_index<"byowner"_n>();
@@ -570,32 +569,36 @@ namespace eosiosystem {
             });
         }
 
+        //note -- we can call these lock token computations like this
+        //only because token locks are exclusive, meaning an account CANNOT have
+        //multiple locked token grants.
         eosio::token::computeremaininglockedtokens(actor,true);
+        eosio::token::computegenerallockedtokens(actor,true);
+
         sort(producers_accounts.begin(),producers_accounts.end());
 
         update_votes(actor, proxy, producers_accounts, true);
 
-        uint128_t endpoint_hash = string_to_uint128_hash("vote_producer");
+        uint128_t endpoint_hash = string_to_uint128_hash(VOTE_PRODUCER_ENDPOINT);
         auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
         auto fee_iter = fees_by_endpoint.find(endpoint_hash);
 
-        uint64_t bundleeligiblecountdown = voter_iter->bundleeligiblecountdown;
         uint64_t fee_amount = 0;
 
-        if (bundleeligiblecountdown > 0) {
+          if (bundleeligiblecountdown > 0) {
             action{
                     permission_level{_self, "active"_n},
                     AddressContract,
                     "decrcounter"_n,
                     make_tuple(fio_address, 1)
             }.send();
-        } else {
+          } else {
             fee_amount = fee_iter->suf_amount;
             fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
                            "Fee exceeds supplied maximum.",
                            ErrorMaxFeeExceeded);
 
-            fio_fees(actor, asset(fee_amount, FIOSYMBOL));
+            fio_fees(actor, asset(fee_amount, FIOSYMBOL), VOTE_PRODUCER_ENDPOINT);
             processrewardsnotpid(fee_amount, get_self());
             //end new fees, logic for Mandatory fees.
         }
@@ -623,68 +626,33 @@ namespace eosiosystem {
 
         fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                        ErrorMaxFeeInvalid);
-        FioAddress fa, va;
-        getFioAddressStruct(proxy, fa);
-        getFioAddressStruct(fio_address, va);
 
-        fio_400_assert(validateFioNameFormat(va), "proxy", proxy, "Invalid FIO Address format",
+        FioAddress proxyAddressObj, fioAddressObj;
+        getFioAddressStruct(proxy, proxyAddressObj);
+        getFioAddressStruct(fio_address, fioAddressObj);
+
+        fio_400_assert(validateFioNameFormat(proxyAddressObj), "proxy", proxy, "Invalid FIO Address format",
                        ErrorDomainAlreadyRegistered);
-        fio_400_assert(validateFioNameFormat(fa), "fio_address", fio_address, "Invalid FIO Address format",
+
+        fio_400_assert(fio_address == "" || validateFioNameFormat(fioAddressObj), "fio_address", fio_address, "Invalid FIO Address format",
                        ErrorDomainAlreadyRegistered);
 
-        uint128_t voterHash = string_to_uint128_hash(fio_address.c_str());
-        uint128_t voterDomainHash = string_to_uint128_hash(va.fiodomain.c_str());
-
-        // compare fio_address owner and compare to actor
         auto namesbyname = _fionames.get_index<"byname"_n>();
-        auto voter_iter = namesbyname.find(voterHash);
+        auto domainsbyname = _domains.get_index<"byname"_n>();
 
-        fio_400_assert(voter_iter != namesbyname.end(), "fio_address", fio_address,
+        uint64_t bundleeligiblecountdown = 0;
+
+        uint128_t proxyHash = string_to_uint128_hash(proxyAddressObj.fioaddress.c_str());
+        uint128_t proxyDomainHash = string_to_uint128_hash(proxyAddressObj.fiodomain.c_str());
+        auto proxy_iter = namesbyname.find(proxyHash);
+
+        fio_400_assert(proxy_iter != namesbyname.end(), "proxy", proxy,
                        "FIO address not registered", ErrorFioNameNotRegistered);
 
-        uint32_t voter_expiration = voter_iter->expiration;
-        uint32_t present_time = now();
+        uint64_t account = proxy_iter->owner_account;
 
-        fio_400_assert(present_time <= voter_expiration, "fio_address", fio_address, "FIO Address expired",
-                       ErrorDomainExpired);
-
-        auto domainsbyname = _domains.get_index<"byname"_n>();
-        auto voterdomain_iter = domainsbyname.find(voterDomainHash);
-        fio_400_assert(voterdomain_iter != domainsbyname.end(), "fio_address", fio_address,
-                       "FIO Address not registered", ErrorFioNameNotReg);
-        fio_403_assert(voter_iter->owner_account == actor.value, ErrorSignature);
-
-        uint32_t voterdomain_expiration = voterdomain_iter->expiration;
-        fio_400_assert(present_time <= voterdomain_expiration, "fio_address", fio_address, "FIO Domain expired",
-                       ErrorDomainExpired);
-
-        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
-        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
-        auto fioname_iter = namesbyname.find(nameHash);
-        fio_400_assert(fioname_iter != namesbyname.end(), "proxy", proxy,
-                       "FIO Address not registered", ErrorFioNameNotReg);
-
-        //check that the name is not expired
-        uint32_t name_expiration = fioname_iter->expiration;
-        uint64_t account = fioname_iter->owner_account;
-        fio_400_assert(present_time <= name_expiration, "proxy", proxy,
-                       "FIO Address expired", ErrorFioNameExpired);
-
-        auto domains_iter = domainsbyname.find(domainHash);
-
-        fio_400_assert(domains_iter != domainsbyname.end(), "proxy", proxy,
-                       "FIO Address not registered", ErrorFioNameNotReg);
-
-        uint32_t expiration = domains_iter->expiration;
-
-        //add 30 days to the domain expiration, this call will work until 30 days past expire.
-        expiration = get_time_plus_seconds(expiration,SECONDS30DAYS);
-
-        fio_400_assert(present_time <= expiration, "proxy", proxy, "FIO Domain expired",
-                       ErrorDomainExpired);
-
-        auto proxy_name = name{account};
         auto votersbyowner = _voters.get_index<"byowner"_n>();
+
         auto voter_proxy_iter = votersbyowner.find(account);
 
         //the first opportunity to throw this error is when the owner account is not present
@@ -693,12 +661,51 @@ namespace eosiosystem {
                        "This address is not a proxy", AddressNotProxy);
 
         //the second opportunity to throw this error is when the row is present and is not a proxy
-        fio_400_assert(voter_proxy_iter->is_proxy, "fio_address", fio_address,
+        fio_400_assert(voter_proxy_iter->is_proxy, "fio_address", proxy,
                        "This address is not a proxy", AddressNotProxy);
 
+        //check that the proxy name is not expired
+        uint32_t present_time = now();
+        fio_400_assert(present_time <= proxy_iter->expiration, "proxy", proxy,
+                      "FIO Address expired", ErrorFioNameExpired);
+
+        auto domains_iter = domainsbyname.find(proxyDomainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "proxy", proxy,
+                      "FIO Address not registered", ErrorFioNameNotReg);
+
+        fio_400_assert(present_time <= get_time_plus_seconds( domains_iter->expiration, SECONDS30DAYS),
+                     "proxy", proxy, "FIO Domain expired", ErrorDomainExpired);
+
+
+        if (!fio_address.empty()) {
+          uint128_t voterHash = string_to_uint128_hash(fioAddressObj.fioaddress.c_str());
+          uint128_t voterDomainHash = string_to_uint128_hash(fioAddressObj.fiodomain.c_str());
+
+          // compare fio_address owner and compare to actor
+
+          auto voter_iter = namesbyname.find(voterHash);
+
+          fio_403_assert(voter_iter->owner_account == actor.value, ErrorSignature);
+
+          fio_400_assert(voter_iter != namesbyname.end(), "fio_address", fio_address,
+                         "FIO address not registered", ErrorFioNameNotRegistered);
+
+          fio_400_assert(present_time <= voter_iter->expiration, "fio_address", fio_address, "FIO Address expired",
+                         ErrorDomainExpired);
+
+          auto voterdomain_iter = domainsbyname.find(voterDomainHash);
+          fio_400_assert(voterdomain_iter != domainsbyname.end(), "fio_address", fio_address,
+                         "FIO Address not registered", ErrorFioNameNotReg);
+
+          fio_400_assert(present_time <= voterdomain_iter->expiration, "fio_address", fio_address, "FIO Domain expired",
+                         ErrorDomainExpired);
+
+          bundleeligiblecountdown = voter_iter->bundleeligiblecountdown;
+
+        }
 
         std::vector<name> producers{}; // Empty
-
 
         voter_proxy_iter = votersbyowner.find(actor.value);
 
@@ -710,18 +717,20 @@ namespace eosiosystem {
             });
         }
 
+        //note -- we can call these lock token computations like this
+        //only because token locks are exclusive, meaning an account CANNOT have
+        //multiple locked token grants.
         eosio::token::computeremaininglockedtokens(actor,true);
+        eosio::token::computegenerallockedtokens(actor,true);
 
-        update_votes(actor, proxy_name, producers, true);
+        update_votes(actor, name{account}, producers, true);
 
-        uint128_t endpoint_hash = string_to_uint128_hash("vote_producer");
+        uint128_t endpoint_hash = string_to_uint128_hash(VOTE_PROXY_ENDPOINT);
         auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
         auto fee_iter = fees_by_endpoint.find(endpoint_hash);
 
-        uint64_t bundleeligiblecountdown = voter_iter->bundleeligiblecountdown;
         uint64_t fee_amount = 0;
-
-        if (bundleeligiblecountdown > 0) {
+          if (bundleeligiblecountdown > 0) {
             action{
                     permission_level{_self, "active"_n},
                     AddressContract,
@@ -734,7 +743,7 @@ namespace eosiosystem {
                            "Fee exceeds supplied maximum.",
                            ErrorMaxFeeExceeded);
 
-            fio_fees(actor, asset(fee_amount, FIOSYMBOL));
+            fio_fees(actor, asset(fee_amount, FIOSYMBOL), VOTE_PROXY_ENDPOINT);
             processrewardsnotpid(fee_amount, get_self());
             //end new fees, logic for Mandatory fees.
         }
@@ -779,7 +788,11 @@ namespace eosiosystem {
 
     void system_contract::unlocktokens(const name &actor){
         require_auth(TokenContract);
+        //note -- we can call these lock token computations like this
+        //only because token locks are exclusive, meaning an account CANNOT have
+        //multiple locked token grants.
         eosio::token::computeremaininglockedtokens(actor,true);
+        eosio::token::computegenerallockedtokens(actor,true);
     }
 
     uint64_t system_contract::get_votable_balance(const name &tokenowner){
@@ -832,6 +845,53 @@ namespace eosiosystem {
         return amount;
     }
 
+    glockresult system_contract::get_general_votable_balance(const name &tokenowner){
+
+        glockresult res;
+        bool dbg = true;
+        //get fio balance for this account,
+        uint32_t present_time = now();
+        const auto my_balance = eosio::token::get_balance("fio.token"_n,tokenowner, FIOSYMBOL.code() );
+        uint64_t amount = my_balance.amount;
+
+        auto locks_by_owner = _generallockedtokens.get_index<"byowner"_n>();
+        auto lockiter = locks_by_owner.find(tokenowner.value);
+        if(lockiter != locks_by_owner.end()){
+            if (dbg) {
+                print("get_general_votable_balance found lock tokens for account ", tokenowner, "\n");
+            }
+            res.lockfound = true;
+            //if can vote --
+            if (lockiter->can_vote == 1){
+                if (dbg) {
+                    print("get_general_votable_balance  lock tokens can vote returning amount ", amount,"\n");
+                }
+                res.amount = amount;
+            }else{
+                if (amount > lockiter->remaining_lock_amount) {
+                    if (dbg) {
+                        print("get_general_votable_balance  lock tokens cannot vote returning amount ", amount, " minus ",
+                              lockiter->remaining_lock_amount, " \n");
+                    }
+                    res.amount =  amount - lockiter->remaining_lock_amount;
+                }else{
+                    if (dbg) {
+                        print("get_general_votable_balance  amount > remaining return 0 ", " \n");
+                    }
+                    res.amount = 0;
+                }
+            }
+        }
+        if (!res.lockfound){
+            if(dbg) {
+                print(" lock tokens not found return amount ", amount, " \n");
+            }
+         res.amount = amount;
+        }
+        return res;
+    }
+
+
     void system_contract::update_votes(
             const name &voter_name,
             const name &proxy,
@@ -852,8 +912,15 @@ namespace eosiosystem {
         check(voter != votersbyowner.end(), "user must vote before votes can be updated");
         check(!proxy || !voter->is_proxy, "account registered as a proxy is not allowed to use a proxy");
 
+
         //change to get_unlocked_balance() Ed 11/25/2019
-        uint64_t amount = get_votable_balance(voter->owner);
+        uint64_t amount = 0;
+        glockresult res = get_general_votable_balance(voter->owner);
+        if(res.lockfound){
+            amount = res.amount;
+        }else {
+           amount = get_votable_balance(voter->owner);
+        }
 
         //on the first vote we update the total voted fio.
 
@@ -1083,12 +1150,12 @@ namespace eosiosystem {
         regiproxy(actor,fio_address,false);
 
         //begin new fees, logic for Mandatory fees.
-        uint128_t endpoint_hash = string_to_uint128_hash("unregister_proxy");
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PROXY_ENDPOINT);
 
         auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
         auto fee_iter = fees_by_endpoint.find(endpoint_hash);
         //if the fee isnt found for the endpoint, then 400 error.
-        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "unregister_proxy",
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PROXY_ENDPOINT,
                        "FIO fee not found for endpoint", ErrorNoEndpoint);
 
         uint64_t reg_amount = fee_iter->suf_amount;
@@ -1096,7 +1163,7 @@ namespace eosiosystem {
 
         //if its not a mandatory fee then this is an error.
         fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
-                       "unregister_proxy unexpected fee type for endpoint unregister_proxy, expected 0",
+                       "unexpected fee type for endpoint unregister_proxy, expected 0",
                        ErrorNoEndpoint);
 
         fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
@@ -1106,7 +1173,7 @@ namespace eosiosystem {
         reg_fee_asset.symbol = symbol("FIO",9);
         reg_fee_asset.amount = reg_amount;
 
-        fio_fees(actor, reg_fee_asset);
+        fio_fees(actor, reg_fee_asset, UNREGISTER_PROXY_ENDPOINT);
         processrewardsnotpid(reg_amount, get_self());
         //end new fees, logic for Mandatory fees.
 
@@ -1161,12 +1228,12 @@ namespace eosiosystem {
         regiproxy(actor,fio_address,true);
 
         //begin new fees, logic for Mandatory fees.
-        uint128_t endpoint_hash = string_to_uint128_hash("register_proxy");
+        uint128_t endpoint_hash = string_to_uint128_hash(REGISTER_PROXY_ENDPOINT);
 
         auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
         auto fee_iter = fees_by_endpoint.find(endpoint_hash);
         //if the fee isnt found for the endpoint, then 400 error.
-        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "register_proxy",
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", REGISTER_PROXY_ENDPOINT,
                        "FIO fee not found for endpoint", ErrorNoEndpoint);
 
         uint64_t reg_amount = fee_iter->suf_amount;
@@ -1174,7 +1241,7 @@ namespace eosiosystem {
 
         //if its not a mandatory fee then this is an error.
         fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
-                       "register_proxy unexpected fee type for endpoint register_proxy, expected 0",
+                       "unexpected fee type for endpoint register_proxy, expected 0",
                        ErrorNoEndpoint);
 
         fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
@@ -1184,7 +1251,7 @@ namespace eosiosystem {
         reg_fee_asset.symbol = symbol("FIO",9);
         reg_fee_asset.amount = reg_amount;
 
-        fio_fees(actor, reg_fee_asset);
+        fio_fees(actor, reg_fee_asset, REGISTER_PROXY_ENDPOINT);
         processrewardsnotpid(reg_amount, get_self());
         //end new fees, logic for Mandatory fees.
 
@@ -1234,12 +1301,16 @@ namespace eosiosystem {
             //check(!isproxy || !pitr->proxy, "account that uses a proxy is not allowed to become a proxy");
             if (isproxy && !pitr->proxy) {
                 votersbyowner.modify(pitr, same_payer, [&](auto &p) {
+                    p.fioaddress = fio_address;
+                    p.addresshash = addresshash;
                     p.is_proxy = isproxy;
                     p.is_auto_proxy = false;
                 });
             }else if (!isproxy) { //this is how we undo/clear a proxy
                 name nm;
                 votersbyowner.modify(pitr, same_payer, [&](auto &p) {
+                    p.fioaddress = "";      // TODO: placed here to revert to same state as from regproducer, not sure if correct, verify...
+                    p.addresshash = 0;      // TODO: placed here to revert to same state as from regproducer, not sure if correct, verify...
                     p.is_proxy = isproxy;
                     p.is_auto_proxy = false;
                     p.proxy = nm; //set to a null state, an uninitialized name,
@@ -1254,7 +1325,6 @@ namespace eosiosystem {
                               //and not having a proxy, its kind of a null vote, so dont emplace unless isproxy is true.
 
             uint64_t id = _voters.available_primary_key();
-            uint128_t addresshash = string_to_uint128_hash(fio_address.c_str());
             _voters.emplace(proxy, [&](auto &p) {
                 p.id = id;
                 p.fioaddress = fio_address;
@@ -1272,8 +1342,13 @@ namespace eosiosystem {
     void system_contract::propagate_weight_change(const voter_info &voter) {
         check(!voter.proxy || !voter.is_proxy, "account registered as a proxy is not allowed to use a proxy");
 
-        //changed to get_unlocked_balance() Ed 11/25/2019
-        uint64_t amount = get_votable_balance(voter.owner);
+        uint64_t amount = 0;
+        glockresult res = get_general_votable_balance(voter.owner);
+        if(res.lockfound){
+            amount = res.amount;
+        }else {
+            amount = get_votable_balance(voter.owner);
+        }
         //instead of staked we use the voters current FIO balance MAS-522 eliminate stake from voting.
         auto new_weight = (double)amount;
         if (voter.is_proxy) {

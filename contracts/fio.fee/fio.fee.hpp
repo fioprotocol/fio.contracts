@@ -23,16 +23,25 @@ namespace fioio {
     };
 
     struct feevalue {
-        string end_point; //this is the name of the endpoint, which is by convention the same as the
+        string end_point = ""; //this is the name of the endpoint, which is by convention the same as the
                           //url to which the signed transaction is sent.
-        uint64_t value;   //this it the value of the fee in FIO SUFs (Smallest unit of FIO).
+        int64_t value;   //this it the value of the fee in FIO SUFs (Smallest unit of FIO).
 
         EOSLIB_SERIALIZE( feevalue, (end_point)(value))
     };
 
+    struct feevalue_ts {
+        string end_point = ""; //this is the name of the endpoint, which is by convention the same as the
+        //url to which the signed transaction is sent.
+        int64_t value = -1;   //this it the value of the fee in FIO SUFs (Smallest unit of FIO).
+        uint64_t timestamp = 0; //this is the timestamp when the value was last set.
+
+        EOSLIB_SERIALIZE( feevalue_ts, (end_point)(value)(timestamp))
+    };
     //this is the amount of time that must elapse for votes to be recorded into the FIO protocol for fees.
     const uint32_t TIME_BETWEEN_VOTES_SECONDS = 120;
     const uint32_t TIME_BETWEEN_FEE_VOTES_SECONDS = 3600;
+
 
     // This table contains the data attributes associated with a fee.
     // @abi table fiofee i64
@@ -42,19 +51,20 @@ namespace fioio {
         uint128_t end_point_hash;
         uint64_t type;      // this is the fee type from the feetype enumeration.
         uint64_t suf_amount;
+        eosio::binary_extension<bool> votes_pending = false;
 
         uint64_t primary_key() const { return fee_id; }
         uint128_t by_endpoint() const { return end_point_hash; }
         uint64_t by_type() const { return type; }
 
-        EOSLIB_SERIALIZE(fiofee, (fee_id)(end_point)(end_point_hash)(type)(suf_amount)
+        EOSLIB_SERIALIZE(fiofee, (fee_id)(end_point)(end_point_hash)(type)(suf_amount)(votes_pending)
         )
     };
 
     typedef multi_index<"fiofees"_n, fiofee,
             indexed_by<"byendpoint"_n, const_mem_fun < fiofee, uint128_t, &fiofee::by_endpoint>>,
-            indexed_by<"bytype"_n, const_mem_fun<fiofee, uint64_t, &fiofee::by_type>
-    >>
+            indexed_by<"bytype"_n, const_mem_fun<fiofee, uint64_t, &fiofee::by_type>>
+    >
     fiofee_table;
 
 
@@ -90,9 +100,8 @@ namespace fioio {
 
     typedef multi_index<"bundlevoters"_n, bundlevoter> bundlevoters_table;
 
-    // This table holds block producer votes for fees. this table holds the vote for each fee for each block producer
-    // in SUFs. The votes here will be multiplied by the multiplier in the feevoters table.
-    // @abi table feevote i64
+
+    //this structure is retired, left here so that replays can be achieved.
     struct [[eosio::action]] feevote {
         uint64_t id;       //unique one up id
         name block_producer_name;
@@ -102,16 +111,39 @@ namespace fioio {
         uint64_t lastvotetimestamp;
 
         uint64_t primary_key() const { return id; }
-        uint128_t by_endpoint() const { return end_point_hash; }
         uint64_t by_bpname() const { return block_producer_name.value; }
 
         EOSLIB_SERIALIZE(feevote, (id)(block_producer_name)(end_point)(end_point_hash)(suf_amount)(lastvotetimestamp)
         )
     };
 
+    //this table is retired, left in state so that replays can be performed.
     typedef multi_index<"feevotes"_n, feevote,
-            indexed_by<"byendpoint"_n, const_mem_fun < feevote, uint128_t, &feevote::by_endpoint>>,
             indexed_by<"bybpname"_n, const_mem_fun<feevote, uint64_t, &feevote::by_bpname>>
     >
     feevotes_table;
+
+    // This table holds block producer votes for fees. each table entry table holds the fee ratio votes
+    // for each fee for each block producer
+    // The votes here will be multiplied by the multiplier in the feevoters table.
+    // @abi table feevote i64
+    struct [[eosio::action]] feevote2 {
+        uint64_t id;       //unique one up id
+        name block_producer_name;
+        std::vector<feevalue_ts> feevotes; //fee votes are order dependant, the idx in this vector must match the id of the vote
+        uint64_t lastvotetimestamp;
+
+        uint64_t primary_key() const { return id; }
+        uint64_t by_bpname() const { return block_producer_name.value; }
+
+        EOSLIB_SERIALIZE(feevote2, (id)(block_producer_name)(feevotes)(lastvotetimestamp)
+        )
+    };
+
+    typedef multi_index<"feevotes2"_n, feevote2,
+            indexed_by<"bybpname"_n, const_mem_fun<feevote2, uint64_t, &feevote2::by_bpname>>
+    >
+    feevotes2_table;
+
+
 } // namespace fioio

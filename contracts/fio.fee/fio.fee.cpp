@@ -7,7 +7,7 @@
  */
 
 #include "fio.fee.hpp"
-#include "../fio.address/fio.address.hpp"
+#include <fio.address/fio.address.hpp>
 #include <fio.common/fio.common.hpp>
 #include <fio.common/fioerror.hpp>
 #include <eosio/native/intrinsics.hpp>
@@ -32,120 +32,110 @@ namespace fioio {
         fiofee_table fiofees;
         feevoters_table feevoters;
         bundlevoters_table bundlevoters;
-        feevotes_table feevotes;
+        feevotes2_table feevotes;
         eosiosystem::top_producers_table topprods;
+        eosiosystem::producers_table prods;
 
-        void update_fees() {
-            map<string, double> producer_fee_multipliers_map;
+        vector<name> getTopProds(){
+            int NUMBER_TO_SELECT = 150;
+            auto idx = prods.get_index<"prototalvote"_n>();
 
-            const bool dbgout = false;
+            std::vector< name > topprods;
+            topprods.reserve(NUMBER_TO_SELECT);
 
-            //Selecting only elected producers, create a map for each producer and its associated multiplier
-            //for use in performing the multiplications later,
-            auto topprod = topprods.begin();
-            while (topprod != topprods.end()) {
+            for( auto it = idx.cbegin(); it != idx.cend() && topprods.size() < NUMBER_TO_SELECT && 0 < it->total_votes && it->active(); ++it ) {
+                topprods.push_back(it->owner);
+            }
+            return topprods;
+        }
 
-                    auto voters_iter = feevoters.find(topprod->producer.value);
-                    const string v1 = topprod->producer.to_string();
+        uint32_t update_fees() {
+            vector<uint64_t> fee_ids; //hashes for endpoints to process.
 
-                    if (voters_iter != feevoters.end()) {
-                        if (dbgout) {
-                            print(" adding producer to multiplier map", v1.c_str(), "\n");
-                        }
-                        producer_fee_multipliers_map.insert(make_pair(v1, voters_iter->fee_multiplier));
+            int NUMBER_FEES_TO_PROCESS = 10;
+
+            //get the fees needing processing.
+            auto fee = fiofees.begin();
+            while (fee != fiofees.end()) {
+                if(fee->votes_pending.value()){
+                    fee_ids.push_back(fee->fee_id);
+                    //only get the specified number of fees to process.
+                    if (fee_ids.size() == NUMBER_FEES_TO_PROCESS){
+                        break;
                     }
-                topprod++;
+                }
+                fee++;
             }
 
+            //throw a 400 error if fees to process is empty.
+            fio_400_assert(fee_ids.size() > 0, "compute fees", "compute fees",
+                           "No Work.", ErrorNoWork);
 
+            vector<uint64_t> votesufs;
+            int processed_fees = 0;
 
-            auto feevotesbyendpoint = feevotes.get_index<"byendpoint"_n>();
-            string lastvalUsed = "";
-            uint128_t lastusedHash;
-            vector <uint64_t> feevalues;
-            //traverse all of the fee votes grouped by endpoint.
-            for (const auto &vote_item : feevotesbyendpoint) {
-                //if we have changed the endpoint name then we are in the next endpoints grouping,
-                // so compute median fee for this endpoint and then clear the list.
-                if (vote_item.end_point.compare(lastvalUsed) != 0) {
-                    compute_median_and_update_fees(feevalues, lastvalUsed, lastusedHash);
+            for(int i=0;i<fee_ids.size();i++) { //for each fee to process
+                votesufs.clear();
+                auto topprod = topprods.begin();
+                while (topprod != topprods.end()) { //get the votes of the producers, compute the voted fee, and median.
+                    //get the fee voters record of this BP.
+                    auto voters_iter = feevoters.find(topprod->producer.value);
+                    //if there is no fee voters record, then there is not a multiplier, skip this BP.
+                    if (voters_iter != feevoters.end()) {
+                        //get all the fee votes made by this BP.
+                        auto votesbybpname = feevotes.get_index<"bybpname"_n>();
+                        auto bpvote_iter = votesbybpname.find(topprod->producer.value);
+                        int countem = 0;
 
-                    feevalues.clear();
+                        if (bpvote_iter != votesbybpname.end()) {
+                            //if its in the votes list, and if it has a vote, IE end_point is greater 0, then use if.
+                            if ((bpvote_iter->feevotes.size() > fee_ids[i]) &&
+                                (bpvote_iter->feevotes[fee_ids[i]].end_point.length() > 0)) {
+                                const double dresult = voters_iter->fee_multiplier *
+                                                       (double) bpvote_iter->feevotes[fee_ids[i]].value;
+                                const uint64_t voted_fee = (uint64_t)(dresult);
+                                votesufs.push_back(voted_fee);
+                            }
+                        }
+                    }
+                    topprod++;
                 }
-                lastvalUsed = vote_item.end_point;
-                lastusedHash = vote_item.end_point_hash;
 
-                //if the vote item block producer name is in the multiplier map, then multiply
-                //the suf amount by the multiplier and add it to the list of feevalues to be
-                //averaged
-                if (producer_fee_multipliers_map.find(vote_item.block_producer_name.to_string()) !=
-                    producer_fee_multipliers_map.end()) {
+                //compute the median from the votesufs.
+                int64_t median_fee = -1;
+                if (votesufs.size() >= MIN_FEE_VOTERS_FOR_MEDIAN) {
+                    sort(votesufs.begin(), votesufs.end());
+                    int size = votesufs.size();
+                    if (votesufs.size() % 2 == 0) {
+                        median_fee = (votesufs[size / 2 - 1] + votesufs[size / 2]) / 2;
+                    } else {
+                        median_fee = votesufs[size / 2];
+                    }
+                }
 
-                    //note -- we protect against both overflow and negative values here, an
-                    //overflow error should result computing the dresult,and we check if the
-                    //result is negative.
-                    const double dresult = producer_fee_multipliers_map[vote_item.block_producer_name.to_string()] *
-                                     (double) vote_item.suf_amount;
+                //set median as the new fee amount.
 
-                    const uint64_t voted_fee = (uint64_t)(dresult);
-                    feevalues.push_back(voted_fee);
+                //update the fee.
+                auto fee_iter = fiofees.find(fee_ids[i]);
+                if((fee_iter != fiofees.end())) {
+                    if ( median_fee > 0) {
+                        fiofees.modify(fee_iter, _self, [&](struct fiofee &ff) {
+                            ff.suf_amount = median_fee;
+                            ff.votes_pending.emplace(false);
+                        });
+                        processed_fees++;
+                    }else { //just clear the pending flag, not enough votes to update the fee yet/
+                        fiofees.modify(fee_iter, _self, [&](struct fiofee &ff) {
+                            ff.votes_pending.emplace(false);
+                        });
+                    }
                 }
             }
-
-            //compute the median on the remaining feevalues, this remains to be
-            //processed after we have gone through the loop.
-            compute_median_and_update_fees(feevalues, lastvalUsed, lastusedHash);
 
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
               "Transaction is too large", ErrorTransactionTooLarge);
-        }
 
-        /*******
-        * This method will compute the median fee from the fee votes that are cast.
-        *
-        * @param feevalues
-        * @param fee_endpoint
-        * @param fee_endpoint_hash
-        */
-        void
-        compute_median_and_update_fees(vector <uint64_t> feevalues, const string &fee_endpoint, const uint128_t &fee_endpoint_hash) {
-            bool dbgout = false;
-            //one more time
-            if (feevalues.size() >= MIN_FEE_VOTERS_FOR_MEDIAN) {
-                uint64_t median_fee = 0;
-                //sort it.
-                sort(feevalues.begin(), feevalues.end());
-                //if the number of values is odd use the middle one.
-                if ((feevalues.size() % 2) == 1) {
-                    const int useIdx = (feevalues.size() / 2);
-                    if (dbgout) {
-                        print(" odd size is ", feevalues.size(), " using index for median ", useIdx, "\n");
-                    }
-                    median_fee = feevalues[useIdx];
-                } else {//even number in the list. use the middle 2
-                    const int useIdx = (feevalues.size() / 2) - 1;
-                    if (dbgout) {
-                        print(" even size is ", feevalues.size(), " using index for median ", useIdx, "\n");
-                    }
-                    median_fee = (feevalues[useIdx] + feevalues[useIdx + 1]) / 2;
-                }
-                //update the fee.
-                auto feesbyendpoint = fiofees.get_index<"byendpoint"_n>();
-                auto fee_iter = feesbyendpoint.find(fee_endpoint_hash);
-                if (fee_iter != feesbyendpoint.end()) {
-                    if (dbgout) {
-                        print(" updating ", fee_iter->end_point, " to have fee ", median_fee, "\n");
-                    }
-                    feesbyendpoint.modify(fee_iter, _self, [&](struct fiofee &ff) {
-                        ff.suf_amount = median_fee;
-                    });
-                } else {
-                    if (dbgout) {
-                        print(" fee endpoint does not exist in fiofees for endpoint ", fee_endpoint,
-                              " computed median is ", median_fee, " failed to update fee", "\n");
-                    }
-                }
-            }
+            return processed_fees;
         }
 
     public:
@@ -157,7 +147,8 @@ namespace fioio {
                   bundlevoters(_self, _self.value),
                   feevoters(_self, _self.value),
                   feevotes(_self, _self.value),
-                  topprods(SYSTEMACCOUNT, SYSTEMACCOUNT.value) {
+                  topprods(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
+                  prods(SYSTEMACCOUNT,SYSTEMACCOUNT.value){
         }
 
         /*********
@@ -171,95 +162,126 @@ namespace fioio {
          */
         // @abi action
         [[eosio::action]]
-        void setfeevote(const vector <feevalue> &fee_values, const string &actor) {
-
-            name aactor = name(actor.c_str());
-            require_auth(aactor);
-
+        void setfeevote(const vector <feevalue> &fee_values, const int64_t &max_fee, const name &actor) {
+            require_auth(actor);
             bool dbgout = false;
 
-            //check that the producer is active block producer
-            fio_400_assert(((topprods.find(aactor.value) != topprods.end())), "actor", actor,
-                           " Not an active BP",
-                           ErrorFioNameNotReg);
+            //check that the actor is in the top42.
+            vector<name> top_prods = getTopProds();
 
+            fio_400_assert((std::find(top_prods.begin(), top_prods.end(), actor)) !=
+                top_prods.end(), "actor", actor.to_string()," Not a top 150 BP",ErrorFioNameNotReg);
+
+            fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                           ErrorMaxFeeInvalid);
             const uint32_t nowtime = now();
 
-            //check the submitted fee values.
+            //get all the votes made by this actor. go through the list
+            //and find the fee vote to update.
+            auto feevotesbybpname = feevotes.get_index<"bybpname"_n>();
+            // auto votebyname_iter = feevotesbybpname.lower_bound(actor.value);
+            auto votebyname_iter = feevotesbybpname.find(actor.value);
+
+            vector<feevalue_ts> feevotesv;
+            bool emplacerec = true;
+
+            //check for time violation.
+            if (votebyname_iter != feevotesbybpname.end()){
+                emplacerec = false;
+                feevotesv = votebyname_iter->feevotes;
+            }
+
+            // go through all the fee values passed in.
             for (auto &feeval : fee_values) {
                 //check the endpoint exists for this fee
                 const uint128_t endPointHash = string_to_uint128_hash(feeval.end_point.c_str());
 
                 auto feesbyendpoint = fiofees.get_index<"byendpoint"_n>();
-                fio_400_assert(feesbyendpoint.find(endPointHash) != feesbyendpoint.end(), "end_point", feeval.end_point,
+                auto fees_iter = feesbyendpoint.find(endPointHash);
+
+                fio_400_assert(fees_iter != feesbyendpoint.end(), "end_point", feeval.end_point,
                                "invalid end_point", ErrorEndpointNotFound);
 
                 fio_400_assert(feeval.value >= 0, "fee_value", feeval.end_point,
                                "invalid fee value", ErrorFeeInvalid);
 
-                //get all the votes made by this actor. go through the list
-                //and find the fee vote to update.
-                auto feevotesbybpname = feevotes.get_index<"bybpname"_n>();
-                auto votebyname_iter = feevotesbybpname.lower_bound(aactor.value);
+                uint64_t feeid = fees_iter->fee_id;
+
+                // if the vector doesnt have an entry at this fees id index, add items out to this index.
+                // items with an empty string for end_point will NOT be used in median calcs.
+                if (feevotesv.size() < (feeid+1)){
+                    for(int ix = feevotesv.size();ix<=(feeid+1);ix++)
+                    {
+                        feevalue_ts tfv;
+                        feevotesv.push_back(tfv);
+                    }
+                }
 
                 uint64_t idtoremove;
                 bool found = false;
-                bool timeviolation = false;
-                while (votebyname_iter != feevotesbybpname.end())
-                {
-                    if (votebyname_iter->block_producer_name.value != aactor.value) {
-                        //if the bp name changes we have exited the items of interest, so quit.
-                        break;
-                    }
 
-                    if (votebyname_iter->end_point_hash == endPointHash) {
-                        //check the time of the last update, remove and replace if
-                        //its been longer than the time between votes
-                        const uint32_t lastupdate = votebyname_iter->lastvotetimestamp;
+                fio_400_assert(!(feevotesv[feeid].timestamp > (nowtime - TIME_BETWEEN_FEE_VOTES_SECONDS)), "", "", "Too soon since last call", ErrorTimeViolation);
 
-                        //be silent if the time between votes has not yet elapsed.
-                        if (lastupdate > (nowtime - TIME_BETWEEN_FEE_VOTES_SECONDS)) {
-                            timeviolation = true;
-                            break;
-                        } else {
-                            idtoremove = votebyname_iter->id;
-                            found = true;
-                            break;
-                        }
-                    }
-                    votebyname_iter++;
-                }
+                feevotesv[feeid].end_point = feeval.end_point;
+                feevotesv[feeid].value = feeval.value;
+                feevotesv[feeid].timestamp = (uint64_t)nowtime;
 
-                if (found) {
-                    auto myiter = feevotes.find(idtoremove);
-                    if(myiter != feevotes.end()) {
-                        feevotes.erase(myiter);
-                    }
-                }
-
-                if (!timeviolation) {
-                    feevotes.emplace(aactor, [&](struct feevote &fv) {
-                        fv.id = feevotes.available_primary_key();
-                        fv.block_producer_name = aactor;
-                        fv.end_point = feeval.end_point;
-                        fv.end_point_hash = endPointHash;
-                        fv.suf_amount = feeval.value;
-                        fv.lastvotetimestamp = nowtime;
+                if(topprods.find(actor.value) != topprods.end()) {
+                    feesbyendpoint.modify(fees_iter, _self, [&](struct fiofee &a) {
+                        a.votes_pending.emplace(true);
                     });
-                } else {
-                    fio_400_assert(false, "", "", "Too soon since last call", ErrorTimeViolation);
                 }
             }
 
-            const string response_string = string("{\"status\": \"OK\"}");
+            //emplace or update.
+            if (emplacerec){
+                feevotes.emplace(actor, [&](struct feevote2 &fv) {
+                    fv.id = feevotes.available_primary_key();
+                    fv.block_producer_name = actor;
+                    fv.feevotes = feevotesv;
+                    fv.lastvotetimestamp = nowtime;
+                });
+            } else {
+                feevotesbybpname.modify(votebyname_iter, actor, [&](struct feevote2 &fv) {
+                    fv.feevotes = feevotesv;
+                    fv.lastvotetimestamp = nowtime;
+                });
+            }
 
+            //begin new fees, logic for Mandatory fees.
+            uint128_t endpoint_hash = string_to_uint128_hash(SUBMIT_FEE_RATIOS_ENDPOINT);
+
+            auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
+            auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+            //if the fee isnt found for the endpoint, then 400 error.
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", SUBMIT_FEE_RATIOS_ENDPOINT,
+                           "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+            uint64_t reg_amount = fee_iter->suf_amount;
+            uint64_t fee_type = fee_iter->type;
+
+            //if its not a mandatory fee then this is an error.
+            fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                           "submit_fee_ratios unexpected fee type for endpoint submit_fee_ratios, expected 0",
+                           ErrorNoEndpoint);
+
+            fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                           ErrorMaxFeeExceeded);
+
+            fio_fees(actor, asset(reg_amount, FIOSYMBOL), SUBMIT_FEE_RATIOS_ENDPOINT);
+            processrewardsnotpid(reg_amount, get_self());
+            //end new fees, logic for Mandatory fees.
+
+            const string response_string = string("{\"status\": \"OK\"") +
+                                           string(",\"fee_collected\":") +
+                                           to_string(reg_amount) + string("}");
 
             if (SETFEEVOTERAM > 0) {
                 action(
                         permission_level{SYSTEMACCOUNT, "active"_n},
                         "eosio"_n,
                         "incram"_n,
-                        std::make_tuple(aactor, SETFEEVOTERAM)
+                        std::make_tuple(actor, SETFEEVOTERAM)
                 ).send();
             }
 
@@ -273,9 +295,11 @@ namespace fioio {
       * This method will update the fees based upon the present votes made by producers.
       */
         [[eosio::action]]
-        void updatefees() {
-            require_auth(SYSTEMACCOUNT);
-            update_fees();
+        void computefees() {
+            uint32_t numberprocessed = update_fees();
+            const string response_string = string("{\"status\": \"OK\",\"fees_processed\":") +
+                                           to_string(numberprocessed) + string("}");
+            send_response(response_string.c_str());
         }
 
        /********
@@ -287,15 +311,17 @@ namespace fioio {
         // @abi action
         [[eosio::action]]
         void bundlevote(
-                int64_t bundled_transactions,
-                const string &actor
+                const int64_t &bundled_transactions,
+                const int64_t &max_fee,
+                const name &actor
         ) {
-            const name aactor = name(actor.c_str());
-            require_auth(aactor);
+            require_auth(actor);
 
-            fio_400_assert(((topprods.find(aactor.value) != topprods.end())), "actor", actor,
-                           " Not an active BP",
-                           ErrorFioNameNotReg);
+            //check that the actor is in the top150.
+            vector<name> top_prods = getTopProds();
+            fio_400_assert((std::find(top_prods.begin(), top_prods.end(), actor)) !=
+                           top_prods.end(), "actor", actor.to_string()," Not a top 150 BP",ErrorFioNameNotReg);
+
 
             fio_400_assert(bundled_transactions > 0, "bundled_transactions", to_string(bundled_transactions),
                            " Must be positive",
@@ -303,13 +329,13 @@ namespace fioio {
 
             const uint32_t nowtime = now();
 
-            auto voter_iter = bundlevoters.find(aactor.value);
+            auto voter_iter = bundlevoters.find(actor.value);
             if (voter_iter != bundlevoters.end()) //update if it exists
             {
                 const uint32_t lastupdate = voter_iter->lastvotetimestamp;
                 if (lastupdate <= (nowtime - TIME_BETWEEN_VOTES_SECONDS)) {
                     bundlevoters.modify(voter_iter, _self, [&](struct bundlevoter &a) {
-                        a.block_producer_name = aactor;
+                        a.block_producer_name = actor;
                         a.bundledbvotenumber = bundled_transactions;
                         a.lastvotetimestamp = nowtime;
                     });
@@ -317,12 +343,36 @@ namespace fioio {
                     fio_400_assert(false, "", "", "Too soon since last call", ErrorTimeViolation);
                 }
             } else {
-                bundlevoters.emplace(aactor, [&](struct bundlevoter &f) {
-                    f.block_producer_name = aactor;
+                bundlevoters.emplace(actor, [&](struct bundlevoter &f) {
+                    f.block_producer_name = actor;
                     f.bundledbvotenumber = bundled_transactions;
                     f.lastvotetimestamp = nowtime;
                 });
             }
+
+            //begin new fees, logic for Mandatory fees.
+            uint128_t endpoint_hash = string_to_uint128_hash(SUBMIT_BUNDLED_TRANSACTION_ENDPOINT);
+
+            auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
+            auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+            //if the fee isnt found for the endpoint, then 400 error.
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", SUBMIT_BUNDLED_TRANSACTION_ENDPOINT,
+                           "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+            uint64_t reg_amount = fee_iter->suf_amount;
+            uint64_t fee_type = fee_iter->type;
+
+            //if its not a mandatory fee then this is an error.
+            fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                           "submit_bundled_transaction unexpected fee type for endpoint submit_bundled_transaction, expected 0",
+                           ErrorNoEndpoint);
+
+            fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                           ErrorMaxFeeExceeded);
+
+            fio_fees(actor, asset(reg_amount, FIOSYMBOL), SUBMIT_BUNDLED_TRANSACTION_ENDPOINT);
+            processrewardsnotpid(reg_amount, get_self());
+            //end new fees, logic for Mandatory fees.
 
             const string response_string = string("{\"status\": \"OK\"}");
 
@@ -331,7 +381,7 @@ namespace fioio {
                         permission_level{SYSTEMACCOUNT, "active"_n},
                         "eosio"_n,
                         "incram"_n,
-                        std::make_tuple(aactor, BUNDLEVOTERAM)
+                        std::make_tuple(actor, BUNDLEVOTERAM)
                 ).send();
             }
 
@@ -340,7 +390,6 @@ namespace fioio {
 
             send_response(response_string.c_str());
         }
-
 
         /**********
          * This action will create a new feevoters record if the specified block producer does not yet exist in the
@@ -354,30 +403,34 @@ namespace fioio {
         // @abi action
         [[eosio::action]]
         void setfeemult(
-                double multiplier,
-                const string &actor
+                const double &multiplier,
+                const int64_t &max_fee,
+                const name &actor
         ) {
+            require_auth(actor);
 
-            const name aactor = name(actor.c_str());
-            require_auth(aactor);
+            //check that the actor is in the top42.
+            vector<name> top_prods = getTopProds();
 
-            fio_400_assert(((topprods.find(aactor.value) != topprods.end())), "actor", actor,
-                           " Not an active BP",
-                           ErrorFioNameNotReg);
+           fio_400_assert((std::find(top_prods.begin(), top_prods.end(), actor)) !=
+                           top_prods.end(), "actor", actor.to_string()," Not a top 150 BP",ErrorFioNameNotReg);
 
             fio_400_assert(multiplier > 0, "multiplier", to_string(multiplier),
                            " Must be positive",
                            ErrorFioNameNotReg);
 
+            fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                           ErrorMaxFeeInvalid);
+
             const uint32_t nowtime = now();
 
-            auto voter_iter = feevoters.find(aactor.value);
+            auto voter_iter = feevoters.find(actor.value);
             if (voter_iter != feevoters.end())
             {
                 const uint32_t lastupdate = voter_iter->lastvotetimestamp;
                 if (lastupdate <= (nowtime - 120)) {
                     feevoters.modify(voter_iter, _self, [&](struct feevoter &a) {
-                        a.block_producer_name = aactor;
+                        a.block_producer_name = actor;
                         a.fee_multiplier = multiplier;
                         a.lastvotetimestamp = nowtime;
                     });
@@ -385,21 +438,70 @@ namespace fioio {
                     fio_400_assert(false, "", "", "Too soon since last call", ErrorTimeViolation);
                 }
             } else {
-                feevoters.emplace(aactor, [&](struct feevoter &f) {
-                    f.block_producer_name = aactor;
+                feevoters.emplace(actor, [&](struct feevoter &f) {
+                    f.block_producer_name = actor;
                     f.fee_multiplier = multiplier;
                     f.lastvotetimestamp = nowtime;
                 });
             }
 
-            const string response_string = string("{\"status\": \"OK\"}");
+            //get all voted fees and set votes pending.
+            auto feevotesbybpname = feevotes.get_index<"bybpname"_n>();
+            auto votebyname_iter = feevotesbybpname.find(actor.value);
+            auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
+
+            if(topprods.find(actor.value) != topprods.end()) {
+
+                if (votebyname_iter != feevotesbybpname.end()) {
+                    //loop over all fee votes, for all voted fees set the pending flag.
+                    for(int i=0;i<votebyname_iter->feevotes.size();i++) {
+                        if (votebyname_iter->block_producer_name.value != actor.value) {
+                            break;
+                        } else {
+
+                            auto fee_iter = fiofees.find(i);
+                            if(fee_iter != fiofees.end()) {
+                                fiofees.modify(fee_iter, _self, [&](struct fiofee &a) {
+                                    a.votes_pending.emplace(true);
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            //begin new fees, logic for Mandatory fees.
+            uint128_t endpoint_hash = string_to_uint128_hash(SUBMIT_FEE_MULTIPLER_ENDPOINT);
+
+            auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+            //if the fee isnt found for the endpoint, then 400 error.
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", SUBMIT_FEE_MULTIPLER_ENDPOINT,
+                           "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+            uint64_t reg_amount = fee_iter->suf_amount;
+            uint64_t fee_type = fee_iter->type;
+
+            //if its not a mandatory fee then this is an error.
+            fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                           "submit_fee_multiplier unexpected fee type for endpoint submit_fee_multiplier, expected 0",
+                           ErrorNoEndpoint);
+
+            fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                           ErrorMaxFeeExceeded);
+
+            fio_fees(actor, asset(reg_amount, FIOSYMBOL), SUBMIT_FEE_MULTIPLER_ENDPOINT);
+            processrewardsnotpid(reg_amount, get_self());
+            //end new fees, logic for Mandatory fees.
+
+            const string response_string = string("{\"status\": \"OK\"") +
+                                           string(",\"fee_collected\":") +
+                                           to_string(reg_amount) + string("}");
 
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
               "Transaction is too large", ErrorTransactionTooLarge);
 
             send_response(response_string.c_str());
         }
-
 
         // @abi action
         [[eosio::action]]
@@ -416,7 +518,7 @@ namespace fioio {
 
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
             //if the fee isnt found for the endpoint, then 400 error.
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "register_producer",
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", end_point,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             const uint64_t reg_amount = fee_iter->suf_amount;
@@ -430,12 +532,11 @@ namespace fioio {
             fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
                            ErrorMaxFeeExceeded);
 
-            fio_fees(account, asset(reg_amount, FIOSYMBOL));
+            fio_fees(account, asset(reg_amount, FIOSYMBOL), end_point);
             processrewardsnotpid(reg_amount, get_self());
 
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
               "Transaction is too large", ErrorTransactionTooLarge);
-
         }
 
         // @abi action
@@ -446,7 +547,6 @@ namespace fioio {
                 const int64_t &max_fee,
                 const int64_t &bytesize
         ) {
-
             require_auth(account);
             //begin new fees, logic for Mandatory fees.
             const uint128_t endpoint_hash = fioio::string_to_uint128_hash(end_point.c_str());
@@ -455,7 +555,7 @@ namespace fioio {
 
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
             //if the fee isnt found for the endpoint, then 400 error.
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "register_producer",
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", end_point,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             uint64_t reg_amount = fee_iter->suf_amount;
@@ -477,7 +577,7 @@ namespace fioio {
             fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
                            ErrorMaxFeeExceeded);
 
-            fio_fees(account, asset(reg_amount, FIOSYMBOL));
+            fio_fees(account, asset(reg_amount, FIOSYMBOL), end_point);
             processrewardsnotpid(reg_amount, get_self());
             //end new fees, logic for Mandatory fees.
         }
@@ -512,6 +612,7 @@ namespace fioio {
                     feesbyendpoint.modify(fees_iter, _self, [&](struct fiofee &a) {
                         a.type = type;
                         a.suf_amount = suf_amount;
+                        //leave votes_pending as is, if votes are pending they need processed.
                     });
             } else {
                 fiofees.emplace(get_self(), [&](struct fiofee &f) {
@@ -520,15 +621,15 @@ namespace fioio {
                     f.end_point_hash = endPointHash;
                     f.type = type;
                     f.suf_amount = suf_amount;
+                    f.votes_pending.emplace(false);
                 });
             }
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
               "Transaction is too large", ErrorTransactionTooLarge);
-
         }
     };
 
-    EOSIO_DISPATCH(FioFee, (setfeevote)(bundlevote)(setfeemult)(updatefees)
+    EOSIO_DISPATCH(FioFee, (setfeevote)(bundlevote)(setfeemult)(computefees)
                            (mandatoryfee)(bytemandfee)(createfee)
     )
 }
