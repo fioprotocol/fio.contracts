@@ -79,7 +79,7 @@ namespace fioio {
             auto trxTable = fioTransactionsTable.begin();
 
             auto migrLedger = mgrStatsTable.begin();
-            if (migrLedger != mgrStatsTable.end) { mgrStatsTable.erase(migrLedger); }
+            if (migrLedger != mgrStatsTable.end()) { mgrStatsTable.erase(migrLedger); }
 
             while (obtTable != recordObtTable.end()) { //obt record migrate
                 recordObtTable.erase(obtTable);
