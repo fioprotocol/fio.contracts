@@ -20,6 +20,7 @@ namespace eosiosystem {
     system_contract::system_contract(name s, name code, datastream<const char *> ds)
             : native(s, code, ds),
               _voters(_self, _self.value),
+              _voters_old(_self, _self.value), //***** REMOVE POST MIGRATION *****//
               _producers(_self, _self.value),
               _topprods(_self, _self.value),
               _global(_self, _self.value),

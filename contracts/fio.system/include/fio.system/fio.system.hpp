@@ -281,11 +281,53 @@ struct [[eosio::table, eosio::contract("fio.system")]] voter_info {
     )
 };
 
-typedef eosio::multi_index<"voters"_n, voter_info,
+typedef eosio::multi_index<"voters2"_n, voter_info,
 indexed_by<"byaddress"_n, const_mem_fun<voter_info, uint128_t, &voter_info::by_address>>,
 indexed_by<"byowner"_n, const_mem_fun<voter_info, uint64_t, &voter_info::by_owner>>
 > voters_table;
 
+//***** REMOVE POST MIGRATION *****//
+struct [[eosio::table, eosio::contract("fio.system")]] voter_info_old {
+    uint64_t id; //one up id is primary key.
+    string fioaddress;  //this is the fio address to be used for bundled fee collection
+    //for tx that are fee type bundled, just use the one fio address
+    //you want to have pay for the bundled fee transactions associated
+    //with this voter.
+    uint128_t addresshash; //this is the hash of the fio address for searching
+    name owner;     /// the voter
+    name proxy;     /// the proxy set by the voter, if any
+    std::vector <producername> producers; /// the producers approved by this voter if no proxy set
+    /**
+     *  Every time a vote is cast we must first "undo" the last vote weight, before casting the
+     *  new vote weight.  Vote weight is calculated as:
+     *
+     *  stated.amount * 2 ^ ( weeks_since_launch/weeks_per_year)
+     */
+    double last_vote_weight = 0; /// the vote weight cast the last time the vote was updated
+
+    /**
+     * Total vote weight delegated to this voter.
+     */
+    double proxied_vote_weight = 0; /// the total vote weight delegated to this voter as a proxy
+    bool is_proxy = 0; /// whether the voter is a proxy for others
+    bool is_auto_proxy = 0;
+    uint32_t reserved2 = 0;
+    eosio::asset reserved3;
+
+    uint64_t primary_key() const{return id;}
+    uint128_t by_address() const {return addresshash;}
+    uint64_t by_owner() const { return owner.value; }
+
+    // explicit serialization macro is not necessary, used here only to improve compilation time
+    EOSLIB_SERIALIZE( voter_info_old, (id)(fioaddress)(addresshash)(owner)(proxy)(producers)(last_vote_weight)(proxied_vote_weight)(is_proxy)(is_auto_proxy)(reserved2)(reserved3)
+    )
+};
+
+//***** REMOVE POST MIGRATION *****//
+typedef eosio::multi_index<"voters"_n, voter_info_old,
+indexed_by<"byaddress"_n, const_mem_fun<voter_info_old, uint128_t, &voter_info_old::by_address>>,
+indexed_by<"byowner"_n, const_mem_fun<voter_info_old, uint64_t, &voter_info_old::by_owner>>
+> voters_table_old;
 
 
 //MAS-522 eliminate producers2 table typedef eosio::multi_index<"producers2"_n, producer_info2> producers_table2;
@@ -302,6 +344,7 @@ class [[eosio::contract("fio.system")]] system_contract : public native {
 
 private:
     voters_table _voters;
+    voters_table_old _voters_old;
     producers_table _producers;
     top_producers_table _topprods;
     locked_tokens_table _lockedtokens;

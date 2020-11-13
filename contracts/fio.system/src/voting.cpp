@@ -493,6 +493,32 @@ namespace eosiosystem {
     void system_contract::voteproducer(const std::vector<string> &producers, const string &fio_address, const name &actor, const int64_t &max_fee) {
         require_auth(actor);
 
+        //***** REMOVE POST MIGRATION *****//
+        auto old_table_iter = _voters_old.begin();
+        if (old_table_iter != _voters_old.end()) {
+          auto new_table_iter = _voters.begin();
+          //copy records
+          while(old_table_iter !=_voters_old.end()) {
+            _voters.emplace(get_self(), [&](auto new_table) {
+                new_table.id = old_table_iter->id;
+                new_table.fioaddress = old_table_iter->fioaddress;
+                new_table.addresshash = old_table_iter->addresshash;
+                new_table.owner = old_table_iter->owner;
+                new_table.proxy = old_table_iter->proxy;
+                //perform fioaddress lookup to assign this, these are two different objects called producers
+                //new_table.producers = old_table_iter->producers
+                
+                new_table.last_vote_weight = old_table_iter->last_vote_weight;
+                new_table.proxied_vote_weight = old_table_iter->proxied_vote_weight;
+                new_table.is_proxy = old_table_iter->is_proxy;
+                new_table.is_auto_proxy = old_table_iter->is_auto_proxy;
+                new_table.reserved2 = old_table_iter->reserved2;
+                new_table.reserved3 = old_table_iter->reserved3;
+            });
+          }
+        } else {
+        //***** REMOVE POST MIGRATION *****//
+
         fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                        ErrorMaxFeeInvalid);
         name proxy;
@@ -619,6 +645,10 @@ namespace eosiosystem {
           "Transaction is too large", ErrorTransactionTooLarge);
 
         send_response(response_string.c_str());
+
+
+      } //***** REMOVE POST MIGRATION *****//
+
     }
 
     void system_contract::voteproxy(const string &proxy, const string &fio_address, const name &actor, const int64_t &max_fee) {
