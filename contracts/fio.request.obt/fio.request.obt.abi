@@ -259,27 +259,27 @@
             },
             {
                "name":"beginobt",
-               "type":"int"
+               "type":"int64"
             },
             {
                "name":"currentobt",
-               "type":"int"
+               "type":"int64"
             },
             {
                "name":"beginrq",
-               "type":"int"
+               "type":"int64"
             },
             {
                "name":"currentrq",
-               "type":"int"
+               "type":"int64"
             },
             {
                "name":"beginsta",
-               "type":"int"
+               "type":"int64"
             },
             {
                "name":"currentsta",
-               "type":"int"
+               "type":"int64"
             },
             {
                "name":"isFinished",
