@@ -214,11 +214,11 @@
          "base":"",
          "fields":[
             {
-               "name":"pending_action_ids",
+               "name":"payer_action_ids",
                "type":"uint64[]"
             },
             {
-               "name":"sent_action_ids",
+               "name":"payee_action_ids",
                "type":"uint64[]"
             },
             {

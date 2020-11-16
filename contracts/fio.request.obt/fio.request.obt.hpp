@@ -33,8 +33,8 @@ namespace fioio {
     };
 
     struct ledgerItems {
-        std::vector <uint64_t> pending_action_ids;
-        std::vector <uint64_t> sent_action_ids;
+        std::vector <uint64_t> payer_action_ids;
+        std::vector <uint64_t> payee_action_ids;
         std::vector <uint64_t> cancelled_action_ids;
         std::vector <uint64_t> obt_action_ids;
 
