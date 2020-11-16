@@ -11,6 +11,7 @@
 #include <fio.common/fiotime.hpp>
 #include <fio.token/include/fio.token/fio.token.hpp>
 #include <eosiolib/asset.hpp>
+#include <fio.request.obt/fio.request.obt.hpp> //TEMP FOR XFERADDRESS
 
 namespace fioio {
 
@@ -29,6 +30,8 @@ namespace fioio {
         eosiosystem::producers_table producers;
         eosiosystem::locked_tokens_table lockedTokensTable;
         config appConfig;
+        recordobt_table recordObtTable; //TEMP FOR XFERADDRESS
+        fiorequest_contexts_table fiorequestContextsTable; //TEMP FOR XFERADDRESS
 
     public:
         using contract::contract;
@@ -43,7 +46,9 @@ namespace fioio {
                                                                         voters(AddressContract, AddressContract.value),
                                                                         topprods(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                                                                         producers(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
-                                                                        lockedTokensTable(SYSTEMACCOUNT,SYSTEMACCOUNT.value){
+                                                                        lockedTokensTable(SYSTEMACCOUNT,SYSTEMACCOUNT.value),
+                                                                        recordObtTable(REQOBTACCOUNT, REQOBTACCOUNT.value), //TEMP FOR XFERADDRESS
+                                                                        fiorequestContextsTable(REQOBTACCOUNT, REQOBTACCOUNT.value){ //TEMP FOR XFERADDRESS
             configs_singleton configsSingleton(FeeContract, FeeContract.value);
             appConfig = configsSingleton.get_or_default(config());
         }
@@ -1361,7 +1366,6 @@ namespace fioio {
         [[eosio::action]]
         void xferaddress(const string &fio_address, const string &new_owner_fio_public_key, const int64_t &max_fee,
                         const string &tpid, const name &actor) {
-            check(false, "Transfering a FIO address/domain is currently disabled");
             require_auth(actor);
             FioAddress fa;
             getFioAddressStruct(fio_address, fa);
@@ -1390,6 +1394,24 @@ namespace fioio {
 
             fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature);
             const uint128_t endpoint_hash = string_to_uint128_hash(TRANSFER_ADDRESS_ENDPOINT);
+
+            //TEMP
+            auto obtbyname = recordObtTable.get_index<"bypayee"_n>();
+            auto name_iter = obtbyname.find(nameHash);
+            check(name_iter == obtbyname.end(), "Transfering a FIO address is currently disabled for some fio.addresses");
+
+            auto obtbyname2 = recordObtTable.get_index<"bypayer"_n>();
+            auto name_iter2 = obtbyname2.find(nameHash);
+            check(name_iter2 == obtbyname2.end(), "Transfering a FIO address is currently disabled for some fio.addresses");
+
+            auto reqbyname = fiorequestContextsTable.get_index<"byreceiver"_n>();
+            auto name_iter3 = reqbyname.find(nameHash);
+            check(name_iter3 == reqbyname.end(), "Transfering a FIO address is currently disabled for some fio.addresses");
+
+            auto reqbyname2 = fiorequestContextsTable.get_index<"byoriginator"_n>();
+            auto name_iter4 = reqbyname2.find(nameHash);
+            check(name_iter4 == reqbyname2.end(), "Transfering a FIO address is currently disabled for some fio.addresses");
+            //TEMP
 
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
