@@ -265,12 +265,12 @@ namespace fioio {
                 string payee_acct;
                 key_to_account(payee_key, payee_acct);
                 auto ledg_iter = ledgerTable.find(name(payer_account.c_str()).value);
-                auto trxt_vec = ledg_iter->transactions.pending_action_ids;
+                auto trxt_vec = ledg_iter->transactions.payer_action_ids;
                 auto ledg_iter2 = ledgerTable.find(name(payee_acct.c_str()).value);
 
                 trxt_vec.erase(std::remove(trxt_vec.begin(), trxt_vec.end(), requestId), trxt_vec.end());
                 ledgerTable.modify(ledg_iter, _self, [&](struct reqledger &req) {
-                    req.transactions.pending_action_ids = trxt_vec;
+                    req.transactions.payer_action_ids = trxt_vec;
                     req.transactions.obt_action_ids.insert(req.transactions.obt_action_ids.begin(), requestId);
                 });
 
@@ -497,22 +497,22 @@ namespace fioio {
             if (ledg_iter == ledgerTable.end()) {
                 ledgerTable.emplace(aActor, [&](struct reqledger &req) {
                     req.account = name(payer_acct.c_str()).value;
-                    req.transactions.pending_action_ids.insert(req.transactions.pending_action_ids.begin(), id);
+                    req.transactions.payer_action_ids.insert(req.transactions.payer_action_ids.begin(), id);
                 });
             } else {
                 ledgerTable.modify(ledg_iter, _self, [&](struct reqledger &req) {
-                    req.transactions.pending_action_ids.insert(req.transactions.pending_action_ids.begin(), id);
+                    req.transactions.payer_action_ids.insert(req.transactions.payer_action_ids.begin(), id);
                 });
             }
 
             if (ledg_iter2 == ledgerTable.end()) {
                 ledgerTable.emplace(aActor, [&](struct reqledger &req) {
                     req.account = name(payee_acct.c_str()).value;
-                    req.transactions.sent_action_ids.insert(req.transactions.sent_action_ids.begin(), id);
+                    req.transactions.payee_action_ids.insert(req.transactions.payee_action_ids.begin(), id);
                 });
             } else {
                 ledgerTable.modify(ledg_iter2, _self, [&](struct reqledger &req) {
-                    req.transactions.sent_action_ids.insert(req.transactions.sent_action_ids.begin(), id);
+                    req.transactions.payee_action_ids.insert(req.transactions.payee_action_ids.begin(), id);
                 });
             }
 
@@ -679,11 +679,11 @@ namespace fioio {
             string payer_acct;
             key_to_account(payer_key, payer_acct);
             auto ledg_iter = ledgerTable.find(name(payer_acct.c_str()).value);
-            auto trxt_vec = ledg_iter->transactions.pending_action_ids;
+            auto trxt_vec = ledg_iter->transactions.payer_action_ids;
             trxt_vec.erase(std::remove(trxt_vec.begin(), trxt_vec.end(), requestId), trxt_vec.end());
 
             ledgerTable.modify(ledg_iter, _self, [&](struct reqledger &req) {
-                req.transactions.pending_action_ids = trxt_vec;
+                req.transactions.payer_action_ids = trxt_vec;
             });
 
             trxtByRequestId.modify(fioreqctx_iter, _self, [&](struct fiotrxt &fr) {
