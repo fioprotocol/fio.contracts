@@ -596,8 +596,8 @@ namespace fioio {
             fio_400_assert(fioreqctx_iter != trxtByRequestId.end(), "fio_request_id", fio_request_id,
                            "No such FIO Request", ErrorRequestContextNotFound);
 
-
-            // Add check for requested only. TODO
+            fio_400_assert(fioreqctx_iter->fio_data_type == 0, "fio_request_id", fio_request_id,
+                           "Only pending requests can be rejected.", ErrorRequestStatusInvalid);
 
             const uint128_t payer128FioAddHashed = fioreqctx_iter->payer_fio_addr_hex;
             const string payer_key = fioreqctx_iter->payer_key;
@@ -675,16 +675,6 @@ namespace fioio {
                 }
             }
             //end fees, bundle eligible fee logic
-            
-            string payer_acct;
-            key_to_account(payer_key, payer_acct);
-            auto ledg_iter = ledgerTable.find(name(payer_acct.c_str()).value);
-            auto trxt_vec = ledg_iter->transactions.payer_action_ids;
-            trxt_vec.erase(std::remove(trxt_vec.begin(), trxt_vec.end(), requestId), trxt_vec.end());
-
-            ledgerTable.modify(ledg_iter, _self, [&](struct reqledger &req) {
-                req.transactions.payer_action_ids = trxt_vec;
-            });
 
             trxtByRequestId.modify(fioreqctx_iter, _self, [&](struct fiotrxt &fr) {
                 fr.fio_data_type = static_cast<int64_t >(trxstatus::rejected);
