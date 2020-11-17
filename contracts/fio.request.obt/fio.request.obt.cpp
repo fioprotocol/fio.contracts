@@ -1203,20 +1203,9 @@ namespace fioio {
 
         // USED FOR MIGRATION
         if(fioreqctx2_iter != trxtByRequestId.end()){
-            const uint64_t id = fioreqctx2_iter->id;
-            string payer_acct;
             string payee_acct;
-            key_to_account(payer_key, payer_acct);
             key_to_account(payee_key, payee_acct);
-            auto ledg_iter = ledgerTable.find(name(payer_acct.c_str()).value);
             auto ledg_iter2 = ledgerTable.find(name(payee_acct.c_str()).value);
-            auto trxt_vec = ledg_iter->transactions.payer_action_ids;
-
-            trxt_vec.erase(std::remove(trxt_vec.begin(), trxt_vec.end(), id), trxt_vec.end());
-
-            ledgerTable.modify(ledg_iter, _self, [&](struct reqledger &req) {
-                req.transactions.payer_action_ids = trxt_vec;
-            });
 
             ledgerTable.modify(ledg_iter2, _self, [&](struct reqledger &req2) {
                 req2.transactions.cancelled_action_ids.insert(req2.transactions.cancelled_action_ids.begin(), id);
