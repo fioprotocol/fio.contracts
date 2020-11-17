@@ -505,9 +505,11 @@ namespace eosiosystem {
                 new_table.addresshash = old_table_iter->addresshash;
                 new_table.owner = old_table_iter->owner;
                 new_table.proxy = old_table_iter->proxy;
-                //perform fioaddress lookup to assign this, these are two different objects called producers
-                //new_table.producers = old_table_iter->producers
-                
+
+                for(uint32_t i = 0; i < old_table_iter->producers.size(); i++) {
+                  new_table.producers.push_back(producername{old_table_iter->producers[i]});
+                }
+
                 new_table.last_vote_weight = old_table_iter->last_vote_weight;
                 new_table.proxied_vote_weight = old_table_iter->proxied_vote_weight;
                 new_table.is_proxy = old_table_iter->is_proxy;

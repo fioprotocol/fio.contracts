@@ -296,7 +296,7 @@ struct [[eosio::table, eosio::contract("fio.system")]] voter_info_old {
     uint128_t addresshash; //this is the hash of the fio address for searching
     name owner;     /// the voter
     name proxy;     /// the proxy set by the voter, if any
-    std::vector <producername> producers; /// the producers approved by this voter if no proxy set
+    std::vector <name> producers; /// the producers approved by this voter if no proxy set
     /**
      *  Every time a vote is cast we must first "undo" the last vote weight, before casting the
      *  new vote weight.  Vote weight is calculated as:
