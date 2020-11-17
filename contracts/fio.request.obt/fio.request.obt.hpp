@@ -27,7 +27,18 @@ namespace fioio {
         requested = 0,
         rejected = 1,
         sent_to_blockchain = 2,
-        cancelled = 3
+        cancelled = 3,
+        obt_action = 4,
+        other = 5 //Future Use
+    };
+
+    struct ledgerItems {
+        std::vector <uint64_t> payer_action_ids;
+        std::vector <uint64_t> payee_action_ids;
+        std::vector <uint64_t> cancelled_action_ids;
+        std::vector <uint64_t> obt_action_ids;
+
+        std::vector <uint64_t> other_ids; //Future Use
     };
 
     // The request context table holds the requests for funds that have been requested, it provides
@@ -129,4 +140,81 @@ namespace fioio {
             indexed_by<"byfioreqid"_n, const_mem_fun < fioreqsts, uint64_t, &fioreqsts::by_fioreqid> >
     >
     fiorequest_status_table;
+
+    // The request context table holds the requests for funds that have been requested, it provides
+    // searching by id, payer and payee.
+    // @abi table fioreqctxts i64
+    struct [[eosio::action]] fiotrxt {
+        uint64_t id;
+        uint64_t fio_request_id = 0;
+        uint128_t payer_fio_addr_hex;
+        uint128_t payee_fio_addr_hex;
+        uint8_t fio_data_type; //trxstatus ids
+        uint64_t init_time;
+        string payer_fio_addr;
+        string payee_fio_addr;
+        string payer_key = nullptr;
+        string payee_key = nullptr;
+        uint128_t payer_key_hex;
+        uint128_t payee_key_hex;
+
+        string content = "";
+        uint64_t update_time = 0;
+
+        uint64_t primary_key() const { return id; }
+        uint64_t by_requestid() const { return fio_request_id; }
+        uint128_t by_receiver() const { return payer_fio_addr_hex; }
+        uint128_t by_originator() const { return payee_fio_addr_hex; }
+        uint128_t by_payerkey() const { return payer_key_hex; }
+        uint128_t by_payeekey() const { return payee_key_hex; }
+
+        EOSLIB_SERIALIZE(fiotrxt,
+        (id)(fio_request_id)(payer_fio_addr_hex)(payee_fio_addr_hex)(fio_data_type)(init_time)
+                (payer_fio_addr)(payee_fio_addr)(payer_key)(payee_key)(payer_key_hex)(payee_key_hex)
+                (content)(update_time)
+        )
+    };
+
+    typedef multi_index<"fiotrxts"_n, fiotrxt,
+            indexed_by<"byrequestid"_n, const_mem_fun < fiotrxt, uint64_t, &fiotrxt::by_requestid>>,
+    indexed_by<"byreceiver"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_receiver>>,
+    indexed_by<"byoriginator"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_originator>>,
+    indexed_by<"bypayerkey"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_payerkey>>,
+    indexed_by<"bypayeekey"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_payeekey>
+    >>
+    fiotrxt_contexts_table;
+
+    struct [[eosio::action]] reqledger {
+
+        uint64_t account;
+        ledgerItems transactions;
+
+        uint64_t primary_key() const { return account; }
+
+        EOSLIB_SERIALIZE(reqledger, (account)(transactions))
+    };
+
+    typedef multi_index<"reqledgers"_n, reqledger> reqledgers_table;
+
+    struct [[eosio::action]] migrledger {
+
+        uint64_t id;
+
+        int beginobt = -1;
+        int currentobt = 0;
+
+        int beginrq = -1;
+        int currentrq = 0;
+
+        int beginsta = -1;
+        int currentsta = 0;
+
+        bool isFinished = false;
+
+        uint64_t primary_key() const { return id; }
+
+        EOSLIB_SERIALIZE(migrledger, (id)(beginobt)(currentobt)(beginrq)(currentrq)(beginsta)(currentsta))
+    };
+
+    typedef multi_index<"migrledgers"_n, migrledger> migrledgers_table;
 }
