@@ -495,18 +495,20 @@ namespace eosiosystem {
 
         //***** REMOVE POST MIGRATION *****//
         auto old_table_iter = _voters_old.begin();
+        const uint32_t MOVELIMIT = 3;
+        uint32_t c = 0;
         if (old_table_iter != _voters_old.end()) {
           auto new_table_iter = _voters.begin();
           //copy records
           while(old_table_iter !=_voters_old.end()) {
-            _voters.emplace(get_self(), [&](auto new_table) {
-                new_table.id = old_table_iter->id;
+            _voters.emplace(get_self(), [&](voter_info &new_table) {
+                new_table.id = _voters.available_primary_key();
                 new_table.fioaddress = old_table_iter->fioaddress;
                 new_table.addresshash = old_table_iter->addresshash;
                 new_table.owner = old_table_iter->owner;
                 new_table.proxy = old_table_iter->proxy;
 
-                for(uint32_t i = 0; i < old_table_iter->producers.size(); i++) {
+              for(uint32_t i = 0; i < old_table_iter->producers.size(); i++) {
                   new_table.producers.push_back(producername{old_table_iter->producers[i]});
                 }
 
@@ -517,7 +519,11 @@ namespace eosiosystem {
                 new_table.reserved2 = old_table_iter->reserved2;
                 new_table.reserved3 = old_table_iter->reserved3;
             });
+            _voters_old.erase(old_table_iter);
+            c++;
+            if (c > MOVELIMIT) break;
           }
+
         } else {
         //***** REMOVE POST MIGRATION *****//
 
