@@ -1203,6 +1203,7 @@ namespace fioio {
 
         // USED FOR MIGRATION
         if(fioreqctx2_iter != trxtByRequestId.end()){
+            const uint64_t id = fioreqctx2_iter->id;
             string payee_acct;
             key_to_account(payee_key, payee_acct);
             auto ledg_iter2 = ledgerTable.find(name(payee_acct.c_str()).value);
