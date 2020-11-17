@@ -1038,17 +1038,6 @@ namespace fioio {
 
             // USED FOR MIGRATION
             if(fioreqctx2_iter != trxtByRequestId.end()){
-                const uint64_t id = fioreqctx2_iter->id;
-                string payer_acct;
-                key_to_account(payer_key, payer_acct);
-                auto ledg_iter = ledgerTable.find(name(payer_acct.c_str()).value);
-                auto trxt_vec = ledg_iter->transactions.payer_action_ids;
-                trxt_vec.erase(std::remove(trxt_vec.begin(), trxt_vec.end(), requestId), trxt_vec.end());
-
-                ledgerTable.modify(ledg_iter, _self, [&](struct reqledger &req) {
-                    req.transactions.payer_action_ids = trxt_vec;
-                });
-
                 trxtByRequestId.modify(fioreqctx2_iter, _self, [&](struct fiotrxt &fr) {
                     fr.fio_data_type = static_cast<int64_t >(trxstatus::rejected);
                     fr.update_time = currentTime;
