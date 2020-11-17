@@ -519,7 +519,7 @@ namespace eosiosystem {
                 new_table.reserved2 = old_table_iter->reserved2;
                 new_table.reserved3 = old_table_iter->reserved3;
             });
-            _voters_old.erase(old_table_iter);
+            old_table_iter = _voters_old.erase(old_table_iter);
             c++;
             if (c > MOVELIMIT) break;
           }
