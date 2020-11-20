@@ -10,6 +10,7 @@
 
 #include <fio.common/fio.common.hpp>
 #include <fio.address/fio.address.hpp>
+#include <fio.system/include/fio.system/fio.system.hpp>
 #include <fio.fee/fio.fee.hpp>
 #include <fio.tpid/fio.tpid.hpp>
 
@@ -30,6 +31,7 @@ namespace eosio {
         fioio::tpids_table tpids;
         fioio::fionames_table fionames;
         eosiosystem::locked_tokens_table lockedTokensTable;
+        eosiosystem::general_locks_table generalLockTokensTable;
 
     public:
         token(name s, name code, datastream<const char *> ds) : contract(s, code, ds),
@@ -39,7 +41,8 @@ namespace eosio {
                                                                          fioio::AddressContract.value),
                                                                 fiofees(fioio::FeeContract, fioio::FeeContract.value),
                                                                 tpids(TPIDContract, TPIDContract.value),
-                                                                lockedTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value) {
+                                                                lockedTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
+                                                                generalLockTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value){
             fioio::configs_singleton configsSingleton(fioio::FeeContract, fioio::FeeContract.value);
             appConfig = configsSingleton.get_or_default(fioio::config());
         }
@@ -69,6 +72,15 @@ namespace eosio {
                           const name &actor,
                           const string &tpid);
 
+        [[eosio::action]]
+        void trnsloctoks(const string &payee_public_key,
+                                const int32_t &can_vote,
+                                const vector<eosiosystem::lockperiods> periods,
+                                const int64_t &amount,
+                                const int64_t &max_fee,
+                                const name &actor,
+                                const string &tpid);
+
         static asset get_supply(name token_contract_account, symbol_code sym_code) {
             stats statstable(token_contract_account, sym_code.raw());
             const auto &st = statstable.get(sym_code.raw());
@@ -80,6 +92,7 @@ namespace eosio {
             const auto &ac = accountstable.get(sym_code.raw());
             return ac.balance;
         }
+
 
         using create_action = eosio::action_wrapper<"create"_n, &token::create>;
         using issue_action = eosio::action_wrapper<"issue"_n, &token::issue>;
@@ -93,6 +106,7 @@ namespace eosio {
 
             uint64_t primary_key() const { return balance.symbol.code().raw(); }
         };
+
 
         struct [[eosio::table]] currency_stats {
             asset supply;
@@ -112,6 +126,16 @@ namespace eosio {
         bool can_transfer(const name &tokenowner, const uint64_t &feeamount, const uint64_t &transferamount,
                           const bool &isfee);
 
+        bool can_transfer_general(const name &tokenowner,const uint64_t &transferamount);
+
+        name transfer_public_key(const string &payee_public_key,
+                                        const int64_t &amount,
+                                        const int64_t &max_fee,
+                                        const name &actor,
+                                        const string &tpid,
+                                        const int64_t &feeamount,
+                                        const bool &errorifaccountexists);
+
     public:
 
         struct transfer_args {
@@ -126,6 +150,8 @@ namespace eosio {
             string public_key;
             bool existing;
         };
+
+
 
         //this will compute the present unlocked tokens for this user based on the
         //unlocking schedule, it will update the lockedtokens table if the doupdate
@@ -252,5 +278,124 @@ namespace eosio {
             }
             return 0;
         }
+
+        //begin general locked tokens
+        //this will compute the present unlocked tokens for this user based on the
+        //unlocking schedule, it will update the locktokens table if the doupdate
+        //is set to true.
+        static uint64_t computegenerallockedtokens(const name &actor, bool doupdate) {
+
+            bool dbg = true;
+            if (dbg) {
+                print(" calling computegenerallockedtokens for actor ", actor, "\n");
+            }
+            uint32_t present_time = now();
+
+            eosiosystem::general_locks_table generalLockTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value);
+            auto locks_by_owner = generalLockTokensTable.get_index<"byowner"_n>();
+            auto lockiter = locks_by_owner.find(actor.value);
+            if (lockiter != locks_by_owner.end()) {
+
+                if (lockiter->payouts_performed < lockiter->periods.size()) {
+                    uint32_t secondsSinceGrant = (present_time - lockiter->timestamp);
+
+                    uint32_t payoutsDue = 0;
+                    int64_t lastperiodduration = 0;
+                    for (int i=0;i<lockiter->periods.size(); i++){
+                        if(lockiter->periods[i].duration <= lastperiodduration){
+                            //payout nothing if the locking periods are incoherent, IE they arent
+                            // specified as duration is offset from lock creation time, in ascending order
+                            //the system should not allow incoherent locking periods to exist.
+                            payoutsDue = 0;
+                            break;
+                        }
+                        else{
+                            lastperiodduration = lockiter->periods[i].duration;
+                        }
+
+                        if (lockiter->periods[i].duration <= secondsSinceGrant){
+                            payoutsDue++;
+                        }
+
+                    }
+                    if (dbg) {
+                        print("  computegenerallockedtokens ", payoutsDue, " payouts are due to actor ",
+                              actor, "\n");
+                    }
+
+                    uint64_t amountpay = 0;
+                    uint64_t newlockedamount = lockiter->remaining_lock_amount;
+                    bool didsomething = false;
+
+                    if (payoutsDue > lockiter->payouts_performed) {
+                        int64_t percentperblock = 0;
+                       for (int i=lockiter->payouts_performed; i<payoutsDue;i++){
+                           //special note -- we allow 3 decimal places for precision. this needs enforced
+                           //in the input validation of these values.
+                           percentperblock = (int)(lockiter->periods[i].percent * 1000);
+                           int64_t amountadded = (lockiter->lock_amount * percentperblock)/100000;
+                           if (dbg) {
+                               print("  computegenerallockedtokens unlocking ", amountadded, " for actor ",
+                                     actor, "\n");
+                           }
+                           amountpay += amountadded;
+                       }
+
+                        if (dbg) {
+                            print("  computegenerallockedtokens unlocking total amount ", amountpay,
+                                  " for actor ", actor, "\n");
+                        }
+
+                        if (newlockedamount > amountpay) {
+                            newlockedamount -= amountpay;
+                        } else {
+                            newlockedamount = 0;
+                        }
+                    }
+
+                    if ((amountpay > 0) && doupdate) {
+                        //get fio balance for this account,
+                        uint32_t present_time = now();
+                        const auto my_balance = eosio::token::get_balance("fio.token"_n, actor, FIOSYMBOL.code());
+                        uint64_t amount = my_balance.amount;
+
+                        if (newlockedamount > amount) {
+                            print(" WARNING computed amount ", newlockedamount, " is more than amount in account ",
+                                  amount, " \n ",
+                                  " Transaction processing order can cause this, this amount is being re-aligned, resetting remaining locked amount to ",
+                                  amount, "\n");
+                            newlockedamount = amount;
+                        }
+
+                        if (dbg) {
+                            print("  computegenerallockedtokens setting new locked amount", newlockedamount,
+                                  " for actor ", actor, "\n");
+                        }
+
+                        //update the locked table.
+                        locks_by_owner.modify(lockiter, SYSTEMACCOUNT, [&](auto &av) {
+                            av.remaining_lock_amount = newlockedamount;
+                            av.payouts_performed = payoutsDue;
+                        });
+                    }
+
+                    return newlockedamount;
+
+                } else {
+                    if (dbg) {
+                        print("  computegenerallockedtokens using remaining locked amount ",
+                              lockiter->remaining_lock_amount, " for actor ", actor, "\n");
+                    }
+                    return lockiter->remaining_lock_amount;
+                }
+            }
+            if (dbg) {
+                print("  computegenerallockedtokens NO locked tokens for actor ", actor, "\n");
+            }
+            return 0;
+        }
+
+
+
     };
 } /// namespace eosio
