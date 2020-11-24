@@ -55,13 +55,13 @@ namespace fioio {
         uint64_t primary_key() const { return fio_request_id; }
         uint128_t by_receiver() const { return payer_fio_address; }
         uint128_t by_originator() const { return payee_fio_address; }
-        uint128_t by_payerwtime() const { return payer_fio_address_with_time;}
-        uint128_t by_payeewtime() const { return payee_fio_address_with_time;}
+        uint128_t by_payerwtime() const { return payer_fio_address_with_time; }
+        uint128_t by_payeewtime() const { return payee_fio_address_with_time; }
 
         EOSLIB_SERIALIZE(fioreqctxt,
         (fio_request_id)(payer_fio_address)(payee_fio_address)(payer_fio_address_hex_str)(payee_fio_address_hex_str)
                 (payer_fio_address_with_time)(payee_fio_address_with_time)
-        (content)(time_stamp)(payer_fio_addr)(payee_fio_addr)(payer_key)(payee_key)
+                (content)(time_stamp)(payer_fio_addr)(payee_fio_addr)(payer_key)(payee_key)
         )
     };
 
@@ -96,11 +96,10 @@ namespace fioio {
         uint128_t by_payeewtime() const { return payee_fio_address_with_time; }
         uint128_t by_payerwtime() const { return payer_fio_address_with_time; }
 
-
         EOSLIB_SERIALIZE(recordobt_info,
         (id)(payer_fio_address)(payee_fio_address)(payer_fio_address_hex_str)(payee_fio_address_hex_str)
-        (payer_fio_address_with_time)(payee_fio_address_with_time)
-        (content)(time_stamp)(payer_fio_addr)(payee_fio_addr)(payer_key)(payee_key)
+                (payer_fio_address_with_time)(payee_fio_address_with_time)
+                (content)(time_stamp)(payer_fio_addr)(payee_fio_addr)(payer_key)(payee_key)
         )
     };
 
@@ -165,6 +164,22 @@ namespace fioio {
         //Searches by status using bit shifting
         uint128_t by_payerstat() const { return payer_key_hex + fio_data_type * STATUS_MULTIPPLIER; }
         uint128_t by_payeestat() const { return payee_key_hex + fio_data_type * STATUS_MULTIPPLIER; }
+        uint128_t by_payerobt() const {
+            bool obtdata = fio_data_type == 2 || fio_data_type == 4 ? true : false;
+            return payer_key_hex + obtdata * STATUS_MULTIPPLIER;
+        }
+        uint128_t by_payeeobt() const {
+            bool obtdata = fio_data_type == 2 || fio_data_type == 4 ? true : false;
+            return payee_key_hex + obtdata * STATUS_MULTIPPLIER;
+        }
+        uint128_t by_payerreq() const {
+            bool reqdata = fio_data_type >= 3 ? true : false;
+            return payee_key_hex + reqdata * STATUS_MULTIPPLIER;
+        }
+        uint128_t by_payeereq() const {
+            bool reqdata = fio_data_type >= 3 ? true : false;
+            return payee_key_hex + reqdata * STATUS_MULTIPPLIER;
+        }
 
         EOSLIB_SERIALIZE(fiotrxt,
         (id)(fio_request_id)(payer_fio_addr_hex)(payee_fio_addr_hex)(fio_data_type)(init_time)
@@ -181,7 +196,11 @@ namespace fioio {
     indexed_by<"bypayeekey"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_payeekey>>,
     indexed_by<"bytime"_n, const_mem_fun<fiotrxt, uint64_t, &fiotrxt::by_time>>,
     indexed_by<"bypayerstat"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_payerstat>>,
-    indexed_by<"bypayeestat"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_payeestat>
+    indexed_by<"bypayeestat"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_payeestat>>,
+    indexed_by<"bypayerobt"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_payerobt>>,
+    indexed_by<"bypayeeobt"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_payeeobt>>,
+    indexed_by<"bypayerreq"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_payerreq>>,
+    indexed_by<"bypayeereq"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_payeereq>
     >>
     fiotrxt_contexts_table;
 
@@ -202,7 +221,8 @@ namespace fioio {
 
         uint64_t primary_key() const { return id; }
 
-        EOSLIB_SERIALIZE(migrledger, (id)(beginobt)(currentobt)(beginrq)(currentrq)(beginsta)(currentsta))
+        EOSLIB_SERIALIZE(migrledger, (id)(beginobt)(currentobt)(beginrq)(currentrq)(beginsta)(currentsta)
+        )
     };
 
     typedef multi_index<"migrledgers"_n, migrledger> migrledgers_table;
