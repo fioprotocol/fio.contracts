@@ -24,12 +24,12 @@ namespace fioio {
     // The status of a transaction progresses from requested, to either rejected or sent to blockchain (if funds
     // are sent in response to the request.
     enum class trxstatus {
-        requested = 1,
-        rejected = 2,
-        sent_to_blockchain = 3,
-        cancelled = 4,
-        obt_action = 5,
-        other = 6 //Future Use
+        requested = 0,
+        rejected = 1,
+        sent_to_blockchain = 2,
+        cancelled = 3,
+        obt_action = 4,
+        other = 5 //Future Use
     };
 
     // The request context table holds the requests for funds that have been requested, it provides
