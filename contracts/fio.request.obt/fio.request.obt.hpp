@@ -17,6 +17,8 @@
 
 using std::string;
 
+const uint64_t STATUS_MULTIPPLIER = 0x1;
+
 namespace fioio {
 
     using namespace eosio;
@@ -161,8 +163,8 @@ namespace fioio {
         uint64_t by_time() const { return init_time > update_time ? init_time : update_time; }
 
         //Searches by status using bit shifting
-        uint128_t by_payerstat() const { return payer_key_hex << fio_data_type; }
-        uint128_t by_payeestat() const { return payee_key_hex << fio_data_type; }
+        uint128_t by_payerstat() const { return payer_key_hex + fio_data_type * STATUS_MULTIPPLIER; }
+        uint128_t by_payeestat() const { return payee_key_hex + fio_data_type * STATUS_MULTIPPLIER; }
 
         EOSLIB_SERIALIZE(fiotrxt,
         (id)(fio_request_id)(payer_fio_addr_hex)(payee_fio_addr_hex)(fio_data_type)(init_time)
