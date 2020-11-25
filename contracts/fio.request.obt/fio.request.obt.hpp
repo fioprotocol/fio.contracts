@@ -17,11 +17,10 @@
 
 using std::string;
 
-const uint64_t STATUS_MULTIPLIER = 0x1;
-
 namespace fioio {
 
     using namespace eosio;
+    const uint128_t STATUS_MULTIPLIER = 0x1;
 
     // The status of a transaction progresses from requested, to either rejected or sent to blockchain (if funds
     // are sent in response to the request.
@@ -162,23 +161,23 @@ namespace fioio {
         uint64_t by_time() const { return init_time > update_time ? init_time : update_time; }
 
         //Searches by status using bit shifting
-        uint128_t by_payerstat() const { return payer_key_hex + fio_data_type * STATUS_MULTIPLIER; }
-        uint128_t by_payeestat() const { return payee_key_hex + fio_data_type * STATUS_MULTIPLIER; }
+        uint128_t by_payerstat() const { return payer_key_hex + static_cast<uint128_t>(fio_data_type) * STATUS_MULTIPLIER; }
+        uint128_t by_payeestat() const { return payee_key_hex + static_cast<uint128_t>(fio_data_type) * STATUS_MULTIPLIER; }
         uint128_t by_payerobt() const {
             bool obtdata = fio_data_type == 2 || fio_data_type == 4 ? true : false;
-            return payer_key_hex + obtdata * STATUS_MULTIPLIER;
+            return payer_key_hex + static_cast<uint128_t>(obtdata) * STATUS_MULTIPLIER;
         }
         uint128_t by_payeeobt() const {
             bool obtdata = fio_data_type == 2 || fio_data_type == 4 ? true : false;
-            return payee_key_hex + obtdata * STATUS_MULTIPLIER;
+            return payee_key_hex + static_cast<uint128_t>(obtdata) * STATUS_MULTIPLIER;
         }
         uint128_t by_payerreq() const {
             bool reqdata = fio_data_type >= 3 ? true : false;
-            return payee_key_hex + reqdata * STATUS_MULTIPLIER;
+            return payee_key_hex + static_cast<uint128_t>(reqdata) * STATUS_MULTIPLIER;
         }
         uint128_t by_payeereq() const {
             bool reqdata = fio_data_type >= 3 ? true : false;
-            return payee_key_hex + reqdata * STATUS_MULTIPLIER;
+            return payee_key_hex + static_cast<uint128_t>(reqdata) * STATUS_MULTIPLIER;
         }
 
         EOSLIB_SERIALIZE(fiotrxt,
