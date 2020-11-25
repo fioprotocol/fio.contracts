@@ -2,8 +2,7 @@
 #include <eosio/crypto.hpp>
 #include <eosio/permission.hpp>
 #include <eosio.msig/eosio.msig.hpp>
-#include "fio.common/fio.accounts.hpp"
-#include "fio.common/fioerror.hpp"
+
 using namespace fioio;
 
 namespace eosio {
@@ -98,6 +97,7 @@ void multisig::propose( name proposer,
        }.send();
    }
 
+
    auto packed_requested = pack(requested);
    auto res =  check_transaction_authorization(
                   trx_pos, size,
@@ -114,7 +114,7 @@ void multisig::propose( name proposer,
    proptable.emplace( proposer, [&]( auto& prop ) {
          prop.proposal_name      = proposal_name;
          prop.packed_transaction = pkd_trans;
-         prop.earliest_exec_time = std::optional<time_point>{};
+         prop.earliest_exec_time.emplace();
       });
 
    approvals apptable( get_self(), proposer.value );
@@ -188,7 +188,7 @@ void multisig::approve( name proposer, name proposal_name, permission_level leve
          auto table_op = [](auto&&, auto&&){};
          if( trx_is_authorized(get_approvals_and_adjust_table(get_self(), proposer, proposal_name, table_op), prop.packed_transaction) ) {
             proptable.modify( prop, proposer, [&]( auto& p ) {
-               p.earliest_exec_time = std::optional<time_point>{ current_time_point() + eosio::seconds(trx_header.delay_sec.value)};
+               p.earliest_exec_time.emplace(time_point{ current_time_point() + eosio::seconds(trx_header.delay_sec.value)});
             });
          }
       }
@@ -210,14 +210,7 @@ void multisig::approve( name proposer, name proposal_name, permission_level leve
 
 }
 
-/***********
- * This action will indicate the dis-approval of the specified proposal by the signer of the transaction.
- * @param proposer  this is the account name of the proposer of the multi signature operation.
- * @param proposal_name  the proposal name of the multi signature operation.
- * @param level this is the actor and permission dis-approving the multi signature operation
- *              ex: '{"actor": "partner22222", "permission": "active"}'
- */
-void multisig::unapprove( name proposer, name proposal_name, permission_level level, const uint64_t &max_fee) {
+void multisig::unapprove( name proposer, name proposal_name, permission_level level,  const uint64_t &max_fee )  {
    require_auth( level );
 
    //collect fees.
@@ -255,7 +248,7 @@ void multisig::unapprove( name proposer, name proposal_name, permission_level le
          auto table_op = [](auto&&, auto&&){};
          if( !trx_is_authorized(get_approvals_and_adjust_table(get_self(), proposer, proposal_name, table_op), prop.packed_transaction) ) {
             proptable.modify( prop, proposer, [&]( auto& p ) {
-               p.earliest_exec_time = std::optional<time_point>{};
+               p.earliest_exec_time.emplace();
             });
          }
       }
@@ -266,17 +259,8 @@ void multisig::unapprove( name proposer, name proposal_name, permission_level le
 
    fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
      "Transaction is too large", ErrorTransactionTooLarge);
-
 }
 
-/*******
- * This action will perform the cancellation of the specified proposal.
- * @param proposer this is the account name of the proposer of the multi signature operation.
- * @param proposal_name this is the proposal name of the multi signature operation.
- * @param canceler this is the canceller of the operation, this must be the same as the proposer.
- *                 unless the proposal transaction is expired then the canceler may be other
- *                 than the proposer.
- */
 void multisig::cancel( name proposer, name proposal_name, name canceler, const uint64_t &max_fee ) {
    require_auth( canceler );
 
@@ -308,10 +292,8 @@ void multisig::cancel( name proposer, name proposal_name, name canceler, const u
       old_apptable.erase(apps_it);
    }
 
-
    fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
     "Transaction is too large", ErrorTransactionTooLarge);
-
 }
 
 void multisig::exec( name proposer, name proposal_name, const uint64_t &max_fee, name executer ) {
@@ -356,11 +338,9 @@ void multisig::exec( name proposer, name proposal_name, const uint64_t &max_fee,
 
    fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
      "Transaction is too large", ErrorTransactionTooLarge);
-
-
 }
 
-void multisig::invalidate( name account, const uint64_t &max_fee) {
+void multisig::invalidate( name account, const uint64_t &max_fee ) {
    require_auth( account );
    invalidations inv_table( get_self(), get_self().value );
    auto it = inv_table.find( account.value );
@@ -374,9 +354,6 @@ void multisig::invalidate( name account, const uint64_t &max_fee) {
             i.last_invalidation_time = current_time_point();
          });
    }
-
-   fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-     "Transaction is too large", ErrorTransactionTooLarge);
 }
 
 transaction_header get_trx_header(const char* ptr, size_t sz) {
