@@ -263,8 +263,13 @@ namespace fioio {
                 const uint64_t id = fioTransactionsTable.available_primary_key();
                 const uint128_t toHash = string_to_uint128_hash(payee_fio_address.c_str());
                 const uint128_t fromHash = string_to_uint128_hash(payer_fio_address.c_str());
-                const uint128_t payeeKeyHash = string_to_uint128_hash(payee_key.c_str());
-                const uint128_t payerKeyHash = string_to_uint128_hash(payer_key.c_str());
+
+                string payee_account;
+                string payer_account;
+                key_to_account(payee_key, payee_account);
+                key_to_account(payer_key, payer_account);
+                const uint128_t payeeKeyHash = string_to_uint128_hash(payee_account);
+                const uint128_t payerKeyHash = string_to_uint128_hash(payer_account);
 
                 fioTransactionsTable.emplace(aactor, [&](struct fiotrxt &obtinf) {
                     obtinf.id = id;
@@ -277,8 +282,8 @@ namespace fioio {
                     obtinf.payee_fio_addr = payee_fio_address;
                     obtinf.payee_key = payee_key;
                     obtinf.payer_key = payer_key;
-                    obtinf.payee_key_hex = payeeKeyHash;
-                    obtinf.payer_key_hex = payerKeyHash;
+                    obtinf.payee_account = payeeKeyHash;
+                    obtinf.payer_account = payerKeyHash;
                 });
             }
 
@@ -437,8 +442,12 @@ namespace fioio {
             const uint64_t currentTime = now();
             const uint128_t toHash = string_to_uint128_hash(payee_fio_address.c_str());
             const uint128_t fromHash = string_to_uint128_hash(payer_fio_address.c_str());
-            const uint128_t payeeKeyHash = string_to_uint128_hash(payee_key.c_str());
-            const uint128_t payerKeyHash = string_to_uint128_hash(payer_key.c_str());
+            string payee_account;
+            string payer_account;
+            key_to_account(payee_key, payee_account);
+            key_to_account(payer_key, payer_account);
+            const uint128_t payeeKeyHash = string_to_uint128_hash(payee_account);
+            const uint128_t payerKeyHash = string_to_uint128_hash(payer_account);
 
             fioTransactionsTable.emplace(aActor, [&](struct fiotrxt &frc) {
                 frc.id = id;
@@ -452,8 +461,8 @@ namespace fioio {
                 frc.payee_fio_addr = payee_fio_address;
                 frc.payee_key = payee_key;
                 frc.payer_key = payer_key;
-                frc.payee_key_hex = payeeKeyHash;
-                frc.payer_key_hex = payerKeyHash;
+                frc.payee_account = payeeKeyHash;
+                frc.payer_account = payerKeyHash;
             });
 
             const string response_string =

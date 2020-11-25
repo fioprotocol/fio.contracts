@@ -146,8 +146,8 @@ namespace fioio {
         string payee_fio_addr;
         string payer_key = nullptr;
         string payee_key = nullptr;
-        uint128_t payer_key_hex;
-        uint128_t payee_key_hex;
+        uint64_t payer_account;
+        uint64_t payee_account;
 
         string content = "";
         uint64_t update_time = 0;
@@ -156,33 +156,33 @@ namespace fioio {
         uint64_t by_requestid() const { return fio_request_id; }
         uint128_t by_receiver() const { return payer_fio_addr_hex; }
         uint128_t by_originator() const { return payee_fio_addr_hex; }
-        uint128_t by_payerkey() const { return payer_key_hex; }
-        uint128_t by_payeekey() const { return payee_key_hex; }
+        uint64_t by_payeracct() const { return payer_account; }
+        uint64_t by_payeeacct() const { return payee_account; }
         uint64_t by_time() const { return init_time > update_time ? init_time : update_time; }
 
         //Searches by status using bit shifting
-        uint128_t by_payerstat() const { return payer_key_hex + static_cast<uint128_t>(fio_data_type) * STATUS_MULTIPLIER; }
-        uint128_t by_payeestat() const { return payee_key_hex + static_cast<uint128_t>(fio_data_type) * STATUS_MULTIPLIER; }
-        uint128_t by_payerobt() const {
+        uint64_t by_payerstat() const { return payer_account + static_cast<uint64_t>(fio_data_type) * STATUS_MULTIPLIER; }
+        uint64_t by_payeestat() const { return payee_account + static_cast<uint64_t>(fio_data_type) * STATUS_MULTIPLIER; }
+        uint64_t by_payerobt() const {
             bool obtdata = fio_data_type == 2 || fio_data_type == 4 ? true : false;
-            return payer_key_hex + static_cast<uint128_t>(obtdata) * STATUS_MULTIPLIER;
+            return payer_account + static_cast<uint64_t>(obtdata) * STATUS_MULTIPLIER;
         }
-        uint128_t by_payeeobt() const {
+        uint64_t by_payeeobt() const {
             bool obtdata = fio_data_type == 2 || fio_data_type == 4 ? true : false;
-            return payee_key_hex + static_cast<uint128_t>(obtdata) * STATUS_MULTIPLIER;
+            return payee_account + static_cast<uint64_t>(obtdata) * STATUS_MULTIPLIER;
         }
-        uint128_t by_payerreq() const {
+        uint64_t by_payerreq() const {
             bool reqdata = fio_data_type >= 3 ? true : false;
-            return payee_key_hex + static_cast<uint128_t>(reqdata) * STATUS_MULTIPLIER;
+            return payee_account + static_cast<uint64_t>(reqdata) * STATUS_MULTIPLIER;
         }
-        uint128_t by_payeereq() const {
+        uint64_t by_payeereq() const {
             bool reqdata = fio_data_type >= 3 ? true : false;
-            return payee_key_hex + static_cast<uint128_t>(reqdata) * STATUS_MULTIPLIER;
+            return payee_account + static_cast<uint64_t>(reqdata) * STATUS_MULTIPLIER;
         }
 
         EOSLIB_SERIALIZE(fiotrxt,
         (id)(fio_request_id)(payer_fio_addr_hex)(payee_fio_addr_hex)(fio_data_type)(init_time)
-                (payer_fio_addr)(payee_fio_addr)(payer_key)(payee_key)(payer_key_hex)(payee_key_hex)
+                (payer_fio_addr)(payee_fio_addr)(payer_key)(payee_key)(payer_account)(payee_account)
                 (content)(update_time)
         )
     };
@@ -191,15 +191,15 @@ namespace fioio {
             indexed_by<"byrequestid"_n, const_mem_fun < fiotrxt, uint64_t, &fiotrxt::by_requestid>>,
     indexed_by<"byreceiver"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_receiver>>,
     indexed_by<"byoriginator"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_originator>>,
-    indexed_by<"bypayerkey"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_payerkey>>,
-    indexed_by<"bypayeekey"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_payeekey>>,
+    indexed_by<"bypayeracct"_n, const_mem_fun<fiotrxt, uint64_t, &fiotrxt::by_payeracct>>,
+    indexed_by<"bypayeeacct"_n, const_mem_fun<fiotrxt, uint64_t, &fiotrxt::by_payeeacct>>,
     indexed_by<"bytime"_n, const_mem_fun<fiotrxt, uint64_t, &fiotrxt::by_time>>,
-    indexed_by<"bypayerstat"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_payerstat>>,
-    indexed_by<"bypayeestat"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_payeestat>>,
-    indexed_by<"bypayerobt"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_payerobt>>,
-    indexed_by<"bypayeeobt"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_payeeobt>>,
-    indexed_by<"bypayerreq"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_payerreq>>,
-    indexed_by<"bypayeereq"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_payeereq>
+    indexed_by<"bypayerstat"_n, const_mem_fun<fiotrxt, uint64_t, &fiotrxt::by_payerstat>>,
+    indexed_by<"bypayeestat"_n, const_mem_fun<fiotrxt, uint64_t, &fiotrxt::by_payeestat>>,
+    indexed_by<"bypayerobt"_n, const_mem_fun<fiotrxt, uint64_t, &fiotrxt::by_payerobt>>,
+    indexed_by<"bypayeeobt"_n, const_mem_fun<fiotrxt, uint64_t, &fiotrxt::by_payeeobt>>,
+    indexed_by<"bypayerreq"_n, const_mem_fun<fiotrxt, uint64_t, &fiotrxt::by_payerreq>>,
+    indexed_by<"bypayeereq"_n, const_mem_fun<fiotrxt, uint64_t, &fiotrxt::by_payeereq>
     >>
     fiotrxt_contexts_table;
 
