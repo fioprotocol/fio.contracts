@@ -63,7 +63,6 @@ namespace eosio {
         }
     }
 
-
     void token::mintfio(const name &to, const uint64_t &amount) {
         //can only be called by fio.treasury@active
         require_auth(TREASURYACCOUNT);
@@ -98,8 +97,8 @@ namespace eosio {
 
         check(quantity.symbol == st.supply.symbol, "symbol precision mismatch");
 
-        statstable.modify(st, same_payer, [&](auto &s) {
-            s.supply -= quantity;
+       statstable.modify(st, same_payer, [&](auto &s) {
+             s.supply -= quantity;
         });
 
         sub_balance(FIOISSUER, quantity);
@@ -447,31 +446,74 @@ namespace eosio {
                              const name &actor,
                              const string &tpid) {
 
+        bool debug = true;
         fio_400_assert(((periods.size()) >= 1 && (periods.size() <= 50)), "unlock_periods", "Invalid unlock periods",
                        "Invalid number of unlock periods", ErrorTransactionTooLarge);
-        double totp = 0.0;
-        double tv = 0.0;
-        int64_t longestperiod = 0;
-        int64_t lastlockperiodduration = -1;
 
-        for(int i=0;i<periods.size();i++){
-            fio_400_assert(periods[i].percent > 0.0, "unlock_periods", "Invalid unlock periods",
+        int64_t longestperiod = 0;
+        bool isincentive = false;
+        int  incentivepercent = 0;
+        int64_t useamount = amount;
+
+
+        if(periods.size() > 1) { //verify the locking periods, no incentives.
+            int64_t lastlockperiodduration = -1;
+            double totp = 0.0;
+            double tv = 0.0;
+            for (int i = 0; i < periods.size(); i++) {
+                fio_400_assert(periods[i].percent > 0.0, "unlock_periods", "Invalid unlock periods",
+                               "Invalid percentage value in unlock periods", ErrorInvalidUnlockPeriods);
+                tv = periods[i].percent - (double(int(periods[i].percent * 1000.0))) / 1000.0;
+                fio_400_assert(tv == 0.0, "unlock_periods", "Invalid unlock periods",
+                               "Invalid precision for percentage in unlock periods", ErrorInvalidUnlockPeriods);
+                fio_400_assert(periods[i].duration > 0, "unlock_periods", "Invalid unlock periods",
+                               "Invalid duration value in unlock periods", ErrorInvalidUnlockPeriods);
+                fio_400_assert(periods[i].duration > lastlockperiodduration, "unlock_periods", "Invalid unlock periods",
+                               "Invalid duration value in unlock periods", ErrorInvalidUnlockPeriods);
+                lastlockperiodduration = periods[i].duration;
+                totp += periods[i].percent;
+                if (periods[i].duration > longestperiod) {
+                    longestperiod = periods[i].duration;
+                }
+            }
+            fio_400_assert(totp == 100.0, "unlock_periods", "Invalid unlock periods",
+                           "Invalid total percentage for unlock periods", ErrorInvalidUnlockPeriods);
+        }else{ //verify one locking period, check for incentives.
+
+            if (debug){
+                print("trnsloctoks, saw lock with one preiod ", "\n");
+            }
+            fio_400_assert(periods[0].percent == 100.0, "unlock_periods", "Invalid unlock periods",
                            "Invalid percentage value in unlock periods", ErrorInvalidUnlockPeriods);
-            tv = periods[i].percent - (double(int(periods[i].percent * 1000.0)))/1000.0;
-            fio_400_assert(tv == 0.0, "unlock_periods", "Invalid unlock periods",
-                           "Invalid precision for percentage in unlock periods", ErrorInvalidUnlockPeriods);
-            fio_400_assert(periods[i].duration > 0, "unlock_periods", "Invalid unlock periods",
+            fio_400_assert(periods[0].duration > 0, "unlock_periods", "Invalid unlock periods",
                            "Invalid duration value in unlock periods", ErrorInvalidUnlockPeriods);
-            fio_400_assert(periods[i].duration > lastlockperiodduration, "unlock_periods", "Invalid unlock periods",
-                           "Invalid duration value in unlock periods", ErrorInvalidUnlockPeriods);
-            lastlockperiodduration = periods[i].duration;
-            totp += periods[i].percent;
-            if (periods[i].duration > longestperiod){
-                longestperiod = periods[i].duration;
+            longestperiod = periods[0].duration;
+            switch(longestperiod){
+                case INCENTIVETIER1DURATION :
+                    isincentive = true;
+                    incentivepercent = INCENTIVETIER1PERCENT;
+                    break;
+                case INCENTIVETIER2DURATION :
+                    isincentive = true;
+                    incentivepercent = INCENTIVETIER2PERCENT;
+                    break;
+                case INCENTIVETIER3DURATION :
+                    isincentive = true;
+                    incentivepercent = INCENTIVETIER3PERCENT;
+                    break;
+                case INCENTIVETIER4DURATION :
+                    isincentive = true;
+                    incentivepercent = INCENTIVETIER4PERCENT;
+                    break;
+                default:
+                    break;
+            }
+            if (debug){
+                print("trnsloctoks, set incentive percent ", incentivepercent, "\n");
             }
         }
-        fio_400_assert(totp == 100.0, "unlock_periods", "Invalid unlock periods",
-                       "Invalid total percentage for unlock periods", ErrorInvalidUnlockPeriods);
+
+
 
         fio_400_assert(((can_vote == 0)||(can_vote == 1)), "can_vote", to_string(can_vote),
                        "Invalid can_vote value", ErrorInvalidValue);
@@ -511,6 +553,41 @@ namespace eosio {
         //check for pre existing account is done here.
         name owner = transfer_public_key(payee_public_key,amount,max_fee,actor,tpid,reg_amount,true);
 
+        //next, do the incentive logic.
+        if(isincentive){
+           //first compute the amount of the incentive.
+           int64_t incentiveamount = (amount * incentivepercent)/100;
+            if (debug){
+                print("trnsloctoks, computed incentive amount ", incentiveamount, "\n");
+            }
+           //check that the incentive amount is available (otherwise give them 20,000,000 minus the present
+           //value of the total_staking_incentives_granted
+           gstate4 = global4.get();
+           if (MAXINCENTIVESTOGRANT - gstate4.total_staking_incentives_granted < incentiveamount){
+                incentiveamount = MAXINCENTIVESTOGRANT - gstate4.total_staking_incentives_granted;
+           }
+           //mint/issue the amount of the incentive to the grant account.
+            action(permission_level{"eosio"_n, "active"_n},
+                   "fio.token"_n, "issue"_n,
+                   make_tuple(owner, asset(incentiveamount, FIOSYMBOL),
+                              string("New tokens produced for staking incentives"))
+            ).send();
+
+
+            if (dbg) {
+                print("trnsloctoks, calling updtotstkinc ", "\n");
+            }
+
+            INLINE_ACTION_SENDER(eosiosystem::system_contract, updtotstkinc)
+                    ("eosio"_n, {{_self, "active"_n}},
+                     {incentiveamount}
+                    );
+
+
+           //adapt the amount of the grant.
+           useamount += incentiveamount;
+        }
+
         if (dbg) {
             print("trnsloctoks calling addgenlocked ", "\n");
         }
@@ -518,7 +595,7 @@ namespace eosio {
         bool canvote = (can_vote == 1);
         INLINE_ACTION_SENDER(eosiosystem::system_contract, addgenlocked)
                 ("eosio"_n, {{_self, "active"_n}},
-                 {owner,periods,canvote,amount}
+                 {owner,periods,canvote,useamount}
                 );
 
         int64_t raminc = 1024 + (64 * periods.size());

@@ -32,6 +32,9 @@ namespace eosio {
         fioio::fionames_table fionames;
         eosiosystem::locked_tokens_table lockedTokensTable;
         eosiosystem::general_locks_table generalLockTokensTable;
+        eosiosystem::eosio_global_state4 gstate4;
+        eosiosystem::global_state4_singleton global4;
+
 
     public:
         token(name s, name code, datastream<const char *> ds) : contract(s, code, ds),
@@ -42,6 +45,7 @@ namespace eosio {
                                                                 fiofees(fioio::FeeContract, fioio::FeeContract.value),
                                                                 tpids(TPIDContract, TPIDContract.value),
                                                                 lockedTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
+                                                                global4(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                                                                 generalLockTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value){
             fioio::configs_singleton configsSingleton(fioio::FeeContract, fioio::FeeContract.value);
             appConfig = configsSingleton.get_or_default(fioio::config());

@@ -115,6 +115,14 @@ struct [[eosio::table("global3"), eosio::contract("fio.system")]] eosio_global_s
     )
 };
 
+struct [[eosio::table("global4"), eosio::contract("fio.system")]] eosio_global_state4 {
+    eosio_global_state4() {}
+    uint64_t total_staking_incentives_granted = 0;
+
+    EOSLIB_SERIALIZE( eosio_global_state4, (total_staking_incentives_granted)
+    )
+};
+
 
 //these locks are used for investors and emplyees and members who have grants upon integration.
 //this table holds the list of FIO accounts that hold locked FIO tokens
@@ -288,6 +296,7 @@ indexed_by<"byowner"_n, const_mem_fun<voter_info, uint64_t, &voter_info::by_owne
 typedef eosio::singleton<"global"_n, eosio_global_state> global_state_singleton;
 typedef eosio::singleton<"global2"_n, eosio_global_state2> global_state2_singleton;
 typedef eosio::singleton<"global3"_n, eosio_global_state3> global_state3_singleton;
+typedef eosio::singleton<"global4"_n, eosio_global_state4> global_state4_singleton;
 
 static constexpr uint32_t seconds_per_day = 24 * 3600;
 
@@ -305,9 +314,11 @@ private:
     global_state_singleton _global;
     global_state2_singleton _global2;
     global_state3_singleton _global3;
+    global_state4_singleton _global4;
     eosio_global_state _gstate;
     eosio_global_state2 _gstate2;
     eosio_global_state3 _gstate3;
+    eosio_global_state4 _gstate4;
     fioio::fionames_table _fionames;
     fioio::domains_table _domains;
     fioio::fiofee_table _fiofees;
@@ -338,6 +349,10 @@ public:
     [[eosio::action]]
     void addlocked(const name &owner, const int64_t &amount,
                     const int16_t &locktype);
+
+    //update staking total_staking_incentives_granted
+    [[eosio::action]]
+    void updtotstkinc( const int64_t &increment);
 
     [[eosio::action]]
     void addgenlocked(const name &owner, const vector<lockperiods> &periods, const bool &canvote,const int64_t &amount);
