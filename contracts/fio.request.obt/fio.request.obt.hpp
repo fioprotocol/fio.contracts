@@ -160,8 +160,8 @@ namespace fioio {
         uint64_t by_time() const { return init_time > update_time ? init_time : update_time; }
 
         //Searches by status using bit shifting
-        uint64_t by_payerstat() const { return payer_account + (fio_data_type); }
-        uint64_t by_payeestat() const { return payee_account + (fio_data_type); }
+        uint64_t by_payerstat() const { return payer_account + fio_data_type; }
+        uint64_t by_payeestat() const { return payee_account + fio_data_type; }
         uint64_t by_payerobt() const {
             return payer_account + (fio_data_type == 2 || fio_data_type == 4);
         }
@@ -169,10 +169,10 @@ namespace fioio {
             return payee_account + (fio_data_type == 2 || fio_data_type == 4);
         }
         uint64_t by_payerreq() const {
-            return payee_account + (fio_data_type >= 3);
+            return payee_account + (fio_data_type <= 3);
         }
         uint64_t by_payeereq() const {
-            return payee_account + (fio_data_type >= 3);
+            return payee_account + (fio_data_type <= 3);
         }
 
         EOSLIB_SERIALIZE(fiotrxt,
