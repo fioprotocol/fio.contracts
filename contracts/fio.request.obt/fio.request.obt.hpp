@@ -20,7 +20,6 @@ using std::string;
 namespace fioio {
 
     using namespace eosio;
-    const uint128_t STATUS_MULTIPLIER = 0x1;
 
     // The status of a transaction progresses from requested, to either rejected or sent to blockchain (if funds
     // are sent in response to the request.
@@ -161,23 +160,19 @@ namespace fioio {
         uint64_t by_time() const { return init_time > update_time ? init_time : update_time; }
 
         //Searches by status using bit shifting
-        uint64_t by_payerstat() const { return payer_account + static_cast<uint64_t>(fio_data_type) * STATUS_MULTIPLIER; }
-        uint64_t by_payeestat() const { return payee_account + static_cast<uint64_t>(fio_data_type) * STATUS_MULTIPLIER; }
+        uint64_t by_payerstat() const { return payer_account + (fio_data_type); }
+        uint64_t by_payeestat() const { return payee_account + (fio_data_type); }
         uint64_t by_payerobt() const {
-            bool obtdata = fio_data_type == 2 || fio_data_type == 4 ? true : false;
-            return payer_account + static_cast<uint64_t>(obtdata) * STATUS_MULTIPLIER;
+            return payer_account + (fio_data_type == 2 || fio_data_type == 4);
         }
         uint64_t by_payeeobt() const {
-            bool obtdata = fio_data_type == 2 || fio_data_type == 4 ? true : false;
-            return payee_account + static_cast<uint64_t>(obtdata) * STATUS_MULTIPLIER;
+            return payee_account + (fio_data_type == 2 || fio_data_type == 4);
         }
         uint64_t by_payerreq() const {
-            bool reqdata = fio_data_type >= 3 ? true : false;
-            return payee_account + static_cast<uint64_t>(reqdata) * STATUS_MULTIPLIER;
+            return payee_account + (fio_data_type >= 3);
         }
         uint64_t by_payeereq() const {
-            bool reqdata = fio_data_type >= 3 ? true : false;
-            return payee_account + static_cast<uint64_t>(reqdata) * STATUS_MULTIPLIER;
+            return payee_account + (fio_data_type >= 3);
         }
 
         EOSLIB_SERIALIZE(fiotrxt,

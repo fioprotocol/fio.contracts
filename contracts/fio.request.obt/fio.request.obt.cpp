@@ -153,7 +153,7 @@ namespace fioio {
             fio_400_assert(fioname_iter != namesbyname.end(), "payer_fio_address", payer_fio_address,
                            "No such FIO Address",
                            ErrorFioNameNotReg);
-            uint64_t account = fioname_iter->owner_account;
+            uint64_t payer_acct = fioname_iter->owner_account;
             uint64_t payernameexp = fioname_iter->expiration;
 
             fio_400_assert(present_time <= payernameexp, "payer_fio_address", payer_fio_address,
@@ -174,7 +174,7 @@ namespace fioio {
             fio_400_assert(present_time <= domexp, "payer_fio_address", payer_fio_address,
                            "FIO Domain expired", ErrorFioNameExpired);
 
-            auto account_iter = clientkeys.find(account);
+            auto account_iter = clientkeys.find(payer_acct);
             fio_400_assert(account_iter != clientkeys.end(), "payer_fio_address", payer_fio_address,
                            "No such FIO Address",
                            ErrorClientKeyNotFound);
@@ -188,10 +188,10 @@ namespace fioio {
                            "No such FIO Address",
                            ErrorFioNameNotReg);
 
-            fio_403_assert(account == aactor.value, ErrorSignature);
+            fio_403_assert(payer_acct == aactor.value, ErrorSignature);
 
-            account = fioname_iter2->owner_account;
-            account_iter = clientkeys.find(account);
+            uint64_t payee_acct = fioname_iter2->owner_account;
+            account_iter = clientkeys.find(payee_acct);
             fio_400_assert(account_iter != clientkeys.end(), "payee_fio_address", payee_fio_address,
                            "No such FIO Address",
                            ErrorClientKeyNotFound);
@@ -264,13 +264,6 @@ namespace fioio {
                 const uint128_t toHash = string_to_uint128_hash(payee_fio_address.c_str());
                 const uint128_t fromHash = string_to_uint128_hash(payer_fio_address.c_str());
 
-                string payee_account;
-                string payer_account;
-                key_to_account(payee_key, payee_account);
-                key_to_account(payer_key, payer_account);
-                const uint128_t payeeKeyHash = string_to_uint128_hash(payee_account);
-                const uint128_t payerKeyHash = string_to_uint128_hash(payer_account);
-
                 fioTransactionsTable.emplace(aactor, [&](struct fiotrxt &obtinf) {
                     obtinf.id = id;
                     obtinf.payer_fio_addr_hex = fromHash;
@@ -282,8 +275,8 @@ namespace fioio {
                     obtinf.payee_fio_addr = payee_fio_address;
                     obtinf.payee_key = payee_key;
                     obtinf.payer_key = payer_key;
-                    obtinf.payee_account = payeeKeyHash;
-                    obtinf.payer_account = payerKeyHash;
+                    obtinf.payee_account = payee_acct;
+                    obtinf.payer_account = payer_acct;
                 });
             }
 
@@ -356,8 +349,8 @@ namespace fioio {
                            "No such FIO Address",
                            ErrorFioNameNotReg);
 
-            uint64_t account = fioname_iter2->owner_account;
-            auto account_iter = clientkeys.find(account);
+            uint64_t payer_acct = fioname_iter2->owner_account;
+            auto account_iter = clientkeys.find(payer_acct);
             fio_400_assert(account_iter != clientkeys.end(), "payer_fio_address", payer_fio_address,
                            "No such FIO Address",
                            ErrorClientKeyNotFound);
@@ -370,8 +363,8 @@ namespace fioio {
                            "No such FIO Address",
                            ErrorFioNameNotReg);
 
-            account = fioname_iter->owner_account;
-            account_iter = clientkeys.find(account);
+            uint64_t payee_acct = fioname_iter->owner_account;
+            account_iter = clientkeys.find(payee_acct);
             fio_400_assert(account_iter != clientkeys.end(), "payee_fio_address", payee_fio_address,
                            "No such FIO Address",
                            ErrorClientKeyNotFound);
@@ -395,7 +388,7 @@ namespace fioio {
             fio_400_assert(present_time <= domexp, "payee_fio_address", payee_fio_address,
                            "FIO Domain expired", ErrorFioNameExpired);
 
-            fio_403_assert(account == aActor.value, ErrorSignature);
+            fio_403_assert(payee_acct == aActor.value, ErrorSignature);
 
             //begin fees, bundle eligible fee logic
             const uint128_t endpoint_hash = string_to_uint128_hash(NEW_FUNDS_REQUEST_ENDPOINT);
@@ -442,12 +435,6 @@ namespace fioio {
             const uint64_t currentTime = now();
             const uint128_t toHash = string_to_uint128_hash(payee_fio_address.c_str());
             const uint128_t fromHash = string_to_uint128_hash(payer_fio_address.c_str());
-            string payee_account;
-            string payer_account;
-            key_to_account(payee_key, payee_account);
-            key_to_account(payer_key, payer_account);
-            const uint128_t payeeKeyHash = string_to_uint128_hash(payee_account);
-            const uint128_t payerKeyHash = string_to_uint128_hash(payer_account);
 
             fioTransactionsTable.emplace(aActor, [&](struct fiotrxt &frc) {
                 frc.id = id;
@@ -461,8 +448,8 @@ namespace fioio {
                 frc.payee_fio_addr = payee_fio_address;
                 frc.payee_key = payee_key;
                 frc.payer_key = payer_key;
-                frc.payee_account = payeeKeyHash;
-                frc.payer_account = payerKeyHash;
+                frc.payee_account = payee_acct;
+                frc.payer_account = payer_acct;
             });
 
             const string response_string =
