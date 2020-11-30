@@ -169,7 +169,7 @@ namespace fioio {
             return payee_account + (fio_data_type == 2 || fio_data_type == 4);
         }
         uint64_t by_payerreq() const {
-            return payee_account + (fio_data_type <= 3);
+            return payer_account + (fio_data_type <= 3);
         }
         uint64_t by_payeereq() const {
             return payee_account + (fio_data_type <= 3);
