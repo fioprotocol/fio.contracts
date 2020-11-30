@@ -557,35 +557,37 @@ namespace eosio {
         if(isincentive){
            //first compute the amount of the incentive.
            int64_t incentiveamount = (amount * incentivepercent)/100;
-            if (debug){
-                print("trnsloctoks, computed incentive amount ", incentiveamount, "\n");
-            }
-           //check that the incentive amount is available (otherwise give them 20,000,000 minus the present
-           //value of the total_staking_incentives_granted
-           gstate4 = global4.get();
-           if (MAXINCENTIVESTOGRANT - gstate4.total_staking_incentives_granted < incentiveamount){
-                incentiveamount = MAXINCENTIVESTOGRANT - gstate4.total_staking_incentives_granted;
+           if (incentiveamount > 0) {
+               if (debug) {
+                   print("trnsloctoks, computed incentive amount ", incentiveamount, "\n");
+               }
+               //check that the incentive amount is available (otherwise give them 20,000,000 minus the present
+               //value of the total_staking_incentives_granted
+               gstate4 = global4.get();
+               if (MAXINCENTIVESTOGRANT - gstate4.total_staking_incentives_granted < incentiveamount) {
+                   incentiveamount = MAXINCENTIVESTOGRANT - gstate4.total_staking_incentives_granted;
+               }
+               //mint/issue the amount of the incentive to the grant account.
+               action(permission_level{"eosio"_n, "active"_n},
+                      "fio.token"_n, "issue"_n,
+                      make_tuple(owner, asset(incentiveamount, FIOSYMBOL),
+                                 string("New tokens produced for staking incentives"))
+               ).send();
+
+
+               if (dbg) {
+                   print("trnsloctoks, calling updtotstkinc ", "\n");
+               }
+
+               INLINE_ACTION_SENDER(eosiosystem::system_contract, updtotstkinc)
+                       ("eosio"_n, {{_self, "active"_n}},
+                        {incentiveamount}
+                       );
+
+
+               //adapt the amount of the grant.
+               useamount += incentiveamount;
            }
-           //mint/issue the amount of the incentive to the grant account.
-            action(permission_level{"eosio"_n, "active"_n},
-                   "fio.token"_n, "issue"_n,
-                   make_tuple(owner, asset(incentiveamount, FIOSYMBOL),
-                              string("New tokens produced for staking incentives"))
-            ).send();
-
-
-            if (dbg) {
-                print("trnsloctoks, calling updtotstkinc ", "\n");
-            }
-
-            INLINE_ACTION_SENDER(eosiosystem::system_contract, updtotstkinc)
-                    ("eosio"_n, {{_self, "active"_n}},
-                     {incentiveamount}
-                    );
-
-
-           //adapt the amount of the grant.
-           useamount += incentiveamount;
         }
 
         if (dbg) {
