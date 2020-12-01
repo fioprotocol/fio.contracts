@@ -192,12 +192,12 @@
                "type":"string"
             },
             {
-               "name":"payer_key_hex",
-               "type":"uint128"
+               "name":"payer_account",
+               "type":"uint64"
             },
             {
-               "name":"payee_key_hex",
-               "type":"uint128"
+               "name":"payee_account",
+               "type":"uint64"
             },
             {
                "name":"content",
@@ -206,46 +206,6 @@
             {
                "name":"update_time",
                "type":"uint64"
-            }
-         ]
-      },
-      {
-         "name":"ledgerItems",
-         "base":"",
-         "fields":[
-            {
-               "name":"payer_action_ids",
-               "type":"uint64[]"
-            },
-            {
-               "name":"payee_action_ids",
-               "type":"uint64[]"
-            },
-            {
-               "name":"cancelled_action_ids",
-               "type":"uint64[]"
-            },
-            {
-               "name":"obt_action_ids",
-               "type":"uint64[]"
-            },
-            {
-               "name":"other_ids",
-               "type":"uint64[]"
-            }
-         ]
-      },
-      {
-         "name":"reqledger",
-         "base":"",
-         "fields":[
-            {
-               "name":"account",
-               "type":"uint64"
-            },
-            {
-               "name":"transactions",
-               "type":"ledgerItems"
             }
          ]
       },
