@@ -380,12 +380,12 @@
            "type": "int64"
          },
          {
-           "name": "tpid",
-           "type": "string"
-         },
-         {
            "name": "actor",
            "type": "name"
+         },
+         {
+           "name": "tpid",
+           "type": "string"
          }
        ]
      },{
@@ -405,12 +405,12 @@
            "type": "int64"
          },
          {
-           "name": "tpid",
-           "type": "string"
-         },
-         {
            "name": "actor",
            "type": "name"
+         },
+         {
+           "name": "tpid",
+           "type": "string"
          }
        ]
      }
