@@ -443,17 +443,6 @@
          "type":"fiotrxt"
       },
       {
-         "name":"reqledgers",
-         "index_type":"i64",
-         "key_names":[
-            "account"
-         ],
-         "key_types":[
-            "uint64"
-         ],
-         "type":"reqledger"
-      },
-      {
          "name":"migrledgers",
          "index_type":"i64",
          "key_names":[
