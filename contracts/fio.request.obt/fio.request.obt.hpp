@@ -133,7 +133,7 @@ namespace fioio {
 
     // The request context table holds the requests for funds that have been requested, it provides
     // searching by id, payer and payee.
-    // @abi table fioreqctxts i64
+    // @abi table fiotrxts i64
     struct [[eosio::action]] fiotrxt {
         uint64_t id;
         uint64_t fio_request_id = 0;
