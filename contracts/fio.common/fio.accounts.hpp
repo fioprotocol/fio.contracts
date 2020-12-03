@@ -7,6 +7,7 @@
  */
 
 #pragma once
+#include <eosio/symbol.hpp>
 
 #define MAX_TRX_SIZE 8098
 
