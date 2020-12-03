@@ -5,6 +5,7 @@
 #include <eosio/eosio.hpp>
 #include <eosio/privileged.hpp>
 #include <eosio/producer_schedule.hpp>
+
 #include "fio.common/fio.accounts.hpp"
 
 namespace eosio {
@@ -146,7 +147,7 @@ namespace eosio {
         [[eosio::action]]
         void setpriv(name account, uint8_t is_priv) {
             require_auth(_self);
-            set_privileged(account.value, is_priv);
+            set_privileged(account, is_priv);
         }
 
         [[eosio::action]]
@@ -158,7 +159,7 @@ namespace eosio {
             size_t size = action_data_size();
             char *buffer = (char *) (max_stack_buffer_size < size ? malloc(size) : alloca(size));
             read_action_data(buffer, size);
-            set_proposed_producers(buffer, size);
+            set_proposed_producers(schedule);
             free(buffer);
             buffer = nullptr;
         }
@@ -168,8 +169,8 @@ namespace eosio {
             require_auth(_self);
         }
 
-        [[eosio::action]]
-        void reqauth( name from );
+        //[[eosio::action]]
+        //void reqauth( name from );
 
         [[eosio::action]]
         void setparams(const eosio::blockchain_parameters &params) {
@@ -195,11 +196,11 @@ namespace eosio {
             if (itr == table.end()) {
                 table.emplace(account, [&](auto &row) {
                     row.owner = account;
-                    sha256(const_cast<char *>(abi.data()), abi.size(), &row.hash);
+                    row.hash = sha256(const_cast<char *>(abi.data()), abi.size());
                 });
             } else {
                 table.modify(itr, same_payer, [&](auto &row) {
-                    sha256(const_cast<char *>(abi.data()), abi.size(), &row.hash);
+                    row.hash = sha256(const_cast<char *>(abi.data()), abi.size());
                 });
             }
         }
