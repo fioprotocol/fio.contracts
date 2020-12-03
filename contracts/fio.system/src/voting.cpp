@@ -71,32 +71,14 @@ namespace eosiosystem {
     void
     system_contract::incram(const name &accountnm, const int64_t &amount) {
         require_auth(_self);
-        bool debug=false;
-
         int64_t ram;
         int64_t cpu;
         int64_t net;
         get_resource_limits(accountnm.value,&ram,&net,&cpu);
         if (ram > 0 ) {
-            if (debug) {
-                print(" incremented the RAM for account ", accountnm, " saw pre-existing RAM value of  ", ram,
-                      "\n");
-                int64_t ramused = get_account_ram_usage(accountnm.value);
-                print(" RAM used by account ", accountnm, " is ", ramused, "\n");
-            }
             ram += amount;
             set_resource_limits(accountnm.value, ram, net, cpu);
-            if(debug) {
-                print(" incremented the RAM for account ", accountnm, " new amount is ", ram, "\n");
-            }
-        }else{
-            if(debug) {
-                print(" saw unlimited ram use for account ", accountnm, "\n");
-            }
-
-
         }
-
     }
 
 
@@ -387,9 +369,6 @@ namespace eosiosystem {
               prevprods.erase(pos);
           }
           else {
-              if(debug) {
-                  print("setting producer to unlimited resources for account ", it->owner, "\n");
-              }
               //it was not in the list before, set it unlimited
               set_resource_limits(it->owner.value, -1,-1,-1);
           }
@@ -399,17 +378,10 @@ namespace eosiosystem {
         for(int i=0; i < prevprods.size(); i++){
             //get the ram that this account has used.
             int64_t ram = get_account_ram_usage(prevprods[i].value);
-            if(debug) {
-                print(" de-schedule producer, found ram usage ", ram, " for account ", prevprods[i], "\n");
-            }
             //increment the ram by the set amount.
             ram += ADDITIONALRAMBPDESCHEDULING;
             //set the new limits going forward.
             set_resource_limits(prevprods[i].value, ram, -1, -1);
-            if(debug) {
-                print(" de-schedule producer, setting RAM limit ", ram, " for account ", prevprods[i],
-                      "\n");
-            }
         }
 
       if( top_producers.size() == 0 || top_producers.size() < _gstate.last_producer_schedule_size ) {
@@ -569,7 +541,12 @@ namespace eosiosystem {
             });
         }
 
+        //note -- we can call these lock token computations like this
+        //only because token locks are exclusive, meaning an account CANNOT have
+        //multiple locked token grants.
         eosio::token::computeremaininglockedtokens(actor,true);
+        eosio::token::computegenerallockedtokens(actor,true);
+
         sort(producers_accounts.begin(),producers_accounts.end());
 
         update_votes(actor, proxy, producers_accounts, true);
@@ -712,7 +689,11 @@ namespace eosiosystem {
             });
         }
 
+        //note -- we can call these lock token computations like this
+        //only because token locks are exclusive, meaning an account CANNOT have
+        //multiple locked token grants.
         eosio::token::computeremaininglockedtokens(actor,true);
+        eosio::token::computegenerallockedtokens(actor,true);
 
         update_votes(actor, name{account}, producers, true);
 
@@ -779,7 +760,11 @@ namespace eosiosystem {
 
     void system_contract::unlocktokens(const name &actor){
         require_auth(TokenContract);
+        //note -- we can call these lock token computations like this
+        //only because token locks are exclusive, meaning an account CANNOT have
+        //multiple locked token grants.
         eosio::token::computeremaininglockedtokens(actor,true);
+        eosio::token::computegenerallockedtokens(actor,true);
     }
 
     uint64_t system_contract::get_votable_balance(const name &tokenowner){
@@ -832,6 +817,34 @@ namespace eosiosystem {
         return amount;
     }
 
+    glockresult system_contract::get_general_votable_balance(const name &tokenowner){
+        glockresult res;
+        uint32_t present_time = now();
+        const auto my_balance = eosio::token::get_balance("fio.token"_n,tokenowner, FIOSYMBOL.code() );
+        uint64_t amount = my_balance.amount;
+
+        auto locks_by_owner = _generallockedtokens.get_index<"byowner"_n>();
+        auto lockiter = locks_by_owner.find(tokenowner.value);
+        if(lockiter != locks_by_owner.end()){
+            res.lockfound = true;
+            //if can vote --
+            if (lockiter->can_vote == 1){
+                res.amount = amount;
+            }else{
+                if (amount > lockiter->remaining_lock_amount) {
+                    res.amount =  amount - lockiter->remaining_lock_amount;
+                }else{
+                    res.amount = 0;
+                }
+            }
+        }
+        if (!res.lockfound){
+         res.amount = amount;
+        }
+        return res;
+    }
+
+
     void system_contract::update_votes(
             const name &voter_name,
             const name &proxy,
@@ -852,8 +865,15 @@ namespace eosiosystem {
         check(voter != votersbyowner.end(), "user must vote before votes can be updated");
         check(!proxy || !voter->is_proxy, "account registered as a proxy is not allowed to use a proxy");
 
+
         //change to get_unlocked_balance() Ed 11/25/2019
-        uint64_t amount = get_votable_balance(voter->owner);
+        uint64_t amount = 0;
+        glockresult res = get_general_votable_balance(voter->owner);
+        if(res.lockfound){
+            amount = res.amount;
+        }else {
+           amount = get_votable_balance(voter->owner);
+        }
 
         //on the first vote we update the total voted fio.
 
@@ -989,12 +1009,7 @@ namespace eosiosystem {
 
     void system_contract::crautoproxy(const name &proxy,const name &owner)
     {
-        bool debug = false;
         require_auth(TPIDContract);
-        if (debug) {
-            print("calling create auto proxy ", proxy, " owner ", owner, "\n");
-        }
-
         fio_400_assert(!(isFIOSystem(owner)), "owner", "setautoproxy",
                 "Auto proxy cannot be to a system account", ErrorActorIsSystemAccount);
         fio_400_assert(!(isFIOSystem(proxy)), "proxy", "setautoproxy",
@@ -1008,10 +1023,6 @@ namespace eosiosystem {
 
         if (itervi != votersbyowner.end() &&
            itervi->is_proxy) {
-            if (debug) {
-                print("create auto proxy found the proxy ", proxy, "\n");
-            }
-
             auto itervoter = votersbyowner.find(owner.value);
             if (itervoter == votersbyowner.end()) {
                 uint64_t id = _voters.available_primary_key();
@@ -1025,11 +1036,6 @@ namespace eosiosystem {
                 votersbyowner.modify(itervoter, _self, [&](struct voter_info &a) {
                     a.proxy = proxy;
                 });
-            }
-        }
-        else{
-            if (debug) {
-                print("create auto proxy didnt find the proxy ", proxy, "\n");
             }
         }
     }
@@ -1263,8 +1269,13 @@ namespace eosiosystem {
     void system_contract::propagate_weight_change(const voter_info &voter) {
         check(!voter.proxy || !voter.is_proxy, "account registered as a proxy is not allowed to use a proxy");
 
-        //changed to get_unlocked_balance() Ed 11/25/2019
-        uint64_t amount = get_votable_balance(voter.owner);
+        uint64_t amount = 0;
+        glockresult res = get_general_votable_balance(voter.owner);
+        if(res.lockfound){
+            amount = res.amount;
+        }else {
+            amount = get_votable_balance(voter.owner);
+        }
         //instead of staked we use the voters current FIO balance MAS-522 eliminate stake from voting.
         auto new_weight = (double)amount;
         if (voter.is_proxy) {

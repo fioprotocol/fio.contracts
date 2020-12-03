@@ -39,6 +39,23 @@
 #define MAXACTIVEBPS 21
 #define DEFAULTBUNDLEAMT 100
 
+//staking and staking incentives
+// maximum incentives to grant 20 million SUF.
+#define MAXINCENTIVESTOGRANT    20000000000000000
+//tier 1 is 180 days and 5%
+#define INCENTIVETIER1DURATION  15552000
+#define INCENTIVETIER1PERCENT	5
+//tier 2 is 365 days and 15%
+#define INCENTIVETIER2DURATION  31536000
+#define INCENTIVETIER2PERCENT	15
+//tier 3 is 730 days and 40%
+#define INCENTIVETIER3DURATION  63072000
+#define INCENTIVETIER3PERCENT	40
+//tier 4 is 1095 days and 90%
+#define INCENTIVETIER4DURATION  94608000
+#define INCENTIVETIER4PERCENT	90
+
+
 #define REGISTER_ADDRESS_ENDPOINT "register_fio_address"
 #define REGISTER_DOMAIN_ENDPOINT "register_fio_domain"
 #define RENEW_ADDRESS_ENDPOINT "renew_fio_address"

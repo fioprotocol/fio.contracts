@@ -25,7 +25,9 @@ namespace eosiosystem {
               _global(_self, _self.value),
               _global2(_self, _self.value),
               _global3(_self, _self.value),
+              _global4(_self, _self.value),
               _lockedtokens(_self,_self.value),
+              _generallockedtokens(_self, _self.value),
               _fionames(AddressContract, AddressContract.value),
               _domains(AddressContract, AddressContract.value),
               _accountmap(AddressContract, AddressContract.value),
@@ -33,6 +35,7 @@ namespace eosiosystem {
         _gstate = _global.exists() ? _global.get() : get_default_parameters();
         _gstate2 = _global2.exists() ? _global2.get() : eosio_global_state2{};
         _gstate3 = _global3.exists() ? _global3.get() : eosio_global_state3{};
+        _gstate4 = _global4.exists() ? _global4.get() : eosio_global_state4{};
     }
 
     eosiosystem::eosio_global_state eosiosystem::system_contract::get_default_parameters() {
@@ -60,6 +63,7 @@ namespace eosiosystem {
         _global.set(_gstate, _self);
         _global2.set(_gstate2, _self);
         _global3.set(_gstate3, _self);
+        _global4.set(_gstate4, _self);
     }
 
     void eosiosystem::system_contract::setparams(const eosio::blockchain_parameters &params) {
@@ -196,6 +200,19 @@ namespace eosiosystem {
         check(version.value == 0, "unsupported version for init action");
     }
 
+
+    //This action will increment the total_staking_incentives_granted by the specified amount, up to the MAXINCENTIVESTOGRANT
+    void eosiosystem::system_contract::updtotstkinc( const int64_t &increment)  {
+        require_auth(TokenContract);
+        //safeguard, against incrementing beyond the maximum incentives to grant.
+        if (_gstate4.total_staking_incentives_granted + increment <= MAXINCENTIVESTOGRANT) {
+            _gstate4.total_staking_incentives_granted += increment;
+        }else {
+            _gstate4.total_staking_incentives_granted = MAXINCENTIVESTOGRANT;
+        }
+    }
+
+
     //use this action to initialize the locked token holders table for the FIO protocol.
     void eosiosystem::system_contract::addlocked(const name &owner, const int64_t &amount,
             const int16_t &locktype) {
@@ -216,6 +233,24 @@ namespace eosiosystem {
             });
     }
 
+
+    void eosiosystem::system_contract::addgenlocked(const name &owner, const vector<lockperiods> &periods, const bool &canvote,
+            const int64_t &amount) {
+        require_auth(TokenContract);
+        check(is_account(owner),"account must pre exist");
+        check(amount > 0,"cannot add locked token amount less or equal 0.");
+        _generallockedtokens.emplace(owner, [&](struct locked_tokens_info &a) {
+            a.id = _generallockedtokens.available_primary_key();
+            a.owner_account = owner;
+            a.lock_amount = amount;
+            a.payouts_performed = 0;
+            a.can_vote = canvote?1:0;
+            a.periods = periods;
+            a.remaining_lock_amount = amount;
+            a.timestamp = now();
+        });
+    }
+
 } /// fio.system
 
 
@@ -223,7 +258,7 @@ EOSIO_DISPATCH( eosiosystem::system_contract,
 // native.hpp (newaccount definition is actually in fio.system.cpp)
 (newaccount)(addaction)(remaction)(updateauth)(deleteauth)(linkauth)(unlinkauth)(canceldelay)(onerror)(setabi)
 // fio.system.cpp
-        (init)(addlocked)(setparams)(setpriv)
+(init)(updtotstkinc)(addlocked)(addgenlocked)(setparams)(setpriv)
         (rmvproducer)(updtrevision)
 // delegate_bandwidth.cpp
         (updatepower)
