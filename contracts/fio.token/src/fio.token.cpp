@@ -164,21 +164,12 @@ namespace eosio {
     }
 
     bool token::can_transfer_general(const name &tokenowner, const uint64_t &transferamount) {
-        bool dbg = true;
         //get fio balance for this account,
         uint32_t present_time = now();
         const auto my_balance = eosio::token::get_balance("fio.token"_n, tokenowner, FIOSYMBOL.code());
-
         uint64_t amount = my_balance.amount;
-        if (dbg) {
-            print("can_transfer_general can transfer general balance is ", amount, "\n");
-        }
-
         //recompute the remaining locked amount based on vesting.
         uint64_t lockedTokenAmount = computegenerallockedtokens(tokenowner, false);
-        if (dbg) {
-            print("can_transfer_general locked amount is ", lockedTokenAmount, "\n");
-        }
         //subtract the lock amount from the balance
         if (lockedTokenAmount < amount) {
             amount -= lockedTokenAmount;
@@ -445,17 +436,12 @@ namespace eosio {
                              const int64_t &max_fee,
                              const name &actor,
                              const string &tpid) {
-
-        bool debug = true;
         fio_400_assert(((periods.size()) >= 1 && (periods.size() <= 50)), "unlock_periods", "Invalid unlock periods",
                        "Invalid number of unlock periods", ErrorTransactionTooLarge);
-
         int64_t longestperiod = 0;
         bool isincentive = false;
         int  incentivepercent = 0;
         int64_t useamount = amount;
-
-
         if(periods.size() > 1) { //verify the locking periods, no incentives.
             int64_t lastlockperiodduration = -1;
             double totp = 0.0;
@@ -479,10 +465,6 @@ namespace eosio {
             fio_400_assert(totp == 100.0, "unlock_periods", "Invalid unlock periods",
                            "Invalid total percentage for unlock periods", ErrorInvalidUnlockPeriods);
         }else{ //verify one locking period, check for incentives.
-
-            if (debug){
-                print("trnsloctoks, saw lock with one preiod ", "\n");
-            }
             fio_400_assert(periods[0].percent == 100.0, "unlock_periods", "Invalid unlock periods",
                            "Invalid percentage value in unlock periods", ErrorInvalidUnlockPeriods);
             fio_400_assert(periods[0].duration > 0, "unlock_periods", "Invalid unlock periods",
@@ -508,23 +490,9 @@ namespace eosio {
                 default:
                     break;
             }
-            if (debug){
-                print("trnsloctoks, set incentive percent ", incentivepercent, "\n");
-            }
         }
-
-
-
         fio_400_assert(((can_vote == 0)||(can_vote == 1)), "can_vote", to_string(can_vote),
                        "Invalid can_vote value", ErrorInvalidValue);
-
-
-        bool dbg = true;
-
-        if (dbg) {
-            print(" calling trnsloctoks ");
-        }
-
         uint128_t endpoint_hash = fioio::string_to_uint128_hash("transfer_locked_tokens");
 
         auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
@@ -558,9 +526,6 @@ namespace eosio {
            //first compute the amount of the incentive.
            int64_t incentiveamount = (amount * incentivepercent)/100;
            if (incentiveamount > 0) {
-               if (debug) {
-                   print("trnsloctoks, computed incentive amount ", incentiveamount, "\n");
-               }
                //check that the incentive amount is available (otherwise give them 20,000,000 minus the present
                //value of the total_staking_incentives_granted
                gstate4 = global4.get();
@@ -573,43 +538,26 @@ namespace eosio {
                       make_tuple(owner, asset(incentiveamount, FIOSYMBOL),
                                  string("New tokens produced for staking incentives"))
                ).send();
-
-
-               if (dbg) {
-                   print("trnsloctoks, calling updtotstkinc ", "\n");
-               }
-
                INLINE_ACTION_SENDER(eosiosystem::system_contract, updtotstkinc)
                        ("eosio"_n, {{_self, "active"_n}},
                         {incentiveamount}
                        );
-
-
                //adapt the amount of the grant.
                useamount += incentiveamount;
            }
         }
-
-        if (dbg) {
-            print("trnsloctoks calling addgenlocked ", "\n");
-        }
-
         bool canvote = (can_vote == 1);
         INLINE_ACTION_SENDER(eosiosystem::system_contract, addgenlocked)
                 ("eosio"_n, {{_self, "active"_n}},
                  {owner,periods,canvote,useamount}
                 );
-
         int64_t raminc = 1024 + (64 * periods.size());
-
         action(
                 permission_level{SYSTEMACCOUNT, "active"_n},
                 "eosio"_n,
                 "incram"_n,
                 std::make_tuple(actor, raminc)
                 ).send();
-
-
         const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
                                        to_string(reg_amount) + string("}");
 
@@ -617,7 +565,6 @@ namespace eosio {
                        "Transaction is too large", ErrorTransactionTooLarge);
 
         send_response(response_string.c_str());
-
     }
 
 
