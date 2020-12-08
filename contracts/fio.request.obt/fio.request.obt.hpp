@@ -27,7 +27,9 @@ namespace fioio {
         requested = 0,
         rejected = 1,
         sent_to_blockchain = 2,
-        cancelled = 3
+        cancelled = 3,
+        obt_action = 4,
+        other = 5 //Future Use
     };
 
     // The request context table holds the requests for funds that have been requested, it provides
@@ -129,4 +131,93 @@ namespace fioio {
             indexed_by<"byfioreqid"_n, const_mem_fun < fioreqsts, uint64_t, &fioreqsts::by_fioreqid> >
     >
     fiorequest_status_table;
+
+    // The request context table holds the requests for funds that have been requested, it provides
+    // searching by id, payer and payee.
+    // @abi table fiotrxt i64
+    struct [[eosio::action]] fiotrxt {
+        uint64_t id;
+        uint64_t fio_request_id = 0;
+        uint128_t payer_fio_addr_hex;
+        uint128_t payee_fio_addr_hex;
+        uint8_t fio_data_type; //trxstatus ids
+        uint64_t init_time;
+        string payer_fio_addr;
+        string payee_fio_addr;
+        string payer_key = nullptr;
+        string payee_key = nullptr;
+        uint64_t payer_account;
+        uint64_t payee_account;
+
+        string content = "";
+        uint64_t update_time = 0;
+
+        uint64_t primary_key() const { return id; }
+        uint64_t by_requestid() const { return fio_request_id; }
+        uint128_t by_receiver() const { return payer_fio_addr_hex; }
+        uint128_t by_originator() const { return payee_fio_addr_hex; }
+        uint64_t by_payeracct() const { return payer_account; }
+        uint64_t by_payeeacct() const { return payee_account; }
+        uint64_t by_time() const { return init_time > update_time ? init_time : update_time; }
+
+        //Searches by status using bit shifting
+        uint64_t by_payerstat() const { return payer_account + fio_data_type; }
+        uint64_t by_payeestat() const { return payee_account + fio_data_type; }
+        uint64_t by_payerobt() const {
+            return payer_account + (fio_data_type == 2 || fio_data_type == 4);
+        }
+        uint64_t by_payeeobt() const {
+            return payee_account + (fio_data_type == 2 || fio_data_type == 4);
+        }
+        uint64_t by_payerreq() const {
+            return payer_account + (fio_data_type <= 3);
+        }
+        uint64_t by_payeereq() const {
+            return payee_account + (fio_data_type <= 3);
+        }
+
+        EOSLIB_SERIALIZE(fiotrxt,
+        (id)(fio_request_id)(payer_fio_addr_hex)(payee_fio_addr_hex)(fio_data_type)(init_time)
+                (payer_fio_addr)(payee_fio_addr)(payer_key)(payee_key)(payer_account)(payee_account)
+                (content)(update_time)
+        )
+    };
+
+    typedef multi_index<"fiotrxts"_n, fiotrxt,
+            indexed_by<"byrequestid"_n, const_mem_fun < fiotrxt, uint64_t, &fiotrxt::by_requestid>>,
+    indexed_by<"byreceiver"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_receiver>>,
+    indexed_by<"byoriginator"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_originator>>,
+    indexed_by<"bypayeracct"_n, const_mem_fun<fiotrxt, uint64_t, &fiotrxt::by_payeracct>>,
+    indexed_by<"bypayeeacct"_n, const_mem_fun<fiotrxt, uint64_t, &fiotrxt::by_payeeacct>>,
+    indexed_by<"bytime"_n, const_mem_fun<fiotrxt, uint64_t, &fiotrxt::by_time>>,
+    indexed_by<"bypayerstat"_n, const_mem_fun<fiotrxt, uint64_t, &fiotrxt::by_payerstat>>,
+    indexed_by<"bypayeestat"_n, const_mem_fun<fiotrxt, uint64_t, &fiotrxt::by_payeestat>>,
+    indexed_by<"bypayerobt"_n, const_mem_fun<fiotrxt, uint64_t, &fiotrxt::by_payerobt>>,
+    indexed_by<"bypayeeobt"_n, const_mem_fun<fiotrxt, uint64_t, &fiotrxt::by_payeeobt>>,
+    indexed_by<"bypayerreq"_n, const_mem_fun<fiotrxt, uint64_t, &fiotrxt::by_payerreq>>,
+    indexed_by<"bypayeereq"_n, const_mem_fun<fiotrxt, uint64_t, &fiotrxt::by_payeereq>
+    >>
+    fiotrxt_contexts_table;
+
+    struct [[eosio::action]] migrledger {
+
+        uint64_t id;
+
+        int beginobt = -1;
+        int currentobt = 0;
+
+        int beginrq = -1;
+        int currentrq = 0;
+
+        int beginsta = -1;
+        int currentsta = 0;
+
+        bool isFinished = false;
+
+        uint64_t primary_key() const { return id; }
+
+        EOSLIB_SERIALIZE(migrledger, (id)(beginobt)(currentobt)(beginrq)(currentrq)(beginsta)(currentsta))
+    };
+
+    typedef multi_index<"migrledgers"_n, migrledger> migrledgers_table;
 }
