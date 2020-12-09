@@ -193,11 +193,11 @@
             },
             {
                "name":"payer_account",
-               "type":"uint64"
+               "type":"name"
             },
             {
                "name":"payee_account",
-               "type":"uint64"
+               "type":"name"
             },
             {
                "name":"content",
