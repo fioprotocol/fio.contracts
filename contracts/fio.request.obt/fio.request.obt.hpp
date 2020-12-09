@@ -160,8 +160,8 @@ namespace fioio {
         uint64_t by_time() const { return init_time > update_time ? init_time : update_time; }
 
         //Searches by status using bit shifting
-        uint64_t by_payerstat() const { return payer_account + fio_data_type; }
-        uint64_t by_payeestat() const { return payee_account + fio_data_type; }
+        uint64_t by_payerstat() const { return payer_account + static_cast<uint64_t>(fio_data_type); }
+        uint64_t by_payeestat() const { return payee_account + static_cast<uint64_t>(fio_data_type); }
         uint64_t by_payerobt() const {
             return payer_account + (fio_data_type == 2 || fio_data_type == 4);
         }
