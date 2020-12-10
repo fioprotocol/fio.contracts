@@ -77,7 +77,6 @@ namespace fioio {
 
             if (migrTable == mgrStatsTable.end()) {
                 if (trxTable == fioTransactionsTable.end()) { //transfer ID 0 request
-                    print("0!");
                     string payer_account;
                     key_to_account(reqTable->payer_key, payer_account);
                     name payer_acct = name(payer_account.c_str());
@@ -106,14 +105,12 @@ namespace fioio {
                         strc.id = mgrStatsTable.available_primary_key();
                         strc.currentrq = reqTable->fio_request_id;
                     });
-                    print("1 and done");
                     return;
                 }
             }
 
             auto obtTable = recordObtTable.find(migrTable->currentobt);
             while (obtTable != recordObtTable.end() && migrTable->currentobt < migrTable->beginobt) { //obt record migrate
-                print("1!");
                 uint64_t id = obtTable->id;
                 bool continueIter = false;
                 auto trx_iter = fioTransactionsTable.find(id);
@@ -165,7 +162,6 @@ namespace fioio {
             reqTable = fiorequestContextsTable.find(migrTable->currentrq);
             if (count != limit) { //request table migrate
                 while (reqTable != fiorequestContextsTable.end() && migrTable->currentrq < migrTable->beginrq) {
-                    print("2!");
                     uint64_t reqid = reqTable->fio_request_id;
                     auto trxtByRequestId = fioTransactionsTable.get_index<"byrequestid"_n>();
                     auto fioreqctx_iter = trxtByRequestId.find(reqid);
@@ -211,7 +207,6 @@ namespace fioio {
             auto statTable = fiorequestStatusTable.find(migrTable->currentsta);
             if (count != limit) { //status table migrate
                 while (statTable != fiorequestStatusTable.end()) {
-                    print(" 3 !");
                     uint64_t reqid = statTable->fio_request_id;
                     uint8_t statType = statTable->status;
                     auto trxtByRequestId = fioTransactionsTable.get_index<"byrequestid"_n>();
@@ -239,11 +234,10 @@ namespace fioio {
                             strc.currentsta = 0;
                             strc.isFinished = true;
                         });
-                        print("WE DID IT!!!!");
+                        print("ALL RECORDS HAVE BEEN COPIED");
                         return;
                     }
                     if (count == limit) {
-                        print("????????");
                         return; }
                 }
             }
