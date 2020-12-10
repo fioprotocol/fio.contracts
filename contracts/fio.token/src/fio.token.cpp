@@ -165,21 +165,14 @@ namespace eosio {
     }
 
     bool token::can_transfer_general(const name &tokenowner, const uint64_t &transferamount) {
-        bool dbg = false;
         //get fio balance for this account,
         uint32_t present_time = now();
         const auto my_balance = eosio::token::get_balance("fio.token"_n, tokenowner, FIOSYMBOL.code());
 
         uint64_t amount = my_balance.amount;
-        if (dbg) {
-            print("can_transfer_general can transfer general balance is ", amount, "\n");
-        }
 
         //recompute the remaining locked amount based on vesting.
         uint64_t lockedTokenAmount = computegenerallockedtokens(tokenowner, false);
-        if (dbg) {
-            print("can_transfer_general locked amount is ", lockedTokenAmount, "\n");
-        }
         //subtract the lock amount from the balance
         if (lockedTokenAmount < amount) {
             amount -= lockedTokenAmount;
@@ -471,13 +464,6 @@ namespace eosio {
         fio_400_assert(((can_vote == 0)||(can_vote == 1)), "can_vote", to_string(can_vote),
                        "Invalid can_vote value", ErrorInvalidValue);
 
-
-        bool dbg = false;
-
-        if (dbg) {
-            print(" calling trnsloctoks ");
-        }
-
         uint128_t endpoint_hash = fioio::string_to_uint128_hash("transfer_locked_tokens");
 
         auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
@@ -505,10 +491,6 @@ namespace eosio {
 
         //check for pre existing account is done here.
         name owner = transfer_public_key(payee_public_key,amount,max_fee,actor,tpid,reg_amount,true);
-
-        if (dbg) {
-            print("trnsloctoks calling addgenlocked ", "\n");
-        }
 
         bool canvote = (can_vote == 1);
         INLINE_ACTION_SENDER(eosiosystem::system_contract, addgenlocked)

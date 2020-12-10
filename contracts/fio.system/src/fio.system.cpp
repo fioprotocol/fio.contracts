@@ -220,10 +220,7 @@ namespace eosiosystem {
 
     void eosiosystem::system_contract::addgenlocked(const name &owner, const vector<lockperiods> &periods, const bool &canvote,
             const int64_t &amount) {
-
-        print(" calling addgenlocked for account ",owner,"\n");
         require_auth(TokenContract);
-
 
         check(is_account(owner),"account must pre exist");
         check(amount > 0,"cannot add locked token amount less or equal 0.");
@@ -238,7 +235,6 @@ namespace eosiosystem {
             a.remaining_lock_amount = amount;
             a.timestamp = now();
         });
-        print(" completed calling addgenlocked for account ",owner,"\n");
     }
 
 } /// fio.system
