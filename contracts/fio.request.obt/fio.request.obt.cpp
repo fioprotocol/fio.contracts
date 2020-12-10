@@ -76,14 +76,8 @@ namespace fioio {
             auto migrTable = mgrStatsTable.begin();
 
             if (migrTable == mgrStatsTable.end()) {
-                mgrStatsTable.emplace(executor, [&](struct migrledger &strc) {
-                    strc.id = 0;
-                    strc.currentrq = reqTable->fio_request_id;
-                });
-
                 if (trxTable == fioTransactionsTable.end()) { //transfer ID 0 request
-                    uint64_t id = fioTransactionsTable.available_primary_key();
-
+                    print("0!");
                     string payer_account;
                     key_to_account(reqTable->payer_key, payer_account);
                     name payer_acct = name(payer_account.c_str());
@@ -93,7 +87,7 @@ namespace fioio {
                     name payee_acct = name(payee_account.c_str());
 
                     fioTransactionsTable.emplace(executor, [&](struct fiotrxt &frc) {
-                        frc.id = id;
+                        frc.id = fioTransactionsTable.available_primary_key();
                         frc.fio_request_id = reqTable->fio_request_id;
                         frc.fio_data_type = static_cast<int64_t>(trxstatus::requested);
                         frc.payer_fio_addr_hex = reqTable->payer_fio_address;
@@ -108,12 +102,18 @@ namespace fioio {
                         frc.payee_account = payee_acct.value;
                     });
                     count++;
+                    mgrStatsTable.emplace(executor, [&](struct migrledger &strc) {
+                        strc.id = mgrStatsTable.available_primary_key();
+                        strc.currentrq = reqTable->fio_request_id;
+                    });
+                    print("1 and done");
+                    return;
                 }
             }
 
             auto obtTable = recordObtTable.find(migrTable->currentobt);
             while (obtTable != recordObtTable.end() && migrTable->currentobt < migrTable->beginobt) { //obt record migrate
-                print("1");
+                print("1!");
                 uint64_t id = obtTable->id;
                 bool continueIter = false;
                 auto trx_iter = fioTransactionsTable.find(id);
@@ -165,7 +165,7 @@ namespace fioio {
             reqTable = fiorequestContextsTable.find(migrTable->currentrq);
             if (count != limit) { //request table migrate
                 while (reqTable != fiorequestContextsTable.end() && migrTable->currentrq < migrTable->beginrq) {
-                    print("2");
+                    print("2!");
                     uint64_t reqid = reqTable->fio_request_id;
                     auto trxtByRequestId = fioTransactionsTable.get_index<"byrequestid"_n>();
                     auto fioreqctx_iter = trxtByRequestId.find(reqid);
@@ -211,13 +211,13 @@ namespace fioio {
             auto statTable = fiorequestStatusTable.find(migrTable->currentsta);
             if (count != limit) { //status table migrate
                 while (statTable != fiorequestStatusTable.end()) {
-                    print("3");
+                    print(" 3 !");
                     uint64_t reqid = statTable->fio_request_id;
                     uint8_t statType = statTable->status;
                     auto trxtByRequestId = fioTransactionsTable.get_index<"byrequestid"_n>();
                     auto fioreqctx_iter = trxtByRequestId.find(reqid);
 
-                    if( statType != fioreqctx_iter->fio_data_type ){
+                    if( statType != fioreqctx_iter->fio_data_type && fioreqctx_iter != trxtByRequestId.end() ){
                         uint64_t id = fioreqctx_iter->id;
 
                         trxtByRequestId.modify(fioreqctx_iter, _self, [&](struct fiotrxt &fr) {
@@ -242,8 +242,9 @@ namespace fioio {
                         print("WE DID IT!!!!");
                         return;
                     }
-
-                    if (count == limit) { return; }
+                    if (count == limit) {
+                        print("????????");
+                        return; }
                 }
             }
         }
