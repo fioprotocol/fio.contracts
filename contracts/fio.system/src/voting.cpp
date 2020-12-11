@@ -71,32 +71,14 @@ namespace eosiosystem {
     void
     system_contract::incram(const name &accountnm, const int64_t &amount) {
         require_auth(_self);
-        bool debug=false;
-
         int64_t ram;
         int64_t cpu;
         int64_t net;
         get_resource_limits(accountnm.value,&ram,&net,&cpu);
         if (ram > 0 ) {
-            if (debug) {
-                print(" incremented the RAM for account ", accountnm, " saw pre-existing RAM value of  ", ram,
-                      "\n");
-                int64_t ramused = get_account_ram_usage(accountnm.value);
-                print(" RAM used by account ", accountnm, " is ", ramused, "\n");
-            }
             ram += amount;
             set_resource_limits(accountnm.value, ram, net, cpu);
-            if(debug) {
-                print(" incremented the RAM for account ", accountnm, " new amount is ", ram, "\n");
-            }
-        }else{
-            if(debug) {
-                print(" saw unlimited ram use for account ", accountnm, "\n");
-            }
-
-
         }
-
     }
 
 
@@ -355,8 +337,6 @@ namespace eosiosystem {
 
       _gstate.last_producer_schedule_update = block_time;
 
-      bool debug=false;
-
       auto idx = _producers.get_index<"prototalvote"_n>();
 
       using value_type = std::pair<eosio::producer_key, uint16_t>;
@@ -387,9 +367,6 @@ namespace eosiosystem {
               prevprods.erase(pos);
           }
           else {
-              if(debug) {
-                  print("setting producer to unlimited resources for account ", it->owner, "\n");
-              }
               //it was not in the list before, set it unlimited
               set_resource_limits(it->owner.value, -1,-1,-1);
           }
@@ -399,17 +376,10 @@ namespace eosiosystem {
         for(int i=0; i < prevprods.size(); i++){
             //get the ram that this account has used.
             int64_t ram = get_account_ram_usage(prevprods[i].value);
-            if(debug) {
-                print(" de-schedule producer, found ram usage ", ram, " for account ", prevprods[i], "\n");
-            }
             //increment the ram by the set amount.
             ram += ADDITIONALRAMBPDESCHEDULING;
             //set the new limits going forward.
             set_resource_limits(prevprods[i].value, ram, -1, -1);
-            if(debug) {
-                print(" de-schedule producer, setting RAM limit ", ram, " for account ", prevprods[i],
-                      "\n");
-            }
         }
 
       if( top_producers.size() == 0 || top_producers.size() < _gstate.last_producer_schedule_size ) {
@@ -848,7 +818,6 @@ namespace eosiosystem {
     glockresult system_contract::get_general_votable_balance(const name &tokenowner){
 
         glockresult res;
-        bool dbg = true;
         //get fio balance for this account,
         uint32_t present_time = now();
         const auto my_balance = eosio::token::get_balance("fio.token"_n,tokenowner, FIOSYMBOL.code() );
@@ -857,35 +826,19 @@ namespace eosiosystem {
         auto locks_by_owner = _generallockedtokens.get_index<"byowner"_n>();
         auto lockiter = locks_by_owner.find(tokenowner.value);
         if(lockiter != locks_by_owner.end()){
-            if (dbg) {
-                print("get_general_votable_balance found lock tokens for account ", tokenowner, "\n");
-            }
             res.lockfound = true;
             //if can vote --
             if (lockiter->can_vote == 1){
-                if (dbg) {
-                    print("get_general_votable_balance  lock tokens can vote returning amount ", amount,"\n");
-                }
                 res.amount = amount;
             }else{
                 if (amount > lockiter->remaining_lock_amount) {
-                    if (dbg) {
-                        print("get_general_votable_balance  lock tokens cannot vote returning amount ", amount, " minus ",
-                              lockiter->remaining_lock_amount, " \n");
-                    }
                     res.amount =  amount - lockiter->remaining_lock_amount;
                 }else{
-                    if (dbg) {
-                        print("get_general_votable_balance  amount > remaining return 0 ", " \n");
-                    }
                     res.amount = 0;
                 }
             }
         }
         if (!res.lockfound){
-            if(dbg) {
-                print(" lock tokens not found return amount ", amount, " \n");
-            }
          res.amount = amount;
         }
         return res;
@@ -1056,12 +1009,7 @@ namespace eosiosystem {
 
     void system_contract::crautoproxy(const name &proxy,const name &owner)
     {
-        bool debug = false;
         require_auth(TPIDContract);
-        if (debug) {
-            print("calling create auto proxy ", proxy, " owner ", owner, "\n");
-        }
-
         fio_400_assert(!(isFIOSystem(owner)), "owner", "setautoproxy",
                 "Auto proxy cannot be to a system account", ErrorActorIsSystemAccount);
         fio_400_assert(!(isFIOSystem(proxy)), "proxy", "setautoproxy",
@@ -1075,9 +1023,6 @@ namespace eosiosystem {
 
         if (itervi != votersbyowner.end() &&
            itervi->is_proxy) {
-            if (debug) {
-                print("create auto proxy found the proxy ", proxy, "\n");
-            }
 
             auto itervoter = votersbyowner.find(owner.value);
             if (itervoter == votersbyowner.end()) {
@@ -1092,11 +1037,6 @@ namespace eosiosystem {
                 votersbyowner.modify(itervoter, _self, [&](struct voter_info &a) {
                     a.proxy = proxy;
                 });
-            }
-        }
-        else{
-            if (debug) {
-                print("create auto proxy didnt find the proxy ", proxy, "\n");
             }
         }
     }
