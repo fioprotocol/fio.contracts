@@ -203,20 +203,20 @@ namespace fioio {
 
         uint64_t id;
 
-        int beginobt = -1;
-        int currentobt = 0;
+        uint64_t beginobt = -1;
+        uint64_t currentobt = 0;
 
-        int beginrq = -1;
-        int currentrq = 0;
+        uint64_t beginrq = -1;
+        uint64_t currentrq = 0;
 
-        int beginsta = -1;
-        int currentsta = 0;
+        uint64_t beginsta = -1;
+        uint64_t currentsta = 0;
 
-        bool isFinished = false;
+        uint8_t isFinished = 0;
 
         uint64_t primary_key() const { return id; }
 
-        EOSLIB_SERIALIZE(migrledger, (id)(beginobt)(currentobt)(beginrq)(currentrq)(beginsta)(currentsta))
+        EOSLIB_SERIALIZE(migrledger, (id)(beginobt)(currentobt)(beginrq)(currentrq)(beginsta)(currentsta)(isFinished))
     };
 
     typedef multi_index<"migrledgers"_n, migrledger> migrledgers_table;
