@@ -440,7 +440,7 @@ namespace fioio {
                 key_to_account(payer_key, payer_account);
                 key_to_account(payee_key, payee_account);
                 name payer_acct = name(payer_account.c_str());
-                name payee_acct = name(payer_account.c_str());
+                name payee_acct = name(payee_account.c_str());
 
                 auto trxt_iter = fioTransactionsTable.begin();
                 if(trxt_iter != fioTransactionsTable.end()){
@@ -675,7 +675,7 @@ namespace fioio {
                 key_to_account(payer_key, payer_account);
                 key_to_account(payee_key, payee_account);
                 name payer_acct = name(payer_account.c_str());
-                name payee_acct = name(payer_account.c_str());
+                name payee_acct = name(payee_account.c_str());
 
                 fioTransactionsTable.emplace(aActor, [&](struct fiotrxt &frc) {
                     frc.id = id;
