@@ -234,10 +234,6 @@
                "type":"int64"
             },
             {
-               "name":"beginsta",
-               "type":"int64"
-            },
-            {
                "name":"currentsta",
                "type":"int64"
             },

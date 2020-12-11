@@ -209,14 +209,13 @@ namespace fioio {
         uint64_t beginrq = -1;
         uint64_t currentrq = 0;
 
-        uint64_t beginsta = -1;
         uint64_t currentsta = 0;
 
         uint8_t isFinished = 0;
 
         uint64_t primary_key() const { return id; }
 
-        EOSLIB_SERIALIZE(migrledger, (id)(beginobt)(currentobt)(beginrq)(currentrq)(beginsta)(currentsta)(isFinished))
+        EOSLIB_SERIALIZE(migrledger, (id)(beginobt)(currentobt)(beginrq)(currentrq)(currentsta)(isFinished))
     };
 
     typedef multi_index<"migrledgers"_n, migrledger> migrledgers_table;
