@@ -76,14 +76,7 @@ namespace fioio {
             auto migrTable = mgrStatsTable.begin();
 
             if (migrTable == mgrStatsTable.end()) {
-                mgrStatsTable.emplace(executor, [&](struct migrledger &strc) {
-                    strc.id = 0;
-                    strc.currentrq = reqTable->fio_request_id;
-                });
-
                 if (trxTable == fioTransactionsTable.end()) { //transfer ID 0 request
-                    uint64_t id = fioTransactionsTable.available_primary_key();
-
                     string payer_account;
                     key_to_account(reqTable->payer_key, payer_account);
                     name payer_acct = name(payer_account.c_str());
@@ -93,7 +86,7 @@ namespace fioio {
                     name payee_acct = name(payee_account.c_str());
 
                     fioTransactionsTable.emplace(executor, [&](struct fiotrxt &frc) {
-                        frc.id = id;
+                        frc.id = fioTransactionsTable.available_primary_key();
                         frc.fio_request_id = reqTable->fio_request_id;
                         frc.fio_data_type = static_cast<int64_t>(trxstatus::requested);
                         frc.payer_fio_addr_hex = reqTable->payer_fio_address;
@@ -108,12 +101,59 @@ namespace fioio {
                         frc.payee_account = payee_acct.value;
                     });
                     count++;
+                    mgrStatsTable.emplace(executor, [&](struct migrledger &strc) {
+                        strc.id = 0;
+                        strc.currentrq = 1;
+                    });
+                    return;
+                }
+            }
+
+            reqTable = fiorequestContextsTable.find(migrTable->currentrq);
+            if (count != limit) { //request table migrate
+                while (reqTable != fiorequestContextsTable.end() && migrTable->currentrq <= migrTable->beginrq) {
+                    uint64_t reqid = reqTable->fio_request_id;
+                    auto trxtByRequestId = fioTransactionsTable.get_index<"byrequestid"_n>();
+                    auto fioreqctx_iter = trxtByRequestId.find(reqid);
+
+                    if (fioreqctx_iter == trxtByRequestId.end()) {
+                        string payer_account;
+                        key_to_account(reqTable->payer_key, payer_account);
+                        name payer_acct = name(payer_account.c_str());
+
+                        string payee_account;
+                        key_to_account(reqTable->payee_key, payee_account);
+                        name payee_acct = name(payee_account.c_str());
+
+                        fioTransactionsTable.emplace(executor, [&](struct fiotrxt &frc) {
+                            frc.id = reqid;
+                            frc.fio_request_id = reqid;
+                            frc.fio_data_type = static_cast<int64_t>(trxstatus::requested);
+                            frc.payer_fio_addr_hex = reqTable->payer_fio_address;
+                            frc.payee_fio_addr_hex = reqTable->payee_fio_address;
+                            frc.content = reqTable->content;
+                            frc.init_time = reqTable->time_stamp;
+                            frc.payer_fio_addr = reqTable->payer_fio_addr;
+                            frc.payee_fio_addr = reqTable->payee_fio_addr;
+                            frc.payee_key = reqTable->payee_key;
+                            frc.payer_key = reqTable->payer_key;
+                            frc.payer_account = payer_acct.value;
+                            frc.payee_account = payee_acct.value;
+                        });
+
+                        mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
+                            strc.currentrq = reqid + 1;
+                        });
+
+                        count++;
+                        if (count == limit) { return; }
+                    }
+                    reqTable++;
                 }
             }
 
             auto obtTable = recordObtTable.find(migrTable->currentobt);
-            while (obtTable != recordObtTable.end() && migrTable->currentobt < migrTable->beginobt) { //obt record migrate
-                print("1");
+            while (obtTable != recordObtTable.end() && migrTable->currentobt <= migrTable->beginobt) { //obt record migrate
                 uint64_t id = obtTable->id;
                 bool continueIter = false;
                 auto trx_iter = fioTransactionsTable.find(id);
@@ -138,7 +178,7 @@ namespace fioio {
                     name payee_acct = name(payee_account.c_str());
 
                     fioTransactionsTable.emplace(executor, [&](struct fiotrxt &frc) {
-                        frc.id = id + 1;
+                        frc.id = fioTransactionsTable.available_primary_key();;
                         frc.fio_data_type = static_cast<int64_t>(trxstatus::obt_action);
                         frc.payer_fio_addr_hex = obtTable->payer_fio_address;
                         frc.payee_fio_addr_hex = obtTable->payee_fio_address;
@@ -153,7 +193,7 @@ namespace fioio {
                     });
 
                     mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
-                        strc.currentobt = id;
+                        strc.currentobt = id + 1;
                     });
 
                     count++;
@@ -162,62 +202,15 @@ namespace fioio {
                 obtTable++;
             }
 
-            reqTable = fiorequestContextsTable.find(migrTable->currentrq);
-            if (count != limit) { //request table migrate
-                while (reqTable != fiorequestContextsTable.end() && migrTable->currentrq < migrTable->beginrq) {
-                    print("2");
-                    uint64_t reqid = reqTable->fio_request_id;
-                    auto trxtByRequestId = fioTransactionsTable.get_index<"byrequestid"_n>();
-                    auto fioreqctx_iter = trxtByRequestId.find(reqid);
-
-                    if (fioreqctx_iter == trxtByRequestId.end()) {
-                        uint64_t id = fioTransactionsTable.available_primary_key();
-
-                        string payer_account;
-                        key_to_account(reqTable->payer_key, payer_account);
-                        name payer_acct = name(payer_account.c_str());
-
-                        string payee_account;
-                        key_to_account(reqTable->payee_key, payee_account);
-                        name payee_acct = name(payee_account.c_str());
-
-                        fioTransactionsTable.emplace(executor, [&](struct fiotrxt &frc) {
-                            frc.id = id;
-                            frc.fio_request_id = reqid;
-                            frc.fio_data_type = static_cast<int64_t>(trxstatus::requested);
-                            frc.payer_fio_addr_hex = reqTable->payer_fio_address;
-                            frc.payee_fio_addr_hex = reqTable->payee_fio_address;
-                            frc.content = reqTable->content;
-                            frc.init_time = reqTable->time_stamp;
-                            frc.payer_fio_addr = reqTable->payer_fio_addr;
-                            frc.payee_fio_addr = reqTable->payee_fio_addr;
-                            frc.payee_key = reqTable->payee_key;
-                            frc.payer_key = reqTable->payer_key;
-                            frc.payer_account = payer_acct.value;
-                            frc.payee_account = payee_acct.value;
-                        });
-
-                        mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
-                            strc.currentrq = reqid;
-                        });
-
-                        count++;
-                        if (count == limit) { return; }
-                    }
-                    reqTable++;
-                }
-            }
-
             auto statTable = fiorequestStatusTable.find(migrTable->currentsta);
             if (count != limit) { //status table migrate
                 while (statTable != fiorequestStatusTable.end()) {
-                    print("3");
                     uint64_t reqid = statTable->fio_request_id;
                     uint8_t statType = statTable->status;
                     auto trxtByRequestId = fioTransactionsTable.get_index<"byrequestid"_n>();
                     auto fioreqctx_iter = trxtByRequestId.find(reqid);
 
-                    if( statType != fioreqctx_iter->fio_data_type ){
+                    if( statType != fioreqctx_iter->fio_data_type && fioreqctx_iter != trxtByRequestId.end() ){
                         uint64_t id = fioreqctx_iter->id;
 
                         trxtByRequestId.modify(fioreqctx_iter, _self, [&](struct fiotrxt &fr) {
@@ -227,23 +220,22 @@ namespace fioio {
                         });
 
                         mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
-                            strc.currentsta = statTable->id;
+                            strc.currentsta = statTable->id + 1;
                         });
 
                         count++;
                     }
-
                     statTable++;
                     if(statTable == fiorequestStatusTable.end()){
                         mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
                             strc.currentsta = 0;
-                            strc.isFinished = true;
+                            strc.isFinished = 1;
                         });
-                        print("WE DID IT!!!!");
+                        print("ALL RECORDS HAVE BEEN COPIED");
                         return;
                     }
-
-                    if (count == limit) { return; }
+                    if (count == limit) {
+                        return; }
                 }
             }
         }
@@ -468,7 +460,7 @@ namespace fioio {
                     });
 
                     auto migrTable = mgrStatsTable.begin();
-                    if (migrTable != mgrStatsTable.end() && migrTable->beginobt != -1) {
+                    if (migrTable != mgrStatsTable.end() && migrTable->beginobt == -1) {
                         mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
                             strc.beginobt = id;
                         });
@@ -702,7 +694,7 @@ namespace fioio {
                 });
 
                 auto migrTable = mgrStatsTable.begin();
-                if (migrTable != mgrStatsTable.end() && migrTable->beginrq != -1) {
+                if (migrTable != mgrStatsTable.end() && migrTable->beginrq == -1) {
                     mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
                         strc.beginrq = id;
                     });
