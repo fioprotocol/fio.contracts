@@ -188,7 +188,7 @@ namespace fioio {
 
                 auto fioreqctx_iter = fiorequestContextsTable.find(requestId);
                 fio_400_assert(fioreqctx_iter != fiorequestContextsTable.end(), "fio_request_id", fio_request_id,
-                               "No such FIO Request ", ErrorRequestContextNotFound);
+                               "No such FIO Request", ErrorRequestContextNotFound);
 
                 string payer_account;
                 key_to_account(fioreqctx_iter->payer_key, payer_account);
