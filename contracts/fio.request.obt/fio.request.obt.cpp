@@ -126,7 +126,7 @@ namespace fioio {
                         name payee_acct = name(payee_account.c_str());
 
                         fioTransactionsTable.emplace(executor, [&](struct fiotrxt &frc) {
-                            frc.id = reqid;
+                            frc.id = fioTransactionsTable.available_primary_key();
                             frc.fio_request_id = reqid;
                             frc.fio_data_type = static_cast<int64_t>(trxstatus::requested);
                             frc.payer_fio_addr_hex = reqTable->payer_fio_address;
@@ -445,7 +445,7 @@ namespace fioio {
                 auto trxt_iter = fioTransactionsTable.begin();
                 if(trxt_iter != fioTransactionsTable.end()){
                     fioTransactionsTable.emplace(aactor, [&](struct fiotrxt &obtinf) {
-                        obtinf.id = id + 1;
+                        obtinf.id = fioTransactionsTable.available_primary_key();
                         obtinf.payer_fio_addr_hex = fromHash;
                         obtinf.payee_fio_addr_hex = toHash;
                         obtinf.content = content;
@@ -678,7 +678,7 @@ namespace fioio {
                 name payee_acct = name(payee_account.c_str());
 
                 fioTransactionsTable.emplace(aActor, [&](struct fiotrxt &frc) {
-                    frc.id = id;
+                    frc.id = fioTransactionsTable.available_primary_key();
                     frc.fio_request_id = id;
                     frc.payer_fio_addr_hex = fromHash;
                     frc.payee_fio_addr_hex = toHash;
