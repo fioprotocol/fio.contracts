@@ -282,7 +282,7 @@ namespace eosio {
         }
 
         fio_fees(actor, asset{(int64_t) reg_amount, FIOSYMBOL}, TRANSFER_TOKENS_PUBKEY_ENDPOINT);
-        process_rewards(tpid, reg_amount,get_self(), new_account_name);
+        process_rewards(tpid, reg_amount,get_self(), actor);
 
         require_recipient(actor);
 
