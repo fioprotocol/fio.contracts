@@ -147,7 +147,7 @@ namespace eosio {
 
                     uint64_t daysSinceGrant =  (int)((present_time  - lockiter->timestamp) / 60);
                     uint64_t firstPayPeriod = 3;
-                    uint64_t payoutTimePeriod = 3;
+                    uint64_t payoutTimePeriod = 15;
 
                     bool ninetyDaysSinceGrant = daysSinceGrant >= firstPayPeriod;
 
