@@ -141,17 +141,17 @@ namespace eosio {
                 }
                 if (lockiter->unlocked_period_count < 6) {
                     //to shorten the vesting schedule adapt these variables.
-                    uint32_t daysSinceGrant = (int) ((present_time - lockiter->timestamp) / SECONDSPERDAY);
-                    uint32_t firstPayPeriod = 90;
-                    uint32_t payoutTimePeriod = 180;
+                   // uint32_t daysSinceGrant = (int) ((present_time - lockiter->timestamp) / SECONDSPERDAY);
+                   // uint32_t firstPayPeriod = 90;
+                   // uint32_t payoutTimePeriod = 180;
 
-                    //TEST LOCKED TOKENS uint32_t daysSinceGrant =  (int)((present_time  - lockiter->timestamp) / 60);
-                    //TEST LOCKED TOKENS uint32_t firstPayPeriod = 15;
-                    //TEST LOCKED TOKENS uint32_t payoutTimePeriod = 15;
+                    uint64_t daysSinceGrant =  (int)((present_time  - lockiter->timestamp) / 60);
+                    uint64_t firstPayPeriod = 3;
+                    uint64_t payoutTimePeriod = 3;
 
                     bool ninetyDaysSinceGrant = daysSinceGrant >= firstPayPeriod;
 
-                    uint32_t payoutsDue = 0;
+                    uint64_t payoutsDue = 0;
                     if (daysSinceGrant > firstPayPeriod) {
                         daysSinceGrant -= firstPayPeriod;
                         payoutsDue = daysSinceGrant / payoutTimePeriod;
@@ -160,17 +160,86 @@ namespace eosio {
                         }
                     }
 
-                    uint32_t numberVestingPayouts = lockiter->unlocked_period_count;
-                    uint32_t remainingPayouts = 0;
+                    uint64_t numberVestingPayouts = lockiter->unlocked_period_count;
 
+
+                    uint64_t remainingPayouts = 0;
                     uint64_t newlockedamount = lockiter->remaining_locked_amount;
                     uint64_t totalgrantamount = lockiter->total_grant_amount;
-
                     uint64_t amountpay = 0;
                     uint64_t addone = 0;
                     bool didsomething = false;
 
-                    //this is the first unlocking. 90 days after grant
+
+                    //this logic corrects the locked token accounting for accounts suffering from the bug
+                    //discovered in the second period unlocking.
+
+                    // verify the unlock_period_count_against the remaining_locked_amount, correct
+                    //it if necessary,
+                    //NOTE -- this distinct logic block is placed purposefully,
+                    // there is duplicate code here, and local vars, the intention is to
+                    // ensure there are NO side effects to other logical sections of this code.
+                    //the intention is to ensure that the logic used to calculate the unlock is
+                    //exactly the same as that used during the unlock.
+                    //the performance implications of this new code is that this code will run for every
+                    //vote, proxy, or transfer during the second unlocking period, if an account is mis-accounted
+                    //it will run all of the logic to resolve the accounting. if an account is not mis-accounted
+                    // the overhead is about 6 extra computations being performed during unlock period 2
+                    // for all transfers votes and proxys.
+                    if ((numberVestingPayouts == 2)&&
+                        ((lockiter->grant_type == 1) ||
+                         (lockiter->grant_type == 2) ||
+                         (lockiter->grant_type == 3)))
+                    {
+                        //we will compute the total we should have unlocked in this period.
+                        //if the amount is greater than what has been unlocked so far we will
+                        //correct the amount to be unlocked.
+                        uint64_t totalunlock = 0;
+                        uint64_t nremaininglocked = 0;
+                        //compute the first unlock the same way as it was computed during unlock.
+                        totalunlock = (totalgrantamount / 100) * 6;
+                        //apply the new logic to reduce the size of the calculations for the remaining percent.
+                        //do this in the same way as it was performed in the unlock.
+                        uint64_t totalgrantsmaller = totalgrantamount / 10000;
+                        // compute the amount that should have been unlocked in the
+                        // second unlock period.
+                        totalunlock += ((( (totalgrantsmaller * 18800)) / 100000) * 10000);
+                        if (totalgrantamount >= totalunlock) {
+                            nremaininglocked = (totalgrantamount - totalunlock);
+                        }
+                        else {
+                            //if this went neg for some reason, just leave the lock amount as it is.
+                            return lockiter->remaining_locked_amount;
+                        }
+
+                        //if the computed remaining locked amount for period 2 is less than the present
+                        //remaining locked amount then set the new value using the same logic that
+                        //was used during the unlock period.
+                        if (nremaininglocked < newlockedamount) {
+                            const auto my_balance = eosio::token::get_balance("fio.token"_n, actor,
+                                                                              FIOSYMBOL.code());
+                            uint64_t amount = my_balance.amount;
+
+                            if (nremaininglocked > amount) {
+                                print(" WARNING computed amount ", nremaininglocked,
+                                      " is more than amount in account ",
+                                      amount, " \n ",
+                                      " Transaction processing order can cause this, this amount is being re-aligned, resetting remaining locked amount to ",
+                                      amount, "\n");
+                                nremaininglocked = amount;
+                            }
+
+                            lockedTokensTable.modify(lockiter, SYSTEMACCOUNT, [&](auto &av) {
+                                av.remaining_locked_amount = nremaininglocked;
+                            });
+                        }
+                    }
+
+
+
+
+
+                    //process the first unlock period.
                     if ((numberVestingPayouts == 0) && (ninetyDaysSinceGrant)) {
                         if ((lockiter->grant_type == 1) ||
                             (lockiter->grant_type == 2) ||
@@ -198,6 +267,7 @@ namespace eosio {
                         numberVestingPayouts--;
                     }
 
+                    //process the rest of the payout periods, other than the first period.
                     if (payoutsDue > numberVestingPayouts) {
                         remainingPayouts = payoutsDue - numberVestingPayouts;
                         uint64_t percentperblock = 0;
@@ -213,8 +283,16 @@ namespace eosio {
                             return lockiter->remaining_locked_amount;
                         }
 
+                        //TESTING ONLY, this is the original boinking code
                         //this is assumed to have 3 decimal places in the specified percentage
-                        amountpay = (remainingPayouts * (totalgrantamount * percentperblock)) / 100000;
+                        //this calc results in 20 digits, when we multiply totalgrantamount by percentperblock
+                        // amountpay = (remainingPayouts * (totalgrantamount * percentperblock)) / 100000;
+                        //TESTING ONLY, this is the orginal boinking code
+
+                        //we eliminate the last 5 digits of the SUFs to avoid overflow in the calculations
+                        //that follow.
+                        uint64_t totalgrantsmaller = totalgrantamount/10000;
+                        amountpay = ((remainingPayouts * (totalgrantsmaller * percentperblock)) / 100000) * 10000;
 
                         if (newlockedamount > amountpay) {
                             newlockedamount -= amountpay;
