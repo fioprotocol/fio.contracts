@@ -141,13 +141,13 @@ namespace eosio {
                 }
                 if (lockiter->unlocked_period_count < 6) {
                     //to shorten the vesting schedule adapt these variables.
-                   // uint32_t daysSinceGrant = (int) ((present_time - lockiter->timestamp) / SECONDSPERDAY);
-                   // uint32_t firstPayPeriod = 90;
-                   // uint32_t payoutTimePeriod = 180;
+                    uint32_t daysSinceGrant = (int) ((present_time - lockiter->timestamp) / SECONDSPERDAY);
+                    uint32_t firstPayPeriod = 90;
+                    uint32_t payoutTimePeriod = 180;
 
-                    uint64_t daysSinceGrant =  (int)((present_time  - lockiter->timestamp) / 60);
-                    uint64_t firstPayPeriod = 3;
-                    uint64_t payoutTimePeriod = 15;
+                    //TEST LOCKED TOKENS uint32_t daysSinceGrant =  (int)((present_time  - lockiter->timestamp) / 60);
+                    //TEST LOCKED TOKENS uint32_t firstPayPeriod = 15;
+                    //TEST LOCKED TOKENS uint32_t payoutTimePeriod = 15;
 
                     bool ninetyDaysSinceGrant = daysSinceGrant >= firstPayPeriod;
 
@@ -161,8 +161,6 @@ namespace eosio {
                     }
 
                     uint64_t numberVestingPayouts = lockiter->unlocked_period_count;
-
-
                     uint64_t remainingPayouts = 0;
                     uint64_t newlockedamount = lockiter->remaining_locked_amount;
                     uint64_t totalgrantamount = lockiter->total_grant_amount;
@@ -235,10 +233,6 @@ namespace eosio {
                         }
                     }
 
-
-
-
-
                     //process the first unlock period.
                     if ((numberVestingPayouts == 0) && (ninetyDaysSinceGrant)) {
                         if ((lockiter->grant_type == 1) ||
@@ -282,12 +276,6 @@ namespace eosio {
                         } else {  //unknown lock type, dont unlock
                             return lockiter->remaining_locked_amount;
                         }
-
-                        //TESTING ONLY, this is the original boinking code
-                        //this is assumed to have 3 decimal places in the specified percentage
-                        //this calc results in 20 digits, when we multiply totalgrantamount by percentperblock
-                        // amountpay = (remainingPayouts * (totalgrantamount * percentperblock)) / 100000;
-                        //TESTING ONLY, this is the orginal boinking code
 
                         //we eliminate the last 5 digits of the SUFs to avoid overflow in the calculations
                         //that follow.
