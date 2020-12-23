@@ -372,12 +372,14 @@ namespace eosio {
                     bool didsomething = false;
 
                     if (payoutsDue > lockiter->payouts_performed) {
-                        int64_t percentperblock = 0;
+
+                        uint64_t percentperblock = 0;
                        for (int i=lockiter->payouts_performed; i<payoutsDue;i++){
                            //special note -- we allow 3 decimal places for precision. this needs enforced
                            //in the input validation of these values.
-                           percentperblock = (int)(lockiter->periods[i].percent * 1000);
-                           int64_t amountadded = (lockiter->lock_amount * percentperblock)/100000;
+                           percentperblock = (lockiter->periods[i].percent * 1000);
+                           uint64_t lockamountsmaller = lockiter->lock_amount / 10000;
+                           uint64_t amountadded = ((lockamountsmaller * percentperblock)/100000) * 10000;
                            amountpay += amountadded;
                        }
 
