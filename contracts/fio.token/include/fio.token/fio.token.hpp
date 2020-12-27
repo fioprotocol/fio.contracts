@@ -213,7 +213,7 @@ namespace eosio {
                     if ((numberVestingPayouts == 2)&&
                         ((lockiter->grant_type == 1) ||
                          (lockiter->grant_type == 2) ||
-                         (lockiter->grant_type == 3)))
+                         (lockiter->grant_type == 3)) && doupdate)
                     {
                         //we will compute the total we should have unlocked in this period.
                         //if the amount is greater than what has been unlocked so far we will
