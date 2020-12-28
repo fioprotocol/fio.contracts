@@ -1651,7 +1651,7 @@ namespace fioio {
                            ErrorPubKeyValid);
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
-            fio_400_assert(bundle_sets >= 0, "bundle_sets", to_string(bundle_sets), "Invalid bundle_sets value",
+            fio_400_assert(bundle_sets > 0, "bundle_sets", to_string(bundle_sets), "Invalid bundle_sets value",
                            ErrorMaxFeeInvalid);
 
             const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
