@@ -1674,9 +1674,7 @@ namespace fioio {
             fio_400_assert(present_time <= expiration, "fio_address", fa.fioaddress, "FIO Address expired.",
                            ErrorDomainExpired);
 
-            fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature);
             const uint128_t endpoint_hash = string_to_uint128_hash("add_bundled_transactions");
-
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
             fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "add_bundled_transactions",
