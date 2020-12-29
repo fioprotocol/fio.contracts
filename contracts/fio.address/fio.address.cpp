@@ -43,7 +43,7 @@ namespace fioio {
                                                                         bundlevoters(FeeContract, FeeContract.value),
                                                                         accountmap(_self, _self.value),
                                                                         tpids(TPIDContract, TPIDContract.value),
-                                                                        voters(AddressContract, AddressContract.value),
+                                                                        voters(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                                                                         topprods(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                                                                         producers(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                                                                         lockedTokensTable(SYSTEMACCOUNT,SYSTEMACCOUNT.value),
