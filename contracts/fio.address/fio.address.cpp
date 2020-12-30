@@ -11,6 +11,7 @@
 #include <fio.common/fiotime.hpp>
 #include <fio.token/include/fio.token/fio.token.hpp>
 #include <eosiolib/asset.hpp>
+#include <fio.request.obt/fio.request.obt.hpp> //TEMP FOR XFERADDRESS
 
 namespace fioio {
 
@@ -29,6 +30,8 @@ namespace fioio {
         eosiosystem::producers_table producers;
         eosiosystem::locked_tokens_table lockedTokensTable;
         config appConfig;
+        recordobt_table recordObtTable; //TEMP FOR XFERADDRESS
+        fiorequest_contexts_table fiorequestContextsTable; //TEMP FOR XFERADDRESS
 
     public:
         using contract::contract;
@@ -40,10 +43,12 @@ namespace fioio {
                                                                         bundlevoters(FeeContract, FeeContract.value),
                                                                         accountmap(_self, _self.value),
                                                                         tpids(TPIDContract, TPIDContract.value),
-                                                                        voters(AddressContract, AddressContract.value),
+                                                                        voters(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                                                                         topprods(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                                                                         producers(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
-                                                                        lockedTokensTable(SYSTEMACCOUNT,SYSTEMACCOUNT.value){
+                                                                        lockedTokensTable(SYSTEMACCOUNT,SYSTEMACCOUNT.value),
+                                                                        recordObtTable(REQOBTACCOUNT, REQOBTACCOUNT.value), //TEMP FOR XFERADDRESS
+                                                                        fiorequestContextsTable(REQOBTACCOUNT, REQOBTACCOUNT.value){ //TEMP FOR XFERADDRESS
             configs_singleton configsSingleton(FeeContract, FeeContract.value);
             appConfig = configsSingleton.get_or_default(config());
         }
@@ -301,7 +306,7 @@ namespace fioio {
                 public_address = tpa->public_address.c_str();
 
 
-                fio_400_assert(validateChainNameFormat(token), "token_code", tpa->token_code, "Invalid token code format",
+                fio_400_assert(validateTokenNameFormat(token), "token_code", tpa->token_code, "Invalid token code format",
                                ErrorInvalidFioNameFormat);
                 fio_400_assert(validateChainNameFormat(chaincode), "chain_code", tpa->chain_code, "Invalid chain code format",
                                ErrorInvalidFioNameFormat);
@@ -311,7 +316,7 @@ namespace fioio {
 
                 int idx = 0;
                 for( auto it = fioname_iter->addresses.begin(); it != fioname_iter->addresses.end(); ++it ) {
-                    if( (it->token_code == token) && (it->chain_code == chaincode)  && it->public_address == public_address ){
+                    if( (it->token_code == token) && (it->chain_code == chaincode) && it->public_address == public_address ){
                         wasFound = true;
                         break;
                     }
@@ -432,7 +437,6 @@ namespace fioio {
                 }
             }
 
-
             uint64_t fee_amount = 0;
 
             //begin new fees, bundle eligible fee logic
@@ -478,8 +482,6 @@ namespace fioio {
             return fee_amount;
         }
 
-
-
         uint64_t chain_data_update
          (const string &fioaddress, const vector<tokenpubaddr> &pubaddresses,
                           const uint64_t &max_fee, const FioAddress &fa,
@@ -523,7 +525,7 @@ namespace fioio {
                 token = tpa->token_code.c_str();
                 chaincode = tpa->chain_code.c_str();
 
-                fio_400_assert(validateChainNameFormat(token), "token_code", tpa->token_code, "Invalid token code format",
+                fio_400_assert(validateTokenNameFormat(token), "token_code", tpa->token_code, "Invalid token code format",
                                ErrorInvalidFioNameFormat);
                 fio_400_assert(validateChainNameFormat(chaincode), "chain_code", tpa->chain_code, "Invalid chain code format",
                                ErrorInvalidFioNameFormat);
@@ -531,18 +533,28 @@ namespace fioio {
                                "Invalid public address format",
                                ErrorChainAddressEmpty);
 
-                for( auto it = fioname_iter->addresses.begin(); it != fioname_iter->addresses.end(); ++it ) {
-                    if( (it->token_code == token) && (it->chain_code == chaincode)  ){
-                        namesbyname.modify(fioname_iter, actor, [&](struct fioname &a) {
-                            a.addresses[it-fioname_iter->addresses.begin()].public_address = tpa->public_address;
-                        });
-                        wasFound = true;
-                        break;
+                auto it = std::find_if(fioname_iter->addresses.begin(), fioname_iter->addresses.end(),
+                                       find_token(token));
+                if ((it->token_code == token) && (it->chain_code == chaincode)) {
+                    namesbyname.modify(fioname_iter, actor, [&](struct fioname &a) {
+                        a.addresses[it - fioname_iter->addresses.begin()].public_address = tpa->public_address;
+                    });
+                    wasFound = true;
+                } else if (it->token_code == token && it->chain_code != chaincode) {
+                    for (auto it = fioname_iter->addresses.begin(); it != fioname_iter->addresses.end(); ++it) {
+                        if ((it->token_code == token) && (it->chain_code == chaincode)) {
+                            namesbyname.modify(fioname_iter, actor, [&](struct fioname &a) {
+                                a.addresses[it - fioname_iter->addresses.begin()].public_address = tpa->public_address;
+                            });
+                            wasFound = true;
+                            break;
+                        }
                     }
                 }
+
                 if(!wasFound){
-                    fio_400_assert(fioname_iter->addresses.size() != 100, "token_code", tpa->token_code, "Maximum token codes mapped to single FIO Address reached. Only 100 can be mapped.",
-                                   ErrorInvalidFioNameFormat);
+                    fio_400_assert(fioname_iter->addresses.size() != MAX_SET_ADDRESSES, "token_code", tpa->token_code, "Maximum token codes mapped to single FIO Address reached. Only 200 can be mapped.",
+                                   ErrorInvalidFioNameFormat); // Don't forget to set the error amount if/when changing MAX_SET_ADDRESSES
 
                     tempStruct.public_address = tpa->public_address;
                     tempStruct.token_code = tpa->token_code;
@@ -721,10 +733,6 @@ namespace fioio {
             }
 
             name owner_account_name = accountmgnt(actor, owner_fio_public_key);
-
-            auto ltiter = lockedTokensTable.find(actor.value);
-            fio_400_assert(ltiter == lockedTokensTable.end(), "actor", actor.to_string(), "regdomain not permitted for account with locked tokens, use an account without locked tokens.",
-                           ErrorFeeInvalid);
 
             FioAddress fa;
             getFioAddressStruct(fio_domain, fa);
@@ -1353,8 +1361,7 @@ namespace fioio {
 
         [[eosio::action]]
         void xferaddress(const string &fio_address, const string &new_owner_fio_public_key, const int64_t &max_fee,
-                        const name &actor, const string &tpid ) {
-            check(false, "Transfering a FIO address/domain is currently disabled");
+                         const name &actor, const string &tpid ) {
             require_auth(actor);
             FioAddress fa;
             getFioAddressStruct(fio_address, fa);
@@ -1383,6 +1390,24 @@ namespace fioio {
 
             fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature);
             const uint128_t endpoint_hash = string_to_uint128_hash(TRANSFER_ADDRESS_ENDPOINT);
+
+            //TEMP
+            auto obtbyname = recordObtTable.get_index<"bypayee"_n>();
+            auto name_iter = obtbyname.find(nameHash);
+            check(name_iter == obtbyname.end(), "Transfering a FIO address is currently disabled for some fio.addresses");
+
+            auto obtbyname2 = recordObtTable.get_index<"bypayer"_n>();
+            auto name_iter2 = obtbyname2.find(nameHash);
+            check(name_iter2 == obtbyname2.end(), "Transfering a FIO address is currently disabled for some fio.addresses");
+
+            auto reqbyname = fiorequestContextsTable.get_index<"byreceiver"_n>();
+            auto name_iter3 = reqbyname.find(nameHash);
+            check(name_iter3 == reqbyname.end(), "Transfering a FIO address is currently disabled for some fio.addresses");
+
+            auto reqbyname2 = fiorequestContextsTable.get_index<"byoriginator"_n>();
+            auto name_iter4 = reqbyname2.find(nameHash);
+            check(name_iter4 == reqbyname2.end(), "Transfering a FIO address is currently disabled for some fio.addresses");
+            //TEMP
 
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
@@ -1612,6 +1637,82 @@ namespace fioio {
             send_response(response_string.c_str());
         }
 
+        [[eosio::action]]
+        void addbundles(const string &fio_address, const int64_t &bundle_sets, const int64_t &max_fee,
+                         const string &tpid, const name &actor) {
+            require_auth(actor);
+            FioAddress fa;
+            getFioAddressStruct(fio_address, fa);
+
+            fio_400_assert(validateFioNameFormat(fa) && !fa.domainOnly, "fio_address", fa.fioaddress, "Invalid FIO Address",
+                           ErrorDomainAlreadyRegistered);
+            fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
+                           "TPID must be empty or valid FIO address",
+                           ErrorPubKeyValid);
+            fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                           ErrorMaxFeeInvalid);
+            fio_400_assert(bundle_sets > 0, "bundle_sets", to_string(bundle_sets), "Invalid bundle_sets value",
+                           ErrorMaxFeeInvalid);
+
+            const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+            const uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+            auto namesbyname = fionames.get_index<"byname"_n>();
+            auto fioname_iter = namesbyname.find(nameHash);
+            fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fa.fioaddress,
+                           "FIO Address not registered", ErrorFioNameAlreadyRegistered);
+
+            auto domainsbyname = domains.get_index<"byname"_n>();
+            auto domains_iter = domainsbyname.find(domainHash);
+
+            const uint32_t domain_expiration = domains_iter->expiration;
+            const uint32_t present_time = now();
+            fio_400_assert(present_time <= domain_expiration, "fio_address", fa.fioaddress, "FIO Domain expired",
+                           ErrorDomainExpired);
+
+            const uint32_t expiration = fioname_iter->expiration;
+            fio_400_assert(present_time <= expiration, "fio_address", fa.fioaddress, "FIO Address expired.",
+                           ErrorDomainExpired);
+
+            const uint128_t endpoint_hash = string_to_uint128_hash("add_bundled_transactions");
+            auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
+            auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "add_bundled_transactions",
+                           "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+            //Add bundle
+            uint64_t current_bundle = fioname_iter->bundleeligiblecountdown;
+            uint64_t single_bundle = getBundledAmount();
+            uint64_t set_bundle = current_bundle + ( bundle_sets * single_bundle );
+
+            namesbyname.modify(fioname_iter, actor, [&](struct fioname &a) {
+                a.bundleeligiblecountdown =  set_bundle;
+            });
+
+            //fees
+            const uint64_t fee_amount = fee_iter->suf_amount * bundle_sets;
+            const uint64_t fee_type = fee_iter->type;
+
+            fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                           "add_bundled_transactions unexpected fee type for endpoint add_bundled_transactions, expected 0",
+                           ErrorNoEndpoint);
+
+            fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
+                           "Fee exceeds supplied maximum.",
+                           ErrorMaxFeeExceeded);
+
+            fio_fees(actor, asset(fee_amount, FIOSYMBOL), ADD_BUNDLED_TRANSACTION_ENDPOINT);
+            processbucketrewards(tpid, fee_amount, get_self(), actor);
+
+            const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                           to_string(fee_amount) + string("}");
+
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransaction);
+
+            send_response(response_string.c_str());
+        }
+
         void decrcounter(const string &fio_address, const int32_t &step) {
 
         check(step > 0, "step must be greater than 0");
@@ -1634,5 +1735,5 @@ namespace fioio {
     };
 
     EOSIO_DISPATCH(FioNameLookup, (regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(renewaddress)(setdomainpub)(burnexpired)(decrcounter)
-    (bind2eosio)(burnaddress)(xferdomain)(xferaddress))
+    (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles))
 }
