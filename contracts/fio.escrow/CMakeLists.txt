@@ -1,4 +1,4 @@
-add_contract(fio.escrow fio.escrow fio.escrow.cpp)
+add_contract(fio.escrow fio.escrow ${CMAKE_CURRENT_SOURCE_DIR}/fio.escrow.cpp)
 
 target_include_directories(fio.escrow
         PUBLIC
