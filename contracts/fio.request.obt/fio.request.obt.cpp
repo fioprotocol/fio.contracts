@@ -157,39 +157,35 @@ namespace fioio {
                 while (obtTable != recordObtTable.end() &&
                        migrTable->currentobt < migrTable->beginobt) { //obt record migrate
                     uint64_t id = obtTable->id;
-                    auto trx_iter = fioTransactionsTable.find(id);
+                    string payer_account;
+                    key_to_account(obtTable->payer_key, payer_account);
+                    name payer_acct = name(payer_account.c_str());
 
-                    if (trx_iter == fioTransactionsTable.end()) {
-                        string payer_account;
-                        key_to_account(obtTable->payer_key, payer_account);
-                        name payer_acct = name(payer_account.c_str());
+                    string payee_account;
+                    key_to_account(obtTable->payee_key, payee_account);
+                    name payee_acct = name(payee_account.c_str());
 
-                        string payee_account;
-                        key_to_account(obtTable->payee_key, payee_account);
-                        name payee_acct = name(payee_account.c_str());
+                    fioTransactionsTable.emplace(executor, [&](struct fiotrxt &frc) {
+                        frc.id = fioTransactionsTable.available_primary_key();;
+                        frc.fio_data_type = static_cast<int64_t>(trxstatus::obt_action);
+                        frc.payer_fio_addr_hex = obtTable->payer_fio_address;
+                        frc.payee_fio_addr_hex = obtTable->payee_fio_address;
+                        frc.content = obtTable->content;
+                        frc.init_time = obtTable->time_stamp;
+                        frc.payer_fio_addr = obtTable->payer_fio_addr;
+                        frc.payee_fio_addr = obtTable->payee_fio_addr;
+                        frc.payee_key = obtTable->payee_key;
+                        frc.payer_key = obtTable->payer_key;
+                        frc.payer_account = payer_acct.value;
+                        frc.payee_account = payee_acct.value;
+                    });
 
-                        fioTransactionsTable.emplace(executor, [&](struct fiotrxt &frc) {
-                            frc.id = fioTransactionsTable.available_primary_key();;
-                            frc.fio_data_type = static_cast<int64_t>(trxstatus::obt_action);
-                            frc.payer_fio_addr_hex = obtTable->payer_fio_address;
-                            frc.payee_fio_addr_hex = obtTable->payee_fio_address;
-                            frc.content = obtTable->content;
-                            frc.init_time = obtTable->time_stamp;
-                            frc.payer_fio_addr = obtTable->payer_fio_addr;
-                            frc.payee_fio_addr = obtTable->payee_fio_addr;
-                            frc.payee_key = obtTable->payee_key;
-                            frc.payer_key = obtTable->payer_key;
-                            frc.payer_account = payer_acct.value;
-                            frc.payee_account = payee_acct.value;
-                        });
+                    mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
+                        strc.currentobt = id + 1;
+                    });
 
-                        mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
-                            strc.currentobt = id + 1;
-                        });
-
-                        count++;
-                        if (count == limit) { return; }
-                    }
+                    count++;
+                    if (count == limit) { return; }
                     obtTable++;
                 }
             }
