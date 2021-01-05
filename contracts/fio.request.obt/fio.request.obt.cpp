@@ -155,20 +155,9 @@ namespace fioio {
             auto obtTable = recordObtTable.find(migrTable->currentobt);
             while (obtTable != recordObtTable.end() && migrTable->currentobt <= migrTable->beginobt) { //obt record migrate
                 uint64_t id = obtTable->id;
-                bool continueIter = false;
                 auto trx_iter = fioTransactionsTable.find(id);
 
-                if(id == 0){
-                    auto trx_iter1 = fioTransactionsTable.find(1);
-                    if (trx_iter1 == fioTransactionsTable.end()) {
-                        continueIter = true;
-                    }
-                } else {
-                    trx_iter = fioTransactionsTable.find(id+1);
-                }
-
-                if (trx_iter == fioTransactionsTable.end() || continueIter) {
-
+                if (trx_iter == fioTransactionsTable.end()) {
                     string payer_account;
                     key_to_account(obtTable->payer_key, payer_account);
                     name payer_acct = name(payer_account.c_str());
