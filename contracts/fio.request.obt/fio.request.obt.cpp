@@ -111,7 +111,7 @@ namespace fioio {
 
             reqTable = fiorequestContextsTable.find(migrTable->currentrq);
             if (count != limit) { //request table migrate
-                while (reqTable != fiorequestContextsTable.end() && migrTable->currentrq <= migrTable->beginrq) {
+                while (reqTable != fiorequestContextsTable.end() && migrTable->currentrq < migrTable->beginrq) {
                     uint64_t reqid = reqTable->fio_request_id;
                     auto trxtByRequestId = fioTransactionsTable.get_index<"byrequestid"_n>();
                     auto fioreqctx_iter = trxtByRequestId.find(reqid);
@@ -153,22 +153,10 @@ namespace fioio {
             }
 
             auto obtTable = recordObtTable.find(migrTable->currentobt);
-            while (obtTable != recordObtTable.end() && migrTable->currentobt <= migrTable->beginobt) { //obt record migrate
-                uint64_t id = obtTable->id;
-                bool continueIter = false;
-                auto trx_iter = fioTransactionsTable.find(id);
-
-                if(id == 0){
-                    auto trx_iter1 = fioTransactionsTable.find(1);
-                    if (trx_iter1 == fioTransactionsTable.end()) {
-                        continueIter = true;
-                    }
-                } else {
-                    trx_iter = fioTransactionsTable.find(id+1);
-                }
-
-                if (trx_iter == fioTransactionsTable.end() || continueIter) {
-
+            if (count != limit) {
+                while (obtTable != recordObtTable.end() &&
+                       migrTable->currentobt < migrTable->beginobt) { //obt record migrate
+                    uint64_t id = obtTable->id;
                     string payer_account;
                     key_to_account(obtTable->payer_key, payer_account);
                     name payer_acct = name(payer_account.c_str());
@@ -198,8 +186,8 @@ namespace fioio {
 
                     count++;
                     if (count == limit) { return; }
+                    obtTable++;
                 }
-                obtTable++;
             }
 
             auto statTable = fiorequestStatusTable.find(migrTable->currentsta);
@@ -222,9 +210,8 @@ namespace fioio {
                         mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
                             strc.currentsta = statTable->id + 1;
                         });
-
-                        count++;
                     }
+                    count++;
                     statTable++;
                     if(statTable == fiorequestStatusTable.end()){
                         mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
