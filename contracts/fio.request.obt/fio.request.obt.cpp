@@ -210,9 +210,8 @@ namespace fioio {
                         mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
                             strc.currentsta = statTable->id + 1;
                         });
-
-                        count++;
                     }
+                    count++;
                     statTable++;
                     if(statTable == fiorequestStatusTable.end()){
                         mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
