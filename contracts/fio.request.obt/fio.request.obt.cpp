@@ -111,7 +111,7 @@ namespace fioio {
 
             reqTable = fiorequestContextsTable.find(migrTable->currentrq);
             if (count != limit) { //request table migrate
-                while (reqTable != fiorequestContextsTable.end() && migrTable->currentrq <= migrTable->beginrq) {
+                while (reqTable != fiorequestContextsTable.end() && migrTable->currentrq < migrTable->beginrq) {
                     uint64_t reqid = reqTable->fio_request_id;
                     auto trxtByRequestId = fioTransactionsTable.get_index<"byrequestid"_n>();
                     auto fioreqctx_iter = trxtByRequestId.find(reqid);
@@ -155,7 +155,7 @@ namespace fioio {
             auto obtTable = recordObtTable.find(migrTable->currentobt);
             if (count != limit) {
                 while (obtTable != recordObtTable.end() &&
-                       migrTable->currentobt <= migrTable->beginobt) { //obt record migrate
+                       migrTable->currentobt < migrTable->beginobt) { //obt record migrate
                     uint64_t id = obtTable->id;
                     auto trx_iter = fioTransactionsTable.find(id);
 
