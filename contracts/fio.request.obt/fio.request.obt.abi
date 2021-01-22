@@ -148,7 +148,7 @@
          ]
       },
       {
-         "name":"fiotrxt",
+         "name":"fiotrxt_info",
          "base":"",
          "fields":[
             {
@@ -201,6 +201,10 @@
             },
             {
                "name":"content",
+               "type":"string"
+            },
+            {
+               "name":"obt_metadata",
                "type":"string"
             },
             {
@@ -428,7 +432,7 @@
          "type":"fioreqsts"
       },
       {
-         "name":"fiotrxts",
+         "name":"fiotrxtss",
          "index_type":"i64",
          "key_names":[
             "id"
@@ -436,7 +440,7 @@
          "key_types":[
             "uint64"
          ],
-         "type":"fiotrxt"
+         "type":"fiotrxt_info"
       },
       {
          "name":"migrledgers",

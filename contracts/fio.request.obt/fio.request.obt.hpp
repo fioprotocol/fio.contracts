@@ -134,8 +134,8 @@ namespace fioio {
 
     // The request context table holds the requests for funds that have been requested, it provides
     // searching by id, payer and payee.
-    // @abi table fiotrxt i64
-    struct [[eosio::action]] fiotrxt {
+    // @abi table fiotrxt_info i64
+    struct [[eosio::action]] fiotrxt_info {
         uint64_t id;
         uint64_t fio_request_id = 0;
         uint128_t payer_fio_addr_hex;
@@ -150,6 +150,7 @@ namespace fioio {
         uint64_t payee_account;
 
         string content = "";
+        string obt_metadata  = "";
         uint64_t update_time = 0;
 
         uint64_t primary_key() const { return id; }
@@ -176,28 +177,28 @@ namespace fioio {
             return payee_account + (fio_data_type <= 3);
         }
 
-        EOSLIB_SERIALIZE(fiotrxt,
+        EOSLIB_SERIALIZE(fiotrxt_info,
         (id)(fio_request_id)(payer_fio_addr_hex)(payee_fio_addr_hex)(fio_data_type)(init_time)
                 (payer_fio_addr)(payee_fio_addr)(payer_key)(payee_key)(payer_account)(payee_account)
-                (content)(update_time)
+                (content)(obt_metadata)(update_time)
         )
     };
 
-    typedef multi_index<"fiotrxts"_n, fiotrxt,
-            indexed_by<"byrequestid"_n, const_mem_fun < fiotrxt, uint64_t, &fiotrxt::by_requestid>>,
-    indexed_by<"byreceiver"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_receiver>>,
-    indexed_by<"byoriginator"_n, const_mem_fun<fiotrxt, uint128_t, &fiotrxt::by_originator>>,
-    indexed_by<"bypayeracct"_n, const_mem_fun<fiotrxt, uint64_t, &fiotrxt::by_payeracct>>,
-    indexed_by<"bypayeeacct"_n, const_mem_fun<fiotrxt, uint64_t, &fiotrxt::by_payeeacct>>,
-    indexed_by<"bytime"_n, const_mem_fun<fiotrxt, uint64_t, &fiotrxt::by_time>>,
-    indexed_by<"bypayerstat"_n, const_mem_fun<fiotrxt, uint64_t, &fiotrxt::by_payerstat>>,
-    indexed_by<"bypayeestat"_n, const_mem_fun<fiotrxt, uint64_t, &fiotrxt::by_payeestat>>,
-    indexed_by<"bypayerobt"_n, const_mem_fun<fiotrxt, uint64_t, &fiotrxt::by_payerobt>>,
-    indexed_by<"bypayeeobt"_n, const_mem_fun<fiotrxt, uint64_t, &fiotrxt::by_payeeobt>>,
-    indexed_by<"bypayerreq"_n, const_mem_fun<fiotrxt, uint64_t, &fiotrxt::by_payerreq>>,
-    indexed_by<"bypayeereq"_n, const_mem_fun<fiotrxt, uint64_t, &fiotrxt::by_payeereq>
+    typedef multi_index<"fiotrxtss"_n, fiotrxt_info,
+            indexed_by<"byrequestid"_n, const_mem_fun < fiotrxt_info, uint64_t, &fiotrxt_info::by_requestid>>,
+    indexed_by<"byreceiver"_n, const_mem_fun<fiotrxt_info, uint128_t, &fiotrxt_info::by_receiver>>,
+    indexed_by<"byoriginator"_n, const_mem_fun<fiotrxt_info, uint128_t, &fiotrxt_info::by_originator>>,
+    indexed_by<"bypayeracct"_n, const_mem_fun<fiotrxt_info, uint64_t, &fiotrxt_info::by_payeracct>>,
+    indexed_by<"bypayeeacct"_n, const_mem_fun<fiotrxt_info, uint64_t, &fiotrxt_info::by_payeeacct>>,
+    indexed_by<"bytime"_n, const_mem_fun<fiotrxt_info, uint64_t, &fiotrxt_info::by_time>>,
+    indexed_by<"bypayerstat"_n, const_mem_fun<fiotrxt_info, uint64_t, &fiotrxt_info::by_payerstat>>,
+    indexed_by<"bypayeestat"_n, const_mem_fun<fiotrxt_info, uint64_t, &fiotrxt_info::by_payeestat>>,
+    indexed_by<"bypayerobt"_n, const_mem_fun<fiotrxt_info, uint64_t, &fiotrxt_info::by_payerobt>>,
+    indexed_by<"bypayeeobt"_n, const_mem_fun<fiotrxt_info, uint64_t, &fiotrxt_info::by_payeeobt>>,
+    indexed_by<"bypayerreq"_n, const_mem_fun<fiotrxt_info, uint64_t, &fiotrxt_info::by_payerreq>>,
+    indexed_by<"bypayeereq"_n, const_mem_fun<fiotrxt_info, uint64_t, &fiotrxt_info::by_payeereq>
     >>
-    fiotrxt_contexts_table;
+    fiotrxts_contexts_table;
 
     struct [[eosio::action]] migrledger {
 
