@@ -14,15 +14,11 @@ namespace fioio {
         }
 
         [[eosio::action]]
-        void hi(name nm) {
-            print_f("Name : %\n", nm);
-        }
+        void hi(const name &actor) {
+            const string response_string = string("{\"status\": \"OK\"}");
 
-//        [[eosio::action]]
-//        void check(name nm) {
-//            print_f("Name : %\n", nm);
-//            eosio::check(nm == "hello"_n, "check name not equal to `hello`");
-//        }
+            send_response(response_string.c_str());
+        }
     };
 
     EOSIO_DISPATCH(FioEscrow, (hi))
