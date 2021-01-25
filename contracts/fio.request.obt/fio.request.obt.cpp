@@ -71,14 +71,14 @@ namespace fioio {
             uint16_t count = 0;
             bool isSuccessful = false;
             if (amount > 25) { limit = 25; }
-            auto trxTable = fioTransactionsTable.begin();
-
             auto migrLedger = mgrStatsTable.begin();
             if (migrLedger != mgrStatsTable.end()) { mgrStatsTable.erase(migrLedger); }
 
+            auto trxTable = fioTransactionsTable.begin();
             while (trxTable != fioTransactionsTable.end()) { //obt record migrate
                 fioTransactionsTable.erase(trxTable);
                 count++;
+                trxTable = fioTransactionsTable.begin();
                 if (count == limit) { return; }
             }
         }
