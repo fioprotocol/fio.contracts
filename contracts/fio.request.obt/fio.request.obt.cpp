@@ -82,6 +82,7 @@ namespace fioio {
             while (obtTable != recordObtTable.end()) { //obt record migrate
                 recordObtTable.erase(obtTable);
                 count++;
+                obtTable = recordObtTable.begin();
                 if (count == limit) { return; }
             }
 
@@ -89,6 +90,7 @@ namespace fioio {
                 while (reqTable != fiorequestContextsTable.end()) {
                     fiorequestContextsTable.erase(reqTable);
                     count++;
+                    reqTable = fiorequestContextsTable.begin();
                     if (count == limit) { return; }
                 }
             }
@@ -97,6 +99,7 @@ namespace fioio {
                 while (statTable != fiorequestStatusTable.end()) {
                     fiorequestStatusTable.erase(statTable);
                     count++;
+                    statTable = fiorequestStatusTable.begin();
                     if (count == limit) { return; }
                 }
             }
