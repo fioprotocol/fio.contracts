@@ -141,7 +141,7 @@ namespace fioio {
         uint128_t payer_fio_addr_hex;
         uint128_t payee_fio_addr_hex;
         uint8_t fio_data_type; //trxstatus ids
-        uint64_t init_time;
+        uint64_t req_time;
         string payer_fio_addr;
         string payee_fio_addr;
         string payer_key = nullptr;
@@ -149,9 +149,9 @@ namespace fioio {
         uint64_t payer_account;
         uint64_t payee_account;
 
-        string content = "";
+        string req_content = "";
         string obt_metadata  = "";
-        uint64_t update_time = 0;
+        uint64_t obt_time = 0;
 
         uint64_t primary_key() const { return id; }
         uint64_t by_requestid() const { return fio_request_id; }
@@ -159,7 +159,7 @@ namespace fioio {
         uint128_t by_originator() const { return payee_fio_addr_hex; }
         uint64_t by_payeracct() const { return payer_account; }
         uint64_t by_payeeacct() const { return payee_account; }
-        uint64_t by_time() const { return init_time > update_time ? init_time : update_time; }
+        uint64_t by_time() const { return req_time > obt_time ? req_time : obt_time; }
 
         //Searches by status using bit shifting
         uint64_t by_payerstat() const { return payer_account + static_cast<uint64_t>(fio_data_type); }
@@ -178,9 +178,9 @@ namespace fioio {
         }
 
         EOSLIB_SERIALIZE(fiotrxt_info,
-        (id)(fio_request_id)(payer_fio_addr_hex)(payee_fio_addr_hex)(fio_data_type)(init_time)
+        (id)(fio_request_id)(payer_fio_addr_hex)(payee_fio_addr_hex)(fio_data_type)(req_time)
                 (payer_fio_addr)(payee_fio_addr)(payer_key)(payee_key)(payer_account)(payee_account)
-                (content)(obt_metadata)(update_time)
+                (req_content)(obt_metadata)(obt_time)
         )
     };
 

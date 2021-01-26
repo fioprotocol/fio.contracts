@@ -172,7 +172,7 @@
                "type":"uint8"
             },
             {
-               "name":"init_time",
+               "name":"req_time",
                "type":"uint64"
             },
             {
@@ -200,7 +200,7 @@
                "type":"name"
             },
             {
-               "name":"content",
+               "name":"req_content",
                "type":"string"
             },
             {
@@ -208,7 +208,7 @@
                "type":"string"
             },
             {
-               "name":"update_time",
+               "name":"obt_time",
                "type":"uint64"
             }
          ]
