@@ -150,7 +150,7 @@ namespace fioio {
         uint64_t payee_account;
 
         string req_content = "";
-        string obt_metadata  = "";
+        string obt_content  = "";
         uint64_t obt_time = 0;
 
         uint64_t primary_key() const { return id; }
@@ -180,7 +180,7 @@ namespace fioio {
         EOSLIB_SERIALIZE(fiotrxt_info,
         (id)(fio_request_id)(payer_fio_addr_hex)(payee_fio_addr_hex)(fio_data_type)(req_time)
                 (payer_fio_addr)(payee_fio_addr)(payer_key)(payee_key)(payer_account)(payee_account)
-                (req_content)(obt_metadata)(obt_time)
+                (req_content)(obt_content)(obt_time)
         )
     };
 

@@ -204,7 +204,7 @@
                "type":"string"
             },
             {
-               "name":"obt_metadata",
+               "name":"obt_content",
                "type":"string"
             },
             {

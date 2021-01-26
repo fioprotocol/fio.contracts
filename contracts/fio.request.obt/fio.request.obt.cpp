@@ -204,7 +204,7 @@ namespace fioio {
                         trxtByRequestId.modify(fioreqctx_iter, _self, [&](struct fiotrxt_info &fr) {
                             fr.fio_data_type = statType;
                             fr.obt_time = statTable->time_stamp;
-                            if (statTable->metadata != "") { fr.obt_metadata = statTable->metadata; }
+                            if (statTable->metadata != "") { fr.obt_content = statTable->metadata; }
                         });
 
                         mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
@@ -387,7 +387,7 @@ namespace fioio {
                 if(fioreqctx_iter2 != trxtByRequestId.end()){
                     trxtByRequestId.modify(fioreqctx_iter2, _self, [&](struct fiotrxt_info &fr) {
                         fr.fio_data_type = static_cast<int64_t>(trxstatus::sent_to_blockchain);
-                        fr.obt_metadata = content;
+                        fr.obt_content = content;
                         fr.obt_time = currentTime;
                     });
                 }
@@ -435,7 +435,7 @@ namespace fioio {
                         obtinf.id = fioTransactionsTable.available_primary_key();
                         obtinf.payer_fio_addr_hex = fromHash;
                         obtinf.payee_fio_addr_hex = toHash;
-                        obtinf.obt_metadata = content;
+                        obtinf.obt_content = content;
                         obtinf.fio_data_type = static_cast<int64_t>(trxstatus::obt_action);
                         obtinf.req_time = currentTime;
                         obtinf.payer_fio_addr = payer_fio_address;
