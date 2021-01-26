@@ -435,7 +435,7 @@ namespace fioio {
                         obtinf.id = fioTransactionsTable.available_primary_key();
                         obtinf.payer_fio_addr_hex = fromHash;
                         obtinf.payee_fio_addr_hex = toHash;
-                        obtinf.metadata = content;
+                        obtinf.obt_metadata = content;
                         obtinf.fio_data_type = static_cast<int64_t>(trxstatus::obt_action);
                         obtinf.init_time = currentTime;
                         obtinf.payer_fio_addr = payer_fio_address;
