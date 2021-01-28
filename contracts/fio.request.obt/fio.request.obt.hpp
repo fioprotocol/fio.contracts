@@ -159,7 +159,8 @@ namespace fioio {
         uint128_t by_originator() const { return payee_fio_addr_hex; }
         uint64_t by_payeracct() const { return payer_account; }
         uint64_t by_payeeacct() const { return payee_account; }
-        uint64_t by_time() const { return req_time > obt_time ? req_time : obt_time; }
+        uint64_t by_obttime() const { return obt_time; }
+        uint64_t by_reqtime() const { return req_time; }
 
         //Searches by status using bit shifting
         uint64_t by_payerstat() const { return payer_account + static_cast<uint64_t>(fio_data_type); }
@@ -190,7 +191,8 @@ namespace fioio {
     indexed_by<"byoriginator"_n, const_mem_fun<fiotrxt_info, uint128_t, &fiotrxt_info::by_originator>>,
     indexed_by<"bypayeracct"_n, const_mem_fun<fiotrxt_info, uint64_t, &fiotrxt_info::by_payeracct>>,
     indexed_by<"bypayeeacct"_n, const_mem_fun<fiotrxt_info, uint64_t, &fiotrxt_info::by_payeeacct>>,
-    indexed_by<"bytime"_n, const_mem_fun<fiotrxt_info, uint64_t, &fiotrxt_info::by_time>>,
+    indexed_by<"byobttime"_n, const_mem_fun<fiotrxt_info, uint64_t, &fiotrxt_info::by_obttime>>,
+    indexed_by<"byreqtime"_n, const_mem_fun<fiotrxt_info, uint64_t, &fiotrxt_info::by_reqtime>>,
     indexed_by<"bypayerstat"_n, const_mem_fun<fiotrxt_info, uint64_t, &fiotrxt_info::by_payerstat>>,
     indexed_by<"bypayeestat"_n, const_mem_fun<fiotrxt_info, uint64_t, &fiotrxt_info::by_payeestat>>,
     indexed_by<"bypayerobt"_n, const_mem_fun<fiotrxt_info, uint64_t, &fiotrxt_info::by_payerobt>>,
