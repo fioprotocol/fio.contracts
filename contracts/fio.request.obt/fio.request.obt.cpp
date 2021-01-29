@@ -71,79 +71,36 @@ namespace fioio {
             uint16_t count = 0;
             bool isSuccessful = false;
             if (amount > 25) { limit = 25; }
-            auto migrTable = mgrStatsTable.begin();
-            auto TrxTable = fioTransactionsTable.begin();
-            //reset index for status migration
-            if( migrTable->beginrq != 0 ) {
-                mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strd) {
-                    strd.beginrq = 0;
-                    strd.currentobt = 0;
-                    strd.currentsta = 0;
-                });
-                return;
+            auto obtTable = recordObtTable.begin();
+            auto reqTable = fiorequestContextsTable.begin();
+            auto statTable = fiorequestStatusTable.begin();
+            auto trxTable = fioTransactionsTable.begin();
+
+            auto migrLedger = mgrStatsTable.begin();
+            if (migrLedger != mgrStatsTable.end()) { mgrStatsTable.erase(migrLedger); }
+
+            while (obtTable != recordObtTable.end()) { //obt record migrate
+                recordObtTable.erase(obtTable);
+                count++;
+                obtTable = recordObtTable.begin();
+                if (count == limit) { return; }
             }
 
-            auto trxTable = fioTransactionsTable.find(migrTable->currentobt);
-            if (count != limit) {
-                while (trxTable != fioTransactionsTable.end()) { //obt record migrate
-                    uint64_t id = trxTable->id;
-                    if(trxTable->fio_data_type == 4 && trxTable->obt_time == 0) {
-                        uint64_t time = trxTable->req_time;
-                        string content = trxTable->req_content;
-                        if( content == "" ) { content = trxTable->obt_content; }
-
-                        fioTransactionsTable.modify(trxTable, _self, [&](struct fiotrxt_info &strt) {
-                            strt.obt_time = time;
-                            strt.obt_content = content;
-                            strt.req_content = "";
-                            strt.req_time = 0;
-                        });
-                    }
+            if (count != limit) { //request table migrate
+                while (reqTable != fiorequestContextsTable.end()) {
+                    fiorequestContextsTable.erase(reqTable);
                     count++;
-
-                    if (count == limit) {
-                        mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
-                            strc.currentobt = id + 1;
-                        });
-                        return;
-                    }
-                    trxTable++;
+                    reqTable = fiorequestContextsTable.begin();
+                    if (count == limit) { return; }
                 }
             }
 
-            auto statTable = fiorequestStatusTable.find(migrTable->currentsta);
             if (count != limit) { //status table migrate
                 while (statTable != fiorequestStatusTable.end()) {
-                    uint64_t reqid = statTable->fio_request_id;
-                    uint8_t statType = statTable->status;
-                    uint64_t timestamp = static_cast<uint64_t>(( statTable->time_stamp / 1000000 )); // remove the 00000 at the end
-                    
-                    auto trxtByRequestId = fioTransactionsTable.get_index<"byrequestid"_n>();
-                    auto fioreqctx_iter = trxtByRequestId.find(reqid);
-
-                    if( fioreqctx_iter != trxtByRequestId.end() ){
-                        trxtByRequestId.modify(fioreqctx_iter, _self, [&](struct fiotrxt_info &fr) {
-                            fr.fio_data_type = statType;
-                            fr.obt_time = timestamp;
-                            if (statTable->metadata != "") { fr.obt_content = statTable->metadata; }
-                        });
-                        count++;
-                    }
-                    statTable++;
-                    if(statTable == fiorequestStatusTable.end()){
-                        mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
-                            strc.currentsta = 0;
-                            strc.isFinished = 1;
-                        });
-                        print(" ALL RECORDS HAVE BEEN COPIED ");
-                        return;
-                    }
-                    if (count == limit) {
-                        mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
-                            strc.currentsta = statTable->id;
-                        });
-                        return;
-                    }
+                    fiorequestStatusTable.erase(statTable);
+                    count++;
+                    statTable = fiorequestStatusTable.begin();
+                    if (count == limit) { return; }
                 }
             }
         }
@@ -193,7 +150,7 @@ namespace fioio {
             FioAddress payerfa;
             getFioAddressStruct(payer_fio_address, payerfa);
 
-            const uint32_t present_time = now();
+            uint32_t present_time = now();
 
             uint128_t nameHash = string_to_uint128_hash(payer_fio_address.c_str());
             auto namesbyname = fionames.get_index<"byname"_n>();
@@ -201,7 +158,7 @@ namespace fioio {
             fio_400_assert(fioname_iter != namesbyname.end(), "payer_fio_address", payer_fio_address,
                            "No such FIO Address",
                            ErrorFioNameNotReg);
-            uint64_t account = fioname_iter->owner_account;
+            uint64_t payer_acct = fioname_iter->owner_account;
             uint64_t payernameexp = fioname_iter->expiration;
 
             fio_400_assert(present_time <= payernameexp, "payer_fio_address", payer_fio_address,
@@ -217,12 +174,12 @@ namespace fioio {
                            ErrorDomainNotRegistered);
             uint32_t domexp = iterdom->expiration;
             //add 30 days to the domain expiration, this call will work until 30 days past expire.
-            domexp = get_time_plus_seconds(domexp,SECONDS30DAYS);
+            domexp = get_time_plus_seconds(domexp, SECONDS30DAYS);
 
             fio_400_assert(present_time <= domexp, "payer_fio_address", payer_fio_address,
                            "FIO Domain expired", ErrorFioNameExpired);
 
-            auto account_iter = clientkeys.find(account);
+            auto account_iter = clientkeys.find(payer_acct);
             fio_400_assert(account_iter != clientkeys.end(), "payer_fio_address", payer_fio_address,
                            "No such FIO Address",
                            ErrorClientKeyNotFound);
@@ -236,10 +193,10 @@ namespace fioio {
                            "No such FIO Address",
                            ErrorFioNameNotReg);
 
-            fio_403_assert(account == aactor.value, ErrorSignature);
+            fio_403_assert(payer_acct == aactor.value, ErrorSignature);
 
-            account = fioname_iter2->owner_account;
-            account_iter = clientkeys.find(account);
+            uint64_t payee_acct = fioname_iter2->owner_account;
+            account_iter = clientkeys.find(payee_acct);
             fio_400_assert(account_iter != clientkeys.end(), "payee_fio_address", payee_fio_address,
                            "No such FIO Address",
                            ErrorClientKeyNotFound);
@@ -269,7 +226,8 @@ namespace fioio {
                 }.send();
             } else {
                 fee_amount = fee_iter->suf_amount;
-                fio_400_assert(max_fee >= (int64_t)fee_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
+                               "Fee exceeds supplied maximum.",
                                ErrorMaxFeeExceeded);
 
                 fio_fees(aactor, asset(fee_amount, FIOSYMBOL), RECORD_OBT_DATA_ENDPOINT);
@@ -283,20 +241,14 @@ namespace fioio {
                 }
             }
             //end fees, bundle eligible fee logic
-
             if (fio_request_id.length() > 0) {
-                uint64_t currentTime = current_time();
                 uint64_t requestId;
                 requestId = std::atoi(fio_request_id.c_str());
 
-                auto fioreqctx_iter = fiorequestContextsTable.find(requestId);
-
-                // USED FOR MIGRATION
                 auto trxtByRequestId = fioTransactionsTable.get_index<"byrequestid"_n>();
-                auto fioreqctx_iter2 = trxtByRequestId.find(requestId);
-                // USED FOR MIGRATION
+                auto fioreqctx_iter = trxtByRequestId.find(requestId);
 
-                fio_400_assert(fioreqctx_iter != fiorequestContextsTable.end(), "fio_request_id", fio_request_id,
+                fio_400_assert(fioreqctx_iter != trxtByRequestId.end(), "fio_request_id", fio_request_id,
                                "No such FIO Request", ErrorRequestContextNotFound);
 
                 string payer_account;
@@ -304,96 +256,37 @@ namespace fioio {
                 name payer_acct = name(payer_account.c_str());
                 fio_403_assert(aactor == payer_acct, ErrorSignature);
 
-                // USED FOR MIGRATION
-                if(fioreqctx_iter2 != trxtByRequestId.end()){
-                    trxtByRequestId.modify(fioreqctx_iter2, _self, [&](struct fiotrxt_info &fr) {
-                        fr.fio_data_type = static_cast<int64_t>(trxstatus::sent_to_blockchain);
-                        fr.obt_content = content;
-                        fr.obt_time = present_time;
-                    });
-                }
-                // USED FOR MIGRATION
-
-                //look for other statuses for this request.
-                auto statusByRequestId = fiorequestStatusTable.get_index<"byfioreqid"_n>();
-                auto fioreqstss_iter = statusByRequestId.find(requestId);
-                fio_400_assert(fioreqstss_iter == statusByRequestId.end(), "fio_request_id", fio_request_id,
+                fio_400_assert(fioreqctx_iter->fio_data_type == 0, "fio_request_id", fio_request_id,
                                "Only pending requests can be responded.", ErrorRequestStatusInvalid);
 
-                fiorequestStatusTable.emplace(aactor, [&](struct fioreqsts &fr) {
-                    fr.id = fiorequestStatusTable.available_primary_key();
-                    fr.fio_request_id = requestId;
-                    fr.status = static_cast<int64_t >(trxstatus::sent_to_blockchain);
-                    fr.metadata = content;
-                    fr.time_stamp = currentTime;
+                trxtByRequestId.modify(fioreqctx_iter, _self, [&](struct fiotrxt_info &fr) {
+                    fr.fio_data_type = static_cast<int64_t>(trxstatus::sent_to_blockchain);
+                    fr.obt_content = content;
+                    fr.obt_time = current_time();
                 });
             } else {
-                const uint64_t id = recordObtTable.available_primary_key();
+                const uint64_t id = fioTransactionsTable.available_primary_key();
                 const uint128_t toHash = string_to_uint128_hash(payee_fio_address.c_str());
                 const uint128_t fromHash = string_to_uint128_hash(payer_fio_address.c_str());
-                const string toHashStr = "0x" + to_hex((char *) &toHash, sizeof(toHash));
-                const string fromHashStr = "0x" + to_hex((char *) &fromHash, sizeof(fromHash));
-                const string payerwtimestr = payer_fio_address + to_string(present_time);
-                const string payeewtimestr = payee_fio_address + to_string(present_time);
-                const uint128_t payeewtime = string_to_uint128_hash(payeewtimestr.c_str());
-                const uint128_t payerwtime = string_to_uint128_hash(payerwtimestr.c_str());
 
-                // USED FOR MIGRATION
-                const uint128_t payeeKeyHash = string_to_uint128_hash(payee_key.c_str());
-                const uint128_t payerKeyHash = string_to_uint128_hash(payer_key.c_str());
-
-                string payer_account;
-                string payee_account;
-                key_to_account(payer_key, payer_account);
-                key_to_account(payee_key, payee_account);
-                name payer_acct = name(payer_account.c_str());
-                name payee_acct = name(payee_account.c_str());
-
-                auto trxt_iter = fioTransactionsTable.begin();
-                if(trxt_iter != fioTransactionsTable.end()){
-                    fioTransactionsTable.emplace(aactor, [&](struct fiotrxt_info &obtinf) {
-                        obtinf.id = fioTransactionsTable.available_primary_key();
-                        obtinf.payer_fio_addr_hex = fromHash;
-                        obtinf.payee_fio_addr_hex = toHash;
-                        obtinf.obt_content = content;
-                        obtinf.fio_data_type = static_cast<int64_t>(trxstatus::obt_action);
-                        obtinf.obt_time = present_time;
-                        obtinf.payer_fio_addr = payer_fio_address;
-                        obtinf.payee_fio_addr = payee_fio_address;
-                        obtinf.payee_key = payee_key;
-                        obtinf.payer_key = payer_key;
-                        obtinf.payee_account = payee_acct.value;
-                        obtinf.payer_account = payer_acct.value;
-                    });
-
-                    auto migrTable = mgrStatsTable.begin();
-                    if (migrTable != mgrStatsTable.end() && migrTable->beginobt == -1) {
-                        mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
-                            strc.beginobt = id;
-                        });
-                    }
-                }
-                // USED FOR MIGRATION
-
-                recordObtTable.emplace(aactor, [&](struct recordobt_info &obtinf) {
+                fioTransactionsTable.emplace(aactor, [&](struct fiotrxt_info &obtinf) {
                     obtinf.id = id;
-                    obtinf.payer_fio_address = fromHash;
-                    obtinf.payee_fio_address = toHash;
-                    obtinf.payer_fio_address_hex_str = fromHashStr;
-                    obtinf.payee_fio_address_hex_str = toHashStr;
-                    obtinf.payer_fio_address_with_time = payerwtime;
-                    obtinf.payee_fio_address_with_time = payeewtime;
-                    obtinf.content = content;
-                    obtinf.time_stamp = present_time;
+                    obtinf.payer_fio_addr_hex = fromHash;
+                    obtinf.payee_fio_addr_hex = toHash;
+                    obtinf.obt_content = content;
+                    obtinf.fio_data_type = static_cast<int64_t>(trxstatus::obt_action);
+                    obtinf.obt_time = now();
                     obtinf.payer_fio_addr = payer_fio_address;
                     obtinf.payee_fio_addr = payee_fio_address;
                     obtinf.payee_key = payee_key;
                     obtinf.payer_key = payer_key;
+                    obtinf.payee_account = payee_acct;
+                    obtinf.payer_account = payer_acct;
                 });
             }
 
             const string response_string = string("{\"status\": \"sent_to_blockchain\",\"fee_collected\":") +
-                                     to_string(fee_amount) + string("}");
+                                           to_string(fee_amount) + string("}");
 
             if (RECORDOBTRAM > 0) {
                 action(
@@ -405,7 +298,7 @@ namespace fioio {
             }
 
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-              "Transaction is too large", ErrorTransactionTooLarge);
+                           "Transaction is too large", ErrorTransactionTooLarge);
 
             send_response(response_string.c_str());
         }
@@ -461,8 +354,8 @@ namespace fioio {
                            "No such FIO Address",
                            ErrorFioNameNotReg);
 
-            uint64_t account = fioname_iter2->owner_account;
-            auto account_iter = clientkeys.find(account);
+            uint64_t payer_acct = fioname_iter2->owner_account;
+            auto account_iter = clientkeys.find(payer_acct);
             fio_400_assert(account_iter != clientkeys.end(), "payer_fio_address", payer_fio_address,
                            "No such FIO Address",
                            ErrorClientKeyNotFound);
@@ -475,8 +368,8 @@ namespace fioio {
                            "No such FIO Address",
                            ErrorFioNameNotReg);
 
-            account = fioname_iter->owner_account;
-            account_iter = clientkeys.find(account);
+            uint64_t payee_acct = fioname_iter->owner_account;
+            account_iter = clientkeys.find(payee_acct);
             fio_400_assert(account_iter != clientkeys.end(), "payee_fio_address", payee_fio_address,
                            "No such FIO Address",
                            ErrorClientKeyNotFound);
@@ -495,12 +388,11 @@ namespace fioio {
                            ErrorDomainNotRegistered);
 
             //add 30 days to the domain expiration, this call will work until 30 days past expire.
-            const uint64_t domexp = get_time_plus_seconds(iterdom->expiration,SECONDS30DAYS);
-
+            const uint64_t domexp = get_time_plus_seconds(iterdom->expiration, SECONDS30DAYS);
             fio_400_assert(present_time <= domexp, "payee_fio_address", payee_fio_address,
                            "FIO Domain expired", ErrorFioNameExpired);
 
-            fio_403_assert(account == aActor.value, ErrorSignature);
+            fio_403_assert(payee_acct == aActor.value, ErrorSignature);
 
             //begin fees, bundle eligible fee logic
             const uint128_t endpoint_hash = string_to_uint128_hash(NEW_FUNDS_REQUEST_ENDPOINT);
@@ -527,11 +419,12 @@ namespace fioio {
                 }.send();
             } else {
                 fee_amount = fee_iter->suf_amount;
-                fio_400_assert(max_fee >= (int64_t)fee_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
+                               "Fee exceeds supplied maximum.",
                                ErrorMaxFeeExceeded);
 
                 fio_fees(aActor, asset(fee_amount, FIOSYMBOL), NEW_FUNDS_REQUEST_ENDPOINT);
-                process_rewards(tpid, fee_amount, get_self(),aActor);
+                process_rewards(tpid, fee_amount, get_self(), aActor);
 
                 if (fee_amount > 0) {
                     INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
@@ -542,76 +435,30 @@ namespace fioio {
             }
             //end fees, bundle eligible fee logic
 
-            const uint64_t id = fiorequestContextsTable.available_primary_key();
+            const uint64_t id = fioTransactionsTable.available_primary_key();
             const uint64_t currentTime = now();
             const uint128_t toHash = string_to_uint128_hash(payee_fio_address.c_str());
             const uint128_t fromHash = string_to_uint128_hash(payer_fio_address.c_str());
-            const string payerwtimestr = payer_fio_address + to_string(currentTime);
-            const string payeewtimestr = payee_fio_address + to_string(currentTime);
-            const uint128_t payeewtime = string_to_uint128_hash(payeewtimestr.c_str());
-            const uint128_t payerwtime = string_to_uint128_hash(payerwtimestr.c_str());
-            const string toHashStr = "0x" + to_hex((char *) &toHash, sizeof(toHash));
-            const string fromHashStr = "0x" + to_hex((char *) &fromHash, sizeof(fromHash));
 
-            // USED FOR MIGRATION
-            const uint128_t payeeKeyHash = string_to_uint128_hash(payee_key.c_str());
-            const uint128_t payerKeyHash = string_to_uint128_hash(payer_key.c_str());
-            // USED FOR MIGRATION
-
-            fiorequestContextsTable.emplace(aActor, [&](struct fioreqctxt &frc) {
+            fioTransactionsTable.emplace(aActor, [&](struct fiotrxt_info &frc) {
+                frc.id = id;
                 frc.fio_request_id = id;
-                frc.payer_fio_address = fromHash;
-                frc.payee_fio_address = toHash;
-                frc.payer_fio_address_hex_str = fromHashStr;
-                frc.payee_fio_address_hex_str = toHashStr;
-                frc.payer_fio_address_with_time= payerwtime;
-                frc.payee_fio_address_with_time=payeewtime;
-                frc.content = content;
-                frc.time_stamp = currentTime;
+                frc.payer_fio_addr_hex = fromHash;
+                frc.payee_fio_addr_hex = toHash;
+                frc.req_content = content;
+                frc.fio_data_type = static_cast<int64_t>(trxstatus::requested);
+                frc.req_time = currentTime;
                 frc.payer_fio_addr = payer_fio_address;
                 frc.payee_fio_addr = payee_fio_address;
                 frc.payee_key = payee_key;
                 frc.payer_key = payer_key;
+                frc.payee_account = payee_acct;
+                frc.payer_account = payer_acct;
             });
 
-            // USED FOR MIGRATION
-            auto trxt_iter = fioTransactionsTable.begin();
-            if(trxt_iter != fioTransactionsTable.end()){
-                string payer_account;
-                string payee_account;
-                key_to_account(payer_key, payer_account);
-                key_to_account(payee_key, payee_account);
-                name payer_acct = name(payer_account.c_str());
-                name payee_acct = name(payee_account.c_str());
-
-                fioTransactionsTable.emplace(aActor, [&](struct fiotrxt_info &frc) {
-                    frc.id = fioTransactionsTable.available_primary_key();
-                    frc.fio_request_id = id;
-                    frc.payer_fio_addr_hex = fromHash;
-                    frc.payee_fio_addr_hex = toHash;
-                    frc.req_content = content;
-                    frc.fio_data_type = static_cast<int64_t>(trxstatus::requested);
-                    frc.req_time = currentTime;
-                    frc.payer_fio_addr = payer_fio_address;
-                    frc.payee_fio_addr = payee_fio_address;
-                    frc.payee_key = payee_key;
-                    frc.payer_key = payer_key;
-                    frc.payee_account = payee_acct.value;
-                    frc.payer_account = payer_acct.value;
-                });
-
-                auto migrTable = mgrStatsTable.begin();
-                if (migrTable != mgrStatsTable.end() && migrTable->beginrq == -1) {
-                    mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
-                        strc.beginrq = id;
-                    });
-                }
-            }
-            // USED FOR MIGRATION
-
-           const string response_string = string("{\"fio_request_id\":") + to_string(id) + string(",\"status\":\"requested\"") +
-                                    string(",\"fee_collected\":") + to_string(fee_amount) + string("}");
-
+            const string response_string =
+                    string("{\"fio_request_id\":") + to_string(id) + string(",\"status\":\"requested\"") +
+                    string(",\"fee_collected\":") + to_string(fee_amount) + string("}");
 
             if (NEWFUNDSREQUESTRAM > 0) {
                 action(
@@ -623,9 +470,9 @@ namespace fioio {
             }
 
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-              "Transaction is too large", ErrorTransactionTooLarge);
+                           "Transaction is too large", ErrorTransactionTooLarge);
 
-           send_response(response_string.c_str());
+            send_response(response_string.c_str());
         }
 
          /********
@@ -653,37 +500,24 @@ namespace fioio {
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
 
-            fio_400_assert(fio_request_id.length() > 0 && fio_request_id.length() < 16, "fio_request_id", fio_request_id, "No value specified",
+            fio_400_assert(fio_request_id.length() > 0 && fio_request_id.length() < 16, "fio_request_id",
+                           fio_request_id, "No value specified",
                            ErrorRequestContextNotFound);
 
-           const uint64_t currentTime = current_time();
+            const uint64_t currentTime = current_time();
             uint64_t requestId;
-
             requestId = std::atoi(fio_request_id.c_str());
 
-            auto fioreqctx_iter = fiorequestContextsTable.find(requestId);
-
-            // USED FOR MIGRATION
             auto trxtByRequestId = fioTransactionsTable.get_index<"byrequestid"_n>();
-            auto fioreqctx2_iter = trxtByRequestId.find(requestId);
-            // USED FOR MIGRATION
-
-            fio_400_assert(fioreqctx_iter != fiorequestContextsTable.end(), "fio_request_id", fio_request_id,
+            auto fioreqctx_iter = trxtByRequestId.find(requestId);
+            fio_400_assert(fioreqctx_iter != trxtByRequestId.end(), "fio_request_id", fio_request_id,
                            "No such FIO Request", ErrorRequestContextNotFound);
 
-            //verify pending request only
-            auto statusByRequestId = fiorequestStatusTable.get_index<"byfioreqid"_n>();
-            auto fioreqstss_iter = statusByRequestId.find(requestId);
-            fio_400_assert(fioreqstss_iter->status == 0, "fio_request_id", fio_request_id,
+            fio_400_assert(fioreqctx_iter->fio_data_type == 0, "fio_request_id", fio_request_id,
                            "Only pending requests can be rejected.", ErrorRequestStatusInvalid);
 
-            const uint128_t payer128FioAddHashed = fioreqctx_iter->payer_fio_address;
-
-            // USED FOR MIGRATION
+            const uint128_t payer128FioAddHashed = fioreqctx_iter->payer_fio_addr_hex;
             const string payer_key = fioreqctx_iter->payer_key;
-            const string payee_key = fioreqctx_iter->payee_key;
-            // USED FOR MIGRATION
-
             const uint32_t present_time = now();
 
             auto namesbyname = fionames.get_index<"byname"_n>();
@@ -709,7 +543,7 @@ namespace fioio {
                            ErrorDomainNotRegistered);
 
             //add 30 days to the domain expiration, this call will work until 30 days past expire.
-            const uint64_t domexp = get_time_plus_seconds(iterdom->expiration,SECONDS30DAYS);
+            const uint64_t domexp = get_time_plus_seconds(iterdom->expiration, SECONDS30DAYS);
 
             fio_400_assert(present_time <= domexp, "payer_fio_address", payerFioAddress,
                            "FIO Domain expired", ErrorFioNameExpired);
@@ -743,7 +577,7 @@ namespace fioio {
                 }.send();
             } else {
                 fee_amount = fee_iter->suf_amount;
-                fio_400_assert(max_fee >= (int64_t)fee_amount, "max_fee", to_string(max_fee),
+                fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
                                "Fee exceeds supplied maximum.",
                                ErrorMaxFeeExceeded);
 
@@ -758,25 +592,14 @@ namespace fioio {
                 }
             }
             //end fees, bundle eligible fee logic
-            fiorequestStatusTable.emplace(aactor, [&](struct fioreqsts &fr) {
-                fr.id = fiorequestStatusTable.available_primary_key();;
-                fr.fio_request_id = requestId;
-                fr.status = static_cast<int64_t >(trxstatus::rejected);
-                fr.metadata = "";
-                fr.time_stamp = currentTime;
+
+            trxtByRequestId.modify(fioreqctx_iter, _self, [&](struct fiotrxt_info &fr) {
+                fr.fio_data_type = static_cast<int64_t >(trxstatus::rejected);
+                fr.req_time = currentTime;
             });
 
-            // USED FOR MIGRATION
-            if(fioreqctx2_iter != trxtByRequestId.end()){
-                trxtByRequestId.modify(fioreqctx2_iter, _self, [&](struct fiotrxt_info &fr) {
-                    fr.fio_data_type = static_cast<int64_t >(trxstatus::rejected);
-                    fr.obt_time = currentTime;
-                });
-            }
-            // USED FOR MIGRATION
-
             const string response_string = string("{\"status\": \"request_rejected\",\"fee_collected\":") +
-                                     to_string(fee_amount) + string("}");
+                                           to_string(fee_amount) + string("}");
 
             if (REJECTFUNDSRAM > 0) {
                 action(
@@ -788,7 +611,7 @@ namespace fioio {
             }
 
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-              "Transaction is too large", ErrorTransactionTooLarge);
+                           "Transaction is too large", ErrorTransactionTooLarge);
 
             send_response(response_string.c_str());
         }
@@ -818,7 +641,8 @@ namespace fioio {
         fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                        ErrorMaxFeeInvalid);
 
-        fio_400_assert(fio_request_id.length() > 0 && fio_request_id.length() < 16, "fio_request_id", fio_request_id, "No value specified",
+        fio_400_assert(fio_request_id.length() > 0 && fio_request_id.length() < 16, "fio_request_id",
+                       fio_request_id, "No value specified",
                        ErrorRequestContextNotFound);
 
         const uint64_t currentTime = current_time();
@@ -826,29 +650,18 @@ namespace fioio {
 
         requestId = std::atoi(fio_request_id.c_str());
 
-        auto fioreqctx_iter = fiorequestContextsTable.find(requestId);
-
-        // USED FOR MIGRATION
         auto trxtByRequestId = fioTransactionsTable.get_index<"byrequestid"_n>();
-        auto fioreqctx2_iter = trxtByRequestId.find(requestId);
-        // USED FOR MIGRATION
-
-        fio_400_assert(fioreqctx_iter != fiorequestContextsTable.end(), "fio_request_id", fio_request_id,
+        auto fioreqctx_iter = trxtByRequestId.find(requestId);
+        fio_400_assert(fioreqctx_iter != trxtByRequestId.end(), "fio_request_id", fio_request_id,
                        "No such FIO Request", ErrorRequestContextNotFound);
 
-        const uint128_t payee128FioAddHashed = fioreqctx_iter->payee_fio_address;
-
-        // USED FOR MIGRATION
+        const uint128_t payee128FioAddHashed = fioreqctx_iter->payee_fio_addr_hex;
         const string payer_key = fioreqctx_iter->payer_key;
         const string payee_key = fioreqctx_iter->payee_key;
-        // USED FOR MIGRATION
-
+        const uint64_t id = fioreqctx_iter->id;
         const uint32_t present_time = now();
 
-        //look for other statuses for this request.
-        auto statusByRequestId = fiorequestStatusTable.get_index<"byfioreqid"_n>();
-        auto fioreqstss_iter = statusByRequestId.find(requestId);
-        fio_400_assert(fioreqstss_iter == statusByRequestId.end(), "fio_request_id", fio_request_id,
+        fio_400_assert(fioreqctx_iter->fio_data_type == 0, "fio_request_id", fio_request_id,
                        "Only pending requests can be cancelled.", ErrorRequestStatusInvalid);
 
         auto namesbyname = fionames.get_index<"byname"_n>();
@@ -873,7 +686,7 @@ namespace fioio {
                        ErrorDomainNotRegistered);
 
         //add 30 days to the domain expiration, this call will work until 30 days past expire.
-        const uint64_t domexp = get_time_plus_seconds(iterdom->expiration,SECONDS30DAYS);
+        const uint64_t domexp = get_time_plus_seconds(iterdom->expiration, SECONDS30DAYS);
 
         fio_400_assert(present_time <= domexp, "payee_fio_address", payeeFioAddress,
                        "FIO Domain expired", ErrorFioNameExpired);
@@ -883,12 +696,12 @@ namespace fioio {
         fio_403_assert(account == aactor.value, ErrorSignature);
 
         //begin fees, bundle eligible fee logic
-        const uint128_t endpoint_hash = string_to_uint128_hash(CANCEL_FUNDS_REQUEST_ENDPOINT);
+        const uint128_t endpoint_hash = string_to_uint128_hash("cancel_funds_request");
 
         auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
         auto fee_iter = fees_by_endpoint.find(endpoint_hash);
 
-        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", CANCEL_FUNDS_REQUEST_ENDPOINT,
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "cancel_funds_request",
                        "FIO fee not found for endpoint", ErrorNoEndpoint);
 
         const uint64_t fee_type = fee_iter->type;
@@ -907,7 +720,7 @@ namespace fioio {
             }.send();
         } else {
             fee_amount = fee_iter->suf_amount;
-            fio_400_assert(max_fee >= (int64_t)fee_amount, "max_fee", to_string(max_fee),
+            fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
                            "Fee exceeds supplied maximum.",
                            ErrorMaxFeeExceeded);
 
@@ -922,23 +735,10 @@ namespace fioio {
             }
         }
         //end fees, bundle eligible fee logic
-
-        fiorequestStatusTable.emplace(aactor, [&](struct fioreqsts &fr) {
-            fr.id = fiorequestStatusTable.available_primary_key();;
-            fr.fio_request_id = requestId;
-            fr.status = static_cast<int64_t >(trxstatus::cancelled);
-            fr.metadata = "";
-            fr.time_stamp = currentTime;
+        trxtByRequestId.modify(fioreqctx_iter, _self, [&](struct fiotrxt_info &fr) {
+            fr.fio_data_type = static_cast<int64_t >(trxstatus::cancelled);
+            fr.req_time = currentTime;
         });
-
-        // USED FOR MIGRATION
-        if(fioreqctx2_iter != trxtByRequestId.end()){
-            trxtByRequestId.modify(fioreqctx2_iter, _self, [&](struct fiotrxt_info &fr) {
-                fr.fio_data_type = static_cast<int64_t >(trxstatus::cancelled);
-                fr.obt_time = currentTime;
-            });
-        }
-        // USED FOR MIGRATION
 
         const string response_string = string("{\"status\": \"cancelled\",\"fee_collected\":") +
                                        to_string(fee_amount) + string("}");
