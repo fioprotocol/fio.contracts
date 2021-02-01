@@ -1677,7 +1677,7 @@ namespace fioio {
             const uint128_t endpoint_hash = string_to_uint128_hash("add_bundled_transactions");
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", ADD_BUNDLED_TRANSACTION_ENDPOINT,
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "add_bundled_transactions",
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             //Add bundle
