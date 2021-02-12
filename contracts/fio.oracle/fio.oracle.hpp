@@ -41,7 +41,7 @@ namespace fioio {
         )
     };
 
-    typedef multi_index<"oraclelegder"_n, oraclelegder,
+    typedef multi_index<"oraclelegders"_n, oraclelegder,
             indexed_by<"byactor"_n, const_mem_fun < oraclelegder, uint64_t, &oraclelegder::by_actor>>>
     oraclelegder_table;
 
