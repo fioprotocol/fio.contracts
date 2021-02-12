@@ -8,11 +8,11 @@
          "fields":[
             {
                "name":"id",
-               "type":"int64"
+               "type":"uint64"
             },
             {
                "name":"actor",
-               "type":"int64"
+               "type":"uint64"
             },
             {
                "name":"chaincode",
@@ -24,7 +24,7 @@
             },
             {
                "name":"amount",
-               "type":"int64"
+               "type":"uint64"
             },
             {
                "name":"content",
@@ -79,7 +79,7 @@
    ],
    "tables":[
       {
-         "name":"oraclelegder",
+         "name":"oraclelegders",
          "index_type":"i64",
          "key_names":[
             "id"
