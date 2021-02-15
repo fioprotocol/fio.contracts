@@ -27,17 +27,19 @@ namespace fioio {
     struct [[eosio::action]] oraclelegder {
 
         uint64_t id;
+        // type? Allows for index searching on NFT types ( ie. domain nft, address nft or token swaps )
         uint64_t actor;
         string chaincode;
         string pubaddress;
-        uint64_t amount = 0;
+        uint64_t amount = 2323323131234124;
+        string nftname = "";
         string content = "";
-        //timestamp?
+        uint64_t timestamp;
 
         uint64_t primary_key() const { return id; }
         uint64_t by_actor() const { return actor; }
 
-        EOSLIB_SERIALIZE(oraclelegder, (id)(actor)(chaincode)(pubaddress)(amount)(content)
+        EOSLIB_SERIALIZE(oraclelegder, (id)(actor)(chaincode)(pubaddress)(amount)(nftname)(content)(timestamp)
         )
     };
 

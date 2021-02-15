@@ -31,12 +31,19 @@ namespace fioio {
                         uint64_t &max_fee, string &tpid, name &actor) {
 
             //validation will go here
+            //min/max amount?
+            //chaincode check
+            //public address check
+            //fee checks
+            //tpid validation
+            //actor validation
+
             uint64_t oracle_fee = max_oracle_fee; //temp
             uint64_t fee_amount = max_fee; //temp
 
             //Oracle fee is transferred from actor account to all registered oracles in even amount.
-            //Chain wrap_fio_token fee is collected.
-            //RAM of signer is increased
+            // median fee / oracle_info.size = fee paid
+            // for ( oracle_info.size ) xfer oracle fee
 
             //Copy information to receipt table
             receipts.emplace(_self, [&](struct oraclelegder &p) {
@@ -54,6 +61,10 @@ namespace fioio {
 
             ).send();
 
+            //Chain wrap_fio_token fee is collected.
+
+            //RAM of signer is increased (512)
+
             const string response_string = string("{\"status\": \"OK\",\"oracle_fee_collected\":\"") +
                                            to_string(oracle_fee) + string("\",\"fee_collected\":") +
                                            to_string(fee_amount) + string("}");
@@ -66,5 +77,12 @@ namespace fioio {
     };
 
     EOSIO_DISPATCH(FIOOracle, (wraptokens)
+    //unwraptokens - msig of all oracles????
+    //regoracle - must be topprod
+    //unregoracle - eosio can remove anyone
+    //setoraclefee
+
+    //wrapdomain - xferdomain to fio.oracle
+    //unwrapdomain - change owner to supplied fio address
     )
 }
