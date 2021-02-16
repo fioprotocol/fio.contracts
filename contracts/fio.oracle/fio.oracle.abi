@@ -33,6 +33,59 @@
          ]
       },
       {
+               "name":"oracles",
+               "base":"",
+               "fields":[
+                  {
+                     "name":"id",
+                     "type":"uint64"
+                  },
+                  {
+                     "name":"actor",
+                     "type":"uint64"
+                  },
+                  {
+                     "name":"fees",
+                     "type":"oraclefees[]"
+                  }
+               ]
+            },
+            {
+                     "name":"oracle_voters",
+                     "base":"",
+                     "fields":[
+                        {
+                           "name":"id",
+                           "type":"uint64"
+                        },
+                        {
+                           "name":"voters",
+                           "type":"uint64"
+                        },
+                        {
+                           "name":"idhash",
+                           "type":"uint128"
+                        },
+                        {
+                           "name":"obt_id",
+                           "type":"string"
+                        },
+                        {
+                           "name":"fio_address",
+                           "type":"string"
+                        },
+                        {
+                           "name":"amount",
+                           "type":"uint64"
+                        },
+                        {
+                                                   "name":"isComplete",
+                                                   "type":"bool"
+                                                }
+                     ]
+                  },
+
+      {
          "name":"wraptokens",
          "base":"",
          "fields":[
@@ -65,7 +118,29 @@
                "type":"name"
             }
          ]
-      }
+      },
+      {
+               "name":"unwraptokens",
+               "base":"",
+               "fields":[
+                  {
+                     "name":"amount",
+                     "type":"int64"
+                  },
+                  {
+                     "name":"obt_id",
+                     "type":"string"
+                  },
+                  {
+                     "name":"fio_address",
+                     "type":"string"
+                  },
+                  {
+                     "name":"actor",
+                     "type":"name"
+                  }
+               ]
+            }
    ],
    "types":[
 
@@ -75,7 +150,12 @@
          "name":"wraptokens",
          "type":"wraptokens",
          "ricardian_contract":""
-      }
+      },
+      {
+               "name":"unwraptokens",
+               "type":"unwraptokens",
+               "ricardian_contract":""
+            }
    ],
    "tables":[
       {
@@ -88,7 +168,29 @@
             "string"
          ],
          "type":"oraclelegder"
-      }
+      },
+      {
+               "name":"oracless",
+               "index_type":"i64",
+               "key_names":[
+                  "id"
+               ],
+               "key_types":[
+                  "string"
+               ],
+               "type":"oracles"
+            },
+            {
+                     "name":"oravoters",
+                     "index_type":"i64",
+                     "key_names":[
+                        "id"
+                     ],
+                     "key_types":[
+                        "string"
+                     ],
+                     "type":"oracle_voters"
+                  }
    ],
    "ricardian_clauses":[
 
