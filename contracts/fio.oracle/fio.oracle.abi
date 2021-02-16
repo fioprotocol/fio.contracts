@@ -33,58 +33,57 @@
          ]
       },
       {
-               "name":"oracles",
-               "base":"",
-               "fields":[
-                  {
-                     "name":"id",
-                     "type":"uint64"
-                  },
-                  {
-                     "name":"actor",
-                     "type":"uint64"
-                  },
-                  {
-                     "name":"fees",
-                     "type":"oraclefees[]"
-                  }
-               ]
+         "name":"oracles",
+         "base":"",
+         "fields":[
+            {
+               "name":"id",
+               "type":"uint64"
             },
             {
-                     "name":"oracle_voters",
-                     "base":"",
-                     "fields":[
-                        {
-                           "name":"id",
-                           "type":"uint64"
-                        },
-                        {
-                           "name":"voters",
-                           "type":"uint64"
-                        },
-                        {
-                           "name":"idhash",
-                           "type":"uint128"
-                        },
-                        {
-                           "name":"obt_id",
-                           "type":"string"
-                        },
-                        {
-                           "name":"fio_address",
-                           "type":"string"
-                        },
-                        {
-                           "name":"amount",
-                           "type":"uint64"
-                        },
-                        {
-                                                   "name":"isComplete",
-                                                   "type":"bool"
-                                                }
-                     ]
-                  },
-
+               "name":"actor",
+               "type":"uint64"
+            },
+            {
+               "name":"fees",
+               "type":"oraclefees[]"
+            }
+         ]
+      },
+      {
+         "name":"oracle_voters",
+         "base":"",
+         "fields":[
+            {
+               "name":"id",
+               "type":"uint64"
+            },
+            {
+               "name":"voters",
+               "type":"uint64"
+            },
+            {
+               "name":"idhash",
+               "type":"uint128"
+            },
+            {
+               "name":"obt_id",
+               "type":"string"
+            },
+            {
+               "name":"fio_address",
+               "type":"string"
+            },
+            {
+               "name":"amount",
+               "type":"uint64"
+            },
+            {
+               "name":"isComplete",
+               "type":"bool"
+            }
+         ]
+      },
       {
          "name":"wraptokens",
          "base":"",
@@ -120,27 +119,27 @@
          ]
       },
       {
-               "name":"unwraptokens",
-               "base":"",
-               "fields":[
-                  {
-                     "name":"amount",
-                     "type":"int64"
-                  },
-                  {
-                     "name":"obt_id",
-                     "type":"string"
-                  },
-                  {
-                     "name":"fio_address",
-                     "type":"string"
-                  },
-                  {
-                     "name":"actor",
-                     "type":"name"
-                  }
-               ]
+         "name":"unwraptokens",
+         "base":"",
+         "fields":[
+            {
+               "name":"amount",
+               "type":"int64"
+            },
+            {
+               "name":"obt_id",
+               "type":"string"
+            },
+            {
+               "name":"fio_address",
+               "type":"string"
+            },
+            {
+               "name":"actor",
+               "type":"name"
             }
+         ]
+      }
    ],
    "types":[
 
@@ -152,10 +151,10 @@
          "ricardian_contract":""
       },
       {
-               "name":"unwraptokens",
-               "type":"unwraptokens",
-               "ricardian_contract":""
-            }
+         "name":"unwraptokens",
+         "type":"unwraptokens",
+         "ricardian_contract":""
+      }
    ],
    "tables":[
       {
@@ -170,27 +169,27 @@
          "type":"oraclelegder"
       },
       {
-               "name":"oracless",
-               "index_type":"i64",
-               "key_names":[
-                  "id"
-               ],
-               "key_types":[
-                  "string"
-               ],
-               "type":"oracles"
-            },
-            {
-                     "name":"oravoters",
-                     "index_type":"i64",
-                     "key_names":[
-                        "id"
-                     ],
-                     "key_types":[
-                        "string"
-                     ],
-                     "type":"oracle_voters"
-                  }
+         "name":"oracless",
+         "index_type":"i64",
+         "key_names":[
+            "id"
+         ],
+         "key_types":[
+            "string"
+         ],
+         "type":"oracles"
+      },
+      {
+         "name":"oravoters",
+         "index_type":"i64",
+         "key_names":[
+            "id"
+         ],
+         "key_types":[
+            "string"
+         ],
+         "type":"oracle_voters"
+      }
    ],
    "ricardian_clauses":[
 
