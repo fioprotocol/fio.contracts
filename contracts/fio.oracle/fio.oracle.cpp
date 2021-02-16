@@ -9,6 +9,7 @@
 #include "fio.oracle.hpp"
 #include <fio.fee/fio.fee.hpp>
 #include <fio.common/fio.common.hpp>
+#include <fio.address/fio.address.hpp>
 #include <fio.common/fiotime.hpp>
 #include <eosiolib/asset.hpp>
 
@@ -18,11 +19,15 @@ namespace fioio {
 
     private:
         oraclelegder_table receipts;
+        oraclevoters_table voters;
+        fionames_table fionames;
     public:
         using contract::contract;
 
         FIOOracle(name s, name code, datastream<const char *> ds) :
                 receipts(_self, _self.value),
+                voters(_self, _self.value),
+                fionames(AddressContract, AddressContract.value),
                 contract(s, code, ds) {
         }
 
@@ -58,7 +63,6 @@ namespace fioio {
             action(permission_level{SYSTEMACCOUNT, "active"_n},
                    TokenContract, "transfer"_n,
                    make_tuple(actor, FIOORACLEContract, amount, "Token Wrapping")
-
             ).send();
 
             //Chain wrap_fio_token fee is collected.
@@ -74,13 +78,62 @@ namespace fioio {
 
             send_response(response_string.c_str());
         }
+
+        [[eosio::action]]
+        void unwraptokens(uint64_t &amount, string &obt_id, string &fio_address, name &actor) {
+
+            //validation will go here
+            //min/max amount?
+            //fio address format check
+            //actor validation (must be oracle)
+
+            const uint128_t nameHash = string_to_uint128_hash(fio_address);
+            auto namesbyname = fionames.get_index<"byname"_n>();
+            auto fioname_iter = namesbyname.find(nameHash);
+
+            const uint128_t idHash = string_to_uint128_hash(obt_id);
+            auto votesbyid = voters.get_index<"byidhash"_n>();
+            auto voters_iter = votesbyid.find(idHash);
+
+            fio_404_assert(fioname_iter != namesbyname.end(), "FIO Address not found", ErrorFioNameNotRegistered);
+            const uint64_t recAcct = fioname_iter->owner_account;
+
+            //log entry into table
+            voters.emplace(_self, [&](struct oracle_voters &p) {
+                p.id = voters.available_primary_key();
+                p.voter = actor.value;
+                p.amount = amount;
+                p.idhash = idHash;
+                p.obt_id = obt_id;
+                p.fio_address = fio_address;
+            });
+
+            //verify obt and address match other entries
+            //if( voters_iter.size > 0 ) {
+            //
+
+            // if entries vs. number of regoracles meet consensus.
+            //Tokens are transferred to fio.wrapping.
+            action(permission_level{SYSTEMACCOUNT, "active"_n},
+                   TokenContract, "transfer"_n,
+                   make_tuple(FIOORACLEContract, recAcct, amount, "Token Unwrapping")
+            ).send();
+
+            //RAM of signer is increased (512)
+
+            const string response_string = string("{\"status\": \"OK\"}");
+
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransaction);
+
+            send_response(response_string.c_str());
+        }
     };
 
-    EOSIO_DISPATCH(FIOOracle, (wraptokens)
-    //unwraptokens - msig of all oracles????
-    //regoracle - must be topprod
-    //unregoracle - eosio can remove anyone
-    //setoraclefee
+    EOSIO_DISPATCH(FIOOracle, (wraptokens)(unwraptokens)
+    //regoracle - must be topprod AND must be eosio perms
+    //unregoracle - oracle or eosio can remove
+    //setoraclefee - force lower case
 
     //wrapdomain - xferdomain to fio.oracle
     //unwrapdomain - change owner to supplied fio address
