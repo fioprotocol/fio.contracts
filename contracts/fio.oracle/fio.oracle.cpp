@@ -99,7 +99,7 @@ namespace fioio {
             const uint64_t recAcct = fioname_iter->owner_account;
 
             //log entry into table
-            voters.emplace(_self, [&](struct oracle_voters &p) {
+            voters.emplace(_self, [&](struct oracle_votes &p) {
                 p.id = voters.available_primary_key();
                 p.voter = actor.value;
                 p.amount = amount;
@@ -118,8 +118,6 @@ namespace fioio {
                    TokenContract, "transfer"_n,
                    make_tuple(FIOORACLEContract, recAcct, amount, "Token Unwrapping")
             ).send();
-
-            //RAM of signer is increased (512)
 
             const string response_string = string("{\"status\": \"OK\"}");
 

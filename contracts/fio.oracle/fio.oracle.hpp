@@ -66,7 +66,7 @@ namespace fioio {
 
     // oracle vote table
     // @abi table templete i64
-    struct [[eosio::action]] oracle_voters {
+    struct [[eosio::action]] oracle_votes {
 
         uint64_t id;
         uint64_t voter;
@@ -80,12 +80,12 @@ namespace fioio {
         uint64_t by_voter() const { return voter; }
         uint128_t by_idhash() const { return idhash; }
 
-        EOSLIB_SERIALIZE(oracle_voters, (id)(voter)(idhash)(obt_id)(fio_address)(amount)(isComplete))
+        EOSLIB_SERIALIZE(oracle_votes, (id)(voter)(idhash)(obt_id)(fio_address)(amount)(isComplete))
     };
 
-    typedef multi_index<"oravoters"_n, oracle_voters,
-            indexed_by<"byvoter"_n, const_mem_fun < oracle_voters, uint64_t, &oracle_voters::by_voter>>,
-            indexed_by<"byidhash"_n, const_mem_fun< oracle_voters, uint128_t, &oracle_voters::by_idhash>>
+    typedef multi_index<"oravotes"_n, oracle_votes,
+            indexed_by<"byvoter"_n, const_mem_fun < oracle_votes, uint64_t, &oracle_votes::by_voter>>,
+            indexed_by<"byidhash"_n, const_mem_fun< oracle_votes, uint128_t, &oracle_votes::by_idhash>>
             >
     oraclevoters_table;
 }
