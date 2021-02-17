@@ -51,7 +51,7 @@
          ]
       },
       {
-         "name":"oracle_voters",
+         "name":"oracle_votes",
          "base":"",
          "fields":[
             {
@@ -180,7 +180,7 @@
          "type":"oracles"
       },
       {
-         "name":"oravoters",
+         "name":"oravotes",
          "index_type":"i64",
          "key_names":[
             "id"
@@ -188,7 +188,7 @@
          "key_types":[
             "string"
          ],
-         "type":"oracle_voters"
+         "type":"oracle_votes"
       }
    ],
    "ricardian_clauses":[
