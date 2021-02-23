@@ -213,17 +213,6 @@
             "uint64"
          ],
          "type":"fiotrxt_info"
-      },
-      {
-         "name":"migrledgers",
-         "index_type":"i64",
-         "key_names":[
-            "id"
-         ],
-         "key_types":[
-            "uint64"
-         ],
-         "type":"migrledger"
       }
    ],
    "ricardian_clauses":[
