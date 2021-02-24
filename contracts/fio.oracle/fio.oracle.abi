@@ -158,7 +158,7 @@
    ],
    "tables":[
       {
-         "name":"oraclelegders",
+         "name":"oraclelgdrs",
          "index_type":"i64",
          "key_names":[
             "id"
