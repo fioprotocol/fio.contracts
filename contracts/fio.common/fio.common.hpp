@@ -420,6 +420,8 @@ namespace fioio {
                                                               //different fees to avoid ram limits for non top 21 producers.
     static const uint64_t BUNDLEVOTERAM = 0; //integrated.
 
+    static const uint64_t MAXOBTCONTENT = 436;
+    static const uint64_t MAXFUNDSCONTENT = 300;
 
 
 
