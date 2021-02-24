@@ -2,7 +2,7 @@
  *  Description: The FIO request other blockchain transaction (or obt) contract contains the
  *  tables that hold the requests for funds that have been made along with the status of any
  *  response to each request for funds.
- *  @author Casey Gardiner
+ *  @author Casey Gardiner, Adam Androulidakis
  *
  *  @file fio.request.obt.hpp
  *  @license FIO Foundation ( https://github.com/fioprotocol/fio/blob/master/LICENSE )
