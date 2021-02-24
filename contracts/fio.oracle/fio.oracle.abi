@@ -85,6 +85,20 @@
          ]
       },
       {
+            "name": "oraclefees",
+            "base": "",
+            "fields": [
+              {
+                "name": "fee_name",
+                "type": "string"
+              },
+              {
+                "name": "fee_amount",
+                "type": "uint64"
+              }
+            ]
+          },
+      {
          "name":"wraptokens",
          "base":"",
          "fields":[
