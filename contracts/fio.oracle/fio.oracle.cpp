@@ -16,7 +16,7 @@ namespace fioio {
     class [[eosio::contract("FIOOracle")]]  FIOOracle : public eosio::contract {
 
     private:
-        oraclelegder_table receipts;
+        oracleledger_table receipts;
         oraclevoters_table voters;
         fionames_table fionames;
         config appConfig;
@@ -52,7 +52,7 @@ namespace fioio {
             // for ( oracle_info.size ) xfer oracle fee
 
             //Copy information to receipt table
-            receipts.emplace(_self, [&](struct oraclelegder &p) {
+            receipts.emplace(_self, [&](struct oracleledger &p) {
                 p.id = receipts.available_primary_key();
                 p.actor = actor.value;
                 p.chaincode = chain_code;
