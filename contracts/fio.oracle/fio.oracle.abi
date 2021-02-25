@@ -163,9 +163,6 @@
          ]
       }
    ],
-   "types":[
-
-   ],
    "actions":[
       {
          "name":"wraptokens",
@@ -213,13 +210,8 @@
          "type":"oracle_votes"
       }
    ],
-   "ricardian_clauses":[
-
-   ],
-   "variants":[
-
-   ],
-   "abi_extensions":[
-
-   ]
+      "ricardian_clauses": [],
+      "error_messages": [],
+      "abi_extensions": [],
+      "variants": []
 }
