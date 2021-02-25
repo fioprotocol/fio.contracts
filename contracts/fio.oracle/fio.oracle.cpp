@@ -29,6 +29,8 @@ namespace fioio {
                 voters(_self, _self.value),
                 fionames(AddressContract, AddressContract.value),
                 contract(s, code, ds) {
+            configs_singleton configsSingleton(FeeContract, FeeContract.value);
+            appConfig = configsSingleton.get_or_default(config());
         }
 
         [[eosio::action]]
