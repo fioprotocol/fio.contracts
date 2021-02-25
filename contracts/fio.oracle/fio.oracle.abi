@@ -186,7 +186,7 @@
             "id"
          ],
          "key_types":[
-            "string"
+            "uint64"
          ],
          "type":"oraclelegder"
       },
@@ -197,7 +197,7 @@
             "id"
          ],
          "key_types":[
-            "string"
+            "uint64"
          ],
          "type":"oracles"
       },
@@ -208,7 +208,7 @@
             "id"
          ],
          "key_types":[
-            "string"
+            "uint64"
          ],
          "type":"oracle_votes"
       }

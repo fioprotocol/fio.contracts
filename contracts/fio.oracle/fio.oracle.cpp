@@ -26,10 +26,10 @@ namespace fioio {
         using contract::contract;
 
         FIOOracle(name s, name code, datastream<const char *> ds) :
+                contract(s, code, ds),
                 receipts(_self, _self.value),
                 voters(_self, _self.value),
-                fionames(AddressContract, AddressContract.value),
-                contract(s, code, ds) {
+                fionames(AddressContract, AddressContract.value) {
             configs_singleton configsSingleton(FeeContract, FeeContract.value);
             appConfig = configsSingleton.get_or_default(config());
         }
