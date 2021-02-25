@@ -21,6 +21,7 @@ namespace fioio {
         oraclelegder_table receipts;
         oraclevoters_table voters;
         fionames_table fionames;
+        config appConfig;
     public:
         using contract::contract;
 
