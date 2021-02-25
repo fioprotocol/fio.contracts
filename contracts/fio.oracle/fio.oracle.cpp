@@ -8,10 +8,8 @@
 
 #include "fio.oracle.hpp"
 #include <fio.fee/fio.fee.hpp>
-#include <fio.common/fio.common.hpp>
 #include <fio.address/fio.address.hpp>
 #include <fio.common/fiotime.hpp>
-#include <eosiolib/asset.hpp>
 
 namespace fioio {
 
