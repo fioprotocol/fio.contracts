@@ -26,7 +26,7 @@ namespace fioio {
     };
 
     // @abi table templete i64
-    struct [[eosio::action]] oraclelegder {
+    struct [[eosio::action]] oracleledger {
 
         uint64_t id;
         // type? Allows for index searching on NFT types ( ie. domain nft, address nft or token swaps )
@@ -41,13 +41,13 @@ namespace fioio {
         uint64_t primary_key() const { return id; }
         uint64_t by_actor() const { return actor; }
 
-        EOSLIB_SERIALIZE(oraclelegder, (id)(actor)(chaincode)(pubaddress)(amount)(nftname)(content)(timestamp)
+        EOSLIB_SERIALIZE(oracleledger, (id)(actor)(chaincode)(pubaddress)(amount)(nftname)(content)(timestamp)
         )
     };
 
-    typedef multi_index<"oraclelgdrs"_n, oraclelegder,
-            indexed_by<"byactor"_n, const_mem_fun < oraclelegder, uint64_t, &oraclelegder::by_actor>>>
-    oraclelegder_table;
+    typedef multi_index<"oracleldgrs"_n, oracleledger,
+            indexed_by<"byactor"_n, const_mem_fun < oracleledger, uint64_t, &oracleledger::by_actor>>>
+    oracleledger_table;
 
     // @abi table templete i64
     struct [[eosio::action]] oracles {
