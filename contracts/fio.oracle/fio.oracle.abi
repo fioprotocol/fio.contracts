@@ -67,7 +67,7 @@
                "type":"uint64"
             },
             {
-               "name":"voters",
+               "name":"voter",
                "type":"uint64"
             },
             {
