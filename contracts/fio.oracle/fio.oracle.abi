@@ -3,7 +3,7 @@
    "version":"eosio::abi/1.0",
    "structs":[
       {
-         "name":"oraclelegder",
+         "name":"oracleledger",
          "base":"",
          "fields":[
             {
@@ -177,7 +177,7 @@
    ],
    "tables":[
       {
-         "name":"oraclelgdrs",
+         "name":"oracleldgrs",
          "index_type":"i64",
          "key_names":[
             "id"
@@ -185,7 +185,7 @@
          "key_types":[
             "uint64"
          ],
-         "type":"oraclelegder"
+         "type":"oracleledger"
       },
       {
          "name":"oracless",
