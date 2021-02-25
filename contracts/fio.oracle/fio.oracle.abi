@@ -1,6 +1,6 @@
 {
    "____comment":"This file was generated with eosio-abigen. DO NOT EDIT Thu Dec 31 03:35:08 2020",
-   "version":"eosio::abi/1.1",
+   "version":"eosio::abi/1.0",
    "structs":[
       {
          "name":"oraclelegder",

@@ -14,6 +14,8 @@
 #include <eosiolib/asset.hpp>
 #include <fio.token/include/fio.token/fio.token.hpp>
 
+using std::string;
+
 namespace fioio {
     using namespace eosio;
 
