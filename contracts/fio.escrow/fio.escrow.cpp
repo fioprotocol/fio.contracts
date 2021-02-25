@@ -14,7 +14,27 @@ namespace fioio {
         }
 
         [[eosio::action]]
-        void hi(const name &actor) {
+        void listdomain(const name &actor){
+            require_auth(actor);
+
+            const string response_string = string("{\"status\": \"OK\"}");
+
+            send_response(response_string.c_str());
+        }
+
+        [[eosio::action]]
+        void cxlistdomain(const name &actor){
+            require_auth(actor);
+
+            const string response_string = string("{\"status\": \"OK\"}");
+
+            send_response(response_string.c_str());
+        }
+
+        [[eosio::action]]
+        void buydomain(const name &actor){
+            require_auth(actor);
+
             const string response_string = string("{\"status\": \"OK\"}");
 
             send_response(response_string.c_str());

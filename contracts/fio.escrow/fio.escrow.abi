@@ -3,7 +3,25 @@
   "version": "eosio::abi/1.1",
   "structs": [
     {
-      "name": "hi",
+      "name": "buydomain",
+      "base": "",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ]
+    },{
+      "name": "listdomain",
+      "base": "",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ]
+    },{
+      "name": "cxlistdomain",
       "base": "",
       "fields": [
         {
@@ -16,10 +34,18 @@
   "types": [],
   "actions": [
     {
-      "name": "hi",
-      "type": "hi",
+      "name": "buydomain",
+      "type": "buydomain",
       "ricardian_contract": ""
-    }
+    },{
+      "name": "listdomain",
+      "type": "listdomain",
+      "ricardian_contract": ""
+    },{
+      "name": "cxlistdomain",
+      "type": "cxlistdomain",
+      "ricardian_contract": ""
+    },
   ],
   "tables": [],
   "ricardian_clauses": [],
