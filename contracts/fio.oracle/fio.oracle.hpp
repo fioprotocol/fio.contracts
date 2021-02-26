@@ -67,7 +67,6 @@ namespace fioio {
             indexed_by<"byactor"_n, const_mem_fun < oracles, uint64_t, &oracles::by_actor>>>
     oracles_table;
 
-    // oracle vote table
     // @abi table templete i64
     struct [[eosio::action]] oracle_votes {
 
