@@ -65,7 +65,7 @@ namespace fioio {
             });
 
             //Tokens are transferred to fio.wrapping.
-            action(permission_level{SYSTEMACCOUNT, "active"_n},
+            action(permission_level{get_self(), "active"_n},
                    TokenContract, "transfer"_n,
                    make_tuple(actor, FIOORACLEContract, asset(amount, FIOSYMBOL), string("Token Wrapping"))
             ).send();
@@ -119,7 +119,7 @@ namespace fioio {
 
             // if entries vs. number of regoracles meet consensus.
             //Tokens are transferred to fio.wrapping.
-            action(permission_level{SYSTEMACCOUNT, "active"_n},
+            action(permission_level{get_self(), "active"_n},
                    TokenContract, "transfer"_n,
                    make_tuple(FIOORACLEContract, recAcct, asset(amount, FIOSYMBOL), string("Token Unwrapping"))
             ).send();

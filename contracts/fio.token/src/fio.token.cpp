@@ -391,14 +391,13 @@ namespace eosio {
          * we permit the use of transfer from the treasury account to any other accounts.
          * we permit the use of transfer from any other accounts to the treasury account for fees.
          */
-        if (from != SYSTEMACCOUNT && from != TREASURYACCOUNT && from != EscrowContract) {
+        if (from != SYSTEMACCOUNT && from != TREASURYACCOUNT && from != EscrowContract && from != FIOORACLEContract) {
             if(!has_auth(EscrowContract)){
                 check(to == TREASURYACCOUNT, "transfer not allowed");
             }
         }
-        eosio_assert((has_auth(SYSTEMACCOUNT) || has_auth(TREASURYACCOUNT) || has_auth(EscrowContract)),
+        eosio_assert((has_auth(SYSTEMACCOUNT) || has_auth(TREASURYACCOUNT) || has_auth(EscrowContract) || has_auth(FIOORACLEContract)),
                      "missing required authority of treasury or eosio");
-
 
         check(from != to, "cannot transfer to self");
         check(is_account(to), "to account does not exist");
