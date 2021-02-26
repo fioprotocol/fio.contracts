@@ -147,6 +147,7 @@ namespace eosiosystem {
                  account == fioio::TokenContract ||
                  account == fioio::TREASURYACCOUNT ||
                  account == fioio::FIOSYSTEMACCOUNT ||
+                 account == fioio::FIOORACLEContract ||
                  account == fioio::FIOACCOUNT)
                 ) {
 
