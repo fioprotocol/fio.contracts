@@ -18,6 +18,7 @@ namespace fioio {
     private:
         oracleledger_table receipts;
         oraclevoters_table voters;
+        oracles_table oracles;
         fionames_table fionames;
         config appConfig;
     public:
@@ -27,6 +28,7 @@ namespace fioio {
                 contract(s, code, ds),
                 receipts(_self, _self.value),
                 voters(_self, _self.value),
+                oracles(_self, _self.value),
                 fionames(AddressContract, AddressContract.value) {
             configs_singleton configsSingleton(FeeContract, FeeContract.value);
             appConfig = configsSingleton.get_or_default(config());
@@ -46,24 +48,26 @@ namespace fioio {
 
             uint64_t oracle_fee = max_oracle_fee; //temp
             uint64_t fee_amount = max_fee; //temp
+            const uint32_t present_time = now();
 
             //Oracle fee is transferred from actor account to all registered oracles in even amount.
             // median fee / oracle_info.size = fee paid
             // for ( oracle_info.size ) xfer oracle fee
 
             //Copy information to receipt table
-            receipts.emplace(_self, [&](struct oracleledger &p) {
+            receipts.emplace(actor, [&](struct oracleledger &p) {
                 p.id = receipts.available_primary_key();
                 p.actor = actor.value;
                 p.chaincode = chain_code;
                 p.pubaddress = public_address;
                 p.amount = amount;
+                p.timestamp = present_time;
             });
 
             //Tokens are transferred to fio.wrapping.
             action(permission_level{SYSTEMACCOUNT, "active"_n},
                    TokenContract, "transfer"_n,
-                   make_tuple(actor, FIOORACLEContract, amount, "Token Wrapping")
+                   make_tuple(actor, FIOORACLEContract, asset(amount, FIOSYMBOL), string("Token Wrapping"))
             ).send();
 
             //Chain wrap_fio_token fee is collected.
@@ -100,13 +104,13 @@ namespace fioio {
             const uint64_t recAcct = fioname_iter->owner_account;
 
             //log entry into table
-            voters.emplace(_self, [&](struct oracle_votes &p) {
+            voters.emplace(actor, [&](struct oracle_votes &p) {
                 p.id = voters.available_primary_key();
                 p.voter = actor.value;
-                p.amount = amount;
                 p.idhash = idHash;
                 p.obt_id = obt_id;
                 p.fio_address = fio_address;
+                p.amount = amount;
             });
 
             //verify obt and address match other entries
@@ -117,7 +121,7 @@ namespace fioio {
             //Tokens are transferred to fio.wrapping.
             action(permission_level{SYSTEMACCOUNT, "active"_n},
                    TokenContract, "transfer"_n,
-                   make_tuple(FIOORACLEContract, recAcct, amount, "Token Unwrapping")
+                   make_tuple(FIOORACLEContract, recAcct, asset(amount, FIOSYMBOL), string("Token Unwrapping"))
             ).send();
 
             const string response_string = string("{\"status\": \"OK\"}");
