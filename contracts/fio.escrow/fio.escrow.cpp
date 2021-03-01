@@ -41,5 +41,5 @@ namespace fioio {
         }
     };
 
-    EOSIO_DISPATCH(FioEscrow, (hi))
+    EOSIO_DISPATCH(FioEscrow, (listdomain)(cxlistdomain)(buydomain))
 }
