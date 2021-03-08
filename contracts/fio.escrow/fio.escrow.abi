@@ -16,6 +16,18 @@
       "base": "",
       "fields": [
         {
+          "name": "fio_domain",
+          "type": "string"
+        },
+        {
+          "name": "sale_price",
+          "type": "int64"
+        },
+        {
+          "name": "tpid",
+          "type": "string"
+        },
+        {
           "name": "actor",
           "type": "name"
         }
@@ -45,9 +57,21 @@
       "name": "cxlistdomain",
       "type": "cxlistdomain",
       "ricardian_contract": ""
-    },
+    }
   ],
-  "tables": [],
+  "tables": [
+    {
+      "name": "domainsales",
+      "index_type": "i64",
+      "key_names": [
+        "id"
+      ],
+      "key_types": [
+        "string"
+      ],
+      "type": "domainsale"
+    }
+  ],
   "ricardian_clauses": [],
   "variants": [],
   "abi_extensions": []
