@@ -16,6 +16,10 @@
       "base": "",
       "fields": [
         {
+          "name": "actor",
+          "type": "name"
+        },
+        {
           "name": "fio_domain",
           "type": "string"
         },
@@ -26,10 +30,6 @@
         {
           "name": "tpid",
           "type": "string"
-        },
-        {
-          "name": "actor",
-          "type": "name"
         }
       ]
     },{

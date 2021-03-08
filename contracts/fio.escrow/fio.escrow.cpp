@@ -32,8 +32,8 @@ namespace fioio {
         * @param actor this is the fio account that has sent this transaction.
         */
         [[eosio::action]]
-        void listdomain(const string &fio_domain, const int64_t &sale_price,
-                        const string &tpid, const name &actor){
+        void listdomain(const name &actor, const string &fio_domain, const int64_t &sale_price,
+                        const string &tpid){
 
             // Steps to take in this action:
             // -- Verify the actor owns the domain
