@@ -3,6 +3,40 @@
   "version": "eosio::abi/1.1",
   "structs": [
     {
+      "name": "domainsale",
+      "base": "",
+      "fields": [
+        {
+          "name": "id",
+          "type": "uint64"
+        },
+        {
+          "name": "owner",
+          "type": "uint64"
+        },
+        {
+          "name": "ownerhash",
+          "type": "uint128"
+        },
+        {
+          "name": "domain",
+          "type": "string"
+        },
+        {
+          "name": "domainhash",
+          "type": "uint128"
+        },
+        {
+          "name": "sale_price",
+          "type": "int64"
+        },
+        {
+          "name": "expiration",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
       "name": "buydomain",
       "base": "",
       "fields": [
