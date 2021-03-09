@@ -93,7 +93,7 @@ namespace fioio {
                            "FIO domain not found", ErrorDomainNotRegistered);
 
             // write to table
-            listdomain_update(name, fio_domain, domainHash, sale_price);
+            listdomain_update(actor, fio_domain, domainHash, sale_price);
 
             const string response_string = string("\"status\":\"OK\"}");
 
