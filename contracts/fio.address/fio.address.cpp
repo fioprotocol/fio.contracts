@@ -230,9 +230,7 @@ namespace fioio {
             return expiration_time;
         }
 
-        uint32_t fio_domain_update(const name &owner,
-                                   const FioAddress &fa,
-                                   const name &actor) {
+        uint32_t fio_domain_update(const name &owner, const FioAddress &fa, const name &actor) {
 
             uint128_t domainHash = string_to_uint128_hash(fa.fioaddress.c_str());
             uint32_t expiration_time;
@@ -641,9 +639,10 @@ namespace fioio {
          * @return  the decremented now() time by nyearsago
          */
         inline uint32_t get_now_plus_years(const uint32_t nyearsago) {
-
             return now() + (YEARTOSECONDS * nyearsago);
         }
+
+
 
         /********* CONTRACT ACTIONS ********/
 

@@ -28,6 +28,7 @@
 #define SECONDSPERDAY  86400
 #define DOMAINWAITFORBURNDAYS  90 * SECONDSPERDAY
 #define ADDRESSWAITFORBURNDAYS  90 * SECONDSPERDAY
+#define SALELISTTIME 90 * SECONDSPERDAY
 #define MAXBOUNTYTOKENSTOMINT 125000000000000000
 //#define MINVOTEDFIO 10'000'000'000000000 //TESTNET ONLY
 #define MINVOTEDFIO 65'000'000'000000000
@@ -66,6 +67,10 @@
 #define SUBMIT_FEE_MULTIPLER_ENDPOINT "submit_fee_multiplier"
 #define BURN_FIO_ADDRESS_ENDPOINT "burn_fio_address"
 #define ADD_BUNDLED_TRANSACTION_ENDPOINT "add_bundled_transactions"
+
+#define LIST_DOMAIN_SALE_ENDPOINT "list_domain_sale"
+#define CANCEL_LIST_DOMAIN_SALE_ENDPOINT "cancel_list_domain_sale"
+#define BUY_DOMAIN_ENDPOINT "buy_domain"
 
 
 namespace fioio {
@@ -116,7 +121,8 @@ namespace fioio {
              actor == fioio::TokenContract ||
              actor == fioio::TREASURYACCOUNT ||
              actor == fioio::FIOSYSTEMACCOUNT ||
-             actor == fioio::FIOACCOUNT);
+             actor == fioio::FIOACCOUNT ||
+             actor == fioio::FIOESCROW);
     }
 
     static constexpr uint64_t string_to_uint64_hash(const char *str) {
@@ -419,6 +425,8 @@ namespace fioio {
     static const uint64_t SETFEEVOTERAM = 4000; //integrated. //note this bump allows consecutive calls to voting with
                                                               //different fees to avoid ram limits for non top 21 producers.
     static const uint64_t BUNDLEVOTERAM = 0; //integrated.
+
+    static const uint64_t LISTDOMAINSALERAM = 2048; // FIOESCROW
 
 
 

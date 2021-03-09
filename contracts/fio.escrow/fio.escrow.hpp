@@ -14,9 +14,10 @@
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/asset.hpp>
 
-using std::string;
-
 namespace fioio {
+
+    using namespace eosio;
+    using namespace std;
 
     // table will store all the domains that are for sale
     // it needs the name of the domain, the seller and the amount the seller wants in FIO
@@ -27,12 +28,13 @@ namespace fioio {
         uint128_t ownerhash = 0;
         string domain = nullptr;
         uint128_t domainhash = 0;
-        asset sale_price;
+        int64_t sale_price;
+        uint64_t expiration;
 
         // primary_key is required to store structure in multi_index table
         uint64_t primary_key() const { return id; }
 
-        EOSLIB_SERIALIZE(domainsale, (id)(owner)(ownerhash)(domain)(domainhash)(sale_price))
+        EOSLIB_SERIALIZE(domainsale, (id)(owner)(ownerhash)(domain)(domainhash)(sale_price)(expiration))
     };
 
     typedef multi_index<"domainsales"_n, domainsale>

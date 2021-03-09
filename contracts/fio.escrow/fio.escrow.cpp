@@ -7,6 +7,9 @@
  */
 
 #include "fio.escrow.hpp"
+#include <eosiolib/asset.hpp>
+#include <fio.common/fiotime.hpp>
+#include <fio.common/fio.common.hpp>
 #include <fio.address/fio.address.hpp>
 
 namespace fioio {
@@ -24,12 +27,38 @@ namespace fioio {
                 domainsales(_self, _self.value) {
         }
 
+
+        inline uint32_t get_list_time(){
+            return now() + SALELISTTIME; // 3 months
+        }
+
+        uint32_t listdomain_update(const name &actor, const string &fio_domain, const int64_t &sale_price){
+            uint128_t domainHash = string_to_uint128_hash(fio_domain);
+            uint128_t ownerHash = string_to_uint128_hash(actor.to_string());
+            uint32_t expiration_time;
+
+            expiration_time = get_list_time();
+
+            uint64_t id = domainsales.available_primary_key();
+
+            domainsales.emplace(actor, [&](struct domainsale &d){
+                d.id = id;
+                d.owner = actor.value;
+                d.ownerhash = ownerHash;
+                d.domain = fio_domain;
+                d.domainhash = domainHash;
+                d.sale_price = sale_price;
+                d.expiration = expiration_time;
+            });
+            return expiration_time;
+        }
+
         /***********
         * This action will list a fio domain for sale
+        * @param actor this is the fio account that has sent this transaction.
         * @param fio_domain this is the fio domain to be sold.
         * @param sale_price this is the amount of FIO the seller wants for the domain
         * @param tpid  this is the fio address of the owner of the domain.
-        * @param actor this is the fio account that has sent this transaction.
         */
         [[eosio::action]]
         void listdomain(const name &actor, const string &fio_domain, const int64_t &sale_price,
@@ -53,7 +82,7 @@ namespace fioio {
                            "TPID must be empty or valid FIO address",
                            ErrorPubKeyValid);
 
-            fio_400_assert(sale_price > 0 && sale_price > 0, "sale_price", std::to_string(sale_price),
+            fio_400_assert(sale_price > 0, "sale_price", std::to_string(sale_price),
                            "Invalid sale_price value", ErrorInvalidAmount);
 
             const uint128_t domainHash = string_to_uint128_hash(fio_domain.c_str());
