@@ -188,6 +188,7 @@ namespace eosio {
                     account == fioio::TokenContract ||
                     account == fioio::REQOBTACCOUNT ||
                     account == fioio::TREASURYACCOUNT ||
+                    account == fioio::FIOORACLEContract ||
                     account == fioio::SYSTEMACCOUNT), "setabi is not permitted");
 
             abi_hash_table table(_self, _self.value);
