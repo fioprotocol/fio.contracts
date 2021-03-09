@@ -20,8 +20,8 @@ namespace fioio {
     using namespace eosio;
 
     struct oraclefees {
-        string fee_name;
-        uint64_t fee_amount;
+        string fee_name = "";
+        uint64_t fee_amount = 0;
         EOSLIB_SERIALIZE(oraclefees, (fee_name)(fee_amount))
     };
 
@@ -52,20 +52,16 @@ namespace fioio {
     // @abi table templete i64
     struct [[eosio::action]] oracles {
 
-        uint64_t id;
         uint64_t actor;
         std::vector <oraclefees> fees;
 
-        uint64_t primary_key() const { return id; }
-        uint64_t by_actor() const { return actor; }
+        uint64_t primary_key() const { return actor; }
 
-        EOSLIB_SERIALIZE(oracles, (id)(actor)(fees)
+        EOSLIB_SERIALIZE(oracles, (actor)(fees)
         )
     };
 
-    typedef multi_index<"oracless"_n, oracles,
-            indexed_by<"byactor"_n, const_mem_fun < oracles, uint64_t, &oracles::by_actor>>>
-    oracles_table;
+    typedef multi_index<"oracless"_n, oracles> oracles_table;
 
     // @abi table templete i64
     struct [[eosio::action]] oracle_votes {
