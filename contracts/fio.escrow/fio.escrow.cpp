@@ -31,7 +31,7 @@ namespace fioio {
             return now() + SALELISTTIME; // 3 months
         }
 
-        uint32_t listdomain_update(const name &actor, const string &fio_domain, const uint128_t domainhash, const int64_t &sale_price){
+        uint32_t listdomain_update(const name &actor, const string &fio_domain, const uint128_t &domainhash, const int64_t &sale_price){
 //            uint128_t domainHash = string_to_uint128_hash(fio_domain);
             uint128_t ownerHash = string_to_uint128_hash(actor.to_string());
             uint32_t expiration_time;

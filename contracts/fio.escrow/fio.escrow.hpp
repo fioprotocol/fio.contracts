@@ -24,7 +24,7 @@ namespace fioio {
     struct [[eosio::action]] domainsale {
 
         uint64_t id = 0;
-        uint64_t owner;
+        string owner = nullptr;
         uint128_t ownerhash = 0;
         string domain = nullptr;
         uint128_t domainhash = 0;
