@@ -12,7 +12,7 @@
         },
         {
           "name": "owner",
-          "type": "uint64"
+          "type": "string"
         },
         {
           "name": "ownerhash",
