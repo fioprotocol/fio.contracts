@@ -6,10 +6,13 @@
  *  @license FIO Foundation ( https://github.com/fioprotocol/fio/blob/master/LICENSE )
  */
 
+#include <eosiolib/asset.hpp>
 #include "fio.oracle.hpp"
 #include <fio.fee/fio.fee.hpp>
 #include <fio.address/fio.address.hpp>
 #include <fio.common/fiotime.hpp>
+#include <fio.common/fio.common.hpp>
+#include <fio.common/fioerror.hpp>
 
 namespace fioio {
 
@@ -20,6 +23,8 @@ namespace fioio {
         oraclevoters_table voters;
         oracles_table oracles;
         fionames_table fionames;
+        eosiosystem::producers_table producers;
+        eosio_names_table accountmap;
         config appConfig;
     public:
         using contract::contract;
@@ -29,6 +34,8 @@ namespace fioio {
                 receipts(_self, _self.value),
                 voters(_self, _self.value),
                 oracles(_self, _self.value),
+                producers(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
+                accountmap(AddressContract, AddressContract.value),
                 fionames(AddressContract, AddressContract.value) {
             configs_singleton configsSingleton(FeeContract, FeeContract.value);
             appConfig = configsSingleton.get_or_default(config());
@@ -90,7 +97,12 @@ namespace fioio {
             //validation will go here
             //min/max amount?
             //fio address format check
+
             //actor validation (must be oracle)
+            require_auth(actor);
+            auto oraclesearch = oracles.find(actor.value);
+            fio_400_assert(oraclesearch != oracles.end(), "oracle_actor", oracle_actor.to_string(),
+                           "actor is not a registered Oracle", ErrorPubAddressExist);
 
             const uint128_t nameHash = string_to_uint128_hash(fio_address);
             auto namesbyname = fionames.get_index<"byname"_n>();
@@ -131,13 +143,68 @@ namespace fioio {
 
             send_response(response_string.c_str());
         }
+
+        [[eosio::action]]
+        void regoracle(name oracle_actor, name &actor) {
+            //regoracle - must be topprod AND must be eosio perms
+            require_auth(SYSTEMACCOUNT);
+
+            const bool accountExists = is_account(oracle_actor);
+            auto other = accountmap.find(oracle_actor.value);
+            fio_400_assert(other != accountmap.end(), "oracle_actor", oracle_actor.to_string(),
+                           "Account is not bound on the fio chain",
+                           ErrorPubAddressExist);
+            fio_400_assert(accountExists, "oracle_actor", oracle_actor.to_string(),
+                           "Account does not yet exist on the fio chain",
+                           ErrorPubAddressExist);
+
+            auto prodbyowner = producers.get_index<"byowner"_n>();
+            auto proditer = prodbyowner.find(oracle_actor.value);
+
+            fio_400_assert(proditer != prodbyowner.end(), "oracle_actor", oracle_actor.to_string(),
+                           "Oracle not active producer", ErrorNoFioAddressProducer);
+
+            std::vector<oraclefees> tempVec;
+            oracles.emplace(actor, [&](struct oracles &p) {
+                p.actor = oracle_actor.value;
+                p.fees = tempVec;
+            });
+
+            const string response_string = string("{\"status\": \"OK\"}");
+
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransactionTooLarge);
+
+            send_response(response_string.c_str());
+        }
+
+        [[eosio::action]]
+        void unregoracle(name oracle_actor, name &actor) {
+            //unregoracle - oracle or eosio can remove
+            if(actor != SYSTEMACCOUNT){
+                require_auth(actor);
+                fio_403_assert(actor == oracle_actor, ErrorSignature);
+            } else {
+                require_auth(SYSTEMACCOUNT);
+            }
+
+            auto oraclesearch = oracles.find(oracle_actor.value);
+            fio_400_assert(oraclesearch != oracles.end(), "oracle_actor", oracle_actor.to_string(),
+                           "Oracle is not registered", ErrorPubAddressExist);
+
+            oracles.erase(oraclesearch);
+
+            const string response_string = string("{\"status\": \"OK\"}");
+
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransactionTooLarge);
+
+            send_response(response_string.c_str());
+        }
     };
 
-    EOSIO_DISPATCH(FIOOracle, (wraptokens)(unwraptokens)
-    //regoracle - must be topprod AND must be eosio perms
-    //unregoracle - oracle or eosio can remove
+    EOSIO_DISPATCH(FIOOracle, (wraptokens)(unwraptokens)(regoracle)(unregoracle)
     //setoraclefee - force lower case
-
     //wrapdomain - xferdomain to fio.oracle
     //unwrapdomain - change owner to supplied fio address
     )
