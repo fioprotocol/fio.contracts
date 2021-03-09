@@ -27,13 +27,12 @@ namespace fioio {
                 domainsales(_self, _self.value) {
         }
 
-
         inline uint32_t get_list_time(){
             return now() + SALELISTTIME; // 3 months
         }
 
-        uint32_t listdomain_update(const name &actor, const string &fio_domain, const int64_t &sale_price){
-            uint128_t domainHash = string_to_uint128_hash(fio_domain);
+        uint32_t listdomain_update(const name &actor, const string &fio_domain, const uint128_t domainhash, const int64_t &sale_price){
+//            uint128_t domainHash = string_to_uint128_hash(fio_domain);
             uint128_t ownerHash = string_to_uint128_hash(actor.to_string());
             uint32_t expiration_time;
 
@@ -46,7 +45,7 @@ namespace fioio {
                 d.owner = actor.value;
                 d.ownerhash = ownerHash;
                 d.domain = fio_domain;
-                d.domainhash = domainHash;
+                d.domainhash = domainhash;
                 d.sale_price = sale_price;
                 d.expiration = expiration_time;
             });
@@ -63,7 +62,7 @@ namespace fioio {
         [[eosio::action]]
         void listdomain(const name &actor, const string &fio_domain, const int64_t &sale_price,
                         const string &tpid){
-
+/*
             // Steps to take in this action:
             // -- Verify the actor owns the domain
             // -- Verify domain will not expire in 90 days
@@ -76,7 +75,7 @@ namespace fioio {
             // * this poses a problem because the xfer fee can change between the time it is listed and it gets cancelled or sold
             // this can be remedied by not collecting that fee up front and have it paid out of the sale price or when the seller cancels it'll cost the xfer fee
             // or we can collect the xfer fee at the time of listing and save that to the table and if the fee has changed just charge or refund the difference
-
+*/
             require_auth(actor);
             fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
                            "TPID must be empty or valid FIO address",
@@ -92,6 +91,9 @@ namespace fioio {
 
             fio_400_assert(domains_iter != domainsbyname.end(), "fio_domain", fio_domain,
                            "FIO domain not found", ErrorDomainNotRegistered);
+
+            // write to table
+            listdomain_update(name, fio_domain, domainHash, sale_price);
 
             const string response_string = string("\"status\":\"OK\"}");
 
