@@ -99,8 +99,8 @@
           "type": "name"
         },
         {
-          "name": "domainsale_id",
-          "type": "uint64"
+          "name": "fio_domain",
+          "type": "string"
         }
       ]
     },
@@ -113,8 +113,8 @@
           "type": "name"
         },
         {
-          "name": "domainsale_id",
-          "type": "uint64"
+          "name": "fio_domain",
+          "type": "string"
         }
       ]
     },

@@ -49,7 +49,7 @@ namespace fioio {
                 d.sale_price = sale_price;
                 d.expiration = expiration_time;
             });
-            return expiration_time;
+            return id;
         }
 
         /***********
@@ -98,6 +98,11 @@ namespace fioio {
             // write to table
             auto domainsale_id = listdomain_update(actor, fio_domain, domainHash, sale_price);
 
+            // transfer the domain to FIOESCROWACCOUNT
+            domainsbyname.modify(domains_iter, FIOESCROWACCOUNT, [&](struct domain &a) {
+                a.account = FIOESCROWACCOUNT.value;
+            });
+
             const string response_string = string("{\"status\": \"OK\",\"domainsale_id\":\"") +
                     to_string(domainsale_id) + string("}");
 
@@ -136,7 +141,7 @@ namespace fioio {
         }
 
         [[eosio::action]]
-        void buydomain(const name &actor, const uint64_t &domainsale_id){
+        void buydomain(const name &actor, const string &fio_domain){
             // Steps to take in this action:
             // -- Verify the actor is on the listing
             // -- retrieve FIO for the sale price
@@ -154,7 +159,7 @@ namespace fioio {
         // this action is to renew the domain listing by 90 days. it must first check to see if the domain expires within 90
         // days and if it does it rejects the action
         [[eosio::action]]
-        void rnlistdomain(const name &actor, const uint64_t &domainsale_id){
+        void rnlistdomain(const name &actor, const string &fio_domain){
 
         }
 
