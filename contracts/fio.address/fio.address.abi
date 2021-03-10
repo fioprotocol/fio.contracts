@@ -342,103 +342,107 @@
           "type": "bool"
         }
       ]
-    },{
-            "name": "burnaddress",
-            "base": "",
-            "fields": [
-              {
-                "name": "fio_address",
-                "type": "string"
-              },
-              {
-                "name": "max_fee",
-                "type": "int64"
-              },
-              {
-                "name": "tpid",
-                "type": "string"
-              },
-              {
-                "name": "actor",
-                "type": "name"
-              }
-            ]
-          },{
-       "name": "xferdomain",
-       "base": "",
-       "fields": [
-         {
-           "name": "fio_domain",
-           "type": "string"
-         },
-         {
-           "name": "new_owner_fio_public_key",
-           "type": "string"
-         },
-         {
-           "name": "max_fee",
-           "type": "int64"
-         },
-         {
-           "name": "actor",
-           "type": "name"
-         },
-         {
-           "name": "tpid",
-           "type": "string"
-         }
-       ]
-     },{
-       "name": "xferaddress",
-       "base": "",
-       "fields": [
-         {
-           "name": "fio_address",
-           "type": "string"
-         },
-         {
-           "name": "new_owner_fio_public_key",
-           "type": "string"
-         },
-         {
-           "name": "max_fee",
-           "type": "int64"
-         },
-         {
-           "name": "actor",
-           "type": "name"
-         },
-         {
-           "name": "tpid",
-           "type": "string"
-         }
-       ]
-     },{
-        "name": "addbundles",
-        "base": "",
-        "fields": [
-          {
-            "name": "fio_address",
-            "type": "string"
-          },
-          {
-            "name": "bundle_sets",
-            "type": "int64"
-          },
-          {
-            "name": "max_fee",
-            "type": "int64"
-          },
-          {
-            "name": "tpid",
-            "type": "string"
-          },
-          {
-            "name": "actor",
-            "type": "name"
-          }
-        ]
-      }
+    },
+    {
+      "name": "burnaddress",
+      "base": "",
+      "fields": [
+        {
+          "name": "fio_address",
+          "type": "string"
+        },
+        {
+          "name": "max_fee",
+          "type": "int64"
+        },
+        {
+          "name": "tpid",
+          "type": "string"
+        },
+        {
+          "name": "actor",
+          "type": "name"
+        }
+      ]
+    },
+    {
+      "name": "xferdomain",
+      "base": "",
+      "fields": [
+        {
+          "name": "fio_domain",
+          "type": "string"
+        },
+        {
+          "name": "new_owner_fio_public_key",
+          "type": "string"
+        },
+        {
+          "name": "max_fee",
+          "type": "int64"
+        },
+        {
+          "name": "actor",
+          "type": "name"
+        },
+        {
+          "name": "tpid",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "xferaddress",
+      "base": "",
+      "fields": [
+        {
+          "name": "fio_address",
+          "type": "string"
+        },
+        {
+          "name": "new_owner_fio_public_key",
+          "type": "string"
+        },
+        {
+          "name": "max_fee",
+          "type": "int64"
+        },
+        {
+          "name": "actor",
+          "type": "name"
+        },
+        {
+          "name": "tpid",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "addbundles",
+      "base": "",
+      "fields": [
+        {
+          "name": "fio_address",
+          "type": "string"
+        },
+        {
+          "name": "bundle_sets",
+          "type": "int64"
+        },
+        {
+          "name": "max_fee",
+          "type": "int64"
+        },
+        {
+          "name": "tpid",
+          "type": "string"
+        },
+        {
+          "name": "actor",
+          "type": "name"
+        }
+      ]
+    }
   ],
   "actions": [
     {
@@ -452,9 +456,9 @@
       "ricardian_contract": ""
     },
     {
-       "name": "addaddress",
-       "type": "addaddress",
-       "ricardian_contract": ""
+      "name": "addaddress",
+      "type": "addaddress",
+      "ricardian_contract": ""
     },
     {
       "name": "remaddress",
@@ -462,9 +466,9 @@
       "ricardian_contract": ""
     },
     {
-       "name": "remalladdr",
-       "type": "remalladdr",
-       "ricardian_contract": ""
+      "name": "remalladdr",
+      "type": "remalladdr",
+      "ricardian_contract": ""
     },
     {
       "name": "regdomain",
@@ -495,19 +499,23 @@
       "name": "bind2eosio",
       "type": "bind2eosio",
       "ricardian_contract": ""
-    },{
-           "name": "burnaddress",
-           "type": "burnaddress",
-           "ricardian_contract": ""
-         },{
+    },
+    {
+      "name": "burnaddress",
+      "type": "burnaddress",
+      "ricardian_contract": ""
+    },
+    {
       "name": "xferdomain",
       "type": "xferdomain",
       "ricardian_contract": ""
-    },{
+    },
+    {
       "name": "xferaddress",
       "type": "xferaddress",
       "ricardian_contract": ""
-    },{
+    },
+    {
       "name": "addbundles",
       "type": "addbundles",
       "ricardian_contract": ""

@@ -1394,19 +1394,19 @@ namespace fioio {
             //TEMP
             auto obtbyname = recordObtTable.get_index<"bypayee"_n>();
             auto name_iter = obtbyname.find(nameHash);
-            check(name_iter == obtbyname.end(), "Transfering a FIO address is currently disabled for some fio.addresses");
+            check(name_iter == obtbyname.end(), "Transferring a FIO address is currently disabled for some fio.addresses");
 
             auto obtbyname2 = recordObtTable.get_index<"bypayer"_n>();
             auto name_iter2 = obtbyname2.find(nameHash);
-            check(name_iter2 == obtbyname2.end(), "Transfering a FIO address is currently disabled for some fio.addresses");
+            check(name_iter2 == obtbyname2.end(), "Transferring a FIO address is currently disabled for some fio.addresses");
 
             auto reqbyname = fiorequestContextsTable.get_index<"byreceiver"_n>();
             auto name_iter3 = reqbyname.find(nameHash);
-            check(name_iter3 == reqbyname.end(), "Transfering a FIO address is currently disabled for some fio.addresses");
+            check(name_iter3 == reqbyname.end(), "Transferring a FIO address is currently disabled for some fio.addresses");
 
             auto reqbyname2 = fiorequestContextsTable.get_index<"byoriginator"_n>();
             auto name_iter4 = reqbyname2.find(nameHash);
-            check(name_iter4 == reqbyname2.end(), "Transfering a FIO address is currently disabled for some fio.addresses");
+            check(name_iter4 == reqbyname2.end(), "Transferring a FIO address is currently disabled for some fio.addresses");
             //TEMP
 
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
