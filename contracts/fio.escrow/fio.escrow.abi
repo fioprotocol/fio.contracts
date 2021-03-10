@@ -37,6 +37,32 @@
       ]
     },
     {
+      "name": "mrkplconfig",
+      "base": "",
+      "fields": [
+        {
+          "name": "id",
+          "type": "uint64"
+        },
+        {
+          "name": "marketplace",
+          "type": "string"
+        },
+        {
+          "name": "owner",
+          "type": "string"
+        },
+        {
+          "name": "ownerhash",
+          "type": "uint128"
+        },
+        {
+          "name": "marketplacefee",
+          "type": "int64"
+        }
+      ]
+    },
+    {
       "name": "buydomain",
       "base": "",
       "fields": [
@@ -45,7 +71,8 @@
           "type": "name"
         }
       ]
-    },{
+    },
+    {
       "name": "listdomain",
       "base": "",
       "fields": [
@@ -60,19 +87,56 @@
         {
           "name": "sale_price",
           "type": "int64"
-        },
-        {
-          "name": "tpid",
-          "type": "string"
         }
       ]
-    },{
+    },
+    {
       "name": "cxlistdomain",
       "base": "",
       "fields": [
         {
           "name": "actor",
           "type": "name"
+        },
+        {
+          "name": "domainsale_id",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "rnlistdomain",
+      "base": "",
+      "fields": [
+        {
+          "name": "actor",
+          "type": "name"
+        },
+        {
+          "name": "domainsale_id",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "setmrkplccfg",
+      "base": "",
+      "fields": [
+        {
+          "name": "actor",
+          "type": "name"
+        },
+        {
+          "name": "marketplace",
+          "type": "string"
+        },
+        {
+          "name": "owner",
+          "type": "string"
+        },
+        {
+          "name": "marketplacefee",
+          "type": "uint64"
         }
       ]
     }
@@ -83,13 +147,25 @@
       "name": "buydomain",
       "type": "buydomain",
       "ricardian_contract": ""
-    },{
+    },
+    {
       "name": "listdomain",
       "type": "listdomain",
       "ricardian_contract": ""
-    },{
+    },
+    {
       "name": "cxlistdomain",
       "type": "cxlistdomain",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "rnlistdomain",
+      "type": "rnlistdomain",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "setmrkplccfg",
+      "type": "setmrkplccfg",
       "ricardian_contract": ""
     }
   ],
@@ -104,6 +180,17 @@
         "string"
       ],
       "type": "domainsale"
+    },
+    {
+      "name": "mrkplconfigs",
+      "index_type": "i64",
+      "key_names": [
+        "id"
+      ],
+      "key_types": [
+        "string"
+      ],
+      "type": "mrkplconfig"
     }
   ],
   "ricardian_clauses": [],

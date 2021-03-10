@@ -10,6 +10,7 @@
 #define FIO_CONTRACTS_FIO_ESCROW_H
 
 #include <fio.common/fio.common.hpp>
+#include <fio.common/fio.accounts.hpp>
 #include <string>
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/asset.hpp>
@@ -33,12 +34,43 @@ namespace fioio {
 
         // primary_key is required to store structure in multi_index table
         uint64_t primary_key() const { return id; }
+        uint128_t by_domain() const { return domainhash; }
 
         EOSLIB_SERIALIZE(domainsale, (id)(owner)(ownerhash)(domain)(domainhash)(sale_price)(expiration))
     };
 
-    typedef multi_index<"domainsales"_n, domainsale>
-            domainsales_table;
+    typedef multi_index<"domainsales"_n, domainsale,
+    indexed_by<"bydomain"_n, const_mem_fun<domainsale, uint128_t, &domainsale::by_domain>>
+    >
+    domainsales_table;
+
+    struct [[eosio::action]] mrkplconfig {
+        uint64_t id = 0;
+        string marketplace;
+        string owner;
+        uint128_t ownerhash = 0;
+        int64_t marketplace_fee;
+
+        // primary_key is required to store structure in multi_index table
+        uint64_t primary_key() const { return id; }
+
+        EOSLIB_SERIALIZE(mrkplconfig, (id)(marketplace)(owner)(ownerhash)(marketplace_fee))
+    };
+
+
+    typedef multi_index<"mrkplconfigs"_n, mrkplconfig>
+            mrkplconfigs_table;
+
+    void collect_marketplace_fee(const name &actor, const asset &fee, const string &act) {
+        if (fee.amount > 0) {
+            action(permission_level{SYSTEMACCOUNT, "active"_n},
+                   TokenContract, "transfer"_n,
+                   make_tuple(actor, TREASURYACCOUNT, fee,
+                              string("FIO fee: ") + act)
+
+            ).send();
+        }
+    }
 }
 
 #endif //FIO_CONTRACTS_FIO_ESCROW_H

@@ -122,7 +122,7 @@ namespace fioio {
              actor == fioio::TREASURYACCOUNT ||
              actor == fioio::FIOSYSTEMACCOUNT ||
              actor == fioio::FIOACCOUNT ||
-             actor == fioio::FIOESCROW);
+             actor == fioio::FIOESCROWACCOUNT);
     }
 
     static constexpr uint64_t string_to_uint64_hash(const char *str) {
@@ -304,7 +304,6 @@ namespace fioio {
 
     void processbucketrewards(const string &tpid, const uint64_t &amount, const name &auth, const name &actor) {
 
-
         action(
                 permission_level{auth, "active"_n},
                 TREASURYACCOUNT,
@@ -427,8 +426,4 @@ namespace fioio {
     static const uint64_t BUNDLEVOTERAM = 0; //integrated.
 
     static const uint64_t LISTDOMAINSALERAM = 2048; // FIOESCROW
-
-
-
-
 } // namespace fioio

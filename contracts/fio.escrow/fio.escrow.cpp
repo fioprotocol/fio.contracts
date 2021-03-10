@@ -42,7 +42,7 @@ namespace fioio {
 
             domainsales.emplace(actor, [&](struct domainsale &d){
                 d.id = id;
-                d.owner = actor.value;
+                d.owner = actor.to_string();
                 d.ownerhash = ownerHash;
                 d.domain = fio_domain;
                 d.domainhash = domainhash;
@@ -60,8 +60,7 @@ namespace fioio {
         * @param tpid  this is the fio address of the owner of the domain.
         */
         [[eosio::action]]
-        void listdomain(const name &actor, const string &fio_domain, const int64_t &sale_price,
-                        const string &tpid){
+        void listdomain(const name &actor, const string &fio_domain, const int64_t &sale_price){
 /*
             // Steps to take in this action:
             // -- Verify the actor owns the domain
@@ -77,31 +76,40 @@ namespace fioio {
             // or we can collect the xfer fee at the time of listing and save that to the table and if the fee has changed just charge or refund the difference
 */
             require_auth(actor);
-            fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
-                           "TPID must be empty or valid FIO address",
-                           ErrorPubKeyValid);
 
+            // make sure sale price is greater than 0
             fio_400_assert(sale_price > 0, "sale_price", std::to_string(sale_price),
                            "Invalid sale_price value", ErrorInvalidAmount);
 
+            // hash domain for easy querying
             const uint128_t domainHash = string_to_uint128_hash(fio_domain.c_str());
 
+            // verify domain exists in the fio_domain table
             auto domainsbyname = domains.get_index<"byname"_n>();
             auto domains_iter = domainsbyname.find(domainHash);
 
             fio_400_assert(domains_iter != domainsbyname.end(), "fio_domain", fio_domain,
                            "FIO domain not found", ErrorDomainNotRegistered);
 
-            // write to table
-            listdomain_update(actor, fio_domain, domainHash, sale_price);
+            // check that the `actor` owners `fio_domain`
+            fio_400_assert(domains_iter->account == actor.value, "fio_domain", fio_domain,
+                            "FIO domain now owned by actor", ErrorDomainOwner);
 
-            const string response_string = string("\"status\":\"OK\"}");
+            // write to table
+            auto domainsale_id = listdomain_update(actor, fio_domain, domainHash, sale_price);
+
+            const string response_string = string("{\"status\": \"OK\",\"domainsale_id\":\"") +
+                    to_string(domainsale_id) + string("}");
+
+            // if tx is too large, throw an error.
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransactionTooLarge);
 
             send_response(response_string.c_str());
         }
 
         [[eosio::action]]
-        void cxlistdomain(const name &actor, const uint64_t &domainlist_id){
+        void cxlistdomain(const name &actor, const string &fio_domain){
             // Steps to take in this action:
             // -- Verify the actor is on the listing
             // -- transfer domain to actor
@@ -109,13 +117,26 @@ namespace fioio {
 
             require_auth(actor);
 
+            const uint128_t domainHash = string_to_uint128_hash(fio_domain.c_str());
+
+            auto domainsalesbydomain = domainsales.get_index<"bydomain"_n>();
+            auto domainsale_iter = domainsalesbydomain.find(domainHash);
+            fio_400_assert(domainsale_iter != domainsalesbydomain.end(), "domainsale", fio_domain,
+                           "FIO fee not found for endpoint", ErrorDomainSaleNotFound);
+
+            domainsalesbydomain.erase(domainsale_iter);
+
             const string response_string = string("{\"status\": \"OK\"}");
+
+            // if tx is too large, throw an error.
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransactionTooLarge);
 
             send_response(response_string.c_str());
         }
 
         [[eosio::action]]
-        void buydomain(const name &actor, const uint64_t &domainlist_id){
+        void buydomain(const name &actor, const uint64_t &domainsale_id){
             // Steps to take in this action:
             // -- Verify the actor is on the listing
             // -- retrieve FIO for the sale price
@@ -129,7 +150,21 @@ namespace fioio {
 
             send_response(response_string.c_str());
         }
+
+        // this action is to renew the domain listing by 90 days. it must first check to see if the domain expires within 90
+        // days and if it does it rejects the action
+        [[eosio::action]]
+        void rnlistdomain(const name &actor, const uint64_t &domainsale_id){
+
+        }
+
+        // this action is to set the config for a marketplace. this will be used to calculate the fee that is taken out
+        // when a listing has sold.
+        [[eosio::action]]
+        void setmrkplccfg(const name &actor, const string &marketplace, const string &owner, const uint64_t &marketplacefee){
+
+        }
     }; // class FioEscrow
 
-    EOSIO_DISPATCH(FioEscrow, (listdomain)(cxlistdomain)(buydomain))
+    EOSIO_DISPATCH(FioEscrow, (listdomain)(cxlistdomain)(buydomain)(rnlistdomain)(setmrkplccfg))
 }
