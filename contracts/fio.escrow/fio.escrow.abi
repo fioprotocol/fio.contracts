@@ -141,16 +141,12 @@
       "base": "",
       "fields": [
         {
-          "name": "actor",
-          "type": "name"
-        },
-        {
           "name": "marketplace",
           "type": "string"
         },
         {
           "name": "owner",
-          "type": "string"
+          "type": "name"
         },
         {
           "name": "owner_public_key",
