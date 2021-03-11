@@ -1735,9 +1735,7 @@ namespace fioio {
 
         [[eosio::action]]
         void xferescrow(const string &fio_domain, const string &new_owner_fio_public_key, const name &actor){
-
-            check((has_auth(EscrowContract) || has_auth(SYSTEMACCOUNT)),
-                  "missing required authority of fio.escrow, eosio");
+            require_auth(EscrowContract);
 
             FioAddress fa;
             getFioAddressStruct(fio_domain, fa);
@@ -1745,9 +1743,6 @@ namespace fioio {
             register_errors(fa, true);
             fio_400_assert(isPubKeyValid(new_owner_fio_public_key), "new_owner_fio_public_key", new_owner_fio_public_key,
                            "Invalid FIO Public Key", ErrorChainAddressEmpty);
-
-            fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
-                           ErrorMaxFeeInvalid);
 
             auto domainsbyname = domains.get_index<"byname"_n>();
             auto domains_iter = domainsbyname.find(string_to_uint128_hash(fio_domain));
@@ -1759,23 +1754,14 @@ namespace fioio {
             fio_400_assert(present_time <= domain_expiration, "fio_domain", fio_domain, "FIO Domain expired. Renew first.",
                            ErrorDomainExpired);
 
-            fio_403_assert(domains_iter->account == actor.value, ErrorSignature);
-            const uint128_t endpoint_hash = string_to_uint128_hash(TRANSFER_DOMAIN_ENDPOINT);
-
-            auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
-            auto fee_iter = fees_by_endpoint.find(endpoint_hash);
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", TRANSFER_DOMAIN_ENDPOINT,
-                           "FIO fee not found for endpoint", ErrorNoEndpoint);
-
             //Transfer the domain
             string owner_account;
             key_to_account(new_owner_fio_public_key, owner_account);
-            const name nm = accountmgnt(actor, new_owner_fio_public_key);
-            domainsbyname.modify(domains_iter, actor, [&](struct domain &a) {
+            const name nm = name(owner_account);
+            domainsbyname.modify(domains_iter, _self, [&](struct domain &a) {
                 a.account = nm.value;
             });
 
-            // Keep this i guess?
             if (XFERRAM > 0) {
                 action(
                         permission_level{SYSTEMACCOUNT, "active"_n},
@@ -1785,8 +1771,7 @@ namespace fioio {
                 ).send();
             }
 
-            const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
-                                           to_string(fee_amount) + string("}");
+            const string response_string = string("{\"status\": \"OK\"}");
 
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
                            "Transaction is too large", ErrorTransaction);

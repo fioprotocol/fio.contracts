@@ -49,6 +49,10 @@
           "type": "string"
         },
         {
+          "name": "marketplacehash",
+          "type": "uint128"
+        },
+        {
           "name": "owner",
           "type": "string"
         },

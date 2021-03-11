@@ -40,28 +40,30 @@ namespace fioio {
     };
 
     typedef multi_index<"domainsales"_n, domainsale,
-    indexed_by<"bydomain"_n, const_mem_fun<domainsale, uint128_t, &domainsale::by_domain>>
-    >
+            indexed_by<"bydomain"_n, const_mem_fun<domainsale, uint128_t, &domainsale::by_domain>>
+            >
     domainsales_table;
 
     struct [[eosio::action]] mrkplconfig {
         uint64_t id = 0;
-        string marketplace;
-        string owner;
+        string marketplace = nullptr;
+        uint128_t marketplacehash;
+        string owner = nullptr;
         uint128_t ownerhash = 0;
-        string owner_public_key;
+        string owner_public_key = nullptr;
         int64_t marketplace_fee;
 
         // primary_key is required to store structure in multi_index table
         uint64_t primary_key() const { return id; }
-        string by_marketplace() const { return marketplace; }
+        uint128_t by_marketplace() const { return marketplacehash; }
+        uint128_t by_owner() const { return ownerhash; }
 
-        EOSLIB_SERIALIZE(mrkplconfig, (id)(marketplace)(owner)(ownerhash)(marketplace_fee))
+        EOSLIB_SERIALIZE(mrkplconfig, (id)(marketplace)(marketplacehash)(owner)(ownerhash)(owner_public_key)(marketplace_fee))
     };
-
     typedef multi_index<"mrkplconfigs"_n, mrkplconfig,
-            indexed_by<"bymarketplace"_n, const_mem_fun<mrkplconfig, string, &mrkplconfig::by_marketplace>>
-    >
+                indexed_by<"bymarketplace"_n, const_mem_fun<mrkplconfig, uint128_t, &mrkplconfig::by_marketplace>>,
+                indexed_by<"byowner"_n, const_mem_fun<mrkplconfig, uint128_t, &mrkplconfig::by_owner>>
+            >
     mrkplconfigs_table;
 
     struct [[eosio::action]] holderacct {
@@ -73,8 +75,7 @@ namespace fioio {
         EOSLIB_SERIALIZE(holderacct, (id)(holder_public_key))
     };
 
-    typedef multi_index<"holderaccts"_n, holderacct>
-            holderaccts_table;
+    typedef multi_index<"holderaccts"_n, holderacct> holderaccts_table;
 
     void collect_marketplace_fee(const name &actor, const asset &fee, const string &act) {
         if (fee.amount > 0) {
@@ -82,7 +83,6 @@ namespace fioio {
                    TokenContract, "transfer"_n,
                    make_tuple(actor, TREASURYACCOUNT, fee,
                               string("FIO fee: ") + act)
-
             ).send();
         }
     }

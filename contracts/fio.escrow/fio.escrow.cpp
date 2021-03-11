@@ -19,7 +19,6 @@ namespace fioio {
         domainsales_table domainsales;
         mrkplconfigs_table mrkplconfigs;
         holderaccts_table holderaccts;
-
         domains_table domains;
         eosio_names_table accountmap;
     public:
@@ -38,7 +37,8 @@ namespace fioio {
             return now() + SALELISTTIME; // 3 months
         }
 
-        uint32_t listdomain_update(const name &actor, const string &fio_domain, const uint128_t &domainhash, const int64_t &sale_price){
+        uint32_t listdomain_update(const name &actor, const string &fio_domain, const uint128_t &domainhash,
+                                   const int64_t &sale_price){
 //            uint128_t domainHash = string_to_uint128_hash(fio_domain);
             uint128_t ownerHash = string_to_uint128_hash(actor.to_string());
             uint32_t expiration_time;
@@ -100,22 +100,27 @@ namespace fioio {
 
             // check that the `actor` owners `fio_domain`
             fio_400_assert(domains_iter->account == actor.value, "fio_domain", fio_domain,
-                            "FIO domain now owned by actor", ErrorDomainOwner);
+                            "FIO domain not owned by actor", ErrorDomainOwner);
 
-            // write to table
-            auto domainsale_id = listdomain_update(actor, fio_domain, domainHash, sale_price);
+            holderaccts_table table(_self, _self.value);
+            auto hold_account_itr = table.find(0); // only one entry so use 0th index
+
+            string new_owner_fio_public_key;
+
+            if(hold_account_itr != table.end()){
+                new_owner_fio_public_key = hold_account_itr->holder_public_key;
+            }
 
             // transfer the domain to EscrowContract
             action(
                     permission_level{EscrowContract, "active"_n},
                     AddressContract,
                     "xferescrow"_n,
-                    std::make_tuple(actor, fio_domain, new_owner_fio_public_key)
+                    std::make_tuple(fio_domain, new_owner_fio_public_key, actor)
             ).send();
 
-//            domainsbyname.modify(domains_iter, AddressContract, [&](struct domain &a) {
-//                a.account = EscrowContract.value;
-//            });
+            // write to table
+            auto domainsale_id = listdomain_update(actor, fio_domain, domainHash, sale_price);
 
             const string response_string = string("{\"status\": \"OK\",\"domainsale_id\":\"") +
                     to_string(domainsale_id) + string("}");
@@ -127,6 +132,11 @@ namespace fioio {
             send_response(response_string.c_str());
         }
 
+        /***********
+        * This action will list a fio domain for sale
+        * @param actor this is the account name that listed the domain
+        * @param this is the name of the fio_domain
+        */
         [[eosio::action]]
         void cxlistdomain(const name &actor, const string &fio_domain){
             // Steps to take in this action:
@@ -154,6 +164,11 @@ namespace fioio {
             send_response(response_string.c_str());
         }
 
+        /***********
+        * This action will list a fio domain for sale
+        * @param actor this is the account name that listed the domain
+        * @param this is the name of the fio_domain
+        */
         [[eosio::action]]
         void buydomain(const name &actor, const string &fio_domain){
             // Steps to take in this action:
@@ -170,21 +185,28 @@ namespace fioio {
             send_response(response_string.c_str());
         }
 
-        // this action is to renew the domain listing by 90 days. it must first check to see if the domain expires within 90
-        // days and if it does it rejects the action
+        /***********
+        * this action is to renew the domain listing by 90 days. it must first check
+        * to see if the domain expires within 90 days and if it does it rejects the action
+        * @param actor this is the account name that listed the domain
+        * @param this is the name of the fio_domain
+        */
         [[eosio::action]]
         void rnlistdomain(const name &actor, const string &fio_domain){
 
         }
 
-        // this action can only be called by the system contract or fio.escrow and it sets the pubkey that will be
-        // the trusted owner of domains/addresses when they are listed on sale.
+        /***********
+        * this action can only be called by the system contract or fio.escrow and it sets
+        * the pubkey that will be the trusted owner of domains/addresses when they are listed on sale.
+        * @param
+        */
         [[eosio::action]]
         void sethldacct(const string &public_key){
             check((has_auth(EscrowContract) || has_auth(SYSTEMACCOUNT)),
                   "missing required authority of fio.escrow, eosio");
 
-            fio_400_assert(isPubKeyValid(owner_public_key),"owner_public_key", owner_public_key,
+            fio_400_assert(isPubKeyValid(public_key),"owner_public_key", public_key,
                            "Invalid FIO Public Key", ErrorPubKeyValid);
 
             holderaccts_table table(_self, _self.value);
@@ -214,15 +236,16 @@ namespace fioio {
             send_response(response_string.c_str());
         }
 
-        // this action is to set the config for a marketplace. this will be used to calculate the fee that is taken out
-        // when a listing has sold.
+        /***********
+        * this action is to set the config for a marketplace. this will be used to calculate the fee that is taken out
+        * when a listing has sold.
+        * @param
+        */
         [[eosio::action]]
-        void setmrkplcfg(const string &marketplace, const name &owner,
+        void setmrkplccfg(const string &marketplace, const name &owner,
                          const string &owner_public_key, const uint64_t &marketplacefee){
             // only fio.escrow can call this action
             require_auth(owner);
-
-            // TODO: check that all parameters are not null
 
             fio_400_assert(isPubKeyValid(owner_public_key),"owner_public_key", owner_public_key,
                            "Invalid FIO Public Key", ErrorPubKeyValid);
@@ -241,26 +264,29 @@ namespace fioio {
                            "Account does not yet exist on the fio chain",
                            ErrorPubAddressExist);
 
-            const string response_string = string("{\"status\": \"OK\"}");
 
-            auto marketplaceByMarketplace = mrkplconfig.get_index<"bymarketplace"_n>();
-            auto marketplace_iter = marketplaceByMarketplace.find(marketplace);
 
-            uint64_t id = domainsales.available_primary_key();
-            uint128_t ownerHash = string_to_uint128_hash(owner.value.to_string());
+            uint128_t marketplaceHash = string_to_uint128_hash(marketplace.c_str());
 
-            if(marketplace_iter == mrkplconfig.end()){
+            auto marketplaceByMarketplace = mrkplconfigs.get_index<"bymarketplace"_n>();
+            auto marketplace_iter = marketplaceByMarketplace.find(marketplaceHash);
+
+            uint64_t id = mrkplconfigs.available_primary_key();
+            uint128_t ownerHash = string_to_uint128_hash(owner.to_string());
+
+            if(marketplace_iter == marketplaceByMarketplace.end()){
                 // not found, emplace
-                mrkplconfig.emplace(EscrowContract, [&](auto& row){
+                mrkplconfigs.emplace(EscrowContract, [&](auto& row){
                     row.id = id;
                     row.marketplace = marketplace;
+                    row.marketplacehash = marketplaceHash;
                     row.owner = owner.value;
                     row.ownerhash = ownerHash;
                     row.owner_public_key = owner_public_key;
                     row.marketplace_fee = marketplacefee;
                 });
             } else {
-                fio_400_assert(marketplace_iter == mrkplconfig.end(), "marketplace", marketplace,
+                fio_400_assert(marketplace_iter == marketplaceByMarketplace.end(), "marketplace", marketplace,
                                "Marketplace already exists. Use rmmrkplcfg or setmkplfee.",
                                ErrorNoWork);
             }
@@ -269,21 +295,60 @@ namespace fioio {
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
                            "Transaction is too large", ErrorTransactionTooLarge);
 
+            const string response_string = string("{\"status\": \"OK\"}");
+
             send_response(response_string.c_str());
         }
 
-        // this action will remove the marketplace config from the table.
-        // It will need to check if there are any listings by that marketplace and if there are prevent it
-        // from being deleted.
+        /***********
+        * this action will remove the marketplace config from the table.
+        * It will need to check if there are any listings by that marketplace and if there are prevent it
+        * from being deleted.
+        * @param
+        */
         [[eosio::action]]
-        void rmmrkplcfg(const name &actor, const string &fio_domain){
+        void rmmrkplcfg(const name &actor, const string &marketplace){
+            require_auth(actor);
 
+            eosio_assert(marketplace.length() >= 1, "Length of marketplace name should be 1 or more characters");
+
+            uint128_t marketplaceHash = string_to_uint128_hash(marketplace.c_str());
+
+            auto marketplaceByMarketplace = mrkplconfigs.get_index<"bymarketplace"_n>();
+            auto marketplace_iter = marketplaceByMarketplace.find(marketplaceHash);
+
+            if(marketplace_iter != marketplaceByMarketplace.end()){
+                marketplaceByMarketplace.erase(marketplace_iter);
+            } else {
+                fio_400_assert(marketplace_iter == marketplaceByMarketplace.end(), "marketplace", marketplace,
+                               "Marketplace cannot be found",
+                               ErrorNoWork);
+            }
+
+            // if tx is too large, throw an error.
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransactionTooLarge);
+
+            const string response_string = string("{\"status\": \"OK\"}");
+
+            send_response(response_string.c_str());
         }
 
-        // this action will simply update the marketplace fee  that is subtracted from the sale price.
+        /***********
+        * this action will simply update the marketplace fee  that is subtracted from the sale price.
+        * @param
+        */
         [[eosio::action]]
         void setmkplfee(const name &actor, const string &fio_domain){
 
+
+            // if tx is too large, throw an error.
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransactionTooLarge);
+
+            const string response_string = string("{\"status\": \"OK\"}");
+
+            send_response(response_string.c_str());
         }
     }; // class FioEscrow
 
