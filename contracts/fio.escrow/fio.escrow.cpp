@@ -17,6 +17,8 @@ namespace fioio {
     class [[eosio::contract("FioEscrow")]] FioEscrow : public eosio::contract {
     private:
         domainsales_table domainsales;
+        mrkplconfigs_table mrkplconfigs;
+        holderaccts_table holderaccts;
         domains_table domains;
     public:
         using contract::contract;
@@ -24,7 +26,10 @@ namespace fioio {
         FioEscrow(name s, name code, datastream<const char *> ds) :
                 contract(s, code, ds),
                 domains(AddressContract, AddressContract.value),
-                domainsales(_self, _self.value) {
+                domainsales(_self, _self.value),
+                mrkplconfigs(_self, _self.value),
+                holderaccts(_self, _self.value)
+                {
         }
 
         inline uint32_t get_list_time(){
@@ -99,7 +104,7 @@ namespace fioio {
             auto domainsale_id = listdomain_update(actor, fio_domain, domainHash, sale_price);
 
             // transfer the domain to FIOESCROWACCOUNT
-            domainsbyname.modify(domains_iter, FIOESCROWACCOUNT, [&](struct domain &a) {
+            domainsbyname.modify(domains_iter, AddressContract, [&](struct domain &a) {
                 a.account = FIOESCROWACCOUNT.value;
             });
 
@@ -166,8 +171,48 @@ namespace fioio {
         // this action is to set the config for a marketplace. this will be used to calculate the fee that is taken out
         // when a listing has sold.
         [[eosio::action]]
-        void setmrkplccfg(const name &actor, const string &marketplace, const string &owner, const uint64_t &marketplacefee){
+        void setmrkplccfg(const name &actor, const string &marketplace, const string &owner,
+                          const string &owner_public_key, const uint64_t &marketplacefee){
+            // only fio.escrow can call this action
+            require_auth(FIOESCROWACCOUNT);
 
+            const string response_string = string("{\"status\": \"OK\"}");
+
+            // if tx is too large, throw an error.
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransactionTooLarge);
+
+            send_response(response_string.c_str());
+
+        }
+
+        [[eosio::action]]
+        void sethldacct(const string &public_key){
+            require_auth(FIOESCROWACCOUNT);
+
+            holderaccts_table table(_self, _self.value);
+            auto hold_account_itr = table.find(0); // only one entry
+
+            if(hold_account_itr == table.end()){
+                // not found, emplace
+                table.emplace(FIOESCROWACCOUNT, [&](auto& row){
+                    row.id = 0;
+                    row.holder_public_key = public_key;
+                });
+            } else {
+                // found, modify
+                table.modify(hold_account_itr, same_payer, [&](auto& row){
+                    row.holder_public_key = public_key;
+                });
+            }
+
+            const string response_string = string("{\"status\": \"OK\"}");
+
+            // if tx is too large, throw an error.
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransactionTooLarge);
+
+            send_response(response_string.c_str());
         }
     }; // class FioEscrow
 

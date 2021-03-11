@@ -57,8 +57,26 @@
           "type": "uint128"
         },
         {
-          "name": "marketplacefee",
+          "name": "owner_public_key",
+          "type": "string"
+        },
+        {
+          "name": "marketplace_fee",
           "type": "int64"
+        }
+      ]
+    },
+    {
+      "name": "holderacct",
+      "base": "",
+      "fields": [
+        {
+          "name": "id",
+          "type": "uint64"
+        },
+        {
+          "name": "holder_public_key",
+          "type": "string"
         }
       ]
     },
@@ -135,8 +153,22 @@
           "type": "string"
         },
         {
+          "name": "owner_public_key",
+          "type": "string"
+        },
+        {
           "name": "marketplacefee",
           "type": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "sethldacct",
+      "base": "",
+      "fields": [
+        {
+          "name": "public_key",
+          "type": "string"
         }
       ]
     }
@@ -167,6 +199,11 @@
       "name": "setmrkplccfg",
       "type": "setmrkplccfg",
       "ricardian_contract": ""
+    },
+    {
+      "name": "sethldacct",
+      "type": "sethldacct",
+      "ricardian_contract": ""
     }
   ],
   "tables": [
@@ -191,6 +228,17 @@
         "string"
       ],
       "type": "mrkplconfig"
+    },
+    {
+      "name": "holderaccts",
+      "index_type": "i64",
+      "key_names": [
+        "id"
+      ],
+      "key_types": [
+        "string"
+      ],
+      "type": "holderacct"
     }
   ],
   "ricardian_clauses": [],

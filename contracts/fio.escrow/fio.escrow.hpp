@@ -49,17 +49,32 @@ namespace fioio {
         string marketplace;
         string owner;
         uint128_t ownerhash = 0;
+        string owner_public_key;
         int64_t marketplace_fee;
 
         // primary_key is required to store structure in multi_index table
         uint64_t primary_key() const { return id; }
+        string by_marketplace() const { return marketplace; }
 
         EOSLIB_SERIALIZE(mrkplconfig, (id)(marketplace)(owner)(ownerhash)(marketplace_fee))
     };
 
+    typedef multi_index<"mrkplconfigs"_n, mrkplconfig,
+            indexed_by<"bymarketplace"_n, const_mem_fun<mrkplconfig, string, &mrkplconfig::by_marketplace>>
+    >
+    mrkplconfigs_table;
 
-    typedef multi_index<"mrkplconfigs"_n, mrkplconfig>
-            mrkplconfigs_table;
+    struct [[eosio::action]] holderacct {
+        uint64_t id = 0;
+        string holder_public_key;
+
+        uint64_t primary_key() const { return id; }
+
+        EOSLIB_SERIALIZE(holderacct, (id)(holder_public_key))
+    };
+
+    typedef multi_index<"holderaccts"_n, holderacct>
+            holderaccts_table;
 
     void collect_marketplace_fee(const name &actor, const asset &fee, const string &act) {
         if (fee.amount > 0) {
