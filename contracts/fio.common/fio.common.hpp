@@ -122,7 +122,7 @@ namespace fioio {
              actor == fioio::TREASURYACCOUNT ||
              actor == fioio::FIOSYSTEMACCOUNT ||
              actor == fioio::FIOACCOUNT ||
-             actor == fioio::FIOESCROWACCOUNT);
+             actor == fioio::EscrowContract);
     }
 
     static constexpr uint64_t string_to_uint64_hash(const char *str) {

@@ -175,7 +175,7 @@ namespace eosiosystem {
                       acnt == TokenContract ||
                       acnt == TREASURYACCOUNT ||
                       acnt == FIOSYSTEMACCOUNT ||
-                      acnt == FIOESCROWACCOUNT ||
+                      acnt == EscrowContract ||
                       acnt == FIOACCOUNT),"set abi not permitted." );
 
 

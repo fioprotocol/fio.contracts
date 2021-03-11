@@ -239,7 +239,7 @@ namespace fioio {
 
         [[eosio::action]]
         void sethldacct(const string &public_key){
-            check((has_auth(FIOESCROWACCOUNT) || has_auth(SYSTEMACCOUNT)),
+            check((has_auth(EscrowContract) || has_auth(SYSTEMACCOUNT)),
                   "missing required authority of fio.escrow, eosio");
 
             fio_400_assert(isPubKeyValid(owner_public_key),"owner_public_key", owner_public_key,
@@ -250,7 +250,7 @@ namespace fioio {
 
             if(hold_account_itr == table.end()){
                 // not found, emplace
-                table.emplace(FIOESCROWACCOUNT, [&](auto& row){
+                table.emplace(EscrowContract, [&](auto& row){
                     row.id = 0;
                     row.holder_public_key = public_key.c_str();
                 });
