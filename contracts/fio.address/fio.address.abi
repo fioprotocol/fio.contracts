@@ -442,6 +442,16 @@
           "type": "name"
         }
       ]
+    },
+    {
+      "name": "xferescrow",
+      "base": "",
+      "fields": [
+        {
+          "name": "fio_address",
+          "type": "string"
+        }
+      ]
     }
   ],
   "actions": [
@@ -518,6 +528,11 @@
     {
       "name": "addbundles",
       "type": "addbundles",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "xferescrow",
+      "type": "xferescrow",
       "ricardian_contract": ""
     }
   ],

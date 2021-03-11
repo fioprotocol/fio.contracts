@@ -1332,7 +1332,7 @@ namespace fioio {
          * and domains. bind2eosio, the space restricted variant of "Bind to EOSIO"
          * takes a platform-specific account name and a wallet generated public key.
          *
-         * First it verifie that either tsi is a new account and none othe exists, or this
+         * First it verify that either its is a new account and none other exists, or this
          * is an existing eosio account and it is indeed bound to this key. If it is a new,
          * unbound account name, then bind name to the key and add it to the list.
          *
@@ -1343,7 +1343,7 @@ namespace fioio {
                          "missing required authority of fio.address,  fio.token, or eosio");
 
            fio_400_assert(isPubKeyValid(client_key), "client_key", client_key,
-                          "Invalid FIO Public Key", ErrorPubKeyValid);
+                          "Invalid FIO  Public Key", ErrorPubKeyValid);
             auto other = accountmap.find(account.value);
             if (other != accountmap.end()) {
                 eosio_assert_message_code(existing && client_key == other->clientkey, "EOSIO account already bound",
@@ -1734,8 +1734,14 @@ namespace fioio {
             }
             else check(false, "Failed to decrement eligible bundle counter"); // required to fail the parent transaction
         }
+
+        [[eosio::action]]
+        void xferescrow(const string &fio_domain, const string &new_owner_fio_public_key, const int64_t &max_fee,
+                        const name &actor, const string &tpid,){
+
+        }
     };
 
     EOSIO_DISPATCH(FioNameLookup, (regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(renewaddress)(setdomainpub)(burnexpired)(decrcounter)
-    (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles))
+    (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(xferescrow))
 }
