@@ -36,13 +36,13 @@ namespace fioio {
     static const name FOUNDATIONACCOUNT = name("tw4tjkmo4eyd");
     static const name TREASURYACCOUNT   = name("fio.treasury");
     static const name FIOSYSTEMACCOUNT  = name("fio.system");
-    static const name EscrowContract     = name("fio.escrow");
+    static const name EscrowContract    = name("fio.escrow");
     static const name FIOACCOUNT        = name("fio");
 
-    static constexpr name FIOISSUER          = name("eosio"_n);
+    static constexpr name          FIOISSUER = name("eosio"_n);
     static constexpr eosio::symbol FIOSYMBOL = eosio::symbol("FIO", 9);
     //owner permission
-    static const name OWNER  = name("owner");
-    static const name ACTIVE = name("active");
+    static const name              OWNER     = name("owner");
+    static const name              ACTIVE    = name("active");
 
 } // namespace fioio
