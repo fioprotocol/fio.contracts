@@ -12,7 +12,7 @@
         },
         {
           "name": "owner",
-          "type": "string"
+          "type": "name"
         },
         {
           "name": "ownerhash",
@@ -24,6 +24,14 @@
         },
         {
           "name": "domainhash",
+          "type": "uint128"
+        },
+        {
+          "name": "marketplace",
+          "type": "string"
+        },
+        {
+          "name": "marketplacehash",
           "type": "uint128"
         },
         {
@@ -54,7 +62,7 @@
         },
         {
           "name": "owner",
-          "type": "string"
+          "type": "name"
         },
         {
           "name": "ownerhash",
@@ -65,7 +73,11 @@
           "type": "string"
         },
         {
-          "name": "marketplace_fee",
+          "name": "marketplace_commission_fee",
+          "type": "int64"
+        },
+        {
+          "name": "marketplace_listing_fee",
           "type": "int64"
         }
       ]
@@ -109,6 +121,10 @@
         {
           "name": "sale_price",
           "type": "int64"
+        },
+        {
+          "name": "marketplace",
+          "type": "string"
         }
       ]
     },
@@ -141,7 +157,7 @@
       ]
     },
     {
-      "name": "setmrkplccfg",
+      "name": "setmrkplcfg",
       "base": "",
       "fields": [
         {
@@ -157,7 +173,11 @@
           "type": "string"
         },
         {
-          "name": "marketplacefee",
+          "name": "marketplacecommission",
+          "type": "uint64"
+        },
+        {
+          "name": "listingfee",
           "type": "uint64"
         }
       ]
@@ -196,8 +216,8 @@
       "ricardian_contract": ""
     },
     {
-      "name": "setmrkplccfg",
-      "type": "setmrkplccfg",
+      "name": "setmrkplcfg",
+      "type": "setmrkplcfg",
       "ricardian_contract": ""
     },
     {
