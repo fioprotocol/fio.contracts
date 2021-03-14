@@ -122,7 +122,6 @@ namespace fioio {
             }
 // endregion
 
-
             // hash domain for easy querying
             const uint128_t domainHash = string_to_uint128_hash(fio_domain.c_str());
 
@@ -148,7 +147,7 @@ namespace fioio {
                 new_owner_fio_public_key = hold_account_itr->holder_public_key;
             }
 
-            // transfer the domain to EscrowContract
+            // transfer the domain to holder account
             action(
                     permission_level{EscrowContract, "active"_n},
                     AddressContract,
@@ -179,11 +178,6 @@ namespace fioio {
         */
         [[eosio::action]]
         void cxlistdomain(const name &actor, const string &fio_domain) {
-            // Steps to take in this action:
-            // -- Verify the actor is on the listing
-            // -- transfer domain to actor
-            // -- remove listing from table
-
             require_auth(actor);
 
             const uint128_t domainHash = string_to_uint128_hash(fio_domain.c_str());
@@ -224,18 +218,93 @@ namespace fioio {
 
         /***********
         * This action will list a fio domain for sale
-        * @param actor this is the account name that listed the domain
+        * @param buyer this is the account name that listed the domain
         * @param this is the name of the fio_domain
         */
         [[eosio::action]]
-        void buydomain(const name &actor, const string &fio_domain) {
+        void buydomain(const name &buyer, const string &fio_domain, const string &marketplace) {
             // Steps to take in this action:
             // -- Verify the actor is on the listing
             // -- retrieve FIO for the sale price
             // -- transfer domain to actor
             // -- divvy up the fees between marketplace, seller and bp fees
             // -- remove listing from table
-            require_auth(actor);
+            require_auth(buyer);
+
+// region Check if marketplace exists
+            eosio_assert(marketplace.length() >= 1, "Length of marketplace name should be 1 or more characters");
+            uint128_t marketplaceHash = string_to_uint128_hash(marketplace.c_str());
+
+            auto marketplaceByMarketplace = mrkplconfigs.get_index<"bymarketplace"_n>();
+            auto marketplace_iter         = marketplaceByMarketplace.find(marketplaceHash);
+            fio_400_assert(marketplace_iter != marketplaceByMarketplace.end(), "marketplace", marketplace,
+                           "Marketplace not found", ErrorNoWork);
+// endregion
+
+// region Check if domain is listed for sale
+            const uint128_t domainHash = string_to_uint128_hash(fio_domain.c_str());
+
+            auto domainsalesbydomain = domainsales.get_index<"bydomain"_n>();
+            auto domainsale_iter     = domainsalesbydomain.find(domainHash);
+            fio_400_assert(domainsale_iter != domainsalesbydomain.end(), "domainsale", fio_domain,
+                           "Domain not found", ErrorDomainSaleNotFound);
+// endregion
+
+            auto saleprice = asset(domainsale_iter->sale_price, FIOSYMBOL);
+            auto marketCommissionFee = marketplace_iter->marketplace_commission_fee / 100.0;
+            auto marketCommission = asset(saleprice.amount * marketCommissionFee, FIOSYMBOL);
+            auto toBuyer = asset(saleprice.amount - marketCommission.amount, FIOSYMBOL);
+
+//            fio_400_assert(1 == 2, "saleprice", to_string(saleprice.amount), "Checking variable", ErrorNoWork);
+//            fio_400_assert(1 == 2, "marketCommissionFee", to_string(marketCommissionFee),
+//                           "Checking variable", ErrorNoWork);
+//            fio_400_assert(1 == 2, "marketCommission", to_string(marketCommission.amount),
+//                           "Checking variable", ErrorNoWork);
+//            fio_400_assert(1 == 2, "toBuyer", to_string(toBuyer.amount),
+//                           "Checking variable", ErrorNoWork);
+
+// region get private key of buyer
+            const bool accountExists = is_account(buyer);
+            auto buyerAcct = accountmap.find(buyer.value);
+            fio_400_assert(buyerAcct != accountmap.end(), "buyer", buyer.to_string(),
+                           "Account is not bound on the fio chain",
+                           ErrorPubAddressExist);
+            fio_400_assert(accountExists, "buyer", buyer.to_string(),
+                           "Account does not yet exist on the fio chain",
+                           ErrorPubAddressExist);
+// endregion
+
+// region Make FIO transfer from buyer to seller - minus fee
+            action(permission_level{EscrowContract, "active"_n},
+                   TokenContract, "transfer"_n,
+                   make_tuple(buyer, domainsale_iter->owner, toBuyer, string("Domain Purchase"))
+            ).send();
+// endregion
+
+// region Make FIO transfer from buyer to marketplace
+            action(permission_level{EscrowContract, "active"_n},
+                   TokenContract, "transfer"_n,
+                   make_tuple(buyer, marketplace_iter->owner, marketCommission, string("Marketplace Commission"))
+            ).send();
+// endregion
+
+// region transfer domain ownership to buyer
+            // transfer the domain to holder account
+            action(
+                    permission_level{EscrowContract, "active"_n},
+                    AddressContract,
+                    "xferescrow"_n,
+                    std::make_tuple(fio_domain, buyerAcct->clientkey, buyer)
+            ).send();
+// endregion
+
+// region remove listing from table
+            domainsalesbydomain.erase(domainsale_iter);
+
+            domainsale_iter     = domainsalesbydomain.find(domainHash);
+            fio_400_assert(domainsale_iter == domainsalesbydomain.end(), "domainsale", fio_domain,
+                           "Domain listing not removed properly", ErrorDomainSaleNotFound);
+// endregion
 
             const string response_string = string("{\"status\": \"OK\"}");
 
@@ -426,5 +495,6 @@ namespace fioio {
 
     EOSIO_DISPATCH(FioEscrow, (listdomain)(cxlistdomain)(buydomain)
                             (rnlistdomain)(setmrkplcfg)(rmmrkplcfg)
-                            (sethldacct)(setmkpcomfee)(setmkplstfee))
+                            (sethldacct)(setmkpcomfee)(setmkplstfee)
+                            (chkexpired))
 }
