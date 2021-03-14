@@ -41,6 +41,10 @@
         {
           "name": "expiration",
           "type": "uint64"
+        },
+        {
+          "name": "warned_expire",
+          "type": "bool"
         }
       ]
     },
@@ -199,6 +203,92 @@
       ]
     },
     {
+      "name": "rmmrkplcfg",
+      "base": "",
+      "fields": [
+        {
+          "name": "actor",
+          "type": "name"
+        },
+        {
+          "name": "marketplace",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "setmkpcomfee",
+      "base": "",
+      "fields": [
+        {
+          "name": "actor",
+          "type": "name"
+        },
+        {
+          "name": "marketplace",
+          "type": "string"
+        },
+        {
+          "name": "fee",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "setmkplstfee",
+      "base": "",
+      "fields": [
+        {
+          "name": "actor",
+          "type": "name"
+        },
+        {
+          "name": "marketplace",
+          "type": "string"
+        },
+        {
+          "name": "fee",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "setmkplstdur",
+      "base": "",
+      "fields": [
+        {
+          "name": "actor",
+          "type": "name"
+        },
+        {
+          "name": "marketplace",
+          "type": "string"
+        },
+        {
+          "name": "listing_dur",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "setmkpwrntm",
+      "base": "",
+      "fields": [
+        {
+          "name": "actor",
+          "type": "name"
+        },
+        {
+          "name": "marketplace",
+          "type": "string"
+        },
+        {
+          "name": "warn_days",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
       "name": "sethldacct",
       "base": "",
       "fields": [
@@ -207,15 +297,28 @@
           "type": "string"
         }
       ]
+    },
+    {
+      "name": "chkexplistng",
+      "base": "",
+      "fields": [
+        {
+          "name": "actor",
+          "type": "name"
+        },
+        {
+          "name": "fio_domain",
+          "type": "string"
+        },
+        {
+          "name": "warn_days",
+          "type": "uint64"
+        }
+      ]
     }
   ],
   "types": [],
   "actions": [
-    {
-      "name": "buydomain",
-      "type": "buydomain",
-      "ricardian_contract": ""
-    },
     {
       "name": "listdomain",
       "type": "listdomain",
@@ -227,6 +330,11 @@
       "ricardian_contract": ""
     },
     {
+      "name": "buydomain",
+      "type": "buydomain",
+      "ricardian_contract": ""
+    },
+    {
       "name": "rnlistdomain",
       "type": "rnlistdomain",
       "ricardian_contract": ""
@@ -234,6 +342,11 @@
     {
       "name": "setmrkplcfg",
       "type": "setmrkplcfg",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "rmmrkplcfg",
+      "type": "rmmrkplcfg",
       "ricardian_contract": ""
     },
     {
@@ -249,6 +362,16 @@
     {
       "name": "setmkplstfee",
       "type": "setmkplstfee",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "setmkpwrntm",
+      "type": "setmkpwrntm",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "setmkplstdur",
+      "type": "setmkplstdur",
       "ricardian_contract": ""
     },
     {
