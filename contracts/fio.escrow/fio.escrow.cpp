@@ -104,11 +104,11 @@ namespace fioio {
 // region marketplace found
             if (marketplace_iter != marketplaceByMarketplace.end()) {
                 // found
-                auto listingfee = asset(marketplace_iter->listing_fee, FIOSYMBOL);
+                auto listingfee         = asset(marketplace_iter->listing_fee, FIOSYMBOL);
                 auto marketplaceAccount = name(marketplace_iter->owner);
 
                 const bool accountExists = is_account(marketplaceAccount);
-                auto acctmap_itr = accountmap.find(marketplaceAccount.value);
+                auto       acctmap_itr   = accountmap.find(marketplaceAccount.value);
 
                 fio_400_assert(acctmap_itr != accountmap.end(), "marketplaceAccount", marketplaceAccount.to_string(),
                                "Account is not bound on the fio chain",
@@ -128,8 +128,8 @@ namespace fioio {
             const uint128_t domainHash = string_to_uint128_hash(fio_domain.c_str());
 
             // verify domain exists in the fio_domain table
-            auto domainsbyname = domains.get_index<"byname"_n>();
-            auto domains_iter  = domainsbyname.find(domainHash);
+            auto domainsbyname                 = domains.get_index<"byname"_n>();
+            auto domains_iter                  = domainsbyname.find(domainHash);
 
             fio_400_assert(domains_iter != domainsbyname.end(), "fio_domain", fio_domain,
                            "FIO domain not found", ErrorDomainNotRegistered);
@@ -140,7 +140,7 @@ namespace fioio {
 
             // get holder account that will hold the domains while listed for sale
             holderaccts_table table(_self, _self.value);
-            auto hold_account_itr = table.find(0); // only one entry so use 0th index
+            auto              hold_account_itr = table.find(0); // only one entry so use 0th index
 
             string new_owner_fio_public_key;
 
@@ -256,14 +256,15 @@ namespace fioio {
                            "Domain not found", ErrorDomainSaleNotFound);
 // endregion
 
-            auto saleprice = asset(domainsale_iter->sale_price, FIOSYMBOL);
+            auto saleprice           = asset(domainsale_iter->sale_price, FIOSYMBOL);
             auto marketCommissionFee = marketplace_iter->commission_fee / 100.0;
-            auto marketCommission = asset(saleprice.amount * marketCommissionFee, FIOSYMBOL);
-            auto toBuyer = asset(saleprice.amount - marketCommission.amount, FIOSYMBOL);
+            auto marketCommission    = (marketCommissionFee > 0) ?
+                                       asset(saleprice.amount * marketCommissionFee, FIOSYMBOL) : asset(0, FIOSYMBOL);
+            auto toBuyer             = asset(saleprice.amount - marketCommission.amount, FIOSYMBOL);
 
 // region get private key of buyer
             const bool accountExists = is_account(buyer);
-            auto buyerAcct = accountmap.find(buyer.value);
+            auto       buyerAcct     = accountmap.find(buyer.value);
             fio_400_assert(buyerAcct != accountmap.end(), "buyer", buyer.to_string(),
                            "Account is not bound on the fio chain",
                            ErrorPubAddressExist);
@@ -299,7 +300,7 @@ namespace fioio {
 // region remove listing from table
             domainsalesbydomain.erase(domainsale_iter);
 
-            domainsale_iter     = domainsalesbydomain.find(domainHash);
+            domainsale_iter = domainsalesbydomain.find(domainHash);
             fio_400_assert(domainsale_iter == domainsalesbydomain.end(), "domainsale", fio_domain,
                            "Domain listing not removed properly", ErrorDomainSaleNotFound);
 // endregion
@@ -312,13 +313,18 @@ namespace fioio {
 
         /***********
         * this action is to renew the domain listing by 90 days. it must first check
-        * to see if the domain expires within 90 days and if it does it rejects the action
+        * to see if the domain expires within 90 days and if it does it rejects the action.
+         * This action will fail if the listing does not expire within the `warn_days + 3` duration
         * @param actor this is the account name that listed the domain
         * @param this is the name of the fio_domain
         */
         [[eosio::action]]
         void rnlistdomain(const name &actor, const string &fio_domain) {
+            require_auth(actor);
 
+            // find listing based on fio_domain
+
+            //
         }
         // rnlistdomain
 
@@ -328,8 +334,7 @@ namespace fioio {
         * @param
         */
         [[eosio::action]]
-        void sethldacct(const string &public_key)
-        {
+        void sethldacct(const string &public_key) {
             check((has_auth(EscrowContract) || has_auth(SYSTEMACCOUNT)),
                   "missing required authority of fio.escrow, eosio");
 
@@ -348,7 +353,8 @@ namespace fioio {
             } else {
                 // found, modify
                 // TODO: this will likely rarely be done but if it is there should be a transferring of all
-                //  domains/addresses the old pubkey owns to this new pubkey
+                //  domains/addresses the old pubkey owns to this new pubkey.
+
                 table.modify(hold_account_itr, same_payer, [&](auto &row) {
                     row.holder_public_key = public_key.c_str();
                 });
@@ -404,14 +410,14 @@ namespace fioio {
             if (marketplace_iter == marketplaceByMarketplace.end()) {
                 // not found, emplace
                 mrkplconfigs.emplace(EscrowContract, [&](auto &row) {
-                    row.id                         = id;
-                    row.marketplace                = marketplace;
-                    row.marketplacehash            = marketplaceHash;
-                    row.owner                      = owner.value;
-                    row.ownerhash                  = ownerHash;
-                    row.owner_public_key           = owner_public_key;
-                    row.commission_fee = marketplacecommission;
-                    row.listing_fee    = listingfee;
+                    row.id               = id;
+                    row.marketplace      = marketplace;
+                    row.marketplacehash  = marketplaceHash;
+                    row.owner            = owner.value;
+                    row.ownerhash        = ownerHash;
+                    row.owner_public_key = owner_public_key;
+                    row.commission_fee   = marketplacecommission;
+                    row.listing_fee      = listingfee;
                 });
             } else {
                 fio_400_assert(marketplace_iter == marketplaceByMarketplace.end(), "marketplace", marketplace,
@@ -442,17 +448,20 @@ namespace fioio {
             eosio_assert(marketplace.length() >= 1, "Length of marketplace name should be 1 or more characters");
 
             uint128_t marketplaceHash = string_to_uint128_hash(marketplace.c_str());
+            uint128_t ownerHash       = string_to_uint128_hash(actor.to_string());
 
-            auto marketplaceByMarketplace = mrkplconfigs.get_index<"bymarketplace"_n>();
-            auto marketplace_iter         = marketplaceByMarketplace.find(marketplaceHash);
+            auto marketplaceByOwner = mrkplconfigs.get_index<"byowner"_n>();
+            auto marketplace_iter   = marketplaceByOwner.find(ownerHash);
 
-            if (marketplace_iter != marketplaceByMarketplace.end()) {
-                marketplaceByMarketplace.erase(marketplace_iter);
-            } else {
-                fio_400_assert(marketplace_iter == marketplaceByMarketplace.end(), "marketplace", marketplace,
-                               "Marketplace cannot be found",
-                               ErrorNoWork);
-            }
+            fio_400_assert(marketplace_iter == marketplaceByOwner.end(), "marketplace", marketplace,
+                           "Marketplace cannot be found",
+                           ErrorNoWork);
+
+            fio_400_assert(marketplace_iter->marketplace == marketplace, "marketplace", marketplace,
+                           "Only owner of marketplace can modify config",
+                           ErrorNoWork);
+
+            marketplaceByOwner.erase(marketplace_iter);
 
             // if tx is too large, throw an error.
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
@@ -469,8 +478,38 @@ namespace fioio {
         * @param
         */
         [[eosio::action]]
-        void setmkpcomfee(const name &actor, const string &marketplace) {
+        void setmkpcomfee(const name &actor, const string &marketplace, const uint64_t &fee) {
+            require_auth(actor);
 
+            // sanity check of parameters
+            eosio_assert(marketplace.length() >= 1, "Length of marketplace name should be 1 or more characters");
+            eosio_assert(fee >= 0 && fee <= 50, "Fee may only be between 0 and 50. ");
+
+            uint128_t marketplaceHash = string_to_uint128_hash(marketplace.c_str());
+
+            // find marketplace on the `mrkplconfig` table
+            auto marketplaceByMarketplace = mrkplconfigs.get_index<"bymarketplace"_n>();
+            auto marketplace_iter         = marketplaceByMarketplace.find(marketplaceHash);
+
+            fio_400_assert(marketplace_iter == marketplaceByMarketplace.end(), "marketplace", marketplace,
+                           "Marketplace cannot be found",
+                           ErrorNoWork);
+
+
+            // verify the `actor` is the owner of the marketplace
+            fio_400_assert(marketplace_iter->owner == actor.value, "actor", actor.to_string(),
+                           "Only owner of marketplace can modify config",
+                           ErrorNoWork);
+
+            // change the commission fee value
+            marketplaceByMarketplace.modify(marketplace_iter, same_payer, [&](auto &row) {
+                row.commission_fee = fee;
+            });
+
+            // verify the listing fee changed
+            fio_400_assert(marketplace_iter->commission_fee == fee, "fee", to_string(fee),
+                           "The table update failed.",
+                           ErrorNoWork);
 
             // if tx is too large, throw an error.
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
@@ -487,7 +526,135 @@ namespace fioio {
         * @param
         */
         [[eosio::action]]
-        void setmkplstfee(const name &actor, const string &marketplace) {
+        void setmkplstfee(const name &actor, const string &marketplace, const uint64_t &fee) {
+            require_auth(actor);
+
+            // sanity check of parameters
+            eosio_assert(marketplace.length() >= 1, "Length of marketplace name should be 1 or more characters");
+            eosio_assert(fee >= 0, "Fee must 0 or more. ");
+
+            uint128_t marketplaceHash = string_to_uint128_hash(marketplace.c_str());
+
+            // find marketplace on the `mrkplconfig` table
+            auto marketplaceByMarketplace = mrkplconfigs.get_index<"bymarketplace"_n>();
+            auto marketplace_iter         = marketplaceByMarketplace.find(marketplaceHash);
+
+            fio_400_assert(marketplace_iter == marketplaceByMarketplace.end(), "marketplace", marketplace,
+                           "Marketplace cannot be found",
+                           ErrorNoWork);
+
+            // verify the `actor` is the owner of the marketplace
+            fio_400_assert(marketplace_iter->owner == actor.value, "actor", actor.to_string(),
+                           "Only owner of marketplace can modify config",
+                           ErrorNoWork);
+
+            // change the listing fee value
+            marketplaceByMarketplace.modify(marketplace_iter, same_payer, [&](auto &row) {
+                row.listing_fee = fee;
+            });
+
+            // verify the listing fee changed
+            fio_400_assert(marketplace_iter->listing_fee == fee, "fee", to_string(fee),
+                           "The table update failed.",
+                           ErrorNoWork);
+
+            // if tx is too large, throw an error.
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransactionTooLarge);
+
+            const string response_string = string("{\"status\": \"OK\"}");
+
+            send_response(response_string.c_str());
+        }
+        // setmkplstfee
+
+        /***********
+        * this action will simply update the marketplace listing duration time. default is 90 days.
+        * @param
+        */
+        [[eosio::action]]
+        void setmkplstdur(const name &actor, const string &marketplace, const uint64_t &listing_dur) {
+            require_auth(actor);
+
+            // sanity check of parameters
+            eosio_assert(marketplace.length() >= 1, "Length of marketplace name should be 1 or more characters");
+            eosio_assert(listing_dur >= 1 && listing_dur <= 365,
+                         "Listing duration must be greater than 1 day and less than 365 days.");
+
+            uint128_t marketplaceHash = string_to_uint128_hash(marketplace.c_str());
+
+            // find marketplace on the `mrkplconfig` table
+            auto marketplaceByMarketplace = mrkplconfigs.get_index<"bymarketplace"_n>();
+            auto marketplace_iter         = marketplaceByMarketplace.find(marketplaceHash);
+
+            fio_400_assert(marketplace_iter == marketplaceByMarketplace.end(), "marketplace", marketplace,
+                           "Marketplace cannot be found",
+                           ErrorNoWork);
+
+            // verify the `actor` is the owner of the marketplace
+            fio_400_assert(marketplace_iter->owner == actor.value, "actor", actor.to_string(),
+                           "Only owner of marketplace can modify config",
+                           ErrorNoWork);
+
+            // change the listing fee value
+            marketplaceByMarketplace.modify(marketplace_iter, same_payer, [&](auto &row) {
+                row.duration = listing_dur;
+            });
+
+            // verify the listing fee changed
+            fio_400_assert(marketplace_iter->duration == listing_dur, "listing_dur", to_string(listing_dur),
+                           "The table update failed.",
+                           ErrorNoWork);
+
+            // if tx is too large, throw an error.
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransactionTooLarge);
+
+            const string response_string = string("{\"status\": \"OK\"}");
+
+            send_response(response_string.c_str());
+        }
+        // setmkplstfee
+
+        /***********
+        * this action will simply update the marketplace warn time. By default this is 10 days.
+        * @param
+        */
+        [[eosio::action]]
+        void setmkpwrntm(const name &actor, const string &marketplace, const uint64_t &warn_days) {
+            require_auth(actor);
+
+            // sanity check of parameters
+            eosio_assert(marketplace.length() >= 1, "Length of marketplace name should be 1 or more characters");
+
+
+            uint128_t marketplaceHash = string_to_uint128_hash(marketplace.c_str());
+
+            // find marketplace on the `mrkplconfig` table
+            auto marketplaceByMarketplace = mrkplconfigs.get_index<"bymarketplace"_n>();
+            auto marketplace_iter         = marketplaceByMarketplace.find(marketplaceHash);
+
+            fio_400_assert(marketplace_iter == marketplaceByMarketplace.end(), "marketplace", marketplace,
+                           "Marketplace cannot be found",
+                           ErrorNoWork);
+
+            eosio_assert(warn_days >= 1 && warn_days <= (marketplace_iter->duration / 2),
+                         "Cannot warn sooner than half way through listing duration");
+
+            // verify the `actor` is the owner of the marketplace
+            fio_400_assert(marketplace_iter->owner == actor.value, "actor", actor.to_string(),
+                           "Only owner of marketplace can modify config",
+                           ErrorNoWork);
+
+            // change the listing fee value
+            marketplaceByMarketplace.modify(marketplace_iter, same_payer, [&](auto &row) {
+                row.warn_days = warn_days;
+            });
+
+            // verify the listing fee changed
+            fio_400_assert(marketplace_iter->duration == warn_days, "warn_days", to_string(warn_days),
+                           "The table update failed.",
+                           ErrorNoWork);
 
             // if tx is too large, throw an error.
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
@@ -517,9 +684,9 @@ namespace fioio {
 
             // check that `actor` is  the one that listed the domain and their for the previous owner
 
-            // retrieve the `list_warn_time` from the config table
+            // retrieve the `warn_days` from the config table
 
-            // check to see if the expiration date is within `list_warn_time` days (e.g. 5 days)
+            // check to see if the expiration date is within `warn_days` days (e.g. 5 days)
 
             // check if `warned_expire` is set to 1, if so and the expiration is passed,
             // then call cxlistdomain to transfer the domain back and cancel the listing
@@ -537,10 +704,12 @@ namespace fioio {
             send_response(response_string.c_str());
         }
         // chkexplistng
+
+
     }; // class FioEscrow
 
     EOSIO_DISPATCH(FioEscrow, (listdomain)(cxlistdomain)(buydomain)
-                            (rnlistdomain)(setmrkplcfg)(rmmrkplcfg)
-                            (sethldacct)(setmkpcomfee)(setmkplstfee)
-                            (chkexplistng))
+                              (rnlistdomain)(setmrkplcfg)(rmmrkplcfg)
+                              (sethldacct)(setmkpcomfee)(setmkplstfee)
+                              (setmkpwrntm)(setmkplstdur)(chkexplistng))
 }

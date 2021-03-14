@@ -74,15 +74,19 @@
         },
         {
           "name": "commission_fee",
-          "type": "int64"
+          "type": "uint64"
         },
         {
           "name": "listing_fee",
-          "type": "int64"
+          "type": "uint64"
         },
         {
-          "name": "list_warn_time",
-          "type": "int64"
+          "name": "warn_days",
+          "type": "uint64"
+        },
+        {
+          "name": "duration",
+          "type": "uint64"
         }
       ]
     },
@@ -235,6 +239,21 @@
     {
       "name": "sethldacct",
       "type": "sethldacct",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "setmkpcomfee",
+      "type": "setmkpcomfee",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "setmkplstfee",
+      "type": "setmkplstfee",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "chkexplistng",
+      "type": "chkexplistng",
       "ricardian_contract": ""
     }
   ],

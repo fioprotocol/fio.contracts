@@ -20,10 +20,7 @@ namespace fioio {
     using namespace eosio;
     using namespace std;
 
-    // table will store all the domains that are for sale
-    // it needs the name of the domain, the seller and the amount the seller wants in FIO
     struct [[eosio::action]] domainsale {
-
         uint64_t id = 0;
         uint64_t owner = 0;
         uint128_t ownerhash = 0;
@@ -33,6 +30,7 @@ namespace fioio {
         uint128_t marketplacehash;
         int64_t sale_price;
         uint64_t expiration;
+        bool warned_expire;
 
         uint64_t primary_key() const { return id; }
         uint128_t by_domain() const { return domainhash; }
@@ -54,13 +52,14 @@ namespace fioio {
     struct [[eosio::action]] mrkplconfig {
         uint64_t id = 0;
         string marketplace = nullptr;
-        uint128_t marketplacehash;
+        uint128_t marketplacehash = 0;
         uint64_t owner = 0;
         uint128_t ownerhash = 0;
         string owner_public_key = nullptr;
-        int64_t commission_fee;
-        int64_t listing_fee;
-        uint64_t list_warn_time;
+        uint64_t commission_fee;
+        uint64_t listing_fee;
+        uint64_t warn_days;
+        uint64_t duration;
 
         uint64_t primary_key() const { return id; }
         uint128_t by_marketplace() const { return marketplacehash; }
@@ -73,7 +72,7 @@ namespace fioio {
 
     typedef multi_index<"mrkplconfigs"_n, mrkplconfig,
             indexed_by<"bymarketplace"_n, const_mem_fun<mrkplconfig, uint128_t, &mrkplconfig::by_marketplace>>,
-    indexed_by<"byowner"_n, const_mem_fun<mrkplconfig, uint128_t, &mrkplconfig::by_owner>>
+            indexed_by<"byowner"_n, const_mem_fun<mrkplconfig, uint128_t, &mrkplconfig::by_owner>>
     >
     mrkplconfigs_table;
 
