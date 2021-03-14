@@ -7,6 +7,7 @@
  */
 
 #include "fio.escrow.hpp"
+#include <eosiolib/eosio.hpp>
 #include <eosiolib/asset.hpp>
 #include <fio.common/fiotime.hpp>
 #include <fio.common/fio.common.hpp>
@@ -60,6 +61,7 @@ namespace fioio {
             });
             return id;
         }
+        // listdomain_update
 
         /***********
         * This action will list a fio domain for sale. It also collects a fee for listing that is sent to the
@@ -102,7 +104,7 @@ namespace fioio {
 // region marketplace found
             if (marketplace_iter != marketplaceByMarketplace.end()) {
                 // found
-                auto listingfee = asset(marketplace_iter->marketplace_listing_fee, FIOSYMBOL);
+                auto listingfee = asset(marketplace_iter->listing_fee, FIOSYMBOL);
                 auto marketplaceAccount = name(marketplace_iter->owner);
 
                 const bool accountExists = is_account(marketplaceAccount);
@@ -170,6 +172,7 @@ namespace fioio {
 
             send_response(response_string.c_str());
         }
+        // listdomain
 
         /***********
         * This action will list a fio domain for sale
@@ -178,7 +181,9 @@ namespace fioio {
         */
         [[eosio::action]]
         void cxlistdomain(const name &actor, const string &fio_domain) {
-            require_auth(actor);
+            // will be called by either the account listing the domain `actor`
+            // or the EscrowContract from `chkexplistng` when the listing is expired
+            check(has_auth(actor) || has_auth(EscrowContract), "Permission Denied");
 
             const uint128_t domainHash = string_to_uint128_hash(fio_domain.c_str());
 
@@ -215,6 +220,7 @@ namespace fioio {
 
             send_response(response_string.c_str());
         }
+        // cxlistdomain
 
         /***********
         * This action will list a fio domain for sale
@@ -251,17 +257,9 @@ namespace fioio {
 // endregion
 
             auto saleprice = asset(domainsale_iter->sale_price, FIOSYMBOL);
-            auto marketCommissionFee = marketplace_iter->marketplace_commission_fee / 100.0;
+            auto marketCommissionFee = marketplace_iter->commission_fee / 100.0;
             auto marketCommission = asset(saleprice.amount * marketCommissionFee, FIOSYMBOL);
             auto toBuyer = asset(saleprice.amount - marketCommission.amount, FIOSYMBOL);
-
-//            fio_400_assert(1 == 2, "saleprice", to_string(saleprice.amount), "Checking variable", ErrorNoWork);
-//            fio_400_assert(1 == 2, "marketCommissionFee", to_string(marketCommissionFee),
-//                           "Checking variable", ErrorNoWork);
-//            fio_400_assert(1 == 2, "marketCommission", to_string(marketCommission.amount),
-//                           "Checking variable", ErrorNoWork);
-//            fio_400_assert(1 == 2, "toBuyer", to_string(toBuyer.amount),
-//                           "Checking variable", ErrorNoWork);
 
 // region get private key of buyer
             const bool accountExists = is_account(buyer);
@@ -310,6 +308,7 @@ namespace fioio {
 
             send_response(response_string.c_str());
         }
+        // buydomain
 
         /***********
         * this action is to renew the domain listing by 90 days. it must first check
@@ -321,6 +320,7 @@ namespace fioio {
         void rnlistdomain(const name &actor, const string &fio_domain) {
 
         }
+        // rnlistdomain
 
         /***********
         * this action can only be called by the system contract or fio.escrow and it sets
@@ -328,7 +328,8 @@ namespace fioio {
         * @param
         */
         [[eosio::action]]
-        void sethldacct(const string &public_key) {
+        void sethldacct(const string &public_key)
+        {
             check((has_auth(EscrowContract) || has_auth(SYSTEMACCOUNT)),
                   "missing required authority of fio.escrow, eosio");
 
@@ -361,6 +362,8 @@ namespace fioio {
 
             send_response(response_string.c_str());
         }
+        // sethldacct
+
 
         /***********
         * this action is to set the config for a marketplace. this will be used to calculate the fee that is taken out
@@ -407,8 +410,8 @@ namespace fioio {
                     row.owner                      = owner.value;
                     row.ownerhash                  = ownerHash;
                     row.owner_public_key           = owner_public_key;
-                    row.marketplace_commission_fee = marketplacecommission;
-                    row.marketplace_listing_fee    = listingfee;
+                    row.commission_fee = marketplacecommission;
+                    row.listing_fee    = listingfee;
                 });
             } else {
                 fio_400_assert(marketplace_iter == marketplaceByMarketplace.end(), "marketplace", marketplace,
@@ -424,6 +427,7 @@ namespace fioio {
 
             send_response(response_string.c_str());
         }
+        // setmrkplcfg
 
         /***********
         * this action will remove the marketplace config from the table.
@@ -458,13 +462,14 @@ namespace fioio {
 
             send_response(response_string.c_str());
         }
+        // rmmrkplcfg
 
         /***********
-        * this action will simply update the marketplace comission fee  that is subtracted from the sale price.
+        * this action will simply update the marketplace commission fee  that is subtracted from the sale price.
         * @param
         */
         [[eosio::action]]
-        void setmkpcomfee(const name &actor, const string &fio_domain) {
+        void setmkpcomfee(const name &actor, const string &marketplace) {
 
 
             // if tx is too large, throw an error.
@@ -475,13 +480,14 @@ namespace fioio {
 
             send_response(response_string.c_str());
         }
+        // setmkpcomfee
 
         /***********
         * this action will simply update the marketplace listing fee that is charged up front
         * @param
         */
         [[eosio::action]]
-        void setmkplstfee(const name &actor, const string &fio_domain) {
+        void setmkplstfee(const name &actor, const string &marketplace) {
 
             // if tx is too large, throw an error.
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
@@ -491,10 +497,50 @@ namespace fioio {
 
             send_response(response_string.c_str());
         }
+        // setmkplstfee
+
+        /***********
+        * This action will need to be run at least once a day and will check the listing table for any listings
+         * that expire within X days (set in the config table). If a listing is expiring a FIO request will be sent
+         * to the user that listed the domain. They can either let it expire or call the `rnlistdomain` (renew listing)
+         * action. If the domain expires within 90 days they will not be able to renew the listing and must cancel
+         * and then renew the domain and re-list.
+         *
+         * anyone can run this action, but it will need to be on an automated cronjob to run at least once a day or else
+         * listings can get stale and be expired.
+        */
+        [[eosio::action]]
+        void chkexplistng(const name &actor, const string &fio_domain) {
+            require_auth(actor);
+
+            // search the listing table and make sure that `fio_domain` is listed for sale
+
+            // check that `actor` is  the one that listed the domain and their for the previous owner
+
+            // retrieve the `list_warn_time` from the config table
+
+            // check to see if the expiration date is within `list_warn_time` days (e.g. 5 days)
+
+            // check if `warned_expire` is set to 1, if so and the expiration is passed,
+            // then call cxlistdomain to transfer the domain back and cancel the listing
+
+            // send a fio request to the account that listed the domain for sale with the memo that their listing will expire in `list_warn_time` days
+
+            // mark the listing as `warned_expire`
+
+            // if tx is too large, throw an error.
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransactionTooLarge);
+
+            const string response_string = string("{\"status\": \"OK\"}");
+
+            send_response(response_string.c_str());
+        }
+        // chkexplistng
     }; // class FioEscrow
 
     EOSIO_DISPATCH(FioEscrow, (listdomain)(cxlistdomain)(buydomain)
                             (rnlistdomain)(setmrkplcfg)(rmmrkplcfg)
                             (sethldacct)(setmkpcomfee)(setmkplstfee)
-                            (chkexpired))
+                            (chkexplistng))
 }

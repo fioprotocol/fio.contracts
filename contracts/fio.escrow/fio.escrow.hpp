@@ -58,15 +58,16 @@ namespace fioio {
         uint64_t owner = 0;
         uint128_t ownerhash = 0;
         string owner_public_key = nullptr;
-        int64_t marketplace_commission_fee;
-        int64_t marketplace_listing_fee;
+        int64_t commission_fee;
+        int64_t listing_fee;
+        uint64_t list_warn_time;
 
         uint64_t primary_key() const { return id; }
         uint128_t by_marketplace() const { return marketplacehash; }
         uint128_t by_owner() const { return ownerhash; }
 
         EOSLIB_SERIALIZE(mrkplconfig, (id)(marketplace)(marketplacehash)(owner)(ownerhash)(owner_public_key)(
-                marketplace_commission_fee)(marketplace_listing_fee)
+                commission_fee)(listing_fee)
         )
     };
 
