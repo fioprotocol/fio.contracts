@@ -37,8 +37,11 @@ namespace fioio {
         uint128_t by_owner() const { return ownerhash; }
         uint128_t by_marketplace() const { return marketplacehash; }
 
-        EOSLIB_SERIALIZE(domainsale, (id)(owner)(ownerhash)(domain)(domainhash)(marketplace)(marketplacehash)(
-                sale_price)(expiration)
+        EOSLIB_SERIALIZE(domainsale,
+                         (id)(owner)(ownerhash)
+                         (domain)(domainhash)(marketplace)
+                         (marketplacehash)(sale_price)(expiration)
+                         (warned_expire)
         )
     };
 
@@ -65,8 +68,11 @@ namespace fioio {
         uint128_t by_marketplace() const { return marketplacehash; }
         uint128_t by_owner() const { return ownerhash; }
 
-        EOSLIB_SERIALIZE(mrkplconfig, (id)(marketplace)(marketplacehash)(owner)(ownerhash)(owner_public_key)(
-                commission_fee)(listing_fee)
+        EOSLIB_SERIALIZE(mrkplconfig,
+                         (id)(marketplace)(marketplacehash)
+                         (owner)(ownerhash)(owner_public_key)
+                         (commission_fee)(listing_fee)(warn_days)
+                         (duration)
         )
     };
 
