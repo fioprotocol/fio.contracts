@@ -1734,14 +1734,14 @@ namespace fioio {
         }
 
         [[eosio::action]]
-        void xferescrow(const string &fio_domain, const string &new_owner_fio_public_key, const name &actor){
+        void xferescrow(const string &fio_domain, const string &public_key, const name &actor){
             require_auth(EscrowContract);
 
             FioAddress fa;
             getFioAddressStruct(fio_domain, fa);
 
             register_errors(fa, true);
-            fio_400_assert(isPubKeyValid(new_owner_fio_public_key), "new_owner_fio_public_key", new_owner_fio_public_key,
+            fio_400_assert(isPubKeyValid(public_key), "public_key", public_key,
                            "Invalid FIO Public Key", ErrorChainAddressEmpty);
 
             auto domainsbyname = domains.get_index<"byname"_n>();
@@ -1756,7 +1756,7 @@ namespace fioio {
 
             //Transfer the domain
             string owner_account;
-            key_to_account(new_owner_fio_public_key, owner_account);
+            key_to_account(public_key, owner_account);
             const name nm = name(owner_account);
             domainsbyname.modify(domains_iter, _self, [&](struct domain &a) {
                 a.account = nm.value;
