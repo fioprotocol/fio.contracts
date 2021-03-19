@@ -74,25 +74,19 @@ namespace fioio {
         */
         [[eosio::action]]
         void listdomain(const name &actor, const string &fio_domain,
-                        const int64_t &sale_price, const string &marketplace) {
+                        const int64_t &sale_price, const string &marketplace,
+                        const string &notif_address) {
 // region auth check
             require_auth(actor);
 // endregion
 
 // region Parameter assertions
-
-            // check actor is valid
-            // check fio_domain is valid string
-            // check sale_price is greater than 0 and that
-            // check marketplace is valid string
-
-            fio_400_assert(sale_price > 0, "sale_price", std::to_string(sale_price),
-                           "Invalid sale_price value", ErrorInvalidAmount);
-
+            fio_400_assert(sale_price >= 1000000000, "sale_price", std::to_string(sale_price),
+                           "Sale price should be greater than 1 FIO (1,000,000,000 SUF)", ErrorInvalidAmount);
 // endregion
 
 // region Check `marketplace`
-            eosio_assert(marketplace.length() >= 1, "Length of marketplace name should be 1 or more characters");
+            eosio_assert(marketplace.length() >= 1 && marketplace.length() <= 25, "Length of marketplace name should be between 1 and 25 characters");
             uint128_t marketplaceHash = string_to_uint128_hash(marketplace.c_str());
 
             auto marketplaceByMarketplace = mrkplconfigs.get_index<"bymarketplace"_n>();
@@ -102,26 +96,17 @@ namespace fioio {
 // endregion
 
 // region marketplace found
-            if (marketplace_iter != marketplaceByMarketplace.end()) {
-                // found
-                auto listingfee         = asset(marketplace_iter->listing_fee, FIOSYMBOL);
-                auto marketplaceAccount = name(marketplace_iter->owner);
+            // found
+            auto listingfee         = asset(marketplace_iter->listing_fee, FIOSYMBOL);
+            auto marketplaceAccount = name(marketplace_iter->owner);
 
-                const bool accountExists = is_account(marketplaceAccount);
-                auto       acctmap_itr   = accountmap.find(marketplaceAccount.value);
+            const bool accountExists = is_account(marketplaceAccount);
+            auto       acctmap_itr   = accountmap.find(marketplaceAccount.value);
 
-                fio_400_assert(acctmap_itr != accountmap.end(), "marketplaceAccount", marketplaceAccount.to_string(),
-                               "Account is not bound on the fio chain",
-                               ErrorPubAddressExist);
-                fio_400_assert(accountExists, "accountExists", marketplaceAccount.to_string(),
-                               "Account does not yet exist on the fio chain",
-                               ErrorPubAddressExist);
-
-                action(permission_level{EscrowContract, "active"_n},
-                       TokenContract, "transfer"_n,
-                       make_tuple(actor, marketplaceAccount, listingfee, string("Listing fee"))
-                ).send();
-            }
+            action(permission_level{EscrowContract, "active"_n},
+                   TokenContract, "transfer"_n,
+                   make_tuple(actor, marketplaceAccount, listingfee, string("Listing fee"))
+            ).send();
 // endregion
 
             // hash domain for easy querying
@@ -212,6 +197,8 @@ namespace fioio {
                     std::make_tuple(fio_domain, owner->clientkey, actor)
             ).send();
 
+            // send a fio request
+
             const string response_string = string("{\"status\": \"OK\"}");
 
             // if tx is too large, throw an error.
@@ -238,7 +225,7 @@ namespace fioio {
             require_auth(buyer);
 
 // region Check if marketplace exists
-            eosio_assert(marketplace.length() >= 1, "Length of marketplace name should be 1 or more characters");
+            eosio_assert(marketplace.length() >= 1, "Length of marketplace name should be between 1 and 25 characters");
             uint128_t marketplaceHash = string_to_uint128_hash(marketplace.c_str());
 
             auto marketplaceByMarketplace = mrkplconfigs.get_index<"bymarketplace"_n>();
@@ -314,17 +301,16 @@ namespace fioio {
         /***********
         * this action is to renew the domain listing by 90 days. it must first check
         * to see if the domain expires within 90 days and if it does it rejects the action.
-         * This action will fail if the listing does not expire within the `warn_days + 3` duration
+         * This action will fail if the listing does not expire within the `warn_days` duration.
         * @param actor this is the account name that listed the domain
         * @param this is the name of the fio_domain
         */
         [[eosio::action]]
         void rnlistdomain(const name &actor, const string &fio_domain) {
             require_auth(actor);
+            // TODO: 3/15/21
 
             // find listing based on fio_domain
-
-            //
         }
         // rnlistdomain
 
@@ -378,15 +364,19 @@ namespace fioio {
         */
         [[eosio::action]]
         void setmrkplcfg(const string &marketplace, const name &owner,
-                         const string &owner_public_key, const uint64_t &marketplacecommission,
-                         const uint64_t &listingfee) {
+                         const string &owner_public_key, const uint64_t &commissionfee,
+                         const uint64_t &listingfee, const uint64_t &duration,
+                         const uint64_t &warn_days) {
             require_auth(owner);
+            // TODO: 3/15/21 check validity of duration and warn days and add to the table
 
             fio_400_assert(isPubKeyValid(owner_public_key), "owner_public_key", owner_public_key,
                            "Invalid FIO Public Key", ErrorPubKeyValid);
 
             eosio_assert(owner.length() == 12, "Length of account name should be 12");
-            eosio_assert(marketplace.length() >= 1, "Length of marketplace name should be 1 or more characters");
+            eosio_assert(marketplace.length() >= 1 && marketplace.length() <= 25, "Length of marketplace name should be between 1 and 25 characters");
+            eosio_assert(commissionfee > -1 && commissionfee <= 25, "Commission fee should be between 0 and 25");
+            eosio_assert(listingfee > -1 && listingfee <= 10, "Listing fee should be between 0 and 25");
 
             const bool accountExists = is_account(owner);
 
@@ -416,7 +406,7 @@ namespace fioio {
                     row.owner            = owner.value;
                     row.ownerhash        = ownerHash;
                     row.owner_public_key = owner_public_key;
-                    row.commission_fee   = marketplacecommission;
+                    row.commission_fee   = commissionfee;
                     row.listing_fee      = listingfee;
                 });
             } else {
@@ -445,7 +435,7 @@ namespace fioio {
         void rmmrkplcfg(const name &actor, const string &marketplace) {
             require_auth(actor);
 
-            eosio_assert(marketplace.length() >= 1, "Length of marketplace name should be 1 or more characters");
+            eosio_assert(marketplace.length() >= 1, "Length of marketplace name should be between 1 and 25 characters");
 
             uint128_t marketplaceHash = string_to_uint128_hash(marketplace.c_str());
             uint128_t ownerHash       = string_to_uint128_hash(actor.to_string());
@@ -474,8 +464,10 @@ namespace fioio {
         // rmmrkplcfg
 
         /***********
-        * this action will simply update the marketplace commission fee  that is subtracted from the sale price.
-        * @param
+        * this action will simply update the marketplace commission fee that is subtracted from the sale price. Default is 6%
+        * @param actor `name`
+        * @param marketplace `string`
+        * @param fee `uint64`
         */
         [[eosio::action]]
         void setmkpcomfee(const name &actor, const string &marketplace, const uint64_t &fee) {
@@ -522,7 +514,7 @@ namespace fioio {
         // setmkpcomfee
 
         /***********
-        * this action will simply update the marketplace listing fee that is charged up front
+        * this action will simply update the marketplace listing fee that is charged up front. Default is 4 FIO
         * @param
         */
         [[eosio::action]]
@@ -677,8 +669,8 @@ namespace fioio {
          * listings can get stale and be expired.
         */
         [[eosio::action]]
-        void chkexplistng(const name &actor, const string &fio_domain) {
-            require_auth(actor);
+        void chkexplistng() {
+            // TODO: 3/15/21
 
             // search the listing table and make sure that `fio_domain` is listed for sale
 
