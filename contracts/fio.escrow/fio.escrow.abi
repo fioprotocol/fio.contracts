@@ -145,6 +145,10 @@
         {
           "name": "marketplace",
           "type": "string"
+        },
+        {
+          "name": "notif_address",
+          "type": "string"
         }
       ]
     },
@@ -193,11 +197,19 @@
           "type": "string"
         },
         {
-          "name": "marketplacecommission",
+          "name": "commissionfee",
           "type": "uint64"
         },
         {
           "name": "listingfee",
+          "type": "uint64"
+        },
+        {
+          "name": "duration",
+          "type": "uint64"
+        },
+        {
+          "name": "warn_days",
           "type": "uint64"
         }
       ]
@@ -301,20 +313,7 @@
     {
       "name": "chkexplistng",
       "base": "",
-      "fields": [
-        {
-          "name": "actor",
-          "type": "name"
-        },
-        {
-          "name": "fio_domain",
-          "type": "string"
-        },
-        {
-          "name": "warn_days",
-          "type": "uint64"
-        }
-      ]
+      "fields": []
     }
   ],
   "types": [],
