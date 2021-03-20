@@ -123,6 +123,14 @@
         {
           "name": "marketplace",
           "type": "string"
+        },
+        {
+          "name": "max_fee",
+          "type": "int64"
+        },
+        {
+          "name": "tpid",
+          "type": "string"
         }
       ]
     },
@@ -143,11 +151,11 @@
           "type": "int64"
         },
         {
-          "name": "marketplace",
-          "type": "string"
+          "name": "max_fee",
+          "type": "int64"
         },
         {
-          "name": "notif_address",
+          "name": "tpid",
           "type": "string"
         }
       ]
@@ -163,6 +171,14 @@
         {
           "name": "fio_domain",
           "type": "string"
+        },
+        {
+          "name": "max_fee",
+          "type": "int64"
+        },
+        {
+          "name": "tpid",
+          "type": "string"
         }
       ]
     },
@@ -176,6 +192,14 @@
         },
         {
           "name": "fio_domain",
+          "type": "string"
+        },
+        {
+          "name": "max_fee",
+          "type": "int64"
+        },
+        {
+          "name": "tpid",
           "type": "string"
         }
       ]
@@ -211,6 +235,14 @@
         {
           "name": "warn_days",
           "type": "uint64"
+        },
+        {
+          "name": "max_fee",
+          "type": "int64"
+        },
+        {
+          "name": "tpid",
+          "type": "string"
         }
       ]
     },
@@ -224,6 +256,14 @@
         },
         {
           "name": "marketplace",
+          "type": "string"
+        },
+        {
+          "name": "max_fee",
+          "type": "int64"
+        },
+        {
+          "name": "tpid",
           "type": "string"
         }
       ]
@@ -243,6 +283,14 @@
         {
           "name": "fee",
           "type": "uint64"
+        },
+        {
+          "name": "max_fee",
+          "type": "int64"
+        },
+        {
+          "name": "tpid",
+          "type": "string"
         }
       ]
     },
@@ -261,6 +309,14 @@
         {
           "name": "fee",
           "type": "uint64"
+        },
+        {
+          "name": "max_fee",
+          "type": "int64"
+        },
+        {
+          "name": "tpid",
+          "type": "string"
         }
       ]
     },
@@ -279,6 +335,14 @@
         {
           "name": "listing_dur",
           "type": "uint64"
+        },
+        {
+          "name": "max_fee",
+          "type": "int64"
+        },
+        {
+          "name": "tpid",
+          "type": "string"
         }
       ]
     },
@@ -297,6 +361,14 @@
         {
           "name": "warn_days",
           "type": "uint64"
+        },
+        {
+          "name": "max_fee",
+          "type": "int64"
+        },
+        {
+          "name": "tpid",
+          "type": "string"
         }
       ]
     },
@@ -307,13 +379,30 @@
         {
           "name": "public_key",
           "type": "string"
+        },
+        {
+          "name": "max_fee",
+          "type": "int64"
+        },
+        {
+          "name": "tpid",
+          "type": "string"
         }
       ]
     },
     {
       "name": "chkexplistng",
       "base": "",
-      "fields": []
+      "fields": [
+        {
+          "name": "max_fee",
+          "type": "int64"
+        },
+        {
+          "name": "tpid",
+          "type": "string"
+        }
+      ]
     }
   ],
   "types": [],

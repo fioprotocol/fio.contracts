@@ -38,9 +38,7 @@ namespace fioio {
         }
 
         uint32_t listdomain_update(const name &actor, const string &fio_domain,
-                                   const uint128_t &domainhash, const string &marketplace,
-                                   const uint128_t &marketplacehash, const int64_t &sale_price,
-                                   const string &notif_address) {
+                                   const uint128_t &domainhash, const int64_t &sale_price) {
 
             uint128_t ownerHash = string_to_uint128_hash(actor.to_string());
             uint32_t  expiration_time;
@@ -50,15 +48,13 @@ namespace fioio {
             uint64_t id = domainsales.available_primary_key();
 
             domainsales.emplace(actor, [&](struct domainsale &d) {
-                d.id              = id;
-                d.owner           = actor.value;
-                d.ownerhash       = ownerHash;
-                d.domain          = fio_domain;
-                d.domainhash      = domainhash;
-                d.marketplace     = marketplace;
-                d.marketplacehash = marketplacehash;
-                d.sale_price      = sale_price;
-                d.expiration      = expiration_time;
+                d.id         = id;
+                d.owner      = actor.value;
+                d.ownerhash  = ownerHash;
+                d.domain     = fio_domain;
+                d.domainhash = domainhash;
+                d.sale_price = sale_price;
+                d.expiration = expiration_time;
             });
             return id;
         }
@@ -75,8 +71,8 @@ namespace fioio {
         */
         [[eosio::action]]
         void listdomain(const name &actor, const string &fio_domain,
-                        const int64_t &sale_price, const string &marketplace,
-                        const string &notif_address) {
+                        const int64_t &sale_price, const int64_t &max_fee,
+                        const string &tpid) {
 // region auth check
             require_auth(actor);
 // endregion
@@ -84,6 +80,11 @@ namespace fioio {
 // region Parameter assertions
             fio_400_assert(sale_price >= 1000000000, "sale_price", std::to_string(sale_price),
                            "Sale price should be greater than 1 FIO (1,000,000,000 SUF)", ErrorInvalidAmount);
+            fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
+                           "TPID must be empty or valid FIO address",
+                           ErrorPubKeyValid);
+            fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                           ErrorMaxFeeInvalid);
 // endregion
 
 // region Check `marketplace`
@@ -172,7 +173,8 @@ namespace fioio {
         * @param this is the name of the fio_domain
         */
         [[eosio::action]]
-        void cxlistdomain(const name &actor, const string &fio_domain) {
+        void cxlistdomain(const name &actor, const string &fio_domain,
+                          const int64_t &max_fee, const string &tpid) {
             // will be called by either the account listing the domain `actor`
             // or the EscrowContract from `chkexplistng` when the listing is expired
             check(has_auth(actor) || has_auth(EscrowContract), "Permission Denied");
@@ -222,7 +224,8 @@ namespace fioio {
         * @param this is the name of the fio_domain
         */
         [[eosio::action]]
-        void buydomain(const name &buyer, const string &fio_domain, const string &marketplace) {
+        void buydomain(const name &buyer, const string &fio_domain,
+                       const int64_t &max_fee, const string &tpid) {
             // Steps to take in this action:
             // -- Verify the actor is on the listing
             // -- retrieve FIO for the sale price
@@ -313,7 +316,8 @@ namespace fioio {
         * @param this is the name of the fio_domain
         */
         [[eosio::action]]
-        void rnlistdomain(const name &actor, const string &fio_domain) {
+        void rnlistdomain(const name &actor, const string &fio_domain,
+                          const int64_t &max_fee, const string &tpid) {
             require_auth(actor);
             // TODO: 3/15/21
 
@@ -327,7 +331,8 @@ namespace fioio {
         * @param
         */
         [[eosio::action]]
-        void sethldacct(const string &public_key) {
+        void sethldacct(const string &public_key,
+                        const int64_t &max_fee, const string &tpid) {
             check((has_auth(EscrowContract) || has_auth(SYSTEMACCOUNT)),
                   "missing required authority of fio.escrow, eosio");
 
@@ -373,7 +378,7 @@ namespace fioio {
         void setmrkplcfg(const string &marketplace, const name &owner,
                          const string &owner_public_key, const uint64_t &commissionfee,
                          const uint64_t &listingfee, const uint64_t &duration,
-                         const uint64_t &warn_days) {
+                         const uint64_t &warn_days, const int64_t &max_fee, const string &tpid) {
             require_auth(owner);
             // TODO: 3/15/21 check validity of duration and warn days and add to the table
 
@@ -455,7 +460,8 @@ namespace fioio {
         * @param
         */
         [[eosio::action]]
-        void rmmrkplcfg(const name &actor, const string &marketplace) {
+        void rmmrkplcfg(const name &actor, const string &marketplace,
+                        const int64_t &max_fee, const string &tpid) {
             require_auth(actor);
 
             eosio_assert(marketplace.length() >= 1, "Length of marketplace name should be between 1 and 25 characters");
@@ -491,7 +497,8 @@ namespace fioio {
         * @param fee `uint64`
         */
         [[eosio::action]]
-        void setmkpcomfee(const name &actor, const string &marketplace, const uint64_t &fee) {
+        void setmkpcomfee(const name &actor, const string &marketplace, const uint64_t &fee,
+                          const int64_t &max_fee, const string &tpid) {
             require_auth(actor);
 
             // sanity check of parameters
@@ -543,7 +550,8 @@ namespace fioio {
         * @param
         */
         [[eosio::action]]
-        void setmkplstfee(const name &actor, const string &marketplace, const uint64_t &fee) {
+        void setmkplstfee(const name &actor, const string &marketplace, const uint64_t &fee,
+                          const int64_t &max_fee, const string &tpid) {
             require_auth(actor);
 
             // sanity check of parameters
@@ -594,7 +602,8 @@ namespace fioio {
         * @param
         */
         [[eosio::action]]
-        void setmkplstdur(const name &actor, const string &marketplace, const uint64_t &listing_dur) {
+        void setmkplstdur(const name &actor, const string &marketplace, const uint64_t &listing_dur,
+                          const int64_t &max_fee, const string &tpid) {
             require_auth(actor);
 
             // sanity check of parameters
@@ -645,7 +654,8 @@ namespace fioio {
         * @param
         */
         [[eosio::action]]
-        void setmkpwrntm(const name &actor, const string &marketplace, const uint64_t &warn_days) {
+        void setmkpwrntm(const name &actor, const string &marketplace, const uint64_t &warn_days,
+                         const int64_t &max_fee, const string &tpid) {
             require_auth(actor);
 
             // sanity check of parameters
@@ -703,7 +713,7 @@ namespace fioio {
          * listings can get stale and be expired.
         */
         [[eosio::action]]
-        void chkexplistng() {
+        void chkexplistng(const int64_t &max_fee, const string &tpid) {
             // TODO: 3/15/21
 
             // search the listing table and make sure that `fio_domain` is listed for sale
@@ -738,8 +748,7 @@ namespace fioio {
     }; // class FioEscrow
 
     EOSIO_DISPATCH(FioEscrow, (listdomain)(cxlistdomain)(buydomain)
-                                      (rnlistdomain)(setmrkplcfg)(rmmrkplcfg)
-                                      (sethldacct)(setmkpcomfee)(setmkplstfee)
-                                      (setmkpwrntm)(setmkplstdur)
-    (chkexplistng))
+                              (rnlistdomain)(setmrkplcfg)(rmmrkplcfg)
+                              (sethldacct)(setmkpcomfee)(setmkplstfee)
+                              (setmkpwrntm)(setmkplstdur)(chkexplistng))
 }
