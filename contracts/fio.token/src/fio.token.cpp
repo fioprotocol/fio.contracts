@@ -394,8 +394,6 @@ namespace eosio {
                              const name &actor,
                              const string &tpid) {
 
-       fio_403_assert(1==2, ErrorSignature);
-
        uint128_t endpoint_hash = fioio::string_to_uint128_hash("transfer_tokens_pub_key");
 
        auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
