@@ -12,6 +12,7 @@
 #include <fio.token/include/fio.token/fio.token.hpp>
 #include <eosiolib/asset.hpp>
 #include <fio.request.obt/fio.request.obt.hpp> //TEMP FOR XFERADDRESS
+#include <fio.escrow/fio.escrow.hpp>
 
 namespace fioio {
 
@@ -20,6 +21,7 @@ namespace fioio {
     private:
         const int MIN_VOTES_FOR_AVERAGING = 15;
         domains_table domains;
+        domainsales_table  domainsales;
         fionames_table fionames;
         fiofee_table fiofees;
         eosio_names_table accountmap;
@@ -38,6 +40,7 @@ namespace fioio {
 
         FioNameLookup(name s, name code, datastream<const char *> ds) : contract(s, code, ds),
                                                                         domains(_self, _self.value),
+                                                                        domainsales(EscrowContract, EscrowContract.value),
                                                                         fionames(_self, _self.value),
                                                                         fiofees(FeeContract, FeeContract.value),
                                                                         bundlevoters(FeeContract, FeeContract.value),
@@ -1097,6 +1100,14 @@ namespace fioio {
 
                 if (domainsiter != domainsbyname.end()) {
                     domainsbyname.erase(domainsiter);
+                }
+
+                // Find any domains listed for sale on the fio.escrow contract table
+                auto domainsalesbydomain = domainsales.get_index<"bydomain"_n>();
+                auto domainsaleiter = domainsalesbydomain.find(burner);
+                // if found, erase the entry
+                if(domainsaleiter != domainsalesbydomain.end()){
+                    domainsalesbydomain.erase(domainsaleiter);
                 }
             }
 
