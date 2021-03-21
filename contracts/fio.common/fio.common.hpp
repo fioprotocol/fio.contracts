@@ -68,9 +68,14 @@
 #define BURN_FIO_ADDRESS_ENDPOINT "burn_fio_address"
 #define ADD_BUNDLED_TRANSACTION_ENDPOINT "add_bundled_transactions"
 
-#define LIST_DOMAIN_SALE_ENDPOINT "list_domain_sale"
-#define CANCEL_LIST_DOMAIN_SALE_ENDPOINT "cancel_list_domain_sale"
+#define LIST_DOMAIN_ENDPOINT "list_domain"
+#define CANCEL_LIST_DOMAIN_ENDPOINT "cancel_list_domain"
 #define BUY_DOMAIN_ENDPOINT "buy_domain"
+#define SET_MARKETPLACE_CONFIG "set_marketplace_config"
+#define REMOVE_MARKETPLACE_CONFIG "remove_marketplace_config"
+#define SET_HOLDER_ACCOUNT "set_holder_account"
+#define SET_MARKETPLACE_COMMISSION_FEE "set_marketplace_commission_fee"
+#define SET_MARKETPLACE_LISTING_FEE "set_marketplace_listing_fee"
 
 
 namespace fioio {
@@ -425,5 +430,5 @@ namespace fioio {
                                                               //different fees to avoid ram limits for non top 21 producers.
     static const uint64_t BUNDLEVOTERAM = 0; //integrated.
 
-    static const uint64_t LISTDOMAINSALERAM = 2048; // FIOESCROW
+    static const uint64_t FIOESCROWRAM = 512; // FIOESCROW
 } // namespace fioio
