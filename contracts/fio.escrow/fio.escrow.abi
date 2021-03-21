@@ -37,14 +37,6 @@
         {
           "name": "sale_price",
           "type": "int64"
-        },
-        {
-          "name": "expiration",
-          "type": "uint64"
-        },
-        {
-          "name": "warned_expire",
-          "type": "bool"
         }
       ]
     },
@@ -85,12 +77,8 @@
           "type": "uint64"
         },
         {
-          "name": "warn_days",
-          "type": "uint64"
-        },
-        {
-          "name": "duration",
-          "type": "uint64"
+          "name": "actor",
+          "type": "name"
         }
       ]
     },
@@ -105,6 +93,10 @@
         {
           "name": "holder_public_key",
           "type": "string"
+        },
+        {
+          "name": "actor",
+          "type": "name"
         }
       ]
     },
@@ -113,15 +105,11 @@
       "base": "",
       "fields": [
         {
-          "name": "buyer",
+          "name": "actor",
           "type": "name"
         },
         {
           "name": "fio_domain",
-          "type": "string"
-        },
-        {
-          "name": "marketplace",
           "type": "string"
         },
         {
@@ -183,28 +171,6 @@
       ]
     },
     {
-      "name": "rnlistdomain",
-      "base": "",
-      "fields": [
-        {
-          "name": "actor",
-          "type": "name"
-        },
-        {
-          "name": "fio_domain",
-          "type": "string"
-        },
-        {
-          "name": "max_fee",
-          "type": "int64"
-        },
-        {
-          "name": "tpid",
-          "type": "string"
-        }
-      ]
-    },
-    {
       "name": "setmrkplcfg",
       "base": "",
       "fields": [
@@ -229,20 +195,16 @@
           "type": "uint64"
         },
         {
-          "name": "duration",
-          "type": "uint64"
-        },
-        {
-          "name": "warn_days",
-          "type": "uint64"
-        },
-        {
           "name": "max_fee",
           "type": "int64"
         },
         {
           "name": "tpid",
           "type": "string"
+        },
+        {
+          "name": "actor",
+          "type": "name"
         }
       ]
     },
@@ -308,58 +270,6 @@
         },
         {
           "name": "fee",
-          "type": "uint64"
-        },
-        {
-          "name": "max_fee",
-          "type": "int64"
-        },
-        {
-          "name": "tpid",
-          "type": "string"
-        }
-      ]
-    },
-    {
-      "name": "setmkplstdur",
-      "base": "",
-      "fields": [
-        {
-          "name": "actor",
-          "type": "name"
-        },
-        {
-          "name": "marketplace",
-          "type": "string"
-        },
-        {
-          "name": "listing_dur",
-          "type": "uint64"
-        },
-        {
-          "name": "max_fee",
-          "type": "int64"
-        },
-        {
-          "name": "tpid",
-          "type": "string"
-        }
-      ]
-    },
-    {
-      "name": "setmkpwrntm",
-      "base": "",
-      "fields": [
-        {
-          "name": "actor",
-          "type": "name"
-        },
-        {
-          "name": "marketplace",
-          "type": "string"
-        },
-        {
-          "name": "warn_days",
           "type": "uint64"
         },
         {
@@ -387,20 +297,10 @@
         {
           "name": "tpid",
           "type": "string"
-        }
-      ]
-    },
-    {
-      "name": "chkexplistng",
-      "base": "",
-      "fields": [
-        {
-          "name": "max_fee",
-          "type": "int64"
         },
         {
-          "name": "tpid",
-          "type": "string"
+          "name": "actor",
+          "type": "name"
         }
       ]
     }
@@ -420,11 +320,6 @@
     {
       "name": "buydomain",
       "type": "buydomain",
-      "ricardian_contract": ""
-    },
-    {
-      "name": "rnlistdomain",
-      "type": "rnlistdomain",
       "ricardian_contract": ""
     },
     {
@@ -450,21 +345,6 @@
     {
       "name": "setmkplstfee",
       "type": "setmkplstfee",
-      "ricardian_contract": ""
-    },
-    {
-      "name": "setmkpwrntm",
-      "type": "setmkpwrntm",
-      "ricardian_contract": ""
-    },
-    {
-      "name": "setmkplstdur",
-      "type": "setmkplstdur",
-      "ricardian_contract": ""
-    },
-    {
-      "name": "chkexplistng",
-      "type": "chkexplistng",
       "ricardian_contract": ""
     }
   ],
