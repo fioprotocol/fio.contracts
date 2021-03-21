@@ -80,18 +80,8 @@ namespace fioio {
 // endregion
 
 // region Check `marketplace`
-//            fio_400_assert(marketplace.length() >= 1 && marketplace.length() <= 25,
-//                           "marketplace", marketplace,
-//                           "Length of marketplace name should be between 1 and 25 characters", ErrorNoWork);
-//            uint128_t marketplaceHash = string_to_uint128_hash(marketplace.c_str());
-//
-//            auto marketplaceByMarketplace = mrkplconfigs.get_index<"bymarketplace"_n>();
-//            auto marketplace_iter         = marketplaceByMarketplace.find(marketplaceHash);
-//            fio_400_assert(marketplace_iter != marketplaceByMarketplace.end(), "marketplace", marketplace,
-//                           "Marketplace not found", ErrorNoWork);
-
             mrkplconfigs_table marketplaceTable(_self, _self.value);
-                auto marketplace_iter = marketplaceTable.find(0); // only 1 marketplace, use 0th index
+            auto marketplace_iter = marketplaceTable.find(0); // only 1 marketplace, use 0th index
 // endregion
 
             fio_400_assert(marketplace_iter != marketplaceTable.end(), "marketplace_iter", "marketplace_iter",
@@ -287,22 +277,9 @@ namespace fioio {
         [[eosio::action]]
         void buydomain(const name &actor, const string &fio_domain,
                        const int64_t &max_fee, const string &tpid) {
-            // Steps to take in this action:
-            // -- Verify the actor is on the listing
-            // -- retrieve FIO for the sale price
-            // -- transfer domain to actor
-            // -- divvy up the fees between marketplace, seller and bp fees
-            // -- remove listing from table
             require_auth(actor);
 
 // region Check if marketplace exists
-//            eosio_assert(marketplace.length() >= 1, "Length of marketplace name should be between 1 and 25 characters");
-//            uint128_t marketplaceHash = string_to_uint128_hash(marketplace.c_str());
-//
-//            auto marketplaceByMarketplace = mrkplconfigs.get_index<"bymarketplace"_n>();
-//            auto marketplace_iter         = marketplaceByMarketplace.find(marketplaceHash);
-//            fio_400_assert(marketplace_iter != marketplaceByMarketplace.end(), "marketplace", marketplace,
-//                           "Marketplace not found", ErrorNoWork);
 
             mrkplconfigs_table marketplaceTable(_self, _self.value);
             auto marketplace_iter = marketplaceTable.find(0); // only 1 marketplace, use 0th index
@@ -398,6 +375,10 @@ namespace fioio {
                         std::make_tuple(actor, FIOESCROWRAM)
                 ).send();
             }
+
+            // if tx is too large, throw an error.
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransactionTooLarge);
 
             const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
                                            to_string(fee_amount) + string("}");
