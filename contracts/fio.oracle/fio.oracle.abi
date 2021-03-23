@@ -45,10 +45,6 @@
          "base":"",
          "fields":[
             {
-               "name":"id",
-               "type":"uint64"
-            },
-            {
                "name":"actor",
                "type":"uint64"
             },
@@ -67,10 +63,6 @@
                "type":"uint64"
             },
             {
-               "name":"voter",
-               "type":"uint64"
-            },
-            {
                "name":"idhash",
                "type":"uint128"
             },
@@ -85,6 +77,10 @@
             {
                "name":"amount",
                "type":"uint64"
+            },
+            {
+               "name":"voters",
+               "type":"name[]"
             },
             {
                "name":"isComplete",
