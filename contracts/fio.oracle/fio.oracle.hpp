@@ -67,24 +67,22 @@ namespace fioio {
     struct [[eosio::action]] oracle_votes {
 
         uint64_t id;
-        uint64_t voter;
         uint128_t idhash;
         string obt_id;
         string fio_address;
         uint64_t amount;
+        vector<name> voters;
         bool isComplete = false;
 
         uint64_t primary_key() const { return id; }
-        uint64_t by_voter() const { return voter; }
         uint128_t by_idhash() const { return idhash; }
 
-        EOSLIB_SERIALIZE(oracle_votes, (id)(voter)(idhash)(obt_id)(fio_address)(amount)(isComplete)
+        EOSLIB_SERIALIZE(oracle_votes, (id)(idhash)(obt_id)(fio_address)(amount)(voters)(isComplete)
         )
     };
 
     typedef multi_index<"oravotes"_n, oracle_votes,
-            indexed_by<"byvoter"_n, const_mem_fun < oracle_votes, uint64_t, &oracle_votes::by_voter>>,
-    indexed_by<"byidhash"_n, const_mem_fun<oracle_votes, uint128_t, &oracle_votes::by_idhash>>
+            indexed_by<"byidhash"_n, const_mem_fun < oracle_votes, uint128_t, &oracle_votes::by_idhash>>
     >
     oraclevoters_table;
 }
