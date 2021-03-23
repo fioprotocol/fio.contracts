@@ -202,13 +202,7 @@ namespace fioio {
 
         [[eosio::action]]
         void unregoracle(name oracle_actor, name &actor) {
-            //unregoracle - oracle or eosio can remove
-            if(actor != SYSTEMACCOUNT){
-                require_auth(actor);
-                fio_403_assert(actor == oracle_actor, ErrorSignature);
-            } else {
-                require_auth(SYSTEMACCOUNT);
-            }
+            require_auth(SYSTEMACCOUNT);
 
             auto oraclesearch = oracles.find(oracle_actor.value);
             fio_400_assert(oraclesearch != oracles.end(), "oracle_actor", oracle_actor.to_string(),
