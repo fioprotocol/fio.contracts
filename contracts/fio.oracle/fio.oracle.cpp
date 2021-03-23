@@ -101,7 +101,7 @@ namespace fioio {
             //actor validation (must be oracle)
             require_auth(actor);
             auto oraclesearch = oracles.find(actor.value);
-            fio_400_assert(oraclesearch != oracles.end(), "oracle_actor", oracle_actor.to_string(),
+            fio_400_assert(oraclesearch != oracles.end(), "actor", actor.to_string(),
                            "actor is not a registered Oracle", ErrorPubAddressExist);
 
             const uint128_t nameHash = string_to_uint128_hash(fio_address);
@@ -115,26 +115,48 @@ namespace fioio {
             fio_404_assert(fioname_iter != namesbyname.end(), "FIO Address not found", ErrorFioNameNotRegistered);
             const uint64_t recAcct = fioname_iter->owner_account;
 
-            //log entry into table
-            voters.emplace(actor, [&](struct oracle_votes &p) {
-                p.id = voters.available_primary_key();
-                p.voter = actor.value;
-                p.idhash = idHash;
-                p.obt_id = obt_id;
-                p.fio_address = fio_address;
-                p.amount = amount;
-            });
+            vector<name> tempvoters;
+
+            //if found, search for actor in table
+            if(voters_iter != votesbyid.end()){
+                tempvoters = voters_iter->voters;
+
+                auto it = std::find(tempvoters.begin(), tempvoters.end(), actor);
+                fio_400_assert(it == tempvoters.end(), "actor", actor.to_string(),
+                               "Oracle has already voted.", ErrorPubAddressExist);
+
+                tempvoters.push_back(actor);
+
+                votesbyid.modify(voters_iter, actor, [&](auto &p) {
+                    p.voters = tempvoters;
+                });
+            } else {
+                tempvoters.push_back(actor);
+
+                voters.emplace(actor, [&](struct oracle_votes &p) {
+                    p.id = voters.available_primary_key();
+                    p.idhash = idHash;
+                    p.voters = tempvoters;
+                    p.obt_id = obt_id;
+                    p.fio_address = fio_address;
+                    p.amount = amount;
+                });
+            }
 
             //verify obt and address match other entries
-            //if( voters_iter.size > 0 ) {
-            //
-
+            auto oracle_size = std::distance(oracles.cbegin(),oracles.cend());
+            uint8_t size = tempvoters.size();
             // if entries vs. number of regoracles meet consensus.
-            //Tokens are transferred to fio.wrapping.
-            action(permission_level{get_self(), "active"_n},
-                   TokenContract, "transfer"_n,
-                   make_tuple(FIOORACLEContract, recAcct, asset(amount, FIOSYMBOL), string("Token Unwrapping"))
-            ).send();
+            if(oracle_size == size){
+                votesbyid.modify(voters_iter, actor, [&](auto &p) {
+                    p.isComplete = true;
+                });
+                //Tokens are transferred to fio.wrapping.
+                action(permission_level{get_self(), "active"_n},
+                       TokenContract, "transfer"_n,
+                       make_tuple(FIOORACLEContract, recAcct, asset(amount, FIOSYMBOL), string("Token Unwrapping"))
+                ).send();
+            }
 
             const string response_string = string("{\"status\": \"OK\"}");
 
