@@ -63,6 +63,7 @@
 #define TRANSFER_LOCKED_TOKENS_ENDPOINT "transfer_locked_tokens"
 #define TRANSFER_TOKENS_PUBKEY_ENDPOINT "transfer_tokens_pub_key"
 #define SET_DOMAIN_PUBLIC "set_fio_domain_public"
+#define WRAP_FIO_TOKENS_ENDPOINT "wrap_fio_tokens"
 #define CANCEL_FUNDS_REQUEST_ENDPOINT "cancel_funds_request"
 #define REJECT_FUNDS_REQUEST_ENDPOINT "reject_funds_request"
 #define NEW_FUNDS_REQUEST_ENDPOINT "new_funds_request"
@@ -488,6 +489,7 @@ namespace fioio {
     static const uint64_t XFERRAM = 512; //integrated.
     static const uint64_t TRANSFERPUBKEYRAM = 1024; //integrated.
     static const uint64_t REJECTFUNDSRAM = 512; //integrated.
+    static const uint64_t WRAPTOKENRAM = 512; //integrated.
     static const uint64_t CANCELFUNDSRAM = 512; //integrated.
     static const uint64_t SETFEEVOTERAM = 4000; //integrated. //note this bump allows consecutive calls to voting with
                                                               //different fees to avoid ram limits for non top 21 producers.
