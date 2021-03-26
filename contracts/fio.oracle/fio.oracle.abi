@@ -157,6 +157,52 @@
                "type":"name"
             }
          ]
+      },
+      {
+         "name":"regoracle",
+         "base":"",
+         "fields":[
+            {
+               "name":"oracle_actor",
+               "type":"name"
+            },
+            {
+               "name":"actor",
+               "type":"name"
+            }
+         ]
+      },
+      {
+         "name":"unregoracle",
+         "base":"",
+         "fields":[
+            {
+               "name":"oracle_actor",
+               "type":"name"
+            },
+            {
+               "name":"actor",
+               "type":"name"
+            }
+         ]
+      },
+      {
+         "name":"setoraclefee",
+         "base":"",
+         "fields":[
+            {
+               "name":"wrap_fio_domain",
+               "type":"int64"
+            },
+            {
+               "name":"wrap_fio_tokens",
+               "type":"int64"
+            },
+            {
+               "name":"actor",
+               "type":"name"
+            }
+         ]
       }
    ],
    "actions":[
@@ -168,6 +214,21 @@
       {
          "name":"unwraptokens",
          "type":"unwraptokens",
+         "ricardian_contract":""
+      },
+      {
+         "name":"regoracle",
+         "type":"regoracle",
+         "ricardian_contract":""
+      },
+      {
+         "name":"unregoracle",
+         "type":"unregoracle",
+         "ricardian_contract":""
+      },
+      {
+         "name":"setoraclefee",
+         "type":"setoraclefee",
          "ricardian_contract":""
       }
    ],
@@ -206,8 +267,16 @@
          "type":"oracle_votes"
       }
    ],
-      "ricardian_clauses": [],
-      "error_messages": [],
-      "abi_extensions": [],
-      "variants": []
+   "ricardian_clauses":[
+
+   ],
+   "error_messages":[
+
+   ],
+   "abi_extensions":[
+
+   ],
+   "variants":[
+
+   ]
 }
