@@ -300,6 +300,25 @@ struct [[eosio::table, eosio::contract("fio.system")]] global_staking_state {
             (daily_staking_rewards)(staking_rewards_reserves_minted)
     )
 };
+
+//stake account table holds staking info used to compute staking rewards by FIO account
+struct [[eosio::table, eosio::contract("fio.system")]] account_staking_info {
+    uint64_t id = 0;   //unique id for ease of maintenance. primary key
+    name account;  //the account name associated with this staking info, secondary key,
+    uint64_t total_srp = 0; //the staking rewards points awarded to this account, units SUS, incremented on stake, decremented on unstake.
+    uint64_t total_staked_fio = 0;  //total fio staked by this account, units SUFs, incremented on stake, decremented on unstake.
+
+    uint64_t primary_key() const{return id;}
+    uint64_t by_account() const { return account.value; }
+
+    EOSLIB_SERIALIZE( account_staking_info,(id)
+            (account)(total_srp)(total_staked_fio)
+    )
+};
+typedef eosio::multi_index<"accountstake"_n, account_staking_info,
+indexed_by<"byaccount"_n, const_mem_fun<account_staking_info, uint64_t, &account_staking_info::by_account>>
+> account_staking_table;
+
 //FIP-21 FIO staking
 
 typedef eosio::singleton<"global"_n, eosio_global_state> global_state_singleton;
