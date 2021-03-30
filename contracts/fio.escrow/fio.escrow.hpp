@@ -26,7 +26,8 @@ namespace fioio {
         uint128_t ownerhash = 0;
         string domain = nullptr;
         uint128_t domainhash = 0;
-        int64_t sale_price;
+        uint64_t sale_price = 0;
+        uint64_t commission_fee = 0;
 
         uint64_t primary_key() const { return id; }
         uint128_t by_domain() const { return domainhash; }
@@ -35,6 +36,7 @@ namespace fioio {
         EOSLIB_SERIALIZE(domainsale,
                          (id)(owner)(ownerhash)
                          (domain)(domainhash)(sale_price)
+                         (commission_fee)
         )
     };
 
@@ -51,8 +53,9 @@ namespace fioio {
         uint64_t owner = 0;
         uint128_t ownerhash = 0;
         string owner_public_key = nullptr;
-        uint64_t commission_fee;
-        uint64_t listing_fee;
+        uint64_t commission_fee = 0;
+        uint64_t listing_fee = 0;
+        uint64_t e_break = 0;
 
         uint64_t primary_key() const { return id; }
         uint128_t by_marketplace() const { return marketplacehash; }
@@ -61,7 +64,7 @@ namespace fioio {
         EOSLIB_SERIALIZE(mrkplconfig,
                          (id)(marketplace)(marketplacehash)
                          (owner)(ownerhash)(owner_public_key)
-                         (commission_fee)(listing_fee)
+                         (commission_fee)(listing_fee)(e_break)
         )
     };
 
@@ -73,7 +76,7 @@ namespace fioio {
 
     struct [[eosio::action]] holderacct {
         uint64_t id = 0;
-        string holder_public_key;
+        string holder_public_key = nullptr;
 
         uint64_t primary_key() const { return id; }
 

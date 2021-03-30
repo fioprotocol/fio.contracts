@@ -27,16 +27,12 @@
           "type": "uint128"
         },
         {
-          "name": "marketplace",
-          "type": "string"
-        },
-        {
-          "name": "marketplacehash",
-          "type": "uint128"
-        },
-        {
           "name": "sale_price",
-          "type": "int64"
+          "type": "uint64"
+        },
+        {
+          "name": "commission_fee",
+          "type": "uint64"
         }
       ]
     },
@@ -77,8 +73,8 @@
           "type": "uint64"
         },
         {
-          "name": "actor",
-          "type": "name"
+          "name": "e_break",
+          "type": "uint64"
         }
       ]
     },
@@ -93,10 +89,6 @@
         {
           "name": "holder_public_key",
           "type": "string"
-        },
-        {
-          "name": "actor",
-          "type": "name"
         }
       ]
     },
@@ -109,8 +101,16 @@
           "type": "name"
         },
         {
+          "name": "sale_id",
+          "type": "int64"
+        },
+        {
           "name": "fio_domain",
           "type": "string"
+        },
+        {
+          "name": "buy_price",
+          "type": "int64"
         },
         {
           "name": "max_fee",
@@ -162,7 +162,7 @@
         },
         {
           "name": "max_fee",
-          "type": "int64"
+          "type": "uint64"
         },
         {
           "name": "tpid",
@@ -192,6 +192,10 @@
         },
         {
           "name": "listingfee",
+          "type": "uint64"
+        },
+        {
+          "name": "e_break",
           "type": "uint64"
         },
         {
@@ -239,10 +243,6 @@
           "type": "name"
         },
         {
-          "name": "marketplace",
-          "type": "string"
-        },
-        {
           "name": "fee",
           "type": "uint64"
         },
@@ -263,10 +263,6 @@
         {
           "name": "actor",
           "type": "name"
-        },
-        {
-          "name": "marketplace",
-          "type": "string"
         },
         {
           "name": "fee",
@@ -301,6 +297,24 @@
         {
           "name": "actor",
           "type": "name"
+        }
+      ]
+    },
+    {
+      "name": "setmkpebreak",
+      "base": "",
+      "fields": [
+        {
+          "name": "actor",
+          "type": "name"
+        },
+        {
+          "name": "max_fee",
+          "type": "int64"
+        },
+        {
+          "name": "tpid",
+          "type": "string"
         }
       ]
     }
@@ -345,6 +359,11 @@
     {
       "name": "setmkplstfee",
       "type": "setmkplstfee",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "setmkpebreak",
+      "type": "setmkpebreak",
       "ricardian_contract": ""
     }
   ],

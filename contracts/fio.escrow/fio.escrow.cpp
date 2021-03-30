@@ -22,7 +22,7 @@ namespace fioio {
         holderaccts_table  holderaccts;
         domains_table      domains;
         eosio_names_table  accountmap;
-        fiofee_table fiofees;
+        fiofee_table       fiofees;
     public:
         using contract::contract;
 
@@ -36,19 +36,19 @@ namespace fioio {
                 accountmap(AddressContract, AddressContract.value) {}
 
         uint32_t listdomain_update(const name &actor, const string &fio_domain,
-                                   const uint128_t &domainhash, const int64_t &sale_price) {
+                                   const uint128_t &domainhash, const uint64_t &sale_price,
+                                   const uint64_t &commission_fee) {
 
             uint128_t ownerHash = string_to_uint128_hash(actor.to_string());
-
-            uint64_t id = domainsales.available_primary_key();
-
+            uint64_t  id        = domainsales.available_primary_key();
             domainsales.emplace(actor, [&](struct domainsale &d) {
-                d.id         = id;
-                d.owner      = actor.value;
-                d.ownerhash  = ownerHash;
-                d.domain     = fio_domain;
-                d.domainhash = domainhash;
-                d.sale_price = sale_price;
+                d.id             = id;
+                d.owner          = actor.value;
+                d.ownerhash      = ownerHash;
+                d.domain         = fio_domain;
+                d.domainhash     = domainhash;
+                d.sale_price     = sale_price;
+                d.commission_fee = commission_fee;
             });
             return id;
         }
@@ -63,13 +63,10 @@ namespace fioio {
         */
         [[eosio::action]]
         void listdomain(const name &actor, const string &fio_domain,
-                        const int64_t &sale_price, const int64_t &max_fee,
+                        const uint64_t &sale_price, const uint64_t &max_fee,
                         const string &tpid) {
-// region auth check
             require_auth(actor);
-// endregion
 
-// region Parameter assertions
             fio_400_assert(sale_price >= 1000000000, "sale_price", std::to_string(sale_price),
                            "Sale price should be greater than 1 FIO (1,000,000,000 SUF)", ErrorInvalidAmount);
             fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
@@ -77,17 +74,17 @@ namespace fioio {
                            ErrorPubKeyValid);
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
-// endregion
 
-// region Check `marketplace`
             mrkplconfigs_table marketplaceTable(_self, _self.value);
-            auto marketplace_iter = marketplaceTable.find(0); // only 1 marketplace, use 0th index
-// endregion
+            auto               marketplace_iter = marketplaceTable.find(0); // only 1 marketplace, use 0th index
 
             fio_400_assert(marketplace_iter != marketplaceTable.end(), "marketplace_iter", "marketplace_iter",
                            "Marketplace not found", ErrorDomainOwner);
 
-// region marketplace found
+            fio_400_assert(marketplace_iter->e_break == 0, "marketplace_iter->e_break",
+                           to_string(marketplace_iter->e_break),
+                           "E-Break Enabled, action disabled", ErrorNoWork);
+
             // found
             auto listingfee         = asset(marketplace_iter->listing_fee, FIOSYMBOL);
             auto marketplaceAccount = name(marketplace_iter->owner);
@@ -102,7 +99,6 @@ namespace fioio {
                    TokenContract, "transfer"_n,
                    make_tuple(actor, marketplaceAccount, listingfee, string("Listing fee"))
             ).send();
-// endregion
 
             // hash domain for easy querying
             const uint128_t domainHash = string_to_uint128_hash(fio_domain.c_str());
@@ -142,18 +138,18 @@ namespace fioio {
 
             // write to table
             auto domainsale_id = listdomain_update(actor, fio_domain, domainHash,
-                                                   sale_price);
+                                                   sale_price, marketplace_iter->commission_fee);
 
             const uint128_t endpoint_hash = string_to_uint128_hash(LIST_DOMAIN_ENDPOINT);
 
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
-            auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+            auto fee_iter         = fees_by_endpoint.find(endpoint_hash);
             fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", LIST_DOMAIN_ENDPOINT,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             //fees
             const uint64_t fee_amount = fee_iter->suf_amount;
-            const uint64_t fee_type = fee_iter->type;
+            const uint64_t fee_type   = fee_iter->type;
 
             fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
                            "unexpected fee type for endpoint transfer_fio_domain, expected 0",
@@ -177,11 +173,11 @@ namespace fioio {
 
             const string response_string = string("{\"status\": \"OK\","
                                                   "\"domainsale_id\":\"") + to_string(domainsale_id) +
-                                                  string(",\"fee_collected\":") + to_string(fee_amount) +
-                                                  string("}");
+                                           string(",\"fee_collected\":") + to_string(fee_amount) + string("}");
 
             // if tx is too large, throw an error.
-            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size",
+                           std::to_string(transaction_size()),
                            "Transaction is too large", ErrorTransactionTooLarge);
 
             send_response(response_string.c_str());
@@ -195,10 +191,18 @@ namespace fioio {
         */
         [[eosio::action]]
         void cxlistdomain(const name &actor, const string &fio_domain,
-                          const int64_t &max_fee, const string &tpid) {
-            // will be called by either the account listing the domain `actor`
-            // or the EscrowContract from `chkexplistng` when the listing is expired
+                          const uint64_t &max_fee, const string &tpid) {
             check(has_auth(actor) || has_auth(EscrowContract), "Permission Denied");
+
+            mrkplconfigs_table marketplaceTable(_self, _self.value);
+            auto               marketplace_iter = marketplaceTable.find(0); // only 1 marketplace, use 0th index
+
+            fio_400_assert(marketplace_iter != marketplaceTable.end(), "marketplace_iter", "marketplace_iter",
+                           "Marketplace not found", ErrorDomainOwner);
+
+            fio_400_assert(marketplace_iter->e_break == 0, "marketplace_iter->e_break",
+                           to_string(marketplace_iter->e_break),
+                           "E-Break Enabled, action disabled", ErrorNoWork);
 
             const uint128_t domainHash = string_to_uint128_hash(fio_domain.c_str());
 
@@ -206,6 +210,9 @@ namespace fioio {
             auto domainsale_iter     = domainsalesbydomain.find(domainHash);
             fio_400_assert(domainsale_iter != domainsalesbydomain.end(), "domainsale", fio_domain,
                            "Domain not found", ErrorDomainSaleNotFound);
+
+            fio_400_assert(domainsale_iter->owner == actor), "actor", actor.to_string(),
+                           "Only owner of domain may cancel listing", ErrorNoWork);
 
             domainsalesbydomain.erase(domainsale_iter);
 
@@ -230,13 +237,13 @@ namespace fioio {
             const uint128_t endpoint_hash = string_to_uint128_hash(CANCEL_LIST_DOMAIN_ENDPOINT);
 
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
-            auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+            auto fee_iter         = fees_by_endpoint.find(endpoint_hash);
             fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", CANCEL_LIST_DOMAIN_ENDPOINT,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             //fees
             const uint64_t fee_amount = fee_iter->suf_amount;
-            const uint64_t fee_type = fee_iter->type;
+            const uint64_t fee_type   = fee_iter->type;
 
             fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
                            "unexpected fee type for endpoint transfer_fio_domain, expected 0",
@@ -262,7 +269,8 @@ namespace fioio {
                                            to_string(fee_amount) + string("}");
 
             // if tx is too large, throw an error.
-            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size",
+                           std::to_string(transaction_size()),
                            "Transaction is too large", ErrorTransactionTooLarge);
 
             send_response(response_string.c_str());
@@ -275,34 +283,36 @@ namespace fioio {
         * @param this is the name of the fio_domain
         */
         [[eosio::action]]
-        void buydomain(const name &actor, const string &fio_domain,
+        void buydomain(const name &actor, const int64_t &sale_id,
+                       const string &fio_domain, const int64_t &buy_price,
                        const int64_t &max_fee, const string &tpid) {
+
             require_auth(actor);
 
-// region Check if marketplace exists
-
             mrkplconfigs_table marketplaceTable(_self, _self.value);
-            auto marketplace_iter = marketplaceTable.find(0); // only 1 marketplace, use 0th index
+            auto               marketplace_iter = marketplaceTable.find(0); // only 1 marketplace, use 0th index
             fio_400_assert(marketplace_iter != marketplaceTable.end(), "marketplace_iter", "marketplace_iter",
                            "Marketplace not found", ErrorDomainOwner);
-// endregion
 
-// region Check if domain is listed for sale
+            fio_400_assert(marketplace_iter->e_break == 0, "marketplace_iter->e_break",
+                           to_string(marketplace_iter->e_break),
+                           "E-Break Enabled, action disabled", ErrorNoWork);
+
             const uint128_t domainHash = string_to_uint128_hash(fio_domain.c_str());
 
             auto domainsalesbydomain = domainsales.get_index<"bydomain"_n>();
             auto domainsale_iter     = domainsalesbydomain.find(domainHash);
             fio_400_assert(domainsale_iter != domainsalesbydomain.end(), "domainsale", fio_domain,
                            "Domain not found", ErrorDomainSaleNotFound);
-// endregion
 
             auto saleprice           = asset(domainsale_iter->sale_price, FIOSYMBOL);
             auto marketCommissionFee = marketplace_iter->commission_fee / 100.0;
             auto marketCommission    = (marketCommissionFee > 0) ?
-                                       asset(saleprice.amount * marketCommissionFee, FIOSYMBOL) : asset(0, FIOSYMBOL);
-            auto toBuyer             = asset(saleprice.amount - marketCommission.amount, FIOSYMBOL);
+                                       asset(saleprice.amount * marketCommissionFee, FIOSYMBOL) :
+                                       asset(0, FIOSYMBOL);
 
-// region get private key of buyer
+            auto toBuyer = asset(saleprice.amount - marketCommission.amount, FIOSYMBOL);
+
             const bool accountExists = is_account(actor);
             auto       buyerAcct     = accountmap.find(actor.value);
             fio_400_assert(buyerAcct != accountmap.end(), "actor", actor.to_string(),
@@ -311,23 +321,17 @@ namespace fioio {
             fio_400_assert(accountExists, "actor", actor.to_string(),
                            "Account does not yet exist on the fio chain",
                            ErrorPubAddressExist);
-// endregion
 
-// region Make FIO transfer from buyer to seller - minus fee
             action(permission_level{EscrowContract, "active"_n},
                    TokenContract, "transfer"_n,
                    make_tuple(actor, domainsale_iter->owner, toBuyer, string("Domain Purchase"))
             ).send();
-// endregion
 
-// region Make FIO transfer from buyer to marketplace
             action(permission_level{EscrowContract, "active"_n},
                    TokenContract, "transfer"_n,
                    make_tuple(actor, marketplace_iter->owner, marketCommission, string("Marketplace Commission"))
             ).send();
-// endregion
 
-// region transfer domain ownership to buyer
             // transfer the domain to holder account
             action(
                     permission_level{EscrowContract, "active"_n},
@@ -335,26 +339,23 @@ namespace fioio {
                     "xferescrow"_n,
                     std::make_tuple(fio_domain, buyerAcct->clientkey, actor)
             ).send();
-// endregion
 
-// region remove listing from table
             domainsalesbydomain.erase(domainsale_iter);
 
             domainsale_iter = domainsalesbydomain.find(domainHash);
             fio_400_assert(domainsale_iter == domainsalesbydomain.end(), "domainsale", fio_domain,
                            "Domain listing not removed properly", ErrorDomainSaleNotFound);
-// endregion
 
             const uint128_t endpoint_hash = string_to_uint128_hash(LIST_DOMAIN_ENDPOINT);
 
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
-            auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+            auto fee_iter         = fees_by_endpoint.find(endpoint_hash);
             fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", LIST_DOMAIN_ENDPOINT,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             //fees
             const uint64_t fee_amount = fee_iter->suf_amount;
-            const uint64_t fee_type = fee_iter->type;
+            const uint64_t fee_type   = fee_iter->type;
 
             fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
                            "unexpected fee type for endpoint transfer_fio_domain, expected 0",
@@ -377,13 +378,15 @@ namespace fioio {
             }
 
             // if tx is too large, throw an error.
-            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size",
+                           std::to_string(transaction_size()),
                            "Transaction is too large", ErrorTransactionTooLarge);
 
             const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
                                            to_string(fee_amount) + string("}");
 
             send_response(response_string.c_str());
+
         }
         // buydomain
 
@@ -413,8 +416,8 @@ namespace fioio {
             } else {
                 // found, modify
                 // TODO: this will likely rarely be done but if it is there should be a transferring of all
-                //  domains/addresses the old pubkey owns to this new pubkey.
-
+                //  domains/addresses the old pubkey owns to this new pubkey. Or should this be
+                //  removed because the holder account key should never need to be changed
                 table.modify(hold_account_itr, same_payer, [&](auto &row) {
                     row.holder_public_key = public_key.c_str();
                 });
@@ -423,13 +426,13 @@ namespace fioio {
             const uint128_t endpoint_hash = string_to_uint128_hash(SET_HOLDER_ACCOUNT);
 
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
-            auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+            auto fee_iter         = fees_by_endpoint.find(endpoint_hash);
             fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", SET_HOLDER_ACCOUNT,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             //fees
             const uint64_t fee_amount = fee_iter->suf_amount;
-            const uint64_t fee_type = fee_iter->type;
+            const uint64_t fee_type   = fee_iter->type;
 
             fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
                            "unexpected fee type for endpoint transfer_fio_domain, expected 0",
@@ -455,7 +458,8 @@ namespace fioio {
                                            to_string(fee_amount) + string("}");
 
             // if tx is too large, throw an error.
-            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size",
+                           std::to_string(transaction_size()),
                            "Transaction is too large", ErrorTransactionTooLarge);
 
             send_response(response_string.c_str());
@@ -470,8 +474,8 @@ namespace fioio {
         [[eosio::action]]
         void setmrkplcfg(const string &marketplace, const name &owner,
                          const string &owner_public_key, const uint64_t &commissionfee,
-                         const uint64_t &listingfee, const int64_t &max_fee, const string &tpid,
-                         const name &actor) {
+                         const uint64_t &listingfee, const uint64_t &e_break, const int64_t &max_fee,
+                         const string &tpid, const name &actor) {
             require_auth(owner);
 
             fio_400_assert(isPubKeyValid(owner_public_key), "owner_public_key", owner_public_key,
@@ -498,15 +502,15 @@ namespace fioio {
                            "Account does not yet exist on the fio chain",
                            ErrorPubAddressExist);
 
-            uint128_t marketplaceHash = string_to_uint128_hash(marketplace.c_str());
+            uint128_t marketplaceHash           = string_to_uint128_hash(marketplace.c_str());
 
-            auto marketplaceByMarketplace = mrkplconfigs.get_index<"bymarketplace"_n>();
-            auto marketplace_iter         = marketplaceByMarketplace.find(marketplaceHash);
+            mrkplconfigs_table marketplaceTable(_self, _self.value);
+            auto               marketplace_iter = marketplaceTable.find(0); // only 1 marketplace, use 0th index
 
             uint64_t  id        = mrkplconfigs.available_primary_key();
             uint128_t ownerHash = string_to_uint128_hash(owner.to_string());
 
-            if (marketplace_iter == marketplaceByMarketplace.end()) {
+            if (marketplace_iter == marketplaceTable.end()) {
                 // not found, emplace
                 mrkplconfigs.emplace(EscrowContract, [&](auto &row) {
                     row.id               = id;
@@ -517,27 +521,29 @@ namespace fioio {
                     row.owner_public_key = owner_public_key;
                     row.commission_fee   = commissionfee;
                     row.listing_fee      = listingfee;
+                    row.e_break          = e_break;
                 });
             } else {
-                fio_400_assert(marketplace_iter == marketplaceByMarketplace.end(), "marketplace", marketplace,
+                fio_400_assert(marketplace_iter == marketplaceTable.end(), "marketplace", marketplace,
                                "Marketplace already exists. Use the set actions for the individual settings.",
                                ErrorNoWork);
             }
 
             // if tx is too large, throw an error.
-            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size",
+                           std::to_string(transaction_size()),
                            "Transaction is too large", ErrorTransactionTooLarge);
 
             const uint128_t endpoint_hash = string_to_uint128_hash(SET_MARKETPLACE_CONFIG);
 
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
-            auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+            auto fee_iter         = fees_by_endpoint.find(endpoint_hash);
             fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", SET_MARKETPLACE_CONFIG,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             //fees
             const uint64_t fee_amount = fee_iter->suf_amount;
-            const uint64_t fee_type = fee_iter->type;
+            const uint64_t fee_type   = fee_iter->type;
 
             fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
                            "unexpected fee type for endpoint transfer_fio_domain, expected 0",
@@ -559,10 +565,11 @@ namespace fioio {
                 ).send();
             }
 
-
-            const string response_string = string("{\"status\": \"OK\"}");
+            const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                           to_string(fee_amount) + string("}");
 
             send_response(response_string.c_str());
+
         }
         // setmrkplcfg
 
@@ -579,34 +586,41 @@ namespace fioio {
 
             eosio_assert(marketplace.length() >= 1, "Length of marketplace name should be between 1 and 25 characters");
 
-            uint128_t marketplaceHash = string_to_uint128_hash(marketplace.c_str());
-            uint128_t ownerHash       = string_to_uint128_hash(actor.to_string());
+            mrkplconfigs_table marketplaceTable(_self, _self.value);
+            auto               marketplace_iter = marketplaceTable.find(0); // only 1 marketplace, use 0th index
 
-            auto marketplaceByOwner = mrkplconfigs.get_index<"byowner"_n>();
-            auto marketplace_iter   = marketplaceByOwner.find(ownerHash);
-
-            fio_400_assert(marketplace_iter != marketplaceByOwner.end(), "marketplace", marketplace,
-                           "Marketplace cannot be found", ErrorNoWork);
-
-            fio_400_assert(marketplace_iter->marketplace == marketplace, "owner", actor.to_string(),
+            fio_400_assert(marketplace_iter->owner == actor.value, "actor", actor.to_string(),
                            "Only owner of marketplace can modify config", ErrorNoWork);
 
-            marketplaceByOwner.erase(marketplace_iter);
+            fio_400_assert(marketplace_iter != marketplaceTable.end(), "marketplace", marketplace,
+                           "Marketplace cannot be found",
+                           ErrorNoWork);
+
+            fio_400_assert(marketplace_iter->owner == actor, "actor", actor.to_string(),
+                           "Actor must own marketplace",
+                           ErrorNoWork);
+
+            fio_400_assert(marketplace_iter->e_break == 0, "marketplace_iter->e_break",
+                           to_string(marketplace_iter->e_break),
+                           "E-Break Enabled, action disabled", ErrorNoWork);
+
+            marketplaceTable.erase(marketplace_iter);
 
             // if tx is too large, throw an error.
-            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size",
+                           std::to_string(transaction_size()),
                            "Transaction is too large", ErrorTransactionTooLarge);
 
             const uint128_t endpoint_hash = string_to_uint128_hash(REMOVE_MARKETPLACE_CONFIG);
 
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
-            auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+            auto fee_iter         = fees_by_endpoint.find(endpoint_hash);
             fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", REMOVE_MARKETPLACE_CONFIG,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             //fees
             const uint64_t fee_amount = fee_iter->suf_amount;
-            const uint64_t fee_type = fee_iter->type;
+            const uint64_t fee_type   = fee_iter->type;
 
             fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
                            "unexpected fee type for endpoint transfer_fio_domain, expected 0",
@@ -628,9 +642,11 @@ namespace fioio {
                 ).send();
             }
 
-            const string response_string = string("{\"status\": \"OK\"}");
+            const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                           to_string(fee_amount) + string("}");
 
             send_response(response_string.c_str());
+
         }
         // rmmrkplcfg
 
@@ -641,28 +657,29 @@ namespace fioio {
         * @param fee `uint64`
         */
         [[eosio::action]]
-        void setmkpcomfee(const name &actor, const string &marketplace, const uint64_t &fee,
+        void setmkpcomfee(const name &actor, const uint64_t &fee,
                           const int64_t &max_fee, const string &tpid) {
             require_auth(actor);
 
             // sanity check of parameters
-            fio_400_assert(marketplace.length() >= 1 && marketplace.length() <= 25,
-                           "marketplace", marketplace,
-                           "Length of marketplace name should be between 1 and 25 characters", ErrorNoWork);
             fio_400_assert(fee <= 25,
                            "fee", to_string(fee),
                            "Commission fee should be between 0 and 25", ErrorNoWork);
 
-            uint128_t marketplaceHash = string_to_uint128_hash(marketplace.c_str());
+            mrkplconfigs_table marketplaceTable(_self, _self.value);
+            auto               marketplace_iter = marketplaceTable.find(0); // only 1 marketplace, use 0th index
 
-            // find marketplace on the `mrkplconfig` table
-            auto marketplaceByMarketplace = mrkplconfigs.get_index<"bymarketplace"_n>();
-            auto marketplace_iter         = marketplaceByMarketplace.find(marketplaceHash);
-
-            fio_400_assert(marketplace_iter != marketplaceByMarketplace.end(), "marketplace", marketplace,
+            fio_400_assert(marketplace_iter != marketplaceTable.end(), "marketplace", "marketplace",
                            "Marketplace cannot be found",
                            ErrorNoWork);
 
+            fio_400_assert(marketplace_iter->owner == actor, "actor", actor,
+                           "Actor must own marketplace",
+                           ErrorNoWork);
+
+            fio_400_assert(marketplace_iter->e_break == 0, "marketplace_iter->e_break",
+                           to_string(marketplace_iter->e_break),
+                           "E-Break Enabled, action disabled", ErrorNoWork);
 
             // verify the `actor` is the owner of the marketplace
             fio_400_assert(marketplace_iter->owner == actor.value, "actor", actor.to_string(),
@@ -670,7 +687,7 @@ namespace fioio {
                            ErrorNoWork);
 
             // change the commission fee value
-            marketplaceByMarketplace.modify(marketplace_iter, same_payer, [&](auto &row) {
+            marketplaceTable.modify(marketplace_iter, actor, [&](auto &row) {
                 row.commission_fee = fee;
             });
 
@@ -679,20 +696,16 @@ namespace fioio {
                            "The table update failed.",
                            ErrorNoWork);
 
-            // if tx is too large, throw an error.
-            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-                           "Transaction is too large", ErrorTransactionTooLarge);
-
             const uint128_t endpoint_hash = string_to_uint128_hash(SET_MARKETPLACE_COMMISSION_FEE);
 
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
-            auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+            auto fee_iter         = fees_by_endpoint.find(endpoint_hash);
             fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", SET_MARKETPLACE_COMMISSION_FEE,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             //fees
             const uint64_t fee_amount = fee_iter->suf_amount;
-            const uint64_t fee_type = fee_iter->type;
+            const uint64_t fee_type   = fee_iter->type;
 
             fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
                            "unexpected fee type for endpoint transfer_fio_domain, expected 0",
@@ -714,7 +727,13 @@ namespace fioio {
                 ).send();
             }
 
-            const string response_string = string("{\"status\": \"OK\"}");
+            // if tx is too large, throw an error.
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size",
+                           std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransactionTooLarge);
+
+            const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                           to_string(fee_amount) + string("}");
 
             send_response(response_string.c_str());
         }
@@ -725,27 +744,29 @@ namespace fioio {
         * @param
         */
         [[eosio::action]]
-        void setmkplstfee(const name &actor, const string &marketplace, const uint64_t &fee,
+        void setmkplstfee(const name &actor, const uint64_t &fee,
                           const int64_t &max_fee, const string &tpid) {
             require_auth(actor);
 
             // sanity check of parameters
-            fio_400_assert(marketplace.length() >= 1 && marketplace.length() <= 25,
-                           "marketplace", marketplace,
-                           "Length of marketplace name should be between 1 and 25 characters", ErrorNoWork);
             fio_400_assert(fee <= 25000000000,
                            "fee", to_string(fee),
                            "Listing fee should be between 0 and 25,000,000,000 (25 FIO in SUF)", ErrorNoWork);
 
-            uint128_t marketplaceHash = string_to_uint128_hash(marketplace.c_str());
+            mrkplconfigs_table marketplaceTable(_self, _self.value);
+            auto               marketplace_iter = marketplaceTable.find(0); // only 1 marketplace, use 0th index
 
-            // find marketplace on the `mrkplconfig` table
-            auto marketplaceByMarketplace = mrkplconfigs.get_index<"bymarketplace"_n>();
-            auto marketplace_iter         = marketplaceByMarketplace.find(marketplaceHash);
+            fio_400_assert(marketplace_iter->owner == actor, "actor", actor.to_string(),
+                           "Actor must own marketplace",
+                           ErrorNoWork);
 
-            fio_400_assert(marketplace_iter != marketplaceByMarketplace.end(), "marketplace", marketplace,
+            fio_400_assert(marketplace_iter != marketplaceTable.end(), "marketplace", "marketplace",
                            "Marketplace cannot be found",
                            ErrorNoWork);
+
+            fio_400_assert(marketplace_iter->e_break == 0, "marketplace_iter->e_break",
+                           to_string(marketplace_iter->e_break),
+                           "E-Break Enabled, action disabled", ErrorNoWork);
 
             // verify the `actor` is the owner of the marketplace
             fio_400_assert(marketplace_iter->owner == actor.value, "actor", actor.to_string(),
@@ -753,7 +774,7 @@ namespace fioio {
                            ErrorNoWork);
 
             // change the listing fee value
-            marketplaceByMarketplace.modify(marketplace_iter, same_payer, [&](auto &row) {
+            marketplaceTable.modify(marketplace_iter, actor, [&](auto &row) {
                 row.listing_fee = fee;
             });
 
@@ -762,20 +783,16 @@ namespace fioio {
                            "The table update failed.",
                            ErrorNoWork);
 
-            // if tx is too large, throw an error.
-            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-                           "Transaction is too large", ErrorTransactionTooLarge);
-
             const uint128_t endpoint_hash = string_to_uint128_hash(SET_MARKETPLACE_LISTING_FEE);
 
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
-            auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+            auto fee_iter         = fees_by_endpoint.find(endpoint_hash);
             fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", SET_MARKETPLACE_LISTING_FEE,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             //fees
             const uint64_t fee_amount = fee_iter->suf_amount;
-            const uint64_t fee_type = fee_iter->type;
+            const uint64_t fee_type   = fee_iter->type;
 
             fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
                            "unexpected fee type for endpoint transfer_fio_domain, expected 0",
@@ -797,14 +814,99 @@ namespace fioio {
                 ).send();
             }
 
-            const string response_string = string("{\"status\": \"OK\"}");
+            // if tx is too large, throw an error.
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size",
+                           std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransactionTooLarge);
+
+            const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                           to_string(fee_amount) + string("}");
 
             send_response(response_string.c_str());
         }
         // setmkplstfee
+
+        /***********
+        * this action will change the e-break setting
+        * @param
+        */
+        [[eosio::action]]
+        void setmkpebreak(const name &actor, const int64_t &max_fee, const string &tpid) {
+            require_auth(actor);
+
+            // sanity check of parameters
+
+            mrkplconfigs_table marketplaceTable(_self, _self.value);
+            auto               marketplace_iter = marketplaceTable.find(0); // only 1 marketplace, use 0th index
+
+            fio_400_assert(marketplace_iter != marketplaceTable.end(), "marketplace", "marketplace",
+                           "Marketplace cannot be found",
+                           ErrorNoWork);
+
+            // verify the `actor` is the owner of the marketplace
+            fio_400_assert(marketplace_iter->owner == actor.value, "actor", actor.to_string(),
+                           "Only owner of marketplace can modify config",
+                           ErrorNoWork);
+
+            int64_t newVal = 0;
+
+            (marketplace_iter->e_break > 0) ? newVal = 0 : newVal = 1;
+
+            // change the listing fee value
+            marketplaceTable.modify(marketplace_iter, actor, [&](auto &row) {
+                row.e_break = newVal;
+            });
+
+            // verify the listing fee changed
+            fio_400_assert(marketplace_iter->e_break == newVal, "newVal", to_string(newVal),
+                           "The table update failed.",
+                           ErrorNoWork);
+
+            const uint128_t endpoint_hash = string_to_uint128_hash(SET_MARKETPLACE_E_BREAK);
+
+            auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
+            auto fee_iter         = fees_by_endpoint.find(endpoint_hash);
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", SET_MARKETPLACE_E_BREAK,
+                           "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+            //fees
+            const uint64_t fee_amount = fee_iter->suf_amount;
+            const uint64_t fee_type   = fee_iter->type;
+
+            fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                           "unexpected fee type for endpoint transfer_fio_domain, expected 0",
+                           ErrorNoEndpoint);
+
+            fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
+                           "Fee exceeds supplied maximum.",
+                           ErrorMaxFeeExceeded);
+
+            fio_fees(actor, asset(fee_amount, FIOSYMBOL), SET_MARKETPLACE_E_BREAK);
+            processbucketrewards(tpid, fee_amount, get_self(), actor);
+
+            if (FIOESCROWRAM > 0) {
+                action(
+                        permission_level{SYSTEMACCOUNT, "active"_n},
+                        "eosio"_n,
+                        "incram"_n,
+                        std::make_tuple(actor, FIOESCROWRAM)
+                ).send();
+            }
+
+            // if tx is too large, throw an error.
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size",
+                           std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransactionTooLarge);
+
+            const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                           to_string(fee_amount) + string("}");
+
+            send_response(response_string.c_str());
+        }
+        // setmkpebreak
     }; // class FioEscrow
 
     EOSIO_DISPATCH(FioEscrow, (listdomain)(cxlistdomain)(buydomain)
                               (setmrkplcfg)(rmmrkplcfg)(sethldacct)
-                              (setmkpcomfee)(setmkplstfee))
+                              (setmkpcomfee)(setmkplstfee)(setmkpebreak))
 }
