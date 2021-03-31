@@ -282,50 +282,11 @@ indexed_by<"byowner"_n, const_mem_fun<voter_info, uint64_t, &voter_info::by_owne
 > voters_table;
 
 
-//FIP-21 FIO staking
-//staking info is a global state table used to track information relating to staking within the FIO protocol.
-struct [[eosio::table("staking"), eosio::contract("fio.system")]] global_staking_state {
-    global_staking_state() {}
-    uint64_t staked_token_pool = 0;   //total FIO tokens staked for all accounts, units sufs.
-    uint64_t combined_token_pool = 0;  //total fio tokens staked for all accounts plus fio rewards all accounts, units SUFs,
-                                     // incremented when user stakes, when tokens are earmarked as staking rewards,
-                                     // decremented by unstaked amount + reward amount when users unstake
-    uint64_t rewards_token_pool = 0; //total counter how much has come in from fees AND minting units SUFs
-    uint64_t global_srp_count = 0;  //total SRP for all FIO users, increment when users stake, decrement when users unstake.
-    uint64_t daily_staking_rewards = 0; //this is used to track the daily staking rewards,
-                                        // its used only to determine if the protocol should mint FIO whe rewards are under the DAILYSTAKINGMINTTHRESHOLD
-    uint64_t staking_rewards_reserves_minted = 0; //the total amount of FIO used in minting rewards tokens, will not exceed STAKINGREWARDSRESERVEMAXIMUM
-
-    EOSLIB_SERIALIZE( global_staking_state,(staked_token_pool)
-            (combined_token_pool)(rewards_token_pool)(global_srp_count)
-            (daily_staking_rewards)(staking_rewards_reserves_minted)
-    )
-};
-
-//stake account table holds staking info used to compute staking rewards by FIO account
-struct [[eosio::table, eosio::contract("fio.system")]] account_staking_info {
-    uint64_t id = 0;   //unique id for ease of maintenance. primary key
-    name account;  //the account name associated with this staking info, secondary key,
-    uint64_t total_srp = 0; //the staking rewards points awarded to this account, units SUS, incremented on stake, decremented on unstake.
-    uint64_t total_staked_fio = 0;  //total fio staked by this account, units SUFs, incremented on stake, decremented on unstake.
-
-    uint64_t primary_key() const{return id;}
-    uint64_t by_account() const { return account.value; }
-
-    EOSLIB_SERIALIZE( account_staking_info,(id)
-            (account)(total_srp)(total_staked_fio)
-    )
-};
-typedef eosio::multi_index<"accountstake"_n, account_staking_info,
-indexed_by<"byaccount"_n, const_mem_fun<account_staking_info, uint64_t, &account_staking_info::by_account>>
-> account_staking_table;
-
-//FIP-21 FIO staking
 
 typedef eosio::singleton<"global"_n, eosio_global_state> global_state_singleton;
 typedef eosio::singleton<"global2"_n, eosio_global_state2> global_state2_singleton;
 typedef eosio::singleton<"global3"_n, eosio_global_state3> global_state3_singleton;
-typedef eosio::singleton<"staking"_n, global_staking_state> global_staking_singleton;
+
 
 static constexpr uint32_t seconds_per_day = 24 * 3600;
 
@@ -343,11 +304,9 @@ private:
     global_state_singleton _global;
     global_state2_singleton _global2;
     global_state3_singleton _global3;
-    global_staking_singleton  _staking;
     eosio_global_state _gstate;
     eosio_global_state2 _gstate2;
     eosio_global_state3 _gstate3;
-    global_staking_state _gstaking;
     fioio::fionames_table _fionames;
     fioio::domains_table _domains;
     fioio::fiofee_table _fiofees;

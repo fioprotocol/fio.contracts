@@ -35,6 +35,7 @@ namespace fioio {
     static const name TokenContract =     name("fio.token");
     static const name FOUNDATIONACCOUNT = name("tw4tjkmo4eyd");
     static const name TREASURYACCOUNT =   name("fio.treasury");
+    static const name STAKINGACCOUNT =   name("fio.staking");
     static const name FIOSYSTEMACCOUNT=   name("fio.system");
     static const name FIOACCOUNT =   name("fio");
 

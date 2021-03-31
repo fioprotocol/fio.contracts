@@ -25,7 +25,6 @@ namespace eosiosystem {
               _global(_self, _self.value),
               _global2(_self, _self.value),
               _global3(_self, _self.value),
-              _staking(_self, _self.value),
               _lockedtokens(_self,_self.value),
               _generallockedtokens(_self, _self.value),
               _fionames(AddressContract, AddressContract.value),
@@ -35,7 +34,6 @@ namespace eosiosystem {
         _gstate = _global.exists() ? _global.get() : get_default_parameters();
         _gstate2 = _global2.exists() ? _global2.get() : eosio_global_state2{};
         _gstate3 = _global3.exists() ? _global3.get() : eosio_global_state3{};
-        _gstaking = _staking.exists() ? _staking.get() : global_staking_state{};
     }
 
     eosiosystem::eosio_global_state eosiosystem::system_contract::get_default_parameters() {
@@ -176,6 +174,7 @@ namespace eosiosystem {
                       acnt == TPIDContract ||
                       acnt == TokenContract ||
                       acnt == TREASURYACCOUNT ||
+                      acnt == STAKINGACCOUNT ||
                       acnt == FIOSYSTEMACCOUNT ||
                       acnt == FIOACCOUNT),"set abi not permitted." );
 
@@ -218,7 +217,6 @@ namespace eosiosystem {
                 a.timestamp = now();
             });
     }
-
 
     void eosiosystem::system_contract::addgenlocked(const name &owner, const vector<lockperiods> &periods, const bool &canvote,
             const int64_t &amount) {
