@@ -211,7 +211,7 @@ namespace fioio {
             fio_400_assert(domainsale_iter != domainsalesbydomain.end(), "domainsale", fio_domain,
                            "Domain not found", ErrorDomainSaleNotFound);
 
-            fio_400_assert(domainsale_iter->owner == actor), "actor", actor.to_string(),
+            fio_400_assert(domainsale_iter->owner == actor.value, "actor", actor.to_string(),
                            "Only owner of domain may cancel listing", ErrorNoWork);
 
             domainsalesbydomain.erase(domainsale_iter);
@@ -596,7 +596,7 @@ namespace fioio {
                            "Marketplace cannot be found",
                            ErrorNoWork);
 
-            fio_400_assert(marketplace_iter->owner == actor, "actor", actor.to_string(),
+            fio_400_assert(marketplace_iter->owner == actor.value, "actor", actor.to_string(),
                            "Actor must own marketplace",
                            ErrorNoWork);
 
@@ -673,7 +673,7 @@ namespace fioio {
                            "Marketplace cannot be found",
                            ErrorNoWork);
 
-            fio_400_assert(marketplace_iter->owner == actor, "actor", actor,
+            fio_400_assert(marketplace_iter->owner == actor.value, "actor", actor.to_string(),
                            "Actor must own marketplace",
                            ErrorNoWork);
 
@@ -756,7 +756,7 @@ namespace fioio {
             mrkplconfigs_table marketplaceTable(_self, _self.value);
             auto               marketplace_iter = marketplaceTable.find(0); // only 1 marketplace, use 0th index
 
-            fio_400_assert(marketplace_iter->owner == actor, "actor", actor.to_string(),
+            fio_400_assert(marketplace_iter->owner == actor.value, "actor", actor.to_string(),
                            "Actor must own marketplace",
                            ErrorNoWork);
 
