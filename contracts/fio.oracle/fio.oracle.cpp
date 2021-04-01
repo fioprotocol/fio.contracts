@@ -91,7 +91,7 @@ namespace fioio {
             } else {
                 feeFinal = totalfees[oracle_size / 2];
             }
-            // for ( oracle_info.size ) xfer oracle fee
+
             idx = oracles.begin();
             uint64_t feeTotal = feeFinal * oracle_size;
             fio_400_assert(max_oracle_fee >= feeTotal, "max_oracle_fee", to_string(max_oracle_fee), "Invalid oracle fee value",
@@ -140,7 +140,7 @@ namespace fioio {
             fio_fees(actor, asset(wrap_amount, FIOSYMBOL), WRAP_FIO_TOKENS_ENDPOINT);
             process_rewards(tpid, wrap_amount,get_self(), actor);
 
-            //RAM of signer is increased (512)
+            //RAM of signer is increased (512) more?
             action(
                     permission_level{SYSTEMACCOUNT, "active"_n},
                     "eosio"_n,
