@@ -1,9 +1,9 @@
-/** FioTPID implementation file
+/** Fio Staking implementation file
  *  Description:
- *  @author Adam Androulidakis
+ *  @author Ed Rotthoff
  *  @modifedby
- *  @file fio.tpid.cpp
- *  @license FIO Foundation ( https://github.com/fioprotocol/fio/blob/master/LICENSE ) Dapix
+ *  @file fio.staking.cpp
+ *  @license FIO Foundation ( https://github.com/fioprotocol/fio/blob/master/LICENSE )
  */
 
 #pragma once
@@ -54,7 +54,7 @@ namespace fioio {
     typedef eosio::multi_index<"accountstake"_n, account_staking_info,
             indexed_by<"byaccount"_n, const_mem_fun<account_staking_info, uint64_t, &account_staking_info::by_account>>
     > account_staking_table;
-    
+
 
     typedef eosio::singleton<"staking"_n, global_staking_state> global_staking_singleton;
 }
