@@ -248,7 +248,7 @@
          "name":"oracless",
          "index_type":"i64",
          "key_names":[
-            "id"
+            "actor"
          ],
          "key_types":[
             "uint64"
