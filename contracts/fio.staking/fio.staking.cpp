@@ -1,9 +1,9 @@
-/** FioTPID implementation file
+/** Fio Staking implementation file
  *  Description:
- *  @author Adam Androulidakis, Ed Rotthoff
+ *  @author  Ed Rotthoff
  *  @modifedby
- *  @file fio.tpid.cpp
- *  @license FIO Foundation ( https://github.com/fioprotocol/fio/blob/master/LICENSE ) Dapix
+ *  @file fio.staking.cpp
+ *  @license FIO Foundation ( https://github.com/fioprotocol/fio/blob/master/LICENSE )
  */
 
 #include "fio.staking.hpp"
