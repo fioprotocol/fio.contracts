@@ -6,148 +6,6 @@
    ],
    "structs":[
       {
-         "name":"fioreqctxt",
-         "base":"",
-         "fields":[
-            {
-               "name":"fio_request_id",
-               "type":"uint64"
-            },
-            {
-               "name":"payer_fio_address",
-               "type":"uint128"
-            },
-            {
-               "name":"payee_fio_address",
-               "type":"uint128"
-            },
-            {
-               "name":"payer_fio_address_hex_str",
-               "type":"string"
-            },
-            {
-               "name":"payee_fio_address_hex_str",
-               "type":"string"
-            },
-            {
-               "name":"payer_fio_address_with_time",
-               "type":"uint128"
-            },
-            {
-               "name":"payee_fio_address_with_time",
-               "type":"uint128"
-            },
-            {
-               "name":"content",
-               "type":"string"
-            },
-            {
-               "name":"time_stamp",
-               "type":"uint64"
-            },
-            {
-               "name":"payer_fio_addr",
-               "type":"string"
-            },
-            {
-               "name":"payee_fio_addr",
-               "type":"string"
-            },
-            {
-               "name":"payer_key",
-               "type":"string"
-            },
-            {
-               "name":"payee_key",
-               "type":"string"
-            }
-         ]
-      },
-      {
-         "name":"recordobt_info",
-         "base":"",
-         "fields":[
-            {
-               "name":"id",
-               "type":"uint64"
-            },
-            {
-               "name":"payer_fio_address",
-               "type":"uint128"
-            },
-            {
-               "name":"payee_fio_address",
-               "type":"uint128"
-            },
-            {
-               "name":"payer_fio_address_hex_str",
-               "type":"string"
-            },
-            {
-               "name":"payee_fio_address_hex_str",
-               "type":"string"
-            },
-            {
-               "name":"payer_fio_address_with_time",
-               "type":"uint128"
-            },
-            {
-               "name":"payee_fio_address_with_time",
-               "type":"uint128"
-            },
-            {
-               "name":"content",
-               "type":"string"
-            },
-            {
-               "name":"time_stamp",
-               "type":"uint64"
-            },
-            {
-               "name":"payer_fio_addr",
-               "type":"string"
-            },
-            {
-               "name":"payee_fio_addr",
-               "type":"string"
-            },
-            {
-               "name":"payer_key",
-               "type":"string"
-            },
-            {
-               "name":"payee_key",
-               "type":"string"
-            }
-         ]
-      },
-      {
-         "name":"fioreqsts",
-         "base":"",
-         "fields":[
-            {
-               "name":"id",
-               "type":"uint64"
-            },
-            {
-               "name":"fio_request_id",
-               "type":"uint64"
-            },
-            {
-               "name":"status",
-               "type":"uint64"
-            },
-            {
-               "name":"metadata",
-               "type":"string"
-            },
-            {
-               "name":"time_stamp",
-               "type":"uint64"
-            }
-         ]
-      },
-      {
          "name":"fiotrxt_info",
          "base":"",
          "fields":[
@@ -210,54 +68,6 @@
             {
                "name":"obt_time",
                "type":"uint64"
-            }
-         ]
-      },
-      {
-         "name":"migrledger",
-         "base":"",
-         "fields":[
-            {
-               "name":"id",
-               "type":"uint64"
-            },
-            {
-               "name":"beginobt",
-               "type":"int64"
-            },
-            {
-               "name":"currentobt",
-               "type":"int64"
-            },
-            {
-               "name":"beginrq",
-               "type":"int64"
-            },
-            {
-               "name":"currentrq",
-               "type":"int64"
-            },
-            {
-               "name":"currentsta",
-               "type":"int64"
-            },
-            {
-               "name":"isFinished",
-               "type":"int8"
-            }
-         ]
-      },
-      {
-         "name":"migrtrx",
-         "base":"",
-         "fields":[
-            {
-               "name":"amount",
-               "type":"int16"
-            },
-            {
-               "name":"actor",
-               "type":"string"
             }
          ]
       },
@@ -372,11 +182,6 @@
    ],
    "actions":[
       {
-         "name":"migrtrx",
-         "type":"migrtrx",
-         "ricardian_contract":""
-      },
-      {
          "name":"recordobt",
          "type":"recordobt",
          "ricardian_contract":""
@@ -399,39 +204,6 @@
    ],
    "tables":[
       {
-         "name":"fioreqctxts",
-         "index_type":"i64",
-         "key_names":[
-            "fio_request_id"
-         ],
-         "key_types":[
-            "uint64"
-         ],
-         "type":"fioreqctxt"
-      },
-      {
-         "name":"recordobts",
-         "index_type":"i64",
-         "key_names":[
-            "id"
-         ],
-         "key_types":[
-            "uint64"
-         ],
-         "type":"recordobt_info"
-      },
-      {
-         "name":"fioreqstss",
-         "index_type":"i64",
-         "key_names":[
-            "id"
-         ],
-         "key_types":[
-            "uint64"
-         ],
-         "type":"fioreqsts"
-      },
-      {
          "name":"fiotrxtss",
          "index_type":"i64",
          "key_names":[
@@ -441,17 +213,6 @@
             "uint64"
          ],
          "type":"fiotrxt_info"
-      },
-      {
-         "name":"migrledgers",
-         "index_type":"i64",
-         "key_names":[
-            "id"
-         ],
-         "key_types":[
-            "uint64"
-         ],
-         "type":"migrledger"
       }
    ],
    "ricardian_clauses":[
