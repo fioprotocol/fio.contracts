@@ -28,6 +28,7 @@ namespace fioio {
         uint128_t domainhash = 0;
         uint64_t sale_price = 0;
         uint64_t commission_fee = 0;
+        uint64_t date_listed;
 
         uint64_t primary_key() const { return id; }
         uint128_t by_domain() const { return domainhash; }
@@ -36,7 +37,7 @@ namespace fioio {
         EOSLIB_SERIALIZE(domainsale,
                          (id)(owner)(ownerhash)
                          (domain)(domainhash)(sale_price)
-                         (commission_fee)
+                         (commission_fee)(date_listed)
         )
     };
 
