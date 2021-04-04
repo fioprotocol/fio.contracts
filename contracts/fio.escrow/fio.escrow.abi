@@ -235,7 +235,7 @@
       ]
     },
     {
-      "name": "setmkpcomfee",
+      "name": "updtmkplcfg",
       "base": "",
       "fields": [
         {
@@ -243,38 +243,20 @@
           "type": "name"
         },
         {
-          "name": "fee",
+          "name": "commission_fee",
+          "type": "uint64"
+        },
+        {
+          "name": "listing_fee",
+          "type": "uint64"
+        },
+        {
+          "name": "e_break",
           "type": "uint64"
         },
         {
           "name": "max_fee",
           "type": "int64"
-        },
-        {
-          "name": "tpid",
-          "type": "string"
-        }
-      ]
-    },
-    {
-      "name": "setmkplstfee",
-      "base": "",
-      "fields": [
-        {
-          "name": "actor",
-          "type": "name"
-        },
-        {
-          "name": "fee",
-          "type": "uint64"
-        },
-        {
-          "name": "max_fee",
-          "type": "int64"
-        },
-        {
-          "name": "tpid",
-          "type": "string"
         }
       ]
     },
@@ -297,24 +279,6 @@
         {
           "name": "actor",
           "type": "name"
-        }
-      ]
-    },
-    {
-      "name": "setmkpebreak",
-      "base": "",
-      "fields": [
-        {
-          "name": "actor",
-          "type": "name"
-        },
-        {
-          "name": "max_fee",
-          "type": "int64"
-        },
-        {
-          "name": "tpid",
-          "type": "string"
         }
       ]
     }
