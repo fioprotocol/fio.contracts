@@ -398,12 +398,10 @@ namespace fioio {
         * @param
         */
         [[eosio::action]]
-        void sethldacct(const string &public_key, const int64_t &max_fee,
-                        const string &tpid, const name &actor) {
-            check((has_auth(EscrowContract) || has_auth(SYSTEMACCOUNT)),
-                  "missing required authority of fio.escrow, eosio");
+        void sethldacct(const string &public_key) {
+            require_auth(SYSTEMACCOUNT);
 
-            fio_400_assert(isPubKeyValid(public_key), "owner_public_key", public_key,
+            fio_400_assert(isPubKeyValid(public_key), "public_key", public_key,
                            "Invalid FIO Public Key", ErrorPubKeyValid);
 
             holderaccts_table table(_self, _self.value);
@@ -425,39 +423,7 @@ namespace fioio {
                 });
             }
 
-            const uint128_t endpoint_hash = string_to_uint128_hash(SET_HOLDER_ACCOUNT);
-
-            auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
-            auto fee_iter         = fees_by_endpoint.find(endpoint_hash);
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", SET_HOLDER_ACCOUNT,
-                           "FIO fee not found for endpoint", ErrorNoEndpoint);
-
-            //fees
-            const uint64_t fee_amount = fee_iter->suf_amount;
-            const uint64_t fee_type   = fee_iter->type;
-
-            fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
-                           "unexpected fee type for endpoint transfer_fio_domain, expected 0",
-                           ErrorNoEndpoint);
-
-            fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
-                           "Fee exceeds supplied maximum.",
-                           ErrorMaxFeeExceeded);
-
-            fio_fees(actor, asset(fee_amount, FIOSYMBOL), SET_HOLDER_ACCOUNT);
-            processbucketrewards(tpid, fee_amount, get_self(), actor);
-
-            if (FIOESCROWRAM > 0) {
-                action(
-                        permission_level{SYSTEMACCOUNT, "active"_n},
-                        "eosio"_n,
-                        "incram"_n,
-                        std::make_tuple(actor, FIOESCROWRAM)
-                ).send();
-            }
-
-            const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
-                                           to_string(fee_amount) + string("}");
+            const string response_string = string("{\"status\": \"OK\"}");
 
             // if tx is too large, throw an error.
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size",
@@ -469,28 +435,16 @@ namespace fioio {
         // sethldacct
 
         /***********
-        * this action is to set the config for a marketplace. this will be used to calculate the fee that is taken out
-        * when a listing has sold.
+        * this action is to set the config for a marketplace.
         * @param
         */
         [[eosio::action]]
-        void setmrkplcfg(const string &marketplace, const name &owner,
-                         const string &owner_public_key, const uint64_t &commissionfee,
-                         const uint64_t &listingfee) {
-            require_auth(eosio);
-
-            fio_400_assert(isPubKeyValid(owner_public_key), "owner_public_key", owner_public_key,
-                           "Invalid FIO Public Key", ErrorPubKeyValid);
+        void setmrkplcfg(const name &owner) {
+            require_auth(SYSTEMACCOUNT);
 
             fio_400_assert(owner.length() == 12,
                            "owner", owner.to_string(),
                            "Length of account name should be 12", ErrorNoWork);
-            fio_400_assert(commissionfee <= 25,
-                           "commissionfee", to_string(commissionfee),
-                           "Commission fee should be between 0 and 25", ErrorNoWork);
-            fio_400_assert(listingfee <= 25000000000,
-                           "listingfee", to_string(listingfee),
-                           "Listing fee should be between 0 and 25,000,000,000 (25 FIO in SUF)", ErrorNoWork);
 
             const bool accountExists = is_account(owner);
 
@@ -503,8 +457,6 @@ namespace fioio {
                            "Account does not yet exist on the fio chain",
                            ErrorPubAddressExist);
 
-            uint128_t marketplaceHash           = string_to_uint128_hash(marketplace.c_str());
-
             mrkplconfigs_table marketplaceTable(_self, _self.value);
             auto               marketplace_iter = marketplaceTable.find(0); // only 1 marketplace, use 0th index
 
@@ -515,13 +467,10 @@ namespace fioio {
                 // not found, emplace
                 mrkplconfigs.emplace(EscrowContract, [&](auto &row) {
                     row.id               = id;
-                    row.marketplace      = marketplace;
-                    row.marketplacehash  = marketplaceHash;
                     row.owner            = owner.value;
                     row.ownerhash        = ownerHash;
-                    row.owner_public_key = owner_public_key;
-                    row.commission_fee   = commissionfee;
-                    row.listing_fee      = listingfee;
+                    row.commission_fee   = 0;
+                    row.listing_fee      = 0;
                     row.e_break          = 0;
                 });
             }
@@ -536,12 +485,11 @@ namespace fioio {
                         permission_level{SYSTEMACCOUNT, "active"_n},
                         "eosio"_n,
                         "incram"_n,
-                        std::make_tuple(actor, FIOESCROWRAM)
+                        std::make_tuple(owner, FIOESCROWRAM)
                 ).send();
             }
 
-            const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
-                                           to_string(fee_amount) + string("}");
+            const string response_string = string("{\"status\": \"OK\"}");
 
             send_response(response_string.c_str());
 
@@ -563,8 +511,8 @@ namespace fioio {
 
             // sanity check of parameters
             fio_400_assert(commission_fee <= 25,
-                           "fee", to_string(commission_fee)
-            "Commission fee should be between 0 and 25", ErrorNoWork);
+                           "commission_fee", to_string(commission_fee),
+                           "Commission fee should be between 0 and 25", ErrorNoWork);
 
             fio_400_assert(listing_fee <= 25000000000,
                            "fee", to_string(listing_fee),
@@ -609,7 +557,7 @@ namespace fioio {
                            ErrorMaxFeeExceeded);
 
             fio_fees(actor, asset(fee_amount, FIOSYMBOL), UPDATE_MARKETPLACE_CONFIG);
-            processbucketrewards(tpid, fee_amount, get_self(), actor);
+            processbucketrewards("", fee_amount, get_self(), actor);
 
             if (FIOESCROWRAM > 0) {
                 action(
