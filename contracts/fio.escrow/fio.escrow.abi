@@ -49,24 +49,12 @@
           "type": "uint64"
         },
         {
-          "name": "marketplace",
-          "type": "string"
-        },
-        {
-          "name": "marketplacehash",
-          "type": "uint128"
-        },
-        {
           "name": "owner",
           "type": "name"
         },
         {
           "name": "ownerhash",
           "type": "uint128"
-        },
-        {
-          "name": "owner_public_key",
-          "type": "string"
         },
         {
           "name": "commission_fee",
@@ -179,62 +167,8 @@
       "base": "",
       "fields": [
         {
-          "name": "marketplace",
-          "type": "string"
-        },
-        {
           "name": "owner",
           "type": "name"
-        },
-        {
-          "name": "owner_public_key",
-          "type": "string"
-        },
-        {
-          "name": "commissionfee",
-          "type": "uint64"
-        },
-        {
-          "name": "listingfee",
-          "type": "uint64"
-        },
-        {
-          "name": "e_break",
-          "type": "uint64"
-        },
-        {
-          "name": "max_fee",
-          "type": "int64"
-        },
-        {
-          "name": "tpid",
-          "type": "string"
-        },
-        {
-          "name": "actor",
-          "type": "name"
-        }
-      ]
-    },
-    {
-      "name": "rmmrkplcfg",
-      "base": "",
-      "fields": [
-        {
-          "name": "actor",
-          "type": "name"
-        },
-        {
-          "name": "marketplace",
-          "type": "string"
-        },
-        {
-          "name": "max_fee",
-          "type": "int64"
-        },
-        {
-          "name": "tpid",
-          "type": "string"
         }
       ]
     },
@@ -271,18 +205,6 @@
         {
           "name": "public_key",
           "type": "string"
-        },
-        {
-          "name": "max_fee",
-          "type": "int64"
-        },
-        {
-          "name": "tpid",
-          "type": "string"
-        },
-        {
-          "name": "actor",
-          "type": "name"
         }
       ]
     }
