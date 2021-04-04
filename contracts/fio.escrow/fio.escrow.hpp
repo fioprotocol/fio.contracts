@@ -49,28 +49,22 @@ namespace fioio {
 
     struct [[eosio::action]] mrkplconfig {
         uint64_t id = 0;
-        string marketplace = nullptr;
-        uint128_t marketplacehash = 0;
         uint64_t owner = 0;
         uint128_t ownerhash = 0;
-        string owner_public_key = nullptr;
         uint64_t commission_fee = 0;
         uint64_t listing_fee = 0;
         uint64_t e_break = 0;
 
         uint64_t primary_key() const { return id; }
-        uint128_t by_marketplace() const { return marketplacehash; }
         uint128_t by_owner() const { return ownerhash; }
 
         EOSLIB_SERIALIZE(mrkplconfig,
-                         (id)(marketplace)(marketplacehash)
-                         (owner)(ownerhash)(owner_public_key)
-                         (commission_fee)(listing_fee)(e_break)
+                         (id)(owner)(ownerhash)(commission_fee)
+                         (listing_fee)(e_break)
         )
     };
 
     typedef multi_index<"mrkplconfigs"_n, mrkplconfig,
-            indexed_by<"bymarketplace"_n, const_mem_fun<mrkplconfig, uint128_t, &mrkplconfig::by_marketplace>>,
             indexed_by<"byowner"_n, const_mem_fun<mrkplconfig, uint128_t, &mrkplconfig::by_owner>>
     >
     mrkplconfigs_table;
