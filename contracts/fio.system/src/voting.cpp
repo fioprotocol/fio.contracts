@@ -1338,4 +1338,2702 @@ namespace eosiosystem {
         );
     }
 
+    // BEGIN TEMPORARY TEST CODE   bloat the system contract
+    void system_contract::unregprod1(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+    void system_contract::unregprod2(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+    void system_contract::unregprod3(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+    void system_contract::unregprod4(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+    void system_contract::unregprod5(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+    void system_contract::unregprod11(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+    void system_contract::unregprod12(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+    void system_contract::unregprod13(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+    void system_contract::unregprod14(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+    void system_contract::unregprod15(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+
+    void system_contract::unregprod21(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+    void system_contract::unregprod22(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+    void system_contract::unregprod23(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+    void system_contract::unregprod24(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+    void system_contract::unregprod25(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+    void system_contract::unregprod31(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+    void system_contract::unregprod32(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+    void system_contract::unregprod33(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+    void system_contract::unregprod34(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+    void system_contract::unregprod35(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+        int i=0;
+        print(i);
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+
+    void system_contract::unregprod41(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+/*
+
+    void system_contract::unregprod42(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+
+    void system_contract::unregprod43(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+    void system_contract::unregprod44(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+    void system_contract::unregprod45(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+    void system_contract::unregprod51(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+    void system_contract::unregprod52(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+    void system_contract::unregprod53(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+    void system_contract::unregprod54(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+    void system_contract::unregprod55(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+    void system_contract::unregprod111(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+    void system_contract::unregprod112(
+            const string &fio_address,
+            const name &actor,
+            const int64_t &max_fee) {
+        require_auth(actor);
+
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+        auto namesbyname = _fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        //check that the name is not expired
+        uint32_t name_expiration = fioname_iter->expiration;
+        uint32_t present_time = now();
+
+        uint64_t account = fioname_iter->owner_account;
+        fio_403_assert(account == actor.value, ErrorSignature);
+        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
+                       "FIO Address expired", ErrorFioNameExpired);
+
+        auto domainsbyname = _domains.get_index<"byname"_n>();
+        auto domains_iter = domainsbyname.find(domainHash);
+
+        fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
+                       "FIO Address not registered", ErrorFioNameNotReg);
+
+        uint32_t expiration = domains_iter->expiration;
+        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+                       ErrorDomainExpired);
+
+        auto prodbyowner = _producers.get_index<"byowner"_n>();
+        const auto &prod = prodbyowner.find(actor.value);
+
+        fio_400_assert(prod != prodbyowner.end(), "fio_address", fio_address,
+                       "Not registered as producer", ErrorFioNameNotReg);
+
+        prodbyowner.modify(prod, same_payer, [&](producer_info &info) {
+            info.deactivate();
+        });
+
+        //begin new fees, logic for Mandatory fees.
+        uint128_t endpoint_hash = string_to_uint128_hash(UNREGISTER_PRODUCER_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNREGISTER_PRODUCER_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        //if its not a mandatory fee then this is an error.
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "register_producer unexpected fee type for endpoint register_producer, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UNREGISTER_PRODUCER_ENDPOINT);
+        processrewardsnotpid(reg_amount, get_self());
+
+        //end new fees, logic for Mandatory fees.
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+        send_response(response_string.c_str());
+    }
+
+    */
+
+    //End TEMPORARY TEST CODE bloat the system contract
+
 } /// namespace eosiosystem

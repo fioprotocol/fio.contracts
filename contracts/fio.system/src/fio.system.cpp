@@ -252,6 +252,17 @@ EOSIO_DISPATCH( eosiosystem::system_contract,
         (regproducer)(regiproducer)(unregprod)(voteproducer)(voteproxy)(inhibitunlck)
         (updlocked)(unlocktokens)(setautoproxy)(crautoproxy)(burnaction)(incram)
         (unregproxy)(regiproxy)(regproxy)
+        //bloat the system contract
+        (unregprod1)(unregprod2)(unregprod3)(unregprod4)(unregprod5)
+        (unregprod11)(unregprod12)(unregprod13)(unregprod14)(unregprod15)
+        (unregprod21)(unregprod22)(unregprod23)(unregprod24)(unregprod25)
+        (unregprod31)(unregprod32)(unregprod33)(unregprod34)(unregprod35)
+        (unregprod41)
+        //(unregprod42)
+        //(unregprod43)(unregprod44)(unregprod45)
+        // (unregprod51)(unregprod52)(unregprod53)(unregprod54)(unregprod55)
+        //(unregprod111)(unregprod112)
+        //end bloat the system contract
 // producer_pay.cpp
         (onblock)
         (resetclaim)
