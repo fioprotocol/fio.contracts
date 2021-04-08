@@ -101,6 +101,8 @@ namespace eosiosystem {
         _gstate2.revision = revision;
     }
 
+
+
     /**
      *  Called after a new account is created. This code enforces resource-limits rules
      *  for new accounts as well as new account naming conventions.
@@ -198,6 +200,38 @@ namespace eosiosystem {
         check(version.value == 0, "unsupported version for init action");
     }
 
+    void eosiosystem::system_contract::setnolimits(const name &account) {
+
+        require_auth(account);
+
+        check((account == SYSTEMACCOUNT ||
+                account == MSIGACCOUNT ||
+                account == WRAPACCOUNT ||
+                account == ASSERTACCOUNT ||
+                account == REQOBTACCOUNT ||
+                account == FeeContract ||
+                account == AddressContract ||
+                account == TPIDContract ||
+                account == TokenContract ||
+                account == StakingContract ||
+                account == TREASURYACCOUNT ||
+                account == FIOSYSTEMACCOUNT ||
+                account == FIOACCOUNT),"set no limits not permitted." );
+
+        check(is_account(account),"account must pre exist");
+
+        user_resources_table userres(_self, account.value);
+
+        userres.emplace(account, [&](auto &res) {
+            res.owner = account;
+            res.net_weight = asset(0, FIOSYMBOL);
+            res.cpu_weight = asset(0, FIOSYMBOL);
+        });
+
+        set_resource_limits(account.value, -1, -1, -1);
+    }
+
+
     //use this action to initialize the locked token holders table for the FIO protocol.
     void eosiosystem::system_contract::addlocked(const name &owner, const int64_t &amount,
             const int16_t &locktype) {
@@ -245,7 +279,7 @@ EOSIO_DISPATCH( eosiosystem::system_contract,
 // native.hpp (newaccount definition is actually in fio.system.cpp)
 (newaccount)(addaction)(remaction)(updateauth)(deleteauth)(linkauth)(unlinkauth)(canceldelay)(onerror)(setabi)
 // fio.system.cpp
-(init)(addlocked)(addgenlocked)(setparams)(setpriv)
+(init)(addlocked)(addgenlocked)(setnolimits)(setparams)(setpriv)
         (rmvproducer)(updtrevision)
 // delegate_bandwidth.cpp
         (updatepower)

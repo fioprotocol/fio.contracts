@@ -343,6 +343,9 @@ public:
     void addgenlocked(const name &owner, const vector<lockperiods> &periods, const bool &canvote,const int64_t &amount);
 
     [[eosio::action]]
+    void setnolimits(const name &account);
+
+    [[eosio::action]]
     void onblock(ignore <block_header> header);
 
     // functions defined in delegate_bandwidth.cp
