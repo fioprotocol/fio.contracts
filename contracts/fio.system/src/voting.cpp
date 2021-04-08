@@ -2935,7 +2935,7 @@ namespace eosiosystem {
                        "Transaction is too large", ErrorTransactionTooLarge);
         send_response(response_string.c_str());
     }
-
+/*
     void system_contract::unregprod35(
             const string &fio_address,
             const name &actor,
@@ -3105,7 +3105,7 @@ namespace eosiosystem {
                        "Transaction is too large", ErrorTransactionTooLarge);
         send_response(response_string.c_str());
     }
-/*
+
 
     void system_contract::unregprod42(
             const string &fio_address,

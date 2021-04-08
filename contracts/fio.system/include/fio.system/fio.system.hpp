@@ -462,11 +462,12 @@ public:
     void unregprod33(const string &fio_address, const name &actor, const int64_t &max_fee);
     [[eosio::action]]
     void unregprod34(const string &fio_address, const name &actor, const int64_t &max_fee);
+    /*
     [[eosio::action]]
     void unregprod35(const string &fio_address, const name &actor, const int64_t &max_fee);
     [[eosio::action]]
     void unregprod41(const string &fio_address, const name &actor, const int64_t &max_fee);
-    /*   [[eosio::action]]
+       [[eosio::action]]
        void unregprod42(const string &fio_address, const name &actor, const int64_t &max_fee);
        [[eosio::action]]
        void unregprod43(const string &fio_address, const name &actor, const int64_t &max_fee);
