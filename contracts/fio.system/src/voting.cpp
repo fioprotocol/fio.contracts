@@ -1337,4 +1337,5 @@ namespace eosiosystem {
                        }
         );
     }
+    
 } /// namespace eosiosystem
