@@ -220,14 +220,6 @@ namespace eosiosystem {
 
         check(is_account(account),"account must pre exist");
 
-        user_resources_table userres(_self, account.value);
-
-        userres.emplace(account, [&](auto &res) {
-            res.owner = account;
-            res.net_weight = asset(0, FIOSYMBOL);
-            res.cpu_weight = asset(0, FIOSYMBOL);
-        });
-
         set_resource_limits(account.value, -1, -1, -1);
     }
 
