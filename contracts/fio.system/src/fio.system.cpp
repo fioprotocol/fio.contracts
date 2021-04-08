@@ -198,7 +198,6 @@ namespace eosiosystem {
     }
 
     void eosiosystem::system_contract::setnolimits(const name &account) {
-        require_auth(account);
         eosio_assert((has_auth(SYSTEMACCOUNT) || has_auth(FIOSYSTEMACCOUNT)),
                      "missing required authority of fio.system or eosio");
         check(is_account(account),"account must pre exist");
