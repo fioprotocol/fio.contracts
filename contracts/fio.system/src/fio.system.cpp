@@ -201,25 +201,10 @@ namespace eosiosystem {
     }
 
     void eosiosystem::system_contract::setnolimits(const name &account) {
-
         require_auth(account);
-
-        check((account == SYSTEMACCOUNT ||
-                account == MSIGACCOUNT ||
-                account == WRAPACCOUNT ||
-                account == ASSERTACCOUNT ||
-                account == REQOBTACCOUNT ||
-                account == FeeContract ||
-                account == AddressContract ||
-                account == TPIDContract ||
-                account == TokenContract ||
-                account == StakingContract ||
-                account == TREASURYACCOUNT ||
-                account == FIOSYSTEMACCOUNT ||
-                account == FIOACCOUNT),"set no limits not permitted." );
-
+        eosio_assert((has_auth(SYSTEMACCOUNT) || has_auth(FIOSYSTEMACCOUNT)),
+                     "missing required authority of fio.system or eosio");
         check(is_account(account),"account must pre exist");
-
         set_resource_limits(account.value, -1, -1, -1);
     }
 
@@ -279,18 +264,6 @@ EOSIO_DISPATCH( eosiosystem::system_contract,
         (regproducer)(regiproducer)(unregprod)(voteproducer)(voteproxy)(inhibitunlck)
         (updlocked)(unlocktokens)(setautoproxy)(crautoproxy)(burnaction)(incram)
         (unregproxy)(regiproxy)(regproxy)
-        //bloat the system contract
-        (unregprod1)(unregprod2)(unregprod3)(unregprod4)(unregprod5)
-        (unregprod11)(unregprod12)(unregprod13)(unregprod14)(unregprod15)
-        (unregprod21)(unregprod22)(unregprod23)(unregprod24)(unregprod25)
-        (unregprod31)(unregprod32)(unregprod33)(unregprod34)
-        //(unregprod35)
-        //(unregprod41)
-        //(unregprod42)
-        //(unregprod43)(unregprod44)(unregprod45)
-        // (unregprod51)(unregprod52)(unregprod53)(unregprod54)(unregprod55)
-        //(unregprod111)(unregprod112)
-        //end bloat the system contract
 // producer_pay.cpp
         (onblock)
         (resetclaim)
