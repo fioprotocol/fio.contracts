@@ -100,9 +100,7 @@ namespace eosiosystem {
               "specified revision is not yet supported by the code");
         _gstate2.revision = revision;
     }
-
-
-
+    
     /**
      *  Called after a new account is created. This code enforces resource-limits rules
      *  for new accounts as well as new account naming conventions.
@@ -175,7 +173,6 @@ namespace eosiosystem {
                       acnt == AddressContract ||
                       acnt == TPIDContract ||
                       acnt == TokenContract ||
-                      acnt == StakingContract ||
                       acnt == TREASURYACCOUNT ||
                       acnt == FIOSYSTEMACCOUNT ||
                       acnt == FIOACCOUNT),"set abi not permitted." );
