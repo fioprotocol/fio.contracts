@@ -70,7 +70,7 @@
 #define LIST_DOMAIN_ENDPOINT "list_domain"
 #define CANCEL_LIST_DOMAIN_ENDPOINT "cancel_list_domain"
 #define BUY_DOMAIN_ENDPOINT "buy_domain"
-#define UPDATE_MARKETPLACE_CONFIG "update_marketplace_config"
+#define UPDATE_MARKETPLACE_CONFIG_ENDPOINT "update_marketplace_config"
 
 namespace fioio {
 

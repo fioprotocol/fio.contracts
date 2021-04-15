@@ -71,20 +71,6 @@
       ]
     },
     {
-      "name": "holderacct",
-      "base": "",
-      "fields": [
-        {
-          "name": "id",
-          "type": "uint64"
-        },
-        {
-          "name": "holder_public_key",
-          "type": "string"
-        }
-      ]
-    },
-    {
       "name": "buydomain",
       "base": "",
       "fields": [
@@ -197,16 +183,6 @@
           "type": "int64"
         }
       ]
-    },
-    {
-      "name": "sethldacct",
-      "base": "",
-      "fields": [
-        {
-          "name": "public_key",
-          "type": "string"
-        }
-      ]
     }
   ],
   "types": [],
@@ -232,28 +208,8 @@
       "ricardian_contract": ""
     },
     {
-      "name": "rmmrkplcfg",
-      "type": "rmmrkplcfg",
-      "ricardian_contract": ""
-    },
-    {
-      "name": "sethldacct",
-      "type": "sethldacct",
-      "ricardian_contract": ""
-    },
-    {
-      "name": "setmkpcomfee",
-      "type": "setmkpcomfee",
-      "ricardian_contract": ""
-    },
-    {
-      "name": "setmkplstfee",
-      "type": "setmkplstfee",
-      "ricardian_contract": ""
-    },
-    {
-      "name": "setmkpebreak",
-      "type": "setmkpebreak",
+      "name": "updtmkplcfg",
+      "type": "updtmkplcfg",
       "ricardian_contract": ""
     }
   ],
@@ -279,17 +235,6 @@
         "string"
       ],
       "type": "mrkplconfig"
-    },
-    {
-      "name": "holderaccts",
-      "index_type": "i64",
-      "key_names": [
-        "id"
-      ],
-      "key_types": [
-        "string"
-      ],
-      "type": "holderacct"
     }
   ],
   "ricardian_clauses": [],

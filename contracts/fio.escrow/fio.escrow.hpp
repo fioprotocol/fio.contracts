@@ -68,18 +68,6 @@ namespace fioio {
             indexed_by<"byowner"_n, const_mem_fun<mrkplconfig, uint128_t, &mrkplconfig::by_owner>>
     >
     mrkplconfigs_table;
-
-    struct [[eosio::action]] holderacct {
-        uint64_t id = 0;
-        string holder_public_key = nullptr;
-
-        uint64_t primary_key() const { return id; }
-
-        EOSLIB_SERIALIZE(holderacct, (id)(holder_public_key)
-        )
-    };
-
-    typedef multi_index<"holderaccts"_n, holderacct> holderaccts_table;
 }
 
 #endif //FIO_CONTRACTS_FIO_ESCROW_H
