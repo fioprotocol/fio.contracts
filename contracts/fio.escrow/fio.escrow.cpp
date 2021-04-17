@@ -55,7 +55,7 @@ namespace fioio {
 
         /***********
         * This action will list a fio domain for sale. It also collects a fee for listing that is sent to the
-         * marketplace. It transfers the domain ownership to a holderaccount that is set in the holder account table
+         * marketplace. It transfers the domain ownership to `fio.escrow` while listed
         * @param actor this is the fio account that has sent this transaction.
         * @param fio_domain this is the fio domain to be sold.
         * @param sale_price this is the amount of FIO the seller wants for the domain
@@ -111,26 +111,13 @@ namespace fioio {
             fio_400_assert(domains_iter->account == actor.value, "fio_domain", fio_domain,
                            "FIO domain not owned by actor", ErrorDomainOwner);
 
-//            // get holder account that will hold the domains while listed for sale
-//            holderaccts_table table(_self, _self.value);
-//            auto              hold_account_itr = table.find(0); // only one entry so use 0th index
-//
-//            fio_400_assert(hold_account_itr != table.end(), "hold_account_itr", "hold_account_itr",
-//                           "Holder account private key not found", ErrorDomainOwner);
-//
-//            string new_owner_fio_public_key;
-//
-//            // if holderAccount found, set the new_owner_fio_public_key to that public key
-//            if (hold_account_itr != table.end()) {
-//                new_owner_fio_public_key = hold_account_itr->holder_public_key;
-//            }
+            bool isTransferToEscrow = true;
 
-            // transfer the domain to holder account
             action(
                     permission_level{EscrowContract, "active"_n},
                     AddressContract,
                     "xferescrow"_n,
-                    std::make_tuple(fio_domain, nullptr, true, actor)
+                    std::make_tuple(fio_domain, nullptr, isTransferToEscrow, actor)
             ).send();
 
             // write to table
@@ -191,7 +178,7 @@ namespace fioio {
                           const uint64_t &max_fee, const string &tpid) {
             check(has_auth(actor) || has_auth(EscrowContract), "Permission Denied");
 
-            auto               marketplace_iter = mrkplconfigs.begin(); // only 1 marketplace, use 0th index
+            auto marketplace_iter = mrkplconfigs.begin();
 
             fio_400_assert(marketplace_iter != mrkplconfigs.end(), "marketplace_iter", "marketplace_iter",
                            "Marketplace not found", ErrorDomainOwner);
@@ -327,12 +314,13 @@ namespace fioio {
                    make_tuple(actor, marketplace_iter->owner, marketCommission, string("Marketplace Commission"))
             ).send();
 
-            // transfer the domain to holder account
+            bool isTransferToEscrow = false;
+
             action(
                     permission_level{EscrowContract, "active"_n},
                     AddressContract,
                     "xferescrow"_n,
-                    std::make_tuple(fio_domain, buyerAcct->clientkey, actor)
+                    std::make_tuple(fio_domain, buyerAcct->clientkey, isTransferToEscrow, actor)
             ).send();
 
             domainsalesbydomain.erase(domainsale_iter);
@@ -481,7 +469,7 @@ namespace fioio {
                            "e_break", to_string(e_break),
                            "E-break setting must be present", ErrorNoWork);
 
-            auto marketplace_iter = mrkplconfigs.begin(); // only 1 marketplace, use 0th index
+            auto marketplace_iter = mrkplconfigs.begin();
 
             // verify the `actor` is the owner of the marketplace
             fio_400_assert(marketplace_iter->owner == actor.value, "actor", actor.to_string(),
