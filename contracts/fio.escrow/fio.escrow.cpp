@@ -528,7 +528,5 @@ namespace fioio {
 
     }; // class FioEscrow
 
-    EOSIO_DISPATCH(FioEscrow, (listdomain)(cxlistdomain)(buydomain)
-                                      (setmrkplcfg)
-    (updtmkplcfg))
+    EOSIO_DISPATCH(FioEscrow, (listdomain)(cxlistdomain)(buydomain)(setmrkplcfg)(updtmkplcfg))
 }
