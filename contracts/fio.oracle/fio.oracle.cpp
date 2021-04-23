@@ -46,8 +46,7 @@ namespace fioio {
         [[eosio::action]]
         void wraptokens(uint64_t &amount, string &chain_code, string &public_address, uint64_t &max_oracle_fee,
                         uint64_t &max_fee, string &tpid, name &actor) {
-
-            //validation will go here
+            require_auth(actor);
             fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
                            "TPID must be empty or valid FIO address",
                            ErrorPubKeyValid);
@@ -59,6 +58,9 @@ namespace fioio {
                            ErrorInvalidFioNameFormat);
             fio_400_assert(max_oracle_fee >= 0, "max_oracle_fee", to_string(max_oracle_fee), "Invalid oracle fee value",
                            ErrorMaxFeeInvalid);
+
+            //force uppercase chain code
+            std::transform(chain_code.begin(), chain_code.end(),chain_code.begin(), ::toupper);
 
             //max amount?
             fio_400_assert(amount >= 0, "amount", to_string(amount), "Invalid amount",
