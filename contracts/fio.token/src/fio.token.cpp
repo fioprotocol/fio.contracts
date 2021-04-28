@@ -340,9 +340,10 @@ namespace eosio {
          * we permit the use of transfer from any other accounts to the treasury account for fees.
          */
         if (from != SYSTEMACCOUNT && from != TREASURYACCOUNT && from != FIOORACLEContract) {
-            if(!has_auth(FIOORACLEContract)){
+            if (!has_auth(FIOORACLEContract)) {
                 check(to == TREASURYACCOUNT, "transfer not allowed");
             }
+        }
         eosio_assert((has_auth(SYSTEMACCOUNT) || has_auth(TREASURYACCOUNT) || has_auth(FIOORACLEContract)),
                      "missing required authority of treasury, oracle or eosio");
 
