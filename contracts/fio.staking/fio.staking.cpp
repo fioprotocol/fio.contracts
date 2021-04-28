@@ -16,6 +16,7 @@ private:
 
         global_staking_singleton  staking;
         global_staking_state gstaking;
+        account_staking_table accountstaking;
         bool debugout = false;
 
 public:
@@ -23,13 +24,19 @@ public:
 
         Staking(name s, name code, datastream<const char *> ds) :
                 contract(s, code, ds),
-                staking(_self, _self.value){
+                staking(_self, _self.value),
+                accountstaking(_self,_self.value){
             gstaking = staking.exists() ? staking.get() : global_staking_state{};
+        }
+
+        ~Staking() {
+            staking.set(gstaking, _self);
         }
 
 
     //FIP-21 actions to update staking state.
 
+    //(implement 5)
     //perfstake performs updates to state required upon staking.
     // params
     //     owner,
@@ -39,6 +46,7 @@ public:
     //   call incgstake
     //   call incacctstake
 
+    //(implement 6)
     //perfunstake performs updates to state required upon unstaking.
     // params
     //     owner,
@@ -49,6 +57,7 @@ public:
     //   call decacctstake
 
 
+  //  (implement 1)
     //incgstake  performs the staking state increments when staking occurs
     //  params
     //     fiostakedsufs, this is the amount of fio staked in SUFs
@@ -57,7 +66,21 @@ public:
     //     increment the combined_token_pool by fiostaked.
     //     increment the staked_token_pool by fiostaked.
     //     increment the global_srp_count by srpcount.
+    //
+    [[eosio::action]]
+    void incgstake(const int64_t &fiostakedsufs, const int64_t &srpcountsus) {
+            //check auth fio.staking or fio.system
+            eosio_assert((has_auth(SYSTEMACCOUNT) || has_auth(STAKINGACCOUNT)),
+                   "missing required authority of staking or eosio");
+            //     increment the combined_token_pool by fiostaked.
+            gstaking.combined_token_pool += fiostakedsufs;
+            //     increment the staked_token_pool by fiostaked.
+            gstaking.staked_token_pool += fiostakedsufs;
+            //     increment the global_srp_count by srpcount.
+            gstaking.global_srp_count += srpcountsus;
+     }
 
+      //(implement 2)
     //decgstake performs the staking state decrements when unstaking occurs
     // params
     //   fiounstakedsufs,  this is the amount of FIO being unstaked, units SUFs
@@ -67,7 +90,26 @@ public:
     //     decrement the combined_token_pool by fiostaked+fiorewarded.
     //     decrement the staked_token_pool by fiostaked.
     //     decrement the global_srp_count by srpcount.
+      [[eosio::action]]
+      void decgstake(const int64_t &fiostakedsufs, const int64_t &fiorewardededsufs,const int64_t &srpcountsus) {
+          //check auth fio.staking or fio.system
+          eosio_assert((has_auth(SYSTEMACCOUNT) || has_auth(STAKINGACCOUNT)),
+                       "missing required authority of staking or eosio");
 
+          eosio_assert(gstaking.combined_token_pool >= (fiostakedsufs+fiorewardededsufs),"decgstake combined token pool must be greater or equal to staked sufs plus fio rewarded sufs. " );
+          eosio_assert(gstaking.staked_token_pool >= fiostakedsufs,"decgstake staked token pool must be greater or equal to staked sufs. " );
+          eosio_assert(gstaking.global_srp_count >= srpcountsus,"decgstake global srp count must be greater or equal to srp count. " );
+
+
+          //     decrement the combined_token_pool by fiostaked+fiorewarded.
+          gstaking.combined_token_pool -= (fiostakedsufs+fiorewardededsufs);
+          //     decrement the staked_token_pool by fiostaked.
+          gstaking.staked_token_pool -= fiostakedsufs;
+          //     decrement the global_srp_count by srpcount.
+          gstaking.global_srp_count -= srpcountsus;
+      }
+
+    //(implement 7)
     //incgrewards performs the staking state increments when rewards are identified during fee collection.
     //  params
     //      fioamountsufs, this is the amount of FIO being added to the rewards (from fees or when minted). units SUFs
@@ -76,16 +118,19 @@ public:
     //     increment daily_staking_rewards
     //     increment combined_token_pool.
 
+    //(implement 8)
     //clrgdailyrew performs the clearing of the daily rewards.
     // params none!
     // logic
     //   set daily_staking_rewards = 0;
 
+    //(implement 9)
     //incgstkmint increments the staking_rewards_reserves_minted
     // params
     //     amountfiosufs, this is the amount of FIO that has been minted, units SUFs
     //FIP-21 actions to update staking state.
 
+    //(implement 3)
     //FIP-21 actions to update accountstake table.
     //incacctstake  this performs the incrementing of account wise info upon staking.
     // params
@@ -93,6 +138,35 @@ public:
     //     fiostakesufs, this is the amount of fio being staked, units SUFs
     //     srpawardedsus, this is the number of SRPs being awarded this stake, units SUSs
     // logic
+    [[eosio::action]]
+    void incacctstake(const name &owner, const int64_t &fiostakedsufs, const int64_t &srpaawardedsus) {
+        //check auth fio.staking or fio.system
+        eosio_assert((has_auth(SYSTEMACCOUNT) || has_auth(STAKINGACCOUNT)),
+                     "missing required authority of staking or eosio");
+        eosio_assert(fiostakedsufs > 0,"incacctstake fiostakedsuf must be greater than 0. " );
+        eosio_assert(srpaawardedsus > 0,"srpaawardedsus fiostakedsuf must be greater than 0. " );
+
+        auto astakebyaccount = accountstaking.get_index<"byaccount"_n>();
+        auto astakeiter = astakebyaccount.find(owner.value);
+        if (astakeiter != astakebyaccount.end()) {
+            eosio_assert(astakeiter->account == owner,"incacctstake owner lookup error." );
+            //update the existing record
+            astakebyaccount.modify(astakeiter, _self, [&](struct account_staking_info &a) {
+                a.total_staked_fio += fiostakedsufs;
+                a.total_srp += srpaawardedsus;
+            });
+        } else {
+            const uint64_t id = accountstaking.available_primary_key();
+            accountstaking.emplace(get_self(), [&](struct account_staking_info &p) {
+                p.id = id;
+                p.account = owner;
+                p.total_staked_fio = fiostakedsufs;
+                p.total_srp = srpaawardedsus;
+            });
+        }
+    }
+
+    //(implement 4)
     //decacctstake  this performs the decrementing of account wise info upon staking.
     // params
     //     owner,         this is the account that owns the fio being unstaked (the signer of the unstake)
@@ -100,6 +174,30 @@ public:
     //     srprewardedsus, this is the number of SRPs being rewarded this unstake, units SUSs
     // logic
     //FIP-21 actions to update accountstake table.
+    [[eosio::action]]
+    void decacctstake(const name &owner, const int64_t &fiostakedsufs, const int64_t &srprewardedsus) {
+        //check auth fio.staking or fio.system
+        eosio_assert((has_auth(SYSTEMACCOUNT) || has_auth(STAKINGACCOUNT)),
+                     "missing required authority of staking or eosio");
+        eosio_assert(fiostakedsufs > 0,"incacctstake fiostakedsuf must be greater than 0. " );
+        eosio_assert(srprewardedsus > 0,"srprewardedsus fiostakedsuf must be greater than 0. " );
+
+        auto astakebyaccount = accountstaking.get_index<"byaccount"_n>();
+        auto astakeiter = astakebyaccount.find(owner.value);
+
+        eosio_assert(astakeiter != astakebyaccount.end(),"decacctstake owner not found in account staking." );
+        eosio_assert(astakeiter->account == owner,"decacctstake owner lookup error." );
+        eosio_assert(astakeiter->total_srp >= srprewardedsus,"decacctstake total srp for account must be greater than or equal srprewardedsus." );
+        eosio_assert(astakeiter->total_staked_fio >= fiostakedsufs,"decacctstake total staked fio for account must be greater than or equal fiostakedsufs." );
+
+        //update the existing record
+        astakebyaccount.modify(astakeiter, _self, [&](struct account_staking_info &a) {
+            a.total_staked_fio -= fiostakedsufs;
+            a.total_srp -= srprewardedsus;
+        });
+
+    }
+
 
 
     [[eosio::action]]
@@ -119,12 +217,12 @@ public:
 
            Account Tokens Staked is incremented by amount in account related table. Account Tokens Staked cannot be spent by the user.
            Account Staking Reward Point is incremented by SRPs to Award in account related table
-           (call incacctstake)
+          (implement) (call incacctstake)
 
            Combined Token Pool count is incremented by amount.
            Global SRP count is incremented by SRPs to Award.
            staked_token_pool is incremented by amount.
-           (call incgstake)
+          (implement) (call incgstake)
 
 
            check for maximum FIO transaction size is applied
@@ -163,7 +261,7 @@ public:
 
            Account Tokens Staked is decremented by amount in account related table.
            Account Staking Reward Point is decremented by SRPs to Award in account related table
-           (call decacctstake)
+         (implement)  (call decacctstake)
 
            Staking Reward Amount is transferred to Staker's Account.
            Memo: "Paying Staking Rewards"
@@ -171,7 +269,7 @@ public:
            Global SRP count is decremented by SRPs to Claim .
            Combined Token Pool count is decremented by amount + Staking Reward Amount.
            staked token pool is decremented by amount
-           (call decgstake)
+          (implement) (call decgstake)
 
            If tpid was provided, TPID Reward Amount is awarded to the tpid and decremented from Combined Token Pool.
            check for max FIO transaction size exceeded will be applied.
@@ -193,5 +291,5 @@ public:
 
 };     //class Staking
 
-EOSIO_DISPATCH(Staking, (stakefio)(unstakefio)  )
+EOSIO_DISPATCH(Staking, (stakefio)(unstakefio)(incgstake)(decgstake)(incacctstake)(decacctstake) )
 }
