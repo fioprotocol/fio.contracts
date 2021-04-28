@@ -318,6 +318,10 @@ namespace fioio {
                 fees.push_back(tokens);
             }
 
+            oracles.modify(oraclesearch, actor, [&](auto &p) {
+                p.fees = fees;
+            });
+
             const string response_string = string("{\"status\": \"OK\"}");
 
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
