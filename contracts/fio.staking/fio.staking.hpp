@@ -19,8 +19,8 @@ namespace fioio {
 
 
     //staking info is a global state table used to track information relating to staking within the FIO protocol.
-    struct [[eosio::table("staking"), eosio::contract("fio.staking")]] global_staking_state {
-        global_staking_state() {}
+    struct [[eosio::table]] global_staking_state {
+        global_staking_state(){}
         uint64_t staked_token_pool = 0;   //total FIO tokens staked for all accounts, units sufs.
         uint64_t combined_token_pool = 0;  //total fio tokens staked for all accounts plus fio rewards all accounts, units SUFs,
         // incremented by the staked amount when user stakes, when tokens are earmarked as staking rewards,
