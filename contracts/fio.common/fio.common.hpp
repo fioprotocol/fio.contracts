@@ -43,6 +43,8 @@
 #define STAKINGREWARDSRESERVEMAXIMUM 25000000000000000 // 25M FIO SUFS.
 #define DAILYSTAKINGMINTTHRESHOLD 25000000000000 //25k FIO threshold for MINTING staking rewards.
 
+#define STAKE_FIO_TOKENS_ENDPOINT "stake_fio_tokens"
+#define UNSTAKE_FIO_TOKENS_ENDPOINT "unstake_fio_tokens"
 #define REGISTER_ADDRESS_ENDPOINT "register_fio_address"
 #define REGISTER_DOMAIN_ENDPOINT "register_fio_domain"
 #define RENEW_ADDRESS_ENDPOINT "renew_fio_address"
@@ -408,6 +410,8 @@ namespace fioio {
     static const uint64_t INITIALACCOUNTRAM  = 25600;
     static const uint64_t ADDITIONALRAMBPDESCHEDULING = 25600;
 
+    static const uint64_t STAKEFIOTOKENSRAM = 1024; //integrated.
+    static const uint64_t UNSTAKEFIOTOKENSRAM = 1024; //integrated.
     static const uint64_t REGDOMAINRAM  = 2560;  //integrated.
     static const uint64_t REGADDRESSRAM = 2560; //integrated.
     static const uint64_t ADDADDRESSRAM = 512; //integrated.
