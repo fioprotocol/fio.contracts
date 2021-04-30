@@ -157,8 +157,7 @@ public:
                          const string &tpid, const name &actor) {
         //signer not actor.
         require_auth(actor);
-        print("EDEDEDEDEDEDEDEDEDEDEDEDED call into stakefio amount ", amount," max_fee ",max_fee," tpid ",tpid," actor ",actor, "\n");
-
+       
         //check if the actor has voted.
         auto votersbyowner = voters.get_index<"byowner"_n>();
         auto voter = votersbyowner.find(actor.value);
