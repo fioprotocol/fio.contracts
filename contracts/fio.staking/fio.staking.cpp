@@ -46,56 +46,6 @@ public:
 
     //FIP-21 actions to update staking state.
 
-    //(implement 5)
-    //perfstake performs updates to state required upon staking.
-    // params
-    //     owner,
-    //     fiostakedsufs,
-    //     srpsawardedsuss
-    // logic
-    //   call incgstake
-    //   call incacctstake
-
-    //(implement 6)
-    //perfunstake performs updates to state required upon unstaking.
-    // params
-    //     owner,
-    //     fiostakedsufs,
-    //     srpsawardedsuss
-    // logic
-    //   call decgstake
-    //   call decacctstake
-
-
-    //decgstake performs the staking state decrements when unstaking occurs
-    // params
-    //   fiounstakedsufs,  this is the amount of FIO being unstaked, units SUFs
-    //   fiorewardedsufs,  this is the amount of FIO being rewarded for this unstaked, units SUFs
-    //   srpcountsus,      this is the number of SRPs being rewarded for this unstake, units SUSs
-    // logic
-    //     decrement the combined_token_pool by fiostaked+fiorewarded.
-    //     decrement the staked_token_pool by fiostaked.
-    //     decrement the global_srp_count by srpcount.
-      [[eosio::action]]
-      void decgstake(const int64_t &fiostakedsufs, const int64_t &fiorewardededsufs,const int64_t &srpcountsus) {
-          //check auth fio.staking or fio.system
-          eosio_assert((has_auth(SYSTEMACCOUNT) || has_auth(STAKINGACCOUNT)),
-                       "missing required authority of staking or eosio");
-
-          //avoid overflows due to negative results.
-          eosio_assert(gstaking.combined_token_pool >= (fiostakedsufs+fiorewardededsufs),"decgstake combined token pool must be greater or equal to staked sufs plus fio rewarded sufs. " );
-          eosio_assert(gstaking.staked_token_pool >= fiostakedsufs,"decgstake staked token pool must be greater or equal to staked sufs. " );
-          eosio_assert(gstaking.global_srp_count >= srpcountsus,"decgstake global srp count must be greater or equal to srp count. " );
-
-          //should we compute an intermediate result here and check it against supply.
-
-          //     decrement the combined_token_pool by fiostaked+fiorewarded.
-          gstaking.combined_token_pool -= (fiostakedsufs+fiorewardededsufs);
-          //     decrement the staked_token_pool by fiostaked.
-          gstaking.staked_token_pool -= fiostakedsufs;
-          //     decrement the global_srp_count by srpcount.
-          gstaking.global_srp_count -= srpcountsus;
-      }
 
     //(implement 7)
     //incgrewards performs the staking state increments when rewards are identified during fee collection.
@@ -117,38 +67,6 @@ public:
     // params
     //     amountfiosufs, this is the amount of FIO that has been minted, units SUFs
     //FIP-21 actions to update staking state.
-
-
-    //decacctstake  this performs the decrementing of account wise info upon staking.
-    // params
-    //     owner,         this is the account that owns the fio being unstaked (the signer of the unstake)
-    //     fiostakesufs,  this is the amount of FIO being unstaked, units SUFs
-    //     srprewardedsus, this is the number of SRPs being rewarded this unstake, units SUSs
-    // logic
-    //FIP-21 actions to update accountstake table.
-    [[eosio::action]]
-    void decacctstake(const name &owner, const int64_t &fiostakedsufs, const int64_t &srprewardedsus) {
-        //check auth fio.staking or fio.system
-        eosio_assert((has_auth(SYSTEMACCOUNT) || has_auth(STAKINGACCOUNT)),
-                     "missing required authority of staking or eosio");
-        eosio_assert(fiostakedsufs > 0,"decacctstake fiostakedsuf must be greater than 0. " );
-        eosio_assert(srprewardedsus > 0,"decacctstake srprewardedsus must be greater than 0. " );
-
-        auto astakebyaccount = accountstaking.get_index<"byaccount"_n>();
-        auto astakeiter = astakebyaccount.find(owner.value);
-
-        eosio_assert(astakeiter != astakebyaccount.end(),"decacctstake owner not found in account staking." );
-        eosio_assert(astakeiter->account == owner,"decacctstake owner lookup error." );
-        eosio_assert(astakeiter->total_srp >= srprewardedsus,"decacctstake total srp for account must be greater than or equal srprewardedsus." );
-        eosio_assert(astakeiter->total_staked_fio >= fiostakedsufs,"decacctstake total staked fio for account must be greater than or equal fiostakedsufs." );
-
-        //update the existing record
-        astakebyaccount.modify(astakeiter, _self, [&](struct account_staking_info &a) {
-            a.total_staked_fio -= fiostakedsufs;
-            a.total_srp -= srprewardedsus;
-        });
-
-    }
 
 
 
@@ -262,12 +180,13 @@ public:
 
         uint64_t srptoaward = amount / rateofexchange;
 
+        //update global staking state
         gstaking.combined_token_pool += amount;
         gstaking.global_srp_count += srptoaward;
         gstaking.staked_token_pool += amount;
 
 
-        //increment account staking info
+        //update account staking info
         auto astakebyaccount = accountstaking.get_index<"byaccount"_n>();
         auto astakeiter = astakebyaccount.find(actor.value);
         if (astakeiter != astakebyaccount.end()) {
@@ -300,52 +219,204 @@ public:
     void unstakefio(const string &fio_address,const int64_t &amount, const int64_t &max_fee,
                            const string &tpid, const name &actor) {
         require_auth(actor);
-        print("EDEDEDEDEDEDEDEDEDEDEDEDED call into unstakefio amount ", amount," max_fee ",max_fee," tpid ",tpid," actor ",actor, "\n");
+
+        fio_400_assert(amount > 0, "amount", to_string(amount), "Invalid amount value",ErrorInvalidValue);
+        fio_400_assert(max_fee >= 0, "amount", to_string(max_fee), "Invalid fee value",ErrorInvalidValue);
+        fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,"TPID must be empty or valid FIO address",ErrorPubKeyValid);
+
+        //process the fio address specified
+        FioAddress fa;
+        getFioAddressStruct(fio_address, fa);
+
+        fio_400_assert(validateFioNameFormat(fa) && !fa.domainOnly, "fio_address", fa.fioaddress, "Invalid FIO Address",
+                       ErrorDomainAlreadyRegistered);
+
+        const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+        auto namesbyname = fionames.get_index<"byname"_n>();
+        auto fioname_iter = namesbyname.find(nameHash);
+        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fa.fioaddress,
+                       "FIO Address not registered", ErrorFioNameAlreadyRegistered);
+
+        fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature);
+
+        const uint32_t expiration = fioname_iter->expiration;
+        const uint32_t present_time = now();
+        fio_400_assert(present_time <= expiration, "fio_address", fio_address, "FIO Address expired. Renew first.",
+                       ErrorDomainExpired);
+
+        auto astakebyaccount = accountstaking.get_index<"byaccount"_n>();
+        auto astakeiter = astakebyaccount.find(actor.value);
+        eosio_assert(astakeiter != astakebyaccount.end(),"incacctstake, actor has no accountstake record." );
+        eosio_assert(astakeiter->account == actor,"incacctstake, actor accountstake lookup error." );
+        fio_400_assert(astakeiter->total_staked_fio >= amount, "amount", to_string(amount), "Cannot unstake more than staked.",
+                       ErrorInvalidValue);
+
+        //get the usable balance for the account
+        //this is account balance - genesis locked tokens - general locked balance.
+        auto stakeablebalance = eosio::token::computeusablebalance(actor);
+
+        uint64_t paid_fee_amount = 0;
+        //begin, bundle eligible fee logic for staking
+        const uint128_t endpoint_hash = string_to_uint128_hash(UNSTAKE_FIO_TOKENS_ENDPOINT);
+
+        auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+
+        //if the fee isnt found for the endpoint, then 400 error.
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UNSTAKE_FIO_TOKENS_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        const int64_t fee_amount = fee_iter->suf_amount;
+        const uint64_t fee_type = fee_iter->type;
+
+        fio_400_assert(fee_type == 1, "fee_type", to_string(fee_type),
+                       "unexpected fee type for endpoint unstake_fio_tokens, expected 0",
+                       ErrorNoEndpoint);
+
+        const uint64_t bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
+
+        if (bundleeligiblecountdown > 0) {
+            action{
+                    permission_level{_self, "active"_n},
+                    AddressContract,
+                    "decrcounter"_n,
+                    make_tuple(fio_address, 1)
+            }.send();
+        } else {
+            paid_fee_amount = fee_iter->suf_amount;
+            fio_400_assert(max_fee >= (int64_t)paid_fee_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                           ErrorMaxFeeExceeded);
+
+            fio_fees(actor, asset(fee_amount, FIOSYMBOL), UNSTAKE_FIO_TOKENS_ENDPOINT);
+            process_rewards(tpid, fee_amount,get_self(), actor);
+
+            if (fee_amount > 0) {
+                INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
+                        ("eosio"_n, {{_self, "active"_n}},
+                         {actor, true}
+                        );
+            }
+        }
+
+        fio_400_assert(stakeablebalance >= (paid_fee_amount + (uint64_t)amount), "max_fee", to_string(max_fee), "Insufficient balance.",
+                       ErrorMaxFeeExceeded);
+        //End, bundle eligible fee logic for staking
+
+        //RAM bump
+        if (UNSTAKEFIOTOKENSRAM > 0) {
+            action(
+                    permission_level{SYSTEMACCOUNT, "active"_n},
+                    "eosio"_n,
+                    "incram"_n,
+                    std::make_tuple(actor, UNSTAKEFIOTOKENSRAM)
+            ).send();
+        }
+
+        //SRPs to Claim are computed: Staker's Account SRPs * (Unstaked amount / Total Tokens Staked in Staker's Account)
+        uint64_t srpstoclaim = astakeiter->total_srp * ( amount / astakeiter->total_staked_fio);
+
+        //compute rate of exchange
+        uint64_t rateofexchange =  1;
+        if (gstaking.combined_token_pool >= COMBINEDTOKENPOOLMINIMUM) {
+            rateofexchange = gstaking.combined_token_pool / gstaking.global_srp_count;
+        }
+
+        eosio_assert((srpstoclaim * rateofexchange) >= amount, "unstakefio, invalid calc in totalrewardamount, must be that (srpstoclaim * rateofexchange) > amount. ");
+        uint64_t totalrewardamount = ((srpstoclaim * rateofexchange) - amount);
+        uint64_t tenpercent = totalrewardamount / 10;
+        //Staking Reward Amount is computed: ((SRPs to Claim * Rate of Exchnage) - Unstake amount) * 0.9
+        uint64_t stakingrewardamount = tenpercent * 9;
+        // TPID Reward Amount is computed: ((SRPs to Claim * Rate of Exchnage) - Unstake amount) * 0.1
+        uint64_t tpidrewardamount = tenpercent;
+
+        //decrement staking by account.
+        eosio_assert(astakeiter->total_srp >= srpstoclaim,"unstakefio, total srp for account must be greater than or equal srpstoclaim." );
+        eosio_assert(astakeiter->total_staked_fio >= amount,"unstakefio, total staked fio for account must be greater than or equal fiostakedsufs." );
+
+        //update the existing record
+        astakebyaccount.modify(astakeiter, _self, [&](struct account_staking_info &a) {
+            a.total_staked_fio -= amount;
+            a.total_srp -= srpstoclaim;
+        });
+
+        //transfer the staking reward amount.
+        if (stakingrewardamount > 0) {
+            //Staking Reward Amount is transferred to Staker's Account.
+            //           Memo: "Paying Staking Rewards"
+            action(permission_level{get_self(), "active"_n},
+                   TREASURYACCOUNT, "paystake"_n,
+                   make_tuple(actor, stakingrewardamount)
+            ).send();
+        }
+
+        //decrement the global state
+        //avoid overflows due to negative results.
+        eosio_assert(gstaking.combined_token_pool >= (amount+stakingrewardamount),"unstakefio, combined token pool must be greater or equal to amount plus stakingrewardamount. " );
+        eosio_assert(gstaking.staked_token_pool >= amount,"unstakefio, staked token pool must be greater or equal to staked amount. " );
+        eosio_assert(gstaking.global_srp_count >= srpstoclaim,"unstakefio, global srp count must be greater or equal to srpstoclaim. " );
+
+        //     decrement the combined_token_pool by fiostaked+fiorewarded.
+        gstaking.combined_token_pool -= (amount+stakingrewardamount);
+        //     decrement the staked_token_pool by fiostaked.
+        gstaking.staked_token_pool -= amount;
+        //     decrement the global_srp_count by srpcount.
+        gstaking.global_srp_count -= srpstoclaim;
+
+        //pay the tpid.
+        if ((tpid.length() > 0)&&(tpidrewardamount>0)){
+            //get the owner of the tpid and pay them.
+            const uint128_t tnameHash = string_to_uint128_hash(tpid.c_str());
+            auto tfioname_iter = namesbyname.find(tnameHash);
+            fio_400_assert(tfioname_iter != namesbyname.end(), "fio_address", fa.fioaddress,
+                           "FIO Address not registered", ErrorFioNameAlreadyRegistered);
+
+            const uint32_t expiration = tfioname_iter->expiration;
+            const uint32_t present_time = now();
+            fio_400_assert(present_time <= expiration, "fio_address", fio_address, "FIO Address expired. Renew first.",
+                           ErrorDomainExpired);
+
+            //pay the tpid
+            action(
+                    permission_level{get_self(), "active"_n},
+                    TPIDContract,
+                    "updatetpid"_n,
+                    std::make_tuple(tpid, actor, tpidrewardamount)
+            ).send();
+
+
+
+            //decrement the amount paid from combined token pool.
+            if(tpidrewardamount<= gstaking.combined_token_pool) {
+                gstaking.combined_token_pool -= tpidrewardamount;
+            }
+        }
+
+
+        //TODO!!!!!!
+        // amount + Staking Reward Amount is locked in Staker's Account for 7 days.
 
         /*
          * Request is validated per Exception handling.
          *
-           unstake_fio_tokens fee is collected.
-
-           RAM of signer is increased, amount of ram increment will be computed and updated into FIP during development
-
-           SRPs to Claim are computed: Staker's Account SRPs * (Unstaked amount / Total Tokens Staked in Staker's Account)
-
-           Staking Reward Amount is computed: ((SRPs to Claim * Rate of Exchnage) - Unstake amount) * 0.9
-
-           TPID Reward Amount is computed: ((SRPs to Claim * Rate of Exchnage) - Unstake amount) * 0.1
-
-           Account Tokens Staked is decremented by amount in account related table.
-           Account Staking Reward Point is decremented by SRPs to Award in account related table
-         (implement)  (call decacctstake)
-
-           Staking Reward Amount is transferred to Staker's Account.
-           Memo: "Paying Staking Rewards"
-
-           Global SRP count is decremented by SRPs to Claim .
-           Combined Token Pool count is decremented by amount + Staking Reward Amount.
-           staked token pool is decremented by amount
-          (implement) (call decgstake)
-
-           If tpid was provided, TPID Reward Amount is awarded to the tpid and decremented from Combined Token Pool.
-           check for max FIO transaction size exceeded will be applied.
+         *
+         *
+         *
 
            amount + Staking Reward Amount is locked in Staker's Account for 7 days.
 
-           Invalid amount value	amount format is not valid	400	"amount"	Value sent in, e.g. "-100"	"Invalid amount value"
-           Ustake exceeds staked	amount to unstake is greater than the total staked by account	400	"amount"	Value sent in, e.g. "100000000000"	"Cannot unstake more than staked."
-           Invalid fee value	max_fee format is not valid	400	"max_fee"	Value sent in, e.g. "-100"	"Invalid fee value"
-           Fee exceeds maximum	Actual fee is greater than supplied max_fee	400	"max_fee"	Value sent in, e.g. "1000000000"	"Fee exceeds supplied maximum"
-           Insufficient balance	Available (unlocked and unstaked) balance in Staker's account is less than chain fee + amount	400	"max_oracle_fee"	Value sent in, e.g. "100000000000"	"Insufficient balance"
-           Invalid TPID	tpid format is not valid	400	"tpid"	Value sent in, e.g. "notvalidfioaddress"	"TPID must be empty or valid FIO address"
-           Signer not actor	Signer not actor	403			Type: invalid_signature
+
          */
 
-        check(is_account(actor),"account must pre exist");
-        check(amount > 0,"cannot unstake token amount less or equal 0.");
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(paid_fee_amount) + string("}");
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransaction);
+
+        send_response(response_string.c_str());
     }
 
 };     //class Staking
 
-EOSIO_DISPATCH(Staking, (stakefio)(unstakefio)(decgstake)(decacctstake) )
+EOSIO_DISPATCH(Staking, (stakefio)(unstakefio) )
 }

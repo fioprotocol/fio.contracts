@@ -108,6 +108,22 @@ public:
                 send_response(response_string.c_str());
         } //tpid_claim
 
+
+        // @abi action
+        [[eosio::action]]
+        void paystake( const name &actor, const uint64_t &amount) {
+            require_auth(STAKINGACCOUNT);
+
+            action(permission_level{get_self(), "active"_n},
+                TokenContract, "transfer"_n,
+                make_tuple(TREASURYACCOUNT, name(actor),
+                asset(amount, FIOSYMBOL),
+                string("Paying Staking Rewards"))
+            ).send();
+
+        }
+
+
         // @abi action
         [[eosio::action]]
         void bpclaim(const string &fio_address, const name &actor) {
@@ -376,5 +392,5 @@ public:
 };     //class FIOTreasury
 
 EOSIO_DISPATCH(FIOTreasury, (tpidclaim)(startclock)(bprewdupdate)(fdtnrwdupdat)(bppoolupdate)
-               (bpclaim))
+               (bpclaim)(paystake))
 }
