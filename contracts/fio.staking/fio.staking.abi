@@ -122,6 +122,10 @@
                    "base": "",
                    "fields": [
                                {
+                                 "name": "fio_address",
+                                 "type": "string"
+                               },
+                               {
                                  "name": "amount",
                                  "type": "int64"
                                },
@@ -142,6 +146,10 @@
                    "name": "unstakefio",
                    "base": "",
                    "fields": [
+                               {
+                                 "name": "fio_address",
+                                 "type": "string"
+                               },
                                {
                                  "name": "amount",
                                  "type": "int64"

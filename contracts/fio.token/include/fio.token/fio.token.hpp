@@ -13,6 +13,7 @@
 #include <fio.system/include/fio.system/fio.system.hpp>
 #include <fio.fee/fio.fee.hpp>
 #include <fio.tpid/fio.tpid.hpp>
+#include <fio.staking/fio.staking.hpp>
 
 namespace eosiosystem {
     class system_contract;
@@ -32,6 +33,7 @@ namespace eosio {
         fioio::fionames_table fionames;
         eosiosystem::locked_tokens_table lockedTokensTable;
         eosiosystem::general_locks_table generalLockTokensTable;
+        fioio::account_staking_table accountstaking;
 
     public:
         token(name s, name code, datastream<const char *> ds) : contract(s, code, ds),
@@ -42,7 +44,8 @@ namespace eosio {
                                                                 fiofees(fioio::FeeContract, fioio::FeeContract.value),
                                                                 tpids(TPIDContract, TPIDContract.value),
                                                                 lockedTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
-                                                                generalLockTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value){
+                                                                generalLockTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
+                                                                accountstaking(STAKINGACCOUNT,STAKINGACCOUNT.value){
             fioio::configs_singleton configsSingleton(fioio::FeeContract, fioio::FeeContract.value);
             appConfig = configsSingleton.get_or_default(fioio::config());
         }
@@ -150,6 +153,29 @@ namespace eosio {
             string public_key;
             bool existing;
         };
+
+        //This action will compute the number of unlocked tokens contained within an account.
+        // This considers
+        static uint64_t computeusablebalance(const name &owner){
+            uint64_t genesislockedamount = computeremaininglockedtokens(owner,true);
+            uint64_t generallockedamount = computegenerallockedtokens(owner,true);
+            uint64_t stakedfio = 0;
+
+            fioio::account_staking_table accountstaking(STAKINGACCOUNT, STAKINGACCOUNT.value);
+            auto astakebyaccount = accountstaking.get_index<"byaccount"_n>();
+            auto astakeiter = astakebyaccount.find(owner.value);
+            if (astakeiter != astakebyaccount.end()) {
+                check(astakeiter->account == owner,"incacctstake owner lookup error." );
+                stakedfio = astakeiter->total_staked_fio;
+            }
+            //apply a little QC.
+            const auto my_balance = eosio::token::get_balance("fio.token"_n, owner, FIOSYMBOL.code());
+            check(my_balance.amount >= (generallockedamount + generallockedamount + stakedfio),
+                         "computeusablebalance, amount of locked fio plus staked is greater than balance!! for " + owner.to_string() );
+            uint64_t amount = my_balance.amount - (generallockedamount + generallockedamount + stakedfio);
+            return amount;
+
+        }
 
 
 
