@@ -257,7 +257,7 @@ public:
 
         //compute rate of exchange and SRPs
         uint64_t rateofexchange =  1;
-        if (gstaking.combined_token_pool >= 1000000000000000) {
+        if (gstaking.combined_token_pool >= COMBINEDTOKENPOOLMINIMUM) {
             rateofexchange = gstaking.combined_token_pool / gstaking.global_srp_count;
         }
 
