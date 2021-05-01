@@ -67,9 +67,6 @@ public:
     // params
     //     amountfiosufs, this is the amount of FIO that has been minted, units SUFs
     //FIP-21 actions to update staking state.
-
-
-
     [[eosio::action]]
     void stakefio(const string &fio_address, const int64_t &amount, const int64_t &max_fee,
                          const string &tpid, const name &actor) {
@@ -89,25 +86,28 @@ public:
         fio_400_assert(max_fee >= 0, "amount", to_string(max_fee), "Invalid fee value",ErrorInvalidValue);
         fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,"TPID must be empty or valid FIO address",ErrorPubKeyValid);
 
+        uint64_t bundleeligiblecountdown = 0;
         //process the fio address specified
         FioAddress fa;
         getFioAddressStruct(fio_address, fa);
-
-        fio_400_assert(validateFioNameFormat(fa) && !fa.domainOnly, "fio_address", fa.fioaddress, "Invalid FIO Address",
+        fio_400_assert(fio_address == "" || validateFioNameFormat(fa), "fio_address", fio_address, "Invalid FIO Address format",
                        ErrorDomainAlreadyRegistered);
 
-        const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
-        auto namesbyname = fionames.get_index<"byname"_n>();
-        auto fioname_iter = namesbyname.find(nameHash);
-        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fa.fioaddress,
-                       "FIO Address not registered", ErrorFioNameAlreadyRegistered);
+        if (!fio_address.empty()) {
+            const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+            auto namesbyname = fionames.get_index<"byname"_n>();
+            auto fioname_iter = namesbyname.find(nameHash);
+            fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fa.fioaddress,
+                           "FIO Address not registered", ErrorFioNameAlreadyRegistered);
 
-        fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature);
+            fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature);
 
-        const uint32_t expiration = fioname_iter->expiration;
-        const uint32_t present_time = now();
-        fio_400_assert(present_time <= expiration, "fio_address", fio_address, "FIO Address expired. Renew first.",
-                       ErrorDomainExpired);
+            const uint32_t expiration = fioname_iter->expiration;
+            const uint32_t present_time = now();
+            fio_400_assert(present_time <= expiration, "fio_address", fio_address, "FIO Address expired. Renew first.",
+                           ErrorDomainExpired);
+            bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
+        }
 
         //get the usable balance for the account
         //this is account balance - genesis locked tokens - general locked balance.
@@ -132,7 +132,7 @@ public:
                        "unexpected fee type for endpoint stake_fio_tokens, expected 0",
                        ErrorNoEndpoint);
 
-        const uint64_t bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
+
 
         if (bundleeligiblecountdown > 0) {
             action{
@@ -215,6 +215,7 @@ public:
         send_response(response_string.c_str());
     }
 
+
     [[eosio::action]]
     void unstakefio(const string &fio_address,const int64_t &amount, const int64_t &max_fee,
                            const string &tpid, const name &actor) {
@@ -224,25 +225,31 @@ public:
         fio_400_assert(max_fee >= 0, "amount", to_string(max_fee), "Invalid fee value",ErrorInvalidValue);
         fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,"TPID must be empty or valid FIO address",ErrorPubKeyValid);
 
+
         //process the fio address specified
         FioAddress fa;
         getFioAddressStruct(fio_address, fa);
 
-        fio_400_assert(validateFioNameFormat(fa) && !fa.domainOnly, "fio_address", fa.fioaddress, "Invalid FIO Address",
+        fio_400_assert(fio_address == "" || validateFioNameFormat(fa), "fio_address", fio_address, "Invalid FIO Address format",
                        ErrorDomainAlreadyRegistered);
 
-        const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
-        auto namesbyname = fionames.get_index<"byname"_n>();
-        auto fioname_iter = namesbyname.find(nameHash);
-        fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fa.fioaddress,
-                       "FIO Address not registered", ErrorFioNameAlreadyRegistered);
+        uint64_t bundleeligiblecountdown = 0;
 
-        fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature);
+        if (!fio_address.empty()) {
+            const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+            auto namesbyname = fionames.get_index<"byname"_n>();
+            auto fioname_iter = namesbyname.find(nameHash);
+            fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fa.fioaddress,
+                           "FIO Address not registered", ErrorFioNameAlreadyRegistered);
 
-        const uint32_t expiration = fioname_iter->expiration;
-        const uint32_t present_time = now();
-        fio_400_assert(present_time <= expiration, "fio_address", fio_address, "FIO Address expired. Renew first.",
-                       ErrorDomainExpired);
+            fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature);
+
+            const uint32_t expiration = fioname_iter->expiration;
+            const uint32_t present_time = now();
+            fio_400_assert(present_time <= expiration, "fio_address", fio_address, "FIO Address expired. Renew first.",
+                           ErrorDomainExpired);
+            bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
+        }
 
         auto astakebyaccount = accountstaking.get_index<"byaccount"_n>();
         auto astakeiter = astakebyaccount.find(actor.value);
@@ -273,7 +280,7 @@ public:
                        "unexpected fee type for endpoint unstake_fio_tokens, expected 0",
                        ErrorNoEndpoint);
 
-        const uint64_t bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
+
 
         if (bundleeligiblecountdown > 0) {
             action{
@@ -366,8 +373,9 @@ public:
         if ((tpid.length() > 0)&&(tpidrewardamount>0)){
             //get the owner of the tpid and pay them.
             const uint128_t tnameHash = string_to_uint128_hash(tpid.c_str());
-            auto tfioname_iter = namesbyname.find(tnameHash);
-            fio_400_assert(tfioname_iter != namesbyname.end(), "fio_address", fa.fioaddress,
+            auto tnamesbyname = fionames.get_index<"byname"_n>();
+            auto tfioname_iter = tnamesbyname.find(tnameHash);
+            fio_400_assert(tfioname_iter != tnamesbyname.end(), "fio_address", tpid,
                            "FIO Address not registered", ErrorFioNameAlreadyRegistered);
 
             const uint32_t expiration = tfioname_iter->expiration;
