@@ -11,6 +11,7 @@
 #include <fio.token/fio.token.hpp>
 #include <fio.address/fio.address.hpp>
 #include <fio.fee/fio.fee.hpp>
+#include <fio.system/include/fio.system/fio.system.hpp>
 
 namespace fioio {
 
@@ -18,12 +19,13 @@ class [[eosio::contract("Staking")]]  Staking: public eosio::contract {
 
 private:
 
-        global_staking_singleton  staking;
-        global_staking_state gstaking;
-        account_staking_table accountstaking;
-        eosiosystem::voters_table voters;
-        fionames_table fionames;
-        fiofee_table fiofees;
+        global_staking_singleton         staking;
+        global_staking_state             gstaking;
+        account_staking_table            accountstaking;
+        eosiosystem::voters_table        voters;
+        fionames_table                   fionames;
+        fiofee_table                     fiofees;
+        eosiosystem::general_locks_table generallocks;
         bool debugout = false;
 
 public:
@@ -35,7 +37,8 @@ public:
                 accountstaking(_self,_self.value),
                 voters(SYSTEMACCOUNT,SYSTEMACCOUNT.value),
                 fiofees(FeeContract, FeeContract.value),
-                fionames(AddressContract, AddressContract.value){
+                fionames(AddressContract, AddressContract.value),
+                generallocks(SYSTEMACCOUNT,SYSTEMACCOUNT.value){
             gstaking = staking.exists() ? staking.get() : global_staking_state{};
         }
 
@@ -369,6 +372,7 @@ public:
         //     decrement the global_srp_count by srpcount.
         gstaking.global_srp_count -= srpstoclaim;
 
+        const uint32_t present_time = now();
         //pay the tpid.
         if ((tpid.length() > 0)&&(tpidrewardamount>0)){
             //get the owner of the tpid and pay them.
@@ -379,7 +383,6 @@ public:
                            "FIO Address not registered", ErrorFioNameAlreadyRegistered);
 
             const uint32_t expiration = tfioname_iter->expiration;
-            const uint32_t present_time = now();
             fio_400_assert(present_time <= expiration, "fio_address", fio_address, "FIO Address expired. Renew first.",
                            ErrorDomainExpired);
 
@@ -391,8 +394,6 @@ public:
                     std::make_tuple(tpid, actor, tpidrewardamount)
             ).send();
 
-
-
             //decrement the amount paid from combined token pool.
             if(tpidrewardamount<= gstaking.combined_token_pool) {
                 gstaking.combined_token_pool -= tpidrewardamount;
@@ -400,20 +401,129 @@ public:
         }
 
 
-        //TODO!!!!!!
-        // amount + Staking Reward Amount is locked in Staker's Account for 7 days.
+        //look and see if they have any general locks.
+        auto locks_by_owner = generallocks.get_index<"byowner"_n>();
+        auto lockiter = locks_by_owner.find(actor.value);
+        if (lockiter != locks_by_owner.end()) {
+            //if they have general locks then adapt the locks.
+            //get the amount of the lock.
+            int64_t newlockamount = lockiter->lock_amount + (stakingrewardamount + amount);
+            //get the remaining unlocked of the lock.
+            int64_t newremaininglockamount = lockiter->remaining_lock_amount + (stakingrewardamount + amount);
+            //get the timestamp of the lock.
+            print("EDEDDEDEDEDED present time ", present_time,"\n");
+            print("EDEDDEDEDEDED  time stamp lock ", lockiter->timestamp,"\n");
 
-        /*
-         * Request is validated per Exception handling.
-         *
-         *
-         *
-         *
 
-           amount + Staking Reward Amount is locked in Staker's Account for 7 days.
+            print("EDEDDEDEDEDED  lock amount ", lockiter->lock_amount,"\n");
+            print("EDEDDEDEDEDED  staking reward amount ", stakingrewardamount,"\n");
+            print("EDEDDEDEDEDED  unstake amount ", amount,"\n");
+
+            uint32_t insertperiod = (present_time - lockiter->timestamp) + 604800;
+            double oldlockpercentofnewtotal = (((double) lockiter->lock_amount) /
+                                               (double) (lockiter->lock_amount + stakingrewardamount + amount));
+            print("EDEDDEDEDEDED  oldlockpercentofnewtotal ", oldlockpercentofnewtotal,"\n");
+            vector <eosiosystem::lockperiods> newperiods;
+            //gotta truncate tne new percent at 3 decimal places
+            bool insertintoexisting = false;
+            uint32_t lastperiodduration = 0;
+            int insertindex = -1;
+            double totalnewpercent = 0.0;
+            for (int i = 0; i < lockiter->periods.size(); i++) {
+                double newpercent = lockiter->periods[i].percent * oldlockpercentofnewtotal;
+
+                //truncate it at 3 digits resolution.
+                newpercent = ((double(int(newpercent * 1000.0))) / 1000.0);
+                print("EDEDEDEDED newpercent is ",newpercent,"\n");
+                totalnewpercent += newpercent;
+                if (lockiter->periods[i].duration == insertperiod) {
+                    insertintoexisting = true;
+                }
+                if (lockiter->periods[i].duration > insertperiod) {
+                    insertindex = i;
+                }
+                lastperiodduration = lockiter->periods[i].duration;
+                eosiosystem::lockperiods tperiod;
+                tperiod.duration = lockiter->periods[i].duration;
+                tperiod.percent = newpercent;
+                newperiods.push_back(tperiod);
+            }
+
+            if(insertperiod > lastperiodduration)
+            {
+                insertindex = lockiter->periods.size();
+            }
 
 
-         */
+            print("EDEDEDEDEDEDEDED INSERT INDEX IS ",insertindex);
+
+            //adapting an existing period.
+            if (insertintoexisting) {
+                double t =  newperiods[insertindex - 1].percent + (100.0 - totalnewpercent);
+                t = ((double(int(t * 1000.0))) / 1000.0);
+                newperiods[insertindex - 1].percent = t;
+            } else { //add the new period
+                double t =  (100.0 - totalnewpercent);
+                t = ((double(int(t * 1000.0))) / 1000.0);
+                eosiosystem::lockperiods iperiod;
+                iperiod.duration = insertperiod;
+                iperiod.percent = t;
+                newperiods.insert(newperiods.begin() + insertindex, iperiod);
+                print("EDEDEDEDED newpercent added is ",t,"\n");
+            }
+
+           //update the locks table..   modgenlocked
+            action(
+                    permission_level{get_self(), "active"_n},
+                    SYSTEMACCOUNT,
+                    "modgenlocked"_n,
+                    std::make_tuple(actor, newperiods, newlockamount, newremaininglockamount)
+            ).send();
+
+            /*
+             * First compute origpercent as  (old amount of lock / (old lock amount + additional lock amount))/100.
+
+               For each percent in the lock
+                   newpercent = percent * (origpercent).
+                   If duration == new duration
+                         Add the new amount to the period
+                         Keep this as the index which will need the add on percent for final.
+                   If duration > new duration
+                         Add in the new period here!
+                         Keep this as the index which will need the add on percent for final.
+
+                   Lock amount start    22
+                   Lock amount added  100
+
+                   Periods
+                    1—     5%           .9%
+                    2—    15%          2.7%
+                    3—    80%         14.4%
+                    —————————————————
+                    22 is  18% 122 so multiply each percent by (18/100) to get new percent.
+             *
+             *
+             *
+             *
+             */
+            // insertperiod = (now - timestamp) + 7 days is the new unlock period we are adding.
+            // go through the periods until end of list or period >= insertperiod.
+            //                                                       5
+
+        }else {
+            //else make new lock.
+            bool canvote = true;
+            int64_t lockamount = (int64_t)(stakingrewardamount + amount);
+            vector <eosiosystem::lockperiods> periods;
+            eosiosystem::lockperiods period;
+            period.duration = 604800;
+            period.percent = 100.0;
+            periods.push_back(period);
+            INLINE_ACTION_SENDER(eosiosystem::system_contract, addgenlocked)
+                    ("eosio"_n, {{_self, "active"_n}},
+                     {actor, periods, canvote, lockamount}
+                    );
+        }
 
         const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
                                        to_string(paid_fee_amount) + string("}");

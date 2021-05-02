@@ -220,7 +220,9 @@ namespace eosiosystem {
 
     void eosiosystem::system_contract::addgenlocked(const name &owner, const vector<lockperiods> &periods, const bool &canvote,
             const int64_t &amount) {
-        require_auth(TokenContract);
+
+        eosio_assert((has_auth(TokenContract) || has_auth(StakingContract)),
+                     "missing required authority of fio.token or fio.staking");
 
         check(is_account(owner),"account must pre exist");
         check(amount > 0,"cannot add locked token amount less or equal 0.");
@@ -237,6 +239,46 @@ namespace eosiosystem {
         });
     }
 
+    void eosiosystem::system_contract::modgenlocked(const name &owner, const vector<lockperiods> &periods,
+                                                    const int64_t &amount, const int64_t &rem_lock_amount) {
+
+        eosio_assert( has_auth(StakingContract),
+                     "missing required authority of fio.staking");
+
+        check(is_account(owner),"account must pre exist");
+        check(amount > 0,"cannot add locked token amount less or equal 0.");
+        check(rem_lock_amount > 0,"cannot add remaining locked token amount less or equal 0.");
+
+        double totp = 0.0;
+        double tv = 0.0;
+        int64_t longestperiod = 0;
+        for(int i=0;i<periods.size();i++){
+            fio_400_assert(periods[i].percent > 0.0, "unlock_periods", "Invalid unlock periods",
+                           "Invalid percentage value in unlock periods", ErrorInvalidUnlockPeriods);
+            tv = periods[i].percent - (double(int(periods[i].percent * 1000.0)))/1000.0;
+            fio_400_assert(tv == 0.0, "unlock_periods", "Invalid unlock periods",
+                           "Invalid precision for percentage in unlock periods", ErrorInvalidUnlockPeriods);
+            fio_400_assert(periods[i].duration > 0, "unlock_periods", "Invalid unlock periods",
+                           "Invalid duration value in unlock periods", ErrorInvalidUnlockPeriods);
+            totp += periods[i].percent;
+            if (periods[i].duration > longestperiod){
+                longestperiod = periods[i].duration;
+            }
+        }
+        fio_400_assert(totp == 100.0, "unlock_periods", "Invalid unlock periods",
+                       "Invalid total percentage for unlock periods", ErrorInvalidUnlockPeriods);
+
+        auto locks_by_owner = _generallockedtokens.get_index<"byowner"_n>();
+        auto lockiter = locks_by_owner.find(owner.value);
+        check(lockiter != locks_by_owner.end(),"error looking up lock owner.");
+        //call the system contract and update the record.
+        locks_by_owner.modify(lockiter, get_self(), [&](auto &av) {
+            av.remaining_lock_amount = rem_lock_amount;
+            av.lock_amount = amount;
+            av.periods = periods;
+        });
+    }
+
 } /// fio.system
 
 
@@ -244,7 +286,7 @@ EOSIO_DISPATCH( eosiosystem::system_contract,
 // native.hpp (newaccount definition is actually in fio.system.cpp)
 (newaccount)(addaction)(remaction)(updateauth)(deleteauth)(linkauth)(unlinkauth)(canceldelay)(onerror)(setabi)
 // fio.system.cpp
-(init)(addlocked)(addgenlocked)(setparams)(setpriv)
+(init)(addlocked)(addgenlocked)(modgenlocked)(setparams)(setpriv)
         (rmvproducer)(updtrevision)
 // delegate_bandwidth.cpp
         (updatepower)
