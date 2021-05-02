@@ -170,9 +170,9 @@ namespace eosio {
             }
             //apply a little QC.
             const auto my_balance = eosio::token::get_balance("fio.token"_n, owner, FIOSYMBOL.code());
-            check(my_balance.amount >= (generallockedamount + generallockedamount + stakedfio),
+            check(my_balance.amount >= (generallockedamount + genesislockedamount + stakedfio),
                          "computeusablebalance, amount of locked fio plus staked is greater than balance!! for " + owner.to_string() );
-            uint64_t amount = my_balance.amount - (generallockedamount + generallockedamount + stakedfio);
+            uint64_t amount = my_balance.amount - (generallockedamount + genesislockedamount + stakedfio);
             return amount;
 
         }
