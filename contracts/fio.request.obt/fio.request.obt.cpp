@@ -71,136 +71,29 @@ namespace fioio {
             uint16_t count = 0;
             bool isSuccessful = false;
             if (amount > 10) { limit = 10; }
-            auto reqTable = fiorequestContextsTable.begin();
             auto trxTable = fioTransactionsTable.begin();
             auto migrTable = mgrStatsTable.begin();
 
-            if (migrTable == mgrStatsTable.end()) {
-                if (trxTable == fioTransactionsTable.end()) { //transfer ID 0 request
-                    string payer_account;
-                    key_to_account(reqTable->payer_key, payer_account);
-                    name payer_acct = name(payer_account.c_str());
-
-                    string payee_account;
-                    key_to_account(reqTable->payee_key, payee_account);
-                    name payee_acct = name(payee_account.c_str());
-
-                    fioTransactionsTable.emplace(executor, [&](struct fiotrxt_info &frc) {
-                        frc.id = fioTransactionsTable.available_primary_key();
-                        frc.fio_request_id = reqTable->fio_request_id;
-                        frc.fio_data_type = static_cast<int64_t>(trxstatus::requested);
-                        frc.payer_fio_addr_hex = reqTable->payer_fio_address;
-                        frc.payee_fio_addr_hex = reqTable->payee_fio_address;
-                        frc.req_content = reqTable->content;
-                        frc.req_time = reqTable->time_stamp;
-                        frc.payer_fio_addr = reqTable->payer_fio_addr;
-                        frc.payee_fio_addr = reqTable->payee_fio_addr;
-                        frc.payee_key = reqTable->payee_key;
-                        frc.payer_key = reqTable->payer_key;
-                        frc.payer_account = payer_acct.value;
-                        frc.payee_account = payee_acct.value;
-                    });
-                    count++;
-                    mgrStatsTable.emplace(executor, [&](struct migrledger &strc) {
-                        strc.id = 0;
-                        strc.currentrq = 1;
-                    });
-                    return;
-                }
-            }
-
-            reqTable = fiorequestContextsTable.find(migrTable->currentrq);
-            if (count != limit) { //request table migrate
-                while (reqTable != fiorequestContextsTable.end() && migrTable->currentrq < migrTable->beginrq) {
-                    uint64_t reqid = reqTable->fio_request_id;
-                    auto trxtByRequestId = fioTransactionsTable.get_index<"byrequestid"_n>();
-                    auto fioreqctx_iter = trxtByRequestId.find(reqid);
-
-                    if (fioreqctx_iter == trxtByRequestId.end()) {
-                        string payer_account;
-                        key_to_account(reqTable->payer_key, payer_account);
-                        name payer_acct = name(payer_account.c_str());
-
-                        string payee_account;
-                        key_to_account(reqTable->payee_key, payee_account);
-                        name payee_acct = name(payee_account.c_str());
-
-                        fioTransactionsTable.emplace(executor, [&](struct fiotrxt_info &frc) {
-                            frc.id = fioTransactionsTable.available_primary_key();
-                            frc.fio_request_id = reqid;
-                            frc.fio_data_type = static_cast<int64_t>(trxstatus::requested);
-                            frc.payer_fio_addr_hex = reqTable->payer_fio_address;
-                            frc.payee_fio_addr_hex = reqTable->payee_fio_address;
-                            frc.req_content = reqTable->content;
-                            frc.req_time = reqTable->time_stamp;
-                            frc.payer_fio_addr = reqTable->payer_fio_addr;
-                            frc.payee_fio_addr = reqTable->payee_fio_addr;
-                            frc.payee_key = reqTable->payee_key;
-                            frc.payer_key = reqTable->payer_key;
-                            frc.payer_account = payer_acct.value;
-                            frc.payee_account = payee_acct.value;
-                        });
-
-                        mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
-                            strc.currentrq = reqid + 1;
-                        });
-
-                        count++;
-                        if (count == limit) { return; }
-                    }
-                    reqTable++;
-                }
-            }
-
-            auto obtTable = recordObtTable.find(migrTable->currentobt);
-            if (count != limit) {
-                while (obtTable != recordObtTable.end() &&
-                       migrTable->currentobt < migrTable->beginobt) { //obt record migrate
-                    uint64_t id = obtTable->id;
-                    string payer_account;
-                    key_to_account(obtTable->payer_key, payer_account);
-                    name payer_acct = name(payer_account.c_str());
-
-                    string payee_account;
-                    key_to_account(obtTable->payee_key, payee_account);
-                    name payee_acct = name(payee_account.c_str());
-
-                    fioTransactionsTable.emplace(executor, [&](struct fiotrxt_info &frc) {
-                        frc.id = fioTransactionsTable.available_primary_key();;
-                        frc.fio_data_type = static_cast<int64_t>(trxstatus::obt_action);
-                        frc.payer_fio_addr_hex = obtTable->payer_fio_address;
-                        frc.payee_fio_addr_hex = obtTable->payee_fio_address;
-                        frc.req_content = obtTable->content;
-                        frc.req_time = obtTable->time_stamp;
-                        frc.payer_fio_addr = obtTable->payer_fio_addr;
-                        frc.payee_fio_addr = obtTable->payee_fio_addr;
-                        frc.payee_key = obtTable->payee_key;
-                        frc.payer_key = obtTable->payer_key;
-                        frc.payer_account = payer_acct.value;
-                        frc.payee_account = payee_acct.value;
-                    });
-
-                    mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
-                        strc.currentobt = id + 1;
-                    });
-
-                    count++;
-                    if (count == limit) { return; }
-                    obtTable++;
-                }
+            //reset index for status migration
+            if( migrTable->currentobt == 990 && migrTable->beginobt != 0 ) { //mainnet current value
+                mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strd) {
+                    strd.beginobt = 0;
+                    strd.currentsta = 0;
+                });
+                return;
             }
 
             auto statTable = fiorequestStatusTable.find(migrTable->currentsta);
             if (count != limit) { //status table migrate
                 while (statTable != fiorequestStatusTable.end()) {
+                    uint64_t id = fioreqctx_iter->id;
                     uint64_t reqid = statTable->fio_request_id;
                     uint8_t statType = statTable->status;
+                    uint64_t timestamp = ( statType->time_stamp / 1000000 ); // remove the 00000 at the end
                     auto trxtByRequestId = fioTransactionsTable.get_index<"byrequestid"_n>();
                     auto fioreqctx_iter = trxtByRequestId.find(reqid);
 
-                    if( statType != fioreqctx_iter->fio_data_type && fioreqctx_iter != trxtByRequestId.end() ){
-                        uint64_t id = fioreqctx_iter->id;
-
+                    if( fioreqctx_iter != trxtByRequestId.end() ){
                         trxtByRequestId.modify(fioreqctx_iter, _self, [&](struct fiotrxt_info &fr) {
                             fr.fio_data_type = statType;
                             fr.obt_time = statTable->time_stamp;
@@ -210,8 +103,8 @@ namespace fioio {
                         mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
                             strc.currentsta = statTable->id + 1;
                         });
+                        count++;
                     }
-                    count++;
                     statTable++;
                     if(statTable == fiorequestStatusTable.end()){
                         mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
@@ -272,7 +165,7 @@ namespace fioio {
             FioAddress payerfa;
             getFioAddressStruct(payer_fio_address, payerfa);
 
-            uint32_t present_time = now();
+            const uint32_t present_time = now();
 
             uint128_t nameHash = string_to_uint128_hash(payer_fio_address.c_str());
             auto namesbyname = fionames.get_index<"byname"_n>();
@@ -364,7 +257,6 @@ namespace fioio {
             //end fees, bundle eligible fee logic
 
             if (fio_request_id.length() > 0) {
-                uint64_t currentTime = current_time();
                 uint64_t requestId;
                 requestId = std::atoi(fio_request_id.c_str());
 
@@ -388,7 +280,7 @@ namespace fioio {
                     trxtByRequestId.modify(fioreqctx_iter2, _self, [&](struct fiotrxt_info &fr) {
                         fr.fio_data_type = static_cast<int64_t>(trxstatus::sent_to_blockchain);
                         fr.obt_content = content;
-                        fr.obt_time = currentTime;
+                        fr.obt_time = present_time;
                     });
                 }
                 // USED FOR MIGRATION
@@ -404,11 +296,10 @@ namespace fioio {
                     fr.fio_request_id = requestId;
                     fr.status = static_cast<int64_t >(trxstatus::sent_to_blockchain);
                     fr.metadata = content;
-                    fr.time_stamp = currentTime;
+                    fr.time_stamp = present_time;
                 });
             } else {
                 const uint64_t id = recordObtTable.available_primary_key();
-                const uint64_t currentTime = now();
                 const uint128_t toHash = string_to_uint128_hash(payee_fio_address.c_str());
                 const uint128_t fromHash = string_to_uint128_hash(payer_fio_address.c_str());
                 const string toHashStr = "0x" + to_hex((char *) &toHash, sizeof(toHash));
@@ -437,7 +328,7 @@ namespace fioio {
                         obtinf.payee_fio_addr_hex = toHash;
                         obtinf.obt_content = content;
                         obtinf.fio_data_type = static_cast<int64_t>(trxstatus::obt_action);
-                        obtinf.req_time = currentTime;
+                        obtinf.req_time = present_time;
                         obtinf.payer_fio_addr = payer_fio_address;
                         obtinf.payee_fio_addr = payee_fio_address;
                         obtinf.payee_key = payee_key;
@@ -464,7 +355,7 @@ namespace fioio {
                     obtinf.payer_fio_address_with_time = payerwtime;
                     obtinf.payee_fio_address_with_time = payeewtime;
                     obtinf.content = content;
-                    obtinf.time_stamp = currentTime;
+                    obtinf.time_stamp = present_time;
                     obtinf.payer_fio_addr = payer_fio_address;
                     obtinf.payee_fio_addr = payee_fio_address;
                     obtinf.payee_key = payee_key;
