@@ -86,7 +86,6 @@ namespace fioio {
             auto statTable = fiorequestStatusTable.find(migrTable->currentsta);
             if (count != limit) { //status table migrate
                 while (statTable != fiorequestStatusTable.end()) {
-                    uint64_t id = fioreqctx_iter->id;
                     uint64_t reqid = statTable->fio_request_id;
                     uint8_t statType = statTable->status;
                     uint64_t timestamp = ( statType->time_stamp / 1000000 ); // remove the 00000 at the end
