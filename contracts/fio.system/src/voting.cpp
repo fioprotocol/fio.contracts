@@ -790,10 +790,11 @@ namespace eosiosystem {
                         amount = damount;
                     }
 
-                }else{
+                }//STAKING comment out to permit genesis and general locks to co-exist.
+                // else{
                     //amount is all the available tokens in the account.
-                    return amount;
-                }
+                  //  return amount;
+               // }
             }
            //TEST TEST TEST LOCKED TOKENS
            //TEST TEST TEST LOCKED TOKENS  uint32_t issueplus210 = lockiter->timestamp+(25*60);
@@ -812,9 +813,26 @@ namespace eosiosystem {
                 }
             }
         }
+
+        //STAKING
+        //now add in the logic for the general locks.
+        auto locks_by_owner = _generallockedtokens.get_index<"byowner"_n>();
+        auto glockiter = locks_by_owner.find(tokenowner.value);
+        if(glockiter != locks_by_owner.end()){
+            //if can vote --
+            if (glockiter->can_vote == 0){
+                if (amount > glockiter->remaining_lock_amount) {
+                    amount =  amount - glockiter->remaining_lock_amount;
+                }else{
+                    amount = 0;
+                }
+            }
+        }
+
         return amount;
     }
 
+    //STAKING -- this will be obsoleted, logic will be included in get_votable_balance.
     glockresult system_contract::get_general_votable_balance(const name &tokenowner){
 
         glockresult res;
@@ -868,12 +886,13 @@ namespace eosiosystem {
 
         //change to get_unlocked_balance() Ed 11/25/2019
         uint64_t amount = 0;
-        glockresult res = get_general_votable_balance(voter->owner);
-        if(res.lockfound){
-            amount = res.amount;
-        }else {
+
+       // STAKING genesis locks and general can co exist. glockresult res = get_general_votable_balance(voter->owner);
+       // if(res.lockfound){
+       //     amount = res.amount;
+       // }else {
            amount = get_votable_balance(voter->owner);
-        }
+       // }
 
         //on the first vote we update the total voted fio.
 
@@ -1274,12 +1293,13 @@ namespace eosiosystem {
         check(!voter.proxy || !voter.is_proxy, "account registered as a proxy is not allowed to use a proxy");
 
         uint64_t amount = 0;
-        glockresult res = get_general_votable_balance(voter.owner);
-        if(res.lockfound){
-            amount = res.amount;
-        }else {
+       // STAKING genesis and genersal locks can co exist
+       // glockresult res = get_general_votable_balance(voter.owner);
+       // if(res.lockfound){
+       //     amount = res.amount;
+       // }else {
             amount = get_votable_balance(voter.owner);
-        }
+       // }
         //instead of staked we use the voters current FIO balance MAS-522 eliminate stake from voting.
         auto new_weight = (double)amount;
         if (voter.is_proxy) {

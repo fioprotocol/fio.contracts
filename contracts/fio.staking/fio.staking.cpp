@@ -114,7 +114,7 @@ public:
 
         //get the usable balance for the account
         //this is account balance - genesis locked tokens - general locked balance.
-        auto stakeablebalance = eosio::token::computeusablebalance(actor);
+        auto stakeablebalance = eosio::token::computeusablebalance(actor,true);
 
 
         uint64_t paid_fee_amount = 0;
@@ -263,7 +263,7 @@ public:
 
         //get the usable balance for the account
         //this is account balance - genesis locked tokens - general locked balance.
-        auto stakeablebalance = eosio::token::computeusablebalance(actor);
+        auto stakeablebalance = eosio::token::computeusablebalance(actor,true);
 
         uint64_t paid_fee_amount = 0;
         //begin, bundle eligible fee logic for staking
