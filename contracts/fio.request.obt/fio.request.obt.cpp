@@ -88,11 +88,11 @@ namespace fioio {
                 while (statTable != fiorequestStatusTable.end()) {
                     uint64_t reqid = statTable->fio_request_id;
                     uint8_t statType = statTable->status;
-                    uint64_t timestamp = ( statType->time_stamp / 1000000 ); // remove the 00000 at the end
                     auto trxtByRequestId = fioTransactionsTable.get_index<"byrequestid"_n>();
                     auto fioreqctx_iter = trxtByRequestId.find(reqid);
 
                     if( fioreqctx_iter != trxtByRequestId.end() ){
+                        uint64_t timestamp = ( fioreqctx_iter->time_stamp / 1000000 ); // remove the 00000 at the end
                         trxtByRequestId.modify(fioreqctx_iter, _self, [&](struct fiotrxt_info &fr) {
                             fr.fio_data_type = statType;
                             fr.obt_time = statTable->time_stamp;
