@@ -303,8 +303,8 @@ namespace fioio {
                 const uint128_t fromHash = string_to_uint128_hash(payer_fio_address.c_str());
                 const string toHashStr = "0x" + to_hex((char *) &toHash, sizeof(toHash));
                 const string fromHashStr = "0x" + to_hex((char *) &fromHash, sizeof(fromHash));
-                const string payerwtimestr = payer_fio_address + to_string(currentTime);
-                const string payeewtimestr = payee_fio_address + to_string(currentTime);
+                const string payerwtimestr = payer_fio_address + to_string(present_time);
+                const string payeewtimestr = payee_fio_address + to_string(present_time);
                 const uint128_t payeewtime = string_to_uint128_hash(payeewtimestr.c_str());
                 const uint128_t payerwtime = string_to_uint128_hash(payerwtimestr.c_str());
 
