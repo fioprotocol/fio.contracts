@@ -75,7 +75,7 @@ namespace fioio {
             auto migrTable = mgrStatsTable.begin();
 
             //reset index for status migration
-            if( migrTable->currentobt == 990 && migrTable->beginobt != 0 ) { //mainnet current value
+            if( migrTable->beginobt != 0 ) {
                 mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strd) {
                     strd.beginobt = 0;
                     strd.currentsta = 0;
@@ -92,7 +92,7 @@ namespace fioio {
                     auto fioreqctx_iter = trxtByRequestId.find(reqid);
 
                     if( fioreqctx_iter != trxtByRequestId.end() ){
-                        uint64_t timestamp = ( statTable->time_stamp / 1000000 ); // remove the 00000 at the end
+                        uint64_t timestamp = ( statTable->time_stamp / 100000 ); // remove the 00000 at the end
                         trxtByRequestId.modify(fioreqctx_iter, _self, [&](struct fiotrxt_info &fr) {
                             fr.fio_data_type = statType;
                             fr.obt_time = statTable->time_stamp;
@@ -104,6 +104,7 @@ namespace fioio {
                         });
                         count++;
                     }
+                    // old count
                     statTable++;
                     if(statTable == fiorequestStatusTable.end()){
                         mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
@@ -256,6 +257,7 @@ namespace fioio {
             //end fees, bundle eligible fee logic
 
             if (fio_request_id.length() > 0) {
+                uint64_t currentTime = current_time();
                 uint64_t requestId;
                 requestId = std::atoi(fio_request_id.c_str());
 
@@ -295,7 +297,7 @@ namespace fioio {
                     fr.fio_request_id = requestId;
                     fr.status = static_cast<int64_t >(trxstatus::sent_to_blockchain);
                     fr.metadata = content;
-                    fr.time_stamp = present_time;
+                    fr.time_stamp = currentTime;
                 });
             } else {
                 const uint64_t id = recordObtTable.available_primary_key();
@@ -303,8 +305,8 @@ namespace fioio {
                 const uint128_t fromHash = string_to_uint128_hash(payer_fio_address.c_str());
                 const string toHashStr = "0x" + to_hex((char *) &toHash, sizeof(toHash));
                 const string fromHashStr = "0x" + to_hex((char *) &fromHash, sizeof(fromHash));
-                const string payerwtimestr = payer_fio_address + to_string(present_time);
-                const string payeewtimestr = payee_fio_address + to_string(present_time);
+                const string payerwtimestr = payer_fio_address + to_string(currentTime);
+                const string payeewtimestr = payee_fio_address + to_string(currentTime);
                 const uint128_t payeewtime = string_to_uint128_hash(payeewtimestr.c_str());
                 const uint128_t payerwtime = string_to_uint128_hash(payerwtimestr.c_str());
 
@@ -354,7 +356,7 @@ namespace fioio {
                     obtinf.payer_fio_address_with_time = payerwtime;
                     obtinf.payee_fio_address_with_time = payeewtime;
                     obtinf.content = content;
-                    obtinf.time_stamp = present_time;
+                    obtinf.time_stamp = currentTime;
                     obtinf.payer_fio_addr = payer_fio_address;
                     obtinf.payee_fio_addr = payee_fio_address;
                     obtinf.payee_key = payee_key;
