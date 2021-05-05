@@ -216,6 +216,8 @@ namespace fioio {
                 });
             }
 
+            voters_iter = votesbyid.find(idHash); // 1 oracle hack?
+            
             //verify obt and address match other entries
             auto oracle_size = std::distance(oracles.cbegin(), oracles.cend());
             uint8_t size = tempvoters.size();
