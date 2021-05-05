@@ -156,9 +156,9 @@ namespace eosio {
 
         //This action will compute the number of unlocked tokens contained within an account.
         // This considers
-        static uint64_t computeusablebalance(const name &owner){
-            uint64_t genesislockedamount = computeremaininglockedtokens(owner,true);
-            uint64_t generallockedamount = computegenerallockedtokens(owner,true);
+        static uint64_t computeusablebalance(const name &owner,bool updatelocks){
+            uint64_t genesislockedamount = computeremaininglockedtokens(owner,updatelocks);
+            uint64_t generallockedamount = computegenerallockedtokens(owner,updatelocks);
             uint64_t stakedfio = 0;
 
             fioio::account_staking_table accountstaking(STAKINGACCOUNT, STAKINGACCOUNT.value);
