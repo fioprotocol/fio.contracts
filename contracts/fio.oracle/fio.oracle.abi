@@ -46,7 +46,7 @@
          "fields":[
             {
                "name":"actor",
-               "type":"uint64"
+               "type":"name"
             },
             {
                "name":"fees",
