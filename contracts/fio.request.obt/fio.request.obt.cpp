@@ -92,7 +92,7 @@ namespace fioio {
                     auto fioreqctx_iter = trxtByRequestId.find(reqid);
 
                     if( fioreqctx_iter != trxtByRequestId.end() ){
-                        uint64_t timestamp = ( fioreqctx_iter->time_stamp / 1000000 ); // remove the 00000 at the end
+                        uint64_t timestamp = ( statTable->time_stamp / 1000000 ); // remove the 00000 at the end
                         trxtByRequestId.modify(fioreqctx_iter, _self, [&](struct fiotrxt_info &fr) {
                             fr.fio_data_type = statType;
                             fr.obt_time = statTable->time_stamp;
