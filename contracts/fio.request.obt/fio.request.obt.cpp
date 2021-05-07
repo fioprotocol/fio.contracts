@@ -94,7 +94,7 @@ namespace fioio {
                     if( fioreqctx_iter != trxtByRequestId.end() ){
                         trxtByRequestId.modify(fioreqctx_iter, _self, [&](struct fiotrxt_info &fr) {
                             fr.fio_data_type = statType;
-                            fr.obt_time = statTable->time_stamp;
+                            fr.obt_time = timestamp;
                             if (statTable->metadata != "") { fr.obt_content = statTable->metadata; }
                         });
                         count++;
