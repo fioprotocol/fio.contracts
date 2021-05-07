@@ -105,7 +105,7 @@ namespace fioio {
                             strc.currentsta = 0;
                             strc.isFinished = 1;
                         });
-                        print("ALL RECORDS HAVE BEEN COPIED");
+                        print(" ALL RECORDS HAVE BEEN COPIED ");
                         return;
                     }
                     if (count == limit) {
