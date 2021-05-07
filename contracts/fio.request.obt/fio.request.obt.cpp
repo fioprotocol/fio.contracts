@@ -86,7 +86,7 @@ namespace fioio {
                 while (statTable != fiorequestStatusTable.end()) {
                     uint64_t reqid = statTable->fio_request_id;
                     uint8_t statType = statTable->status;
-                    uint64_t timestamp = static_cast<uint64>(( statTable->time_stamp / 100000 )); // remove the 00000 at the end
+                    uint64_t timestamp = static_cast<uint64>(( statTable->time_stamp / 1000000 )); // remove the 00000 at the end
                     
                     auto trxtByRequestId = fioTransactionsTable.get_index<"byrequestid"_n>();
                     auto fioreqctx_iter = trxtByRequestId.find(reqid);
