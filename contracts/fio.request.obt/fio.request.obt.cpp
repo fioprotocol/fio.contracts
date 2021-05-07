@@ -72,7 +72,6 @@ namespace fioio {
             bool isSuccessful = false;
             if (amount > 10) { limit = 10; }
             auto migrTable = mgrStatsTable.begin();
-
             //reset index for status migration
             if( migrTable->beginobt != 0 ) {
                 mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strd) {
@@ -98,13 +97,8 @@ namespace fioio {
                             fr.obt_time = statTable->time_stamp;
                             if (statTable->metadata != "") { fr.obt_content = statTable->metadata; }
                         });
-
-                        mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
-                            strc.currentsta = statTable->id + 1;
-                        });
                         count++;
                     }
-                    // old count
                     statTable++;
                     if(statTable == fiorequestStatusTable.end()){
                         mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
@@ -115,6 +109,9 @@ namespace fioio {
                         return;
                     }
                     if (count == limit) {
+                        mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
+                            strc.currentsta = statTable->id + 1;
+                        });
                         return; }
                 }
             }
