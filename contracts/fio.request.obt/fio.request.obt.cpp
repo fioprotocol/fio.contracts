@@ -70,22 +70,39 @@ namespace fioio {
             uint16_t limit = amount;
             uint16_t count = 0;
             bool isSuccessful = false;
-            if (amount > 10) { limit = 10; }
+            if (amount > 25) { limit = 25; }
             auto migrTable = mgrStatsTable.begin();
             auto TrxTable = fioTransactionsTable.begin();
             //reset index for status migration
-            if( migrTable->beginobt != 0 ) {
+            if( migrTable->beginrq != 0 ) {
                 mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strd) {
-                    strd.beginobt = 0;
+                    strd.beginrq = 0;
+                    strd.currentobt = 0;
                     strd.currentsta = 0;
                 });
                 return;
             }
 
-            //iterate fioTransactionsTable
-            // if status == 4
-            // obt_content = req_content
-            // obt_time = req_time
+            auto trxTable = fioTransactionsTable.find(migrTable->currentobt);
+            if (count != limit) {
+                while (trxTable != fioTransactionsTable.end()) { //obt record migrate
+                    if(trxTable->fio_data_type == trxstatus::obt_action) {
+                        uint64_t id = obtTable->id;
+
+                        fioTransactionsTable.modify(trxTable, _self, [&](struct fiotrxt_info &strt) {
+                            strt.obt_time = trxTable->req_time;
+                            strt.obt_content = trxTable->req_content;
+                        });
+
+                        mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
+                            strc.currentobt = id + 1;
+                        });
+                    }
+                    count++;
+                    if (count == limit) { return; }
+                    trxTable++;
+                }
+            }
 
             auto statTable = fiorequestStatusTable.find(migrTable->currentsta);
             if (count != limit) { //status table migrate
