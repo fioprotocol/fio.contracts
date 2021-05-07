@@ -321,15 +321,21 @@ public:
                     std::make_tuple(actor, UNSTAKEFIOTOKENSRAM)
             ).send();
         }
-
         //SRPs to Claim are computed: Staker's Account SRPs * (Unstaked amount / Total Tokens Staked in Staker's Account)
-        uint64_t srpstoclaim = astakeiter->total_srp * ( amount / astakeiter->total_staked_fio);
+         //                                             this needs to be a floating point (double) operation
+        uint64_t srpstoclaim = (uint64_t)((double)astakeiter->total_srp * (double)( (double)amount / (double)astakeiter->total_staked_fio));
+
+        print("EDEDEDEDEDED total staked fio is ",astakeiter->total_staked_fio, "\n");
+        print("EDEDEDEDEDED amount is ",amount, "\n");
+        print("EDEDEDEDEDED total srp is ",astakeiter->total_srp, "\n");
 
         //compute rate of exchange
         uint64_t rateofexchange =  1;
         if (gstaking.combined_token_pool >= COMBINEDTOKENPOOLMINIMUM) {
             rateofexchange = gstaking.combined_token_pool / gstaking.global_srp_count;
         }
+
+        print("EDEDEDEDEDED rate of exchange is ",rateofexchange, "\n"); 
 
         eosio_assert((srpstoclaim * rateofexchange) >= amount, "unstakefio, invalid calc in totalrewardamount, must be that (srpstoclaim * rateofexchange) > amount. ");
         uint64_t totalrewardamount = ((srpstoclaim * rateofexchange) - amount);
@@ -343,12 +349,15 @@ public:
         eosio_assert(astakeiter->total_srp >= srpstoclaim,"unstakefio, total srp for account must be greater than or equal srpstoclaim." );
         eosio_assert(astakeiter->total_staked_fio >= amount,"unstakefio, total staked fio for account must be greater than or equal fiostakedsufs." );
 
+        print("EDEDEDEDEDED updating astake by account!!!! ", "\n"); //100000000000
+
         //update the existing record
         astakebyaccount.modify(astakeiter, _self, [&](struct account_staking_info &a) {
             a.total_staked_fio -= amount;
             a.total_srp -= srpstoclaim;
         });
 
+        print("EDEDEDEDEDED after astake by account!!!! ", "\n"); //100000000000
         //transfer the staking reward amount.
         if (stakingrewardamount > 0) {
             //Staking Reward Amount is transferred to Staker's Account.
@@ -365,6 +374,7 @@ public:
         eosio_assert(gstaking.staked_token_pool >= amount,"unstakefio, staked token pool must be greater or equal to staked amount. " );
         eosio_assert(gstaking.global_srp_count >= srpstoclaim,"unstakefio, global srp count must be greater or equal to srpstoclaim. " );
 
+        print("EDEDEDEDEDED decr global state!!!! ", "\n"); //100000000000
         //     decrement the combined_token_pool by fiostaked+fiorewarded.
         gstaking.combined_token_pool -= (amount+stakingrewardamount);
         //     decrement the staked_token_pool by fiostaked.
@@ -372,6 +382,7 @@ public:
         //     decrement the global_srp_count by srpcount.
         gstaking.global_srp_count -= srpstoclaim;
 
+        print("EDEDEDEDEDED after decr global state!!!! ", "\n"); //100000000000
         const uint32_t present_time = now();
         //pay the tpid.
         if ((tpid.length() > 0)&&(tpidrewardamount>0)){
@@ -511,6 +522,7 @@ public:
             //                                                       5
 
         }else {
+            print("EDEDEDEDEDED making lock!!!! ", "\n"); //100000000000
             //else make new lock.
             bool canvote = true;
             int64_t lockamount = (int64_t)(stakingrewardamount + amount);
@@ -523,6 +535,7 @@ public:
                     ("eosio"_n, {{_self, "active"_n}},
                      {actor, periods, canvote, lockamount}
                     );
+            print("EDEDEDEDEDED done making lock!!!! ", "\n"); //100000000000
         }
 
         const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
