@@ -86,7 +86,7 @@ namespace fioio {
             auto trxTable = fioTransactionsTable.find(migrTable->currentobt);
             if (count != limit) {
                 while (trxTable != fioTransactionsTable.end()) { //obt record migrate
-                    if(trxTable->fio_data_type == trxstatus::obt_action) {
+                    if(trxTable->fio_data_type == 4) {
                         uint64_t id = obtTable->id;
 
                         fioTransactionsTable.modify(trxTable, _self, [&](struct fiotrxt_info &strt) {
