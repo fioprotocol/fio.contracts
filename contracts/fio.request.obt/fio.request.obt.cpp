@@ -72,6 +72,7 @@ namespace fioio {
             bool isSuccessful = false;
             if (amount > 10) { limit = 10; }
             auto migrTable = mgrStatsTable.begin();
+            auto TrxTable = fioTransactionsTable.begin();
             //reset index for status migration
             if( migrTable->beginobt != 0 ) {
                 mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strd) {
@@ -80,6 +81,11 @@ namespace fioio {
                 });
                 return;
             }
+
+            //iterate fioTransactionsTable
+            // if status == 4
+            // obt_content = req_content
+            // obt_time = req_time
 
             auto statTable = fiorequestStatusTable.find(migrTable->currentsta);
             if (count != limit) { //status table migrate
@@ -326,7 +332,7 @@ namespace fioio {
                         obtinf.payee_fio_addr_hex = toHash;
                         obtinf.obt_content = content;
                         obtinf.fio_data_type = static_cast<int64_t>(trxstatus::obt_action);
-                        obtinf.req_time = present_time;
+                        obtinf.obt_time = present_time;
                         obtinf.payer_fio_addr = payer_fio_address;
                         obtinf.payee_fio_addr = payee_fio_address;
                         obtinf.payee_key = payee_key;
