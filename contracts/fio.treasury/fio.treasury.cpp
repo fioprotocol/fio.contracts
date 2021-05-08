@@ -15,6 +15,7 @@
 #define PAYABLETPIDS    100
 
 #include "fio.treasury.hpp"
+#include <fio.staking/fio.staking.hpp>
 
 namespace fioio {
 
@@ -31,6 +32,8 @@ private:
         voteshares_table voteshares;
         eosiosystem::eosio_global_state gstate;
         eosiosystem::global_state_singleton global;
+        fioio::global_staking_singleton         staking;
+        fioio::global_staking_state             gstaking;
         eosiosystem::producers_table producers;
         bool rewardspaid;
         uint64_t lasttpidpayout;
@@ -47,7 +50,8 @@ public:
                 producers(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                 global(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                 fdtnrewards(get_self(), get_self().value),
-                bucketrewards(get_self(), get_self().value) {
+                bucketrewards(get_self(), get_self().value),
+                staking(STAKINGACCOUNT, STAKINGACCOUNT.value){
                   state = clockstate.get_or_default();
         }
 
@@ -182,6 +186,50 @@ public:
                 //*********** CREATE PAYSCHEDULE **************
                 // If there is no pay schedule then create a new one
                 if (std::distance(voteshares.begin(), voteshares.end()) == 0) { //if new payschedule
+
+                    //process the staking rewards, once per day.
+                    /*
+                    If Daily Staking Rewards is less than 25,000 FIO Tokens and Staking Rewards Reserves Minted is less than Staking Rewards Reserves Maximum:
+                    The difference between 25,000 FIO Tokens and Daily Staking Rewards
+                     (or difference between Staking Rewards Reserves Minted and Staking Rewards Reserves Maximum, whichever is smaller)
+                     is minted, transferred to treasury account and added to Staking Rewards Reserves Minted.
+                            Daily Staking Rewards is incremented by the tokens minted.
+                            Daily Staking Rewards amount is:
+                    Added to Combined Token Pool, which modifies ROE
+                    Set to 0
+                     */
+                    gstaking = staking.get();
+                    uint64_t amounttomint = 0;
+                    if ((gstaking.daily_staking_rewards < DAILYSTAKINGMINTTHRESHOLD)&&
+                            (gstaking.staking_rewards_reserves_minted < STAKINGREWARDSRESERVEMAXIMUM)){
+                        uint64_t twentyfivekminusdaily = DAILYSTAKINGMINTTHRESHOLD - gstaking.daily_staking_rewards;
+                        uint64_t reservemaxminusminted = STAKINGREWARDSRESERVEMAXIMUM - gstaking.staking_rewards_reserves_minted;
+                        amounttomint = reservemaxminusminted;
+                        if (amounttomint > twentyfivekminusdaily){
+                            amounttomint = twentyfivekminusdaily;
+                        }
+                        print ("EDEDEDEDEDEDEDEDED minting staking rewards!!");
+                        print ("EDEDEDEDEDEDEDEDED minting staking rewards!!");
+                        //mint and update accounting.
+                        action(permission_level{get_self(), "active"_n},
+                               TokenContract, "mintfio"_n,
+                               make_tuple(TREASURYACCOUNT,amounttomint)
+                        ).send();
+
+                    }
+
+                    print ("EDEDEDEDEDEDEDEDED updating staking rewards accounting!!");
+                    //update daily accounting, and zero daily staking
+                    action(permission_level{get_self(), "active"_n},
+                           STAKINGACCOUNT, "recorddaily"_n,
+                           make_tuple(amounttomint)
+                    ).send();
+                    print ("EDEDEDEDEDEDEDEDED updating done staking rewards accounting!!", "\n");
+
+                    //end process staking rewards.
+
+
+                    print ("EDEDEDEDEDEDEDEDED creating schedule!!","\n");
                     //Create the payment schedule
                     int64_t bpcounter = 0;
                     uint64_t activecount = 0;
@@ -205,6 +253,8 @@ public:
                         itr++;
                         if (bpcounter >= MAXBPS) break;
                     } // &itr : producers table
+                    print ("EDEDEDEDEDEDEDEDED done with schedule!!","\n");
+                    print ("EDEDEDEDEDEDEDEDED start bp reserve mint!!","\n");
                     //Move 1/365 of the bucketpool to the bpshare
                         bprewards.set(bpreward{bprewards.get().rewards + static_cast<uint64_t>(bucketrewards.get().rewards / YEARDAYS)}, get_self());
                         bucketrewards.set(bucketpool{bucketrewards.get().rewards - static_cast<uint64_t>(bucketrewards.get().rewards / YEARDAYS)}, get_self());
@@ -238,6 +288,8 @@ public:
                         }
                         //!!!rewards is now 0 in the bprewards table and can no longer be referred to. If needed use projectedpay
 
+                    print ("EDEDEDEDEDEDEDEDED done minting!!","\n");
+                    print ("EDEDEDEDEDEDEDEDED start foundation mint!!","\n");
                         uint64_t fdtntomint = FDTNMAXTOMINT;
                         const uint64_t fdtnremainingreserve = FDTNMAXRESERVE - state.fdtnreservetokensminted;
 
@@ -287,6 +339,7 @@ public:
                         }
 
                 } //if new payschedule
+            print ("EDEDEDEDEDEDEDEDED end creat pay schedule!!","\n");
                   //*********** END OF CREATE PAYSCHEDULE **************
                 auto bpiter = voteshares.find(producer);
                 prodbyowner = producers.get_index<"byowner"_n>();
@@ -301,6 +354,7 @@ public:
                         check(proditer->is_active, "producer does not have an active key");
 
                         if (payout > 0) {
+                            print ("EDEDEDEDEDEDEDEDED payout to !!",bpiter->owner,"!!\n");
                                 action(permission_level{get_self(), "active"_n},
                                        TokenContract, "transfer"_n,
                                        make_tuple(TREASURYACCOUNT, name(bpiter->owner), asset(payout, FIOSYMBOL),
@@ -321,7 +375,7 @@ public:
                                 ).send();
                         }
 
-
+                         print ("EDEDEDEDEDEDEDEDED payout to !!",FOUNDATIONACCOUNT,"!!\n");
                         // PAY FOUNDATION //
                         auto fdtnstate = fdtnrewards.get();
                         if(fdtnstate.rewards > 0) {

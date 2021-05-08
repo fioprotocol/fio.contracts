@@ -50,20 +50,36 @@ public:
     //FIP-21 actions to update staking state.
 
 
+
     //(implement 7)
-    //incgrewards performs the staking state increments when rewards are identified during fee collection.
+    //incgrewards performs the staking state increments when rewards are identified (including minted) during fee collection.
     //  params
     //      fioamountsufs, this is the amount of FIO being added to the rewards (from fees or when minted). units SUFs
     //  logic
-    //     increment rewards_token_pool
+    //     increment rewards_token_pool   total counter how much has come in from fees AND minting units SUFs
     //     increment daily_staking_rewards
-    //     increment combined_token_pool.
+    //     increment combined_token_pool.   increment whenever funds earmarked as staking rewards.
+    [[eosio::action]]
+    void incgrewards(const int64_t &fioamountsufs ) {
+        eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
+                      has_auth(STAKINGACCOUNT) ||  has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) || has_auth(FeeContract)),
+                     "missing required authority of fio.address, fio.treasury, fio.fee, fio.token, fio.stakng, eosio or fio.reqobt");
+        gstaking.rewards_token_pool += fioamountsufs;
+        gstaking.daily_staking_rewards += fioamountsufs;
+        gstaking.combined_token_pool += fioamountsufs;
+     }
 
-    //(implement 8)
-    //clrgdailyrew performs the clearing of the daily rewards.
-    // params none!
-    // logic
-    //   set daily_staking_rewards = 0;
+    [[eosio::action]]
+    void recorddaily(const int64_t &amounttomint ) {
+        eosio_assert( has_auth(TREASURYACCOUNT),
+                     "missing required authority of fio.treasury");
+        if (amounttomint > 0) {
+            gstaking.staking_rewards_reserves_minted += amounttomint;
+            gstaking.daily_staking_rewards += amounttomint;
+        }
+        gstaking.combined_token_pool += gstaking.daily_staking_rewards;
+        gstaking.daily_staking_rewards = 0;
+    }
 
     //(implement 9)
     //incgstkmint increments the staking_rewards_reserves_minted
@@ -335,7 +351,7 @@ public:
             rateofexchange = gstaking.combined_token_pool / gstaking.global_srp_count;
         }
 
-        print("EDEDEDEDEDED rate of exchange is ",rateofexchange, "\n"); 
+        print("EDEDEDEDEDED rate of exchange is ",rateofexchange, "\n");
 
         eosio_assert((srpstoclaim * rateofexchange) >= amount, "unstakefio, invalid calc in totalrewardamount, must be that (srpstoclaim * rateofexchange) > amount. ");
         uint64_t totalrewardamount = ((srpstoclaim * rateofexchange) - amount);
@@ -549,5 +565,5 @@ public:
 
 };     //class Staking
 
-EOSIO_DISPATCH(Staking, (stakefio)(unstakefio) )
+EOSIO_DISPATCH(Staking, (stakefio)(unstakefio)(incgrewards)(recorddaily) )
 }
