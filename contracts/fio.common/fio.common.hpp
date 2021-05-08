@@ -288,7 +288,13 @@ namespace fioio {
                     permission_level{auth, "active"_n},
                     TREASURYACCOUNT,
                     "bprewdupdate"_n,
-                    std::make_tuple((uint64_t)(static_cast<double>(amount) * .85))
+                    std::make_tuple((uint64_t)(static_cast<double>(amount) * .60))
+            ).send();
+            action(
+                    permission_level{auth, "active"_n},
+                    STAKINGACCOUNT,
+                    "incgrewards"_n,
+                    std::make_tuple((uint64_t)(static_cast<double>(amount) * .25))
             ).send();
 
         } else {
@@ -296,7 +302,13 @@ namespace fioio {
                     permission_level{auth, "active"_n},
                     TREASURYACCOUNT,
                     "bprewdupdate"_n,
-                    std::make_tuple((uint64_t)(static_cast<double>(amount) * .95))
+                    std::make_tuple((uint64_t)(static_cast<double>(amount) * .70))
+            ).send();
+            action(
+                    permission_level{auth, "active"_n},
+                    STAKINGACCOUNT,
+                    "incgrewards"_n,
+                    std::make_tuple((uint64_t)(static_cast<double>(amount) * .25))
             ).send();
         }
     }
@@ -350,7 +362,13 @@ namespace fioio {
                     permission_level{auth, "active"_n},
                     TREASURYACCOUNT,
                     "bppoolupdate"_n,
-                    std::make_tuple((uint64_t)(static_cast<double>(amount) * .85))
+                    std::make_tuple((uint64_t)(static_cast<double>(amount) * .60))
+            ).send();
+            action(
+                    permission_level{auth, "active"_n},
+                    STAKINGACCOUNT,
+                    "incgrewards"_n,
+                    std::make_tuple((uint64_t)(static_cast<double>(amount) * .25))
             ).send();
         } else {
 
@@ -358,7 +376,13 @@ namespace fioio {
                     permission_level{auth, "active"_n},
                     TREASURYACCOUNT,
                     "bppoolupdate"_n,
-                    std::make_tuple((uint64_t)(static_cast<double>(amount) * .95))
+                    std::make_tuple((uint64_t)(static_cast<double>(amount) * .70))
+            ).send();
+            action(
+                    permission_level{auth, "active"_n},
+                    STAKINGACCOUNT,
+                    "incgrewards"_n,
+                    std::make_tuple((uint64_t)(static_cast<double>(amount) * .25))
             ).send();
         }
     }
@@ -372,7 +396,13 @@ namespace fioio {
                 permission_level{actor, "active"_n},
                 TREASURYACCOUNT,
                 "bprewdupdate"_n,
-                std::make_tuple((uint64_t)(static_cast<double>(amount) * .95))
+                std::make_tuple((uint64_t)(static_cast<double>(amount) * .70))
+        ).send();
+        action(
+                permission_level{actor, "active"_n},
+                STAKINGACCOUNT,
+                "incgrewards"_n,
+                std::make_tuple((uint64_t)(static_cast<double>(amount) * .25))
         ).send();
 
         action(
