@@ -97,8 +97,8 @@ namespace fioio {
                         mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
                             strc.currentobt = id + 1;
                         });
+                        count++;
                     }
-                    count++;
                     if (count == limit) { return; }
                     trxTable++;
                 }
