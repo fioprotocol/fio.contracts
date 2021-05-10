@@ -86,13 +86,15 @@ namespace fioio {
             auto trxTable = fioTransactionsTable.find(migrTable->currentobt);
             if (count != limit) {
                 while (trxTable != fioTransactionsTable.end()) { //obt record migrate
-                    if(trxTable->fio_data_type == 4 && trxTable->obt_content == "") {
+                    if(trxTable->fio_data_type == 4 && trxTable->obt_time == 0) {
                         uint64_t id = trxTable->id;
                         uint64_t time = trxTable->req_time;
+                        string content = trxTable->req_content;
+                        if( content == "" ) { content = trxTable->obt_content; }
 
                         fioTransactionsTable.modify(trxTable, _self, [&](struct fiotrxt_info &strt) {
                             strt.obt_time = time;
-                            strt.obt_content = trxTable->req_content;
+                            strt.obt_content = content;
                             strt.req_content = "";
                             strt.req_time = 0;
                         });
