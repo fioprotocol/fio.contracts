@@ -122,11 +122,12 @@ namespace fioio {
                             fr.obt_time = timestamp;
                             if (statTable->metadata != "") { fr.obt_content = statTable->metadata; }
                         });
-                        count++;
 
                         mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
                             strc.currentsta = statTable->id + 1;
                         });
+
+                        count++;
                     }
                     statTable++;
                     if(statTable == fiorequestStatusTable.end()){
