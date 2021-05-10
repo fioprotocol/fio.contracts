@@ -88,9 +88,10 @@ namespace fioio {
                 while (trxTable != fioTransactionsTable.end()) { //obt record migrate
                     if(trxTable->fio_data_type == 4 && trxTable->obt_content == "") {
                         uint64_t id = trxTable->id;
+                        uint64_t time = trxTable->req_time;
 
                         fioTransactionsTable.modify(trxTable, _self, [&](struct fiotrxt_info &strt) {
-                            strt.obt_time = trxTable->req_time;
+                            strt.obt_time = time;
                             strt.obt_content = trxTable->req_content;
                             strt.req_content = "";
                             strt.req_time = 0;
