@@ -92,6 +92,8 @@ namespace fioio {
                         fioTransactionsTable.modify(trxTable, _self, [&](struct fiotrxt_info &strt) {
                             strt.obt_time = trxTable->req_time;
                             strt.obt_content = trxTable->req_content;
+                            strt.req_content = "";
+                            strt.req_time = 0;
                         });
 
                         mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
