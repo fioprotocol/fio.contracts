@@ -123,6 +123,10 @@ namespace fioio {
                             if (statTable->metadata != "") { fr.obt_content = statTable->metadata; }
                         });
                         count++;
+
+                        mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
+                            strc.currentsta = statTable->id + 1;
+                        });
                     }
                     statTable++;
                     if(statTable == fiorequestStatusTable.end()){
@@ -133,11 +137,7 @@ namespace fioio {
                         print(" ALL RECORDS HAVE BEEN COPIED ");
                         return;
                     }
-                    if (count == limit) {
-                        mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
-                            strc.currentsta = statTable->id + 1;
-                        });
-                        return; }
+                    if (count == limit) { return; }
                 }
             }
         }
