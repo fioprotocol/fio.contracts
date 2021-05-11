@@ -27,7 +27,7 @@ namespace fioio {
         string domain = nullptr;
         uint128_t domainhash = 0;
         uint64_t sale_price = 0;
-        uint64_t commission_fee = 0;
+        double commission_fee = 0;
         uint64_t date_listed;
 
         uint64_t primary_key() const { return id; }

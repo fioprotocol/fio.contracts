@@ -267,7 +267,7 @@ namespace fioio {
         */
         [[eosio::action]]
         void buydomain(const name &actor, const int64_t &sale_id,
-                       const string &fio_domain, const int64_t &buy_price,
+                       const string &fio_domain, const int64_t &max_buy_price,
                        const int64_t &max_fee, const string &tpid) {
 
             require_auth(actor);
@@ -288,6 +288,10 @@ namespace fioio {
                            "Domain not found", ErrorDomainSaleNotFound);
 
             auto saleprice           = asset(domainsale_iter->sale_price, FIOSYMBOL);
+            auto buyer_max_buy_price = asset(max_buy_price, FIOSYMBOL);
+            fio_400_assert(buyer_max_buy_price, "saleprice", saleprice,
+                           "Sale Price is greater than submitted buyer max buy price", ErrorNoWork);
+
             auto marketCommissionFee = marketplace_iter->commission_fee / 100.0;
             auto marketCommission    = (marketCommissionFee > 0) ?
                                        asset(saleprice.amount * marketCommissionFee, FIOSYMBOL) :
@@ -378,83 +382,21 @@ namespace fioio {
         * @param
         */
         [[eosio::action]]
-        void setmrkplcfg(const name &owner) {
-            eosio_assert((has_auth(SYSTEMACCOUNT) || has_auth(EscrowContract)),
-                         "missing required authority of eosio or fio.escrow");
-
-            fio_400_assert(owner.length() == 12,
-                           "owner", owner.to_string(),
-                           "Length of account name should be 12", ErrorNoWork);
-
-            const bool accountExists = is_account(owner);
-
-            auto acctmap_itr = accountmap.find(owner.value);
-
-            fio_400_assert(acctmap_itr != accountmap.end(), "owner", owner.to_string(),
-                           "Account is not bound on the fio chain",
-                           ErrorPubAddressExist);
-            fio_400_assert(accountExists, "owner", owner.to_string(),
-                           "Account does not yet exist on the fio chain",
-                           ErrorPubAddressExist);
-
-            auto marketplace_iter = mrkplconfigs.begin();
-
-            uint64_t  id        = mrkplconfigs.available_primary_key();
-            uint128_t ownerHash = string_to_uint128_hash(owner.to_string());
-
-            if (marketplace_iter == mrkplconfigs.end()) {
-                // not found, emplace
-                mrkplconfigs.emplace(EscrowContract, [&](auto &row) {
-                    row.id             = id;
-                    row.owner          = owner.value;
-                    row.ownerhash      = ownerHash;
-                    row.commission_fee = 0;
-                    row.listing_fee    = 0;
-                    row.e_break        = 0;
-                });
-            } else {
-                // found, modify
-                // Only have to update owner and ownerhash if this is called with a record already
-                // there. It won't modify the fee settings.
-                mrkplconfigs.modify(marketplace_iter, EscrowContract, [&](auto &row) {
-                    row.owner     = owner.value;
-                    row.ownerhash = ownerHash;
-                });
-            }
-
-            // if tx is too large, throw an error.
-            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size",
-                           std::to_string(transaction_size()),
-                           "Transaction is too large", ErrorTransactionTooLarge);
-
-            if (FIOESCROWRAM > 0) {
-                action(
-                        permission_level{SYSTEMACCOUNT, "active"_n},
-                        "eosio"_n,
-                        "incram"_n,
-                        std::make_tuple(owner, FIOESCROWRAM)
-                ).send();
-            }
-
-            const string response_string = string("{\"status\": \"OK\"}");
-
-            send_response(response_string.c_str());
-
-        }
-        // setmrkplcfg
-
-        /***********
-        * this action will update 3 parameters of the marketplace config
-        * @param actor `name`
-        * @param listing_fee `uint64`
-        * @param commission_fee `uint64`
-        * @param e_break `uint64`
-        * @param max_fee `uint64`
-        */
-        [[eosio::action]]
-        void updtmkplcfg(const name &actor, const uint64_t &commission_fee, const uint64_t &listing_fee,
+        void setmrkplcfg(const name &actor, const double &commission_fee, const uint64_t &listing_fee,
                          const uint64_t &e_break, const int64_t &max_fee) {
-            require_auth(actor);
+
+            bool isMsig;
+
+            if((has_auth(SYSTEMACCOUNT) || has_auth(EscrowContract)){
+                isMsig = true
+            } else {
+                require_auth(actor);
+                isMsig = false;
+            }
+
+            fio_400_assert(actor.length() == 12,
+                           "actor", actor.to_string(),
+                           "Length of account name should be 12", ErrorNoWork);
 
             // sanity check of parameters
             fio_400_assert(commission_fee <= 25,
@@ -469,49 +411,72 @@ namespace fioio {
                            "e_break", to_string(e_break),
                            "E-break setting must be present", ErrorNoWork);
 
+            const bool accountExists = is_account(actor);
+            auto acctmap_itr = accountmap.find(actor.value);
+
+            fio_400_assert(acctmap_itr != accountmap.end(), "actor", actor.to_string(),
+                           "Account is not bound on the fio chain",
+                           ErrorPubAddressExist);
+            fio_400_assert(accountExists, "actor", actor.to_string(),
+                           "Account does not yet exist on the fio chain",
+                           ErrorPubAddressExist);
+
             auto marketplace_iter = mrkplconfigs.begin();
 
-            // verify the `actor` is the owner of the marketplace
-            fio_400_assert(marketplace_iter->owner == actor.value, "actor", actor.to_string(),
-                           "Only owner of marketplace can modify config",
-                           ErrorNoWork);
+            uint64_t  id        = mrkplconfigs.available_primary_key();
+            uint128_t ownerHash = string_to_uint128_hash(owner.to_string());
 
-            // change the commission fee value
-            mrkplconfigs.modify(marketplace_iter, actor, [&](auto &row) {
-                row.commission_fee = commission_fee;
-                row.listing_fee    = listing_fee;
-                row.e_break        = e_break;
-            });
+            if (marketplace_iter == mrkplconfigs.end()) {
+                // not found, emplace
+                // if setting the record for the first time, it must be by msig
+                eosio_assert((has_auth(SYSTEMACCOUNT) || has_auth(EscrowContract)),
+                             "missing required authority of eosio or fio.escrow");
+                mrkplconfigs.emplace(EscrowContract, [&](auto &row) {
+                    row.id             = id;
+                    row.owner          = owner.value;
+                    row.ownerhash      = ownerHash;
+                    row.commission_fee = commission_fee;
+                    row.listing_fee    = listing_fee;
+                    row.e_break        = e_break;
+                });
+            } else {
+                // verify the `actor` is the owner of the marketplace
+                fio_400_assert(marketplace_iter->owner == actor.value, "actor", actor.to_string(),
+                               "Only owner of marketplace can modify config", ErrorNoWork);
 
-            const uint128_t endpoint_hash = string_to_uint128_hash(UPDATE_MARKETPLACE_CONFIG_ENDPOINT);
+                // found, modify
+                mrkplconfigs.modify(marketplace_iter, EscrowContract, [&](auto &row) {
+                    row.commission_fee = commission_fee;
+                    row.listing_fee    = listing_fee;
+                    row.e_break        = e_break;
+                });
+            }
 
-            auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
-            auto fee_iter         = fees_by_endpoint.find(endpoint_hash);
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UPDATE_MARKETPLACE_CONFIG_ENDPOINT,
-                           "FIO fee not found for endpoint", ErrorNoEndpoint);
+            // charge fee if it isn't an msig
+            if(!isMsig){
+                //fees
+                const uint64_t fee_amount = fee_iter->suf_amount;
+                const uint64_t fee_type   = fee_iter->type;
 
-            //fees
-            const uint64_t fee_amount = fee_iter->suf_amount;
-            const uint64_t fee_type   = fee_iter->type;
+                fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                               "unexpected fee type for endpoint transfer_fio_domain, expected 0",
+                               ErrorNoEndpoint);
 
-            fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
-                           "unexpected fee type for endpoint transfer_fio_domain, expected 0",
-                           ErrorNoEndpoint);
+                fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
+                               "Fee exceeds supplied maximum.",
+                               ErrorMaxFeeExceeded);
 
-            fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
-                           "Fee exceeds supplied maximum.",
-                           ErrorMaxFeeExceeded);
+                fio_fees(actor, asset(fee_amount, FIOSYMBOL), SET_MARKETPLACE_CONFIG_ENDPOINT);
+                processbucketrewards("", fee_amount, get_self(), actor);
 
-            fio_fees(actor, asset(fee_amount, FIOSYMBOL), UPDATE_MARKETPLACE_CONFIG_ENDPOINT);
-            processbucketrewards("", fee_amount, get_self(), actor);
-
-            if (FIOESCROWRAM > 0) {
-                action(
-                        permission_level{SYSTEMACCOUNT, "active"_n},
-                        "eosio"_n,
-                        "incram"_n,
-                        std::make_tuple(actor, FIOESCROWRAM)
-                ).send();
+                if (FIOESCROWRAM > 0) {
+                    action(
+                            permission_level{SYSTEMACCOUNT, "active"_n},
+                            "eosio"_n,
+                            "incram"_n,
+                            std::make_tuple(actor, FIOESCROWRAM)
+                    ).send();
+                }
             }
 
             // if tx is too large, throw an error.
@@ -519,14 +484,12 @@ namespace fioio {
                            std::to_string(transaction_size()),
                            "Transaction is too large", ErrorTransactionTooLarge);
 
-            const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
-                                           to_string(fee_amount) + string("}");
+            const string response_string = string("{\"status\": \"OK\"}");
 
             send_response(response_string.c_str());
-        }
-        // updtmkplcfg
 
+        } // setmrkplcfg
     }; // class FioEscrow
 
-    EOSIO_DISPATCH(FioEscrow, (listdomain)(cxlistdomain)(buydomain)(setmrkplcfg)(updtmkplcfg))
+    EOSIO_DISPATCH(FioEscrow, (listdomain)(cxlistdomain)(buydomain)(setmrkplcfg))
 }
