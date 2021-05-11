@@ -57,7 +57,7 @@ namespace eosio {
         void mintfio(const name &to, const uint64_t &amount);
 
         [[eosio::action]]
-        void retire(asset quantity, string memo);
+        void retire(const int &quantity, const string &memo, const name &actor);
 
         [[eosio::action]]
         void transfer(name from,

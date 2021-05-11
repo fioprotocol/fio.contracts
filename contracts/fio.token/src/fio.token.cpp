@@ -81,28 +81,37 @@ namespace eosio {
         }
     }
 
-    void token::retire(asset quantity, string memo) {
-        const symbol sym = quantity.symbol;
-        check(sym.is_valid(), "invalid symbol name");
+    void token::retire(const int &quantity, const string &memo, const name &actor) {
         check(memo.size() <= 256, "memo has more than 256 bytes");
-
-        stats statstable(_self, sym.code().raw());
-        auto existing = statstable.find(sym.code().raw());
-        check(existing != statstable.end(), "token with symbol does not exist");
+        require_auth(actor);
+        stats statstable(_self, FIOSYMBOL.raw());
+        auto existing = statstable.find(FIOSYMBOL.raw());
         const auto &st = *existing;
 
-        require_auth(FIOISSUER);
-        check(quantity.is_valid(), "invalid quantity");
-        check(quantity.amount > 0, "must retire positive quantity");
-        check(quantity.symbol == FIOSYMBOL, "symbol precision mismatch");
 
-        check(quantity.symbol == st.supply.symbol, "symbol precision mismatch");
+        eosiosystem::locked_tokens_table lockedTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value);
+
+
+
+        auto lockiter = lockedTokensTable.find(actor.value);
+
+        if (lockiter != lockedTokensTable.end()) {
+          if (lockiter->grant_type == 1 && lockiter->grant_type == 3) {
+
+
+
+          }
+        }
+
+
 
         statstable.modify(st, same_payer, [&](auto &s) {
-            s.supply -= quantity;
+            s.supply -= asset(quantity, FIOSYMBOL);
         });
 
-        sub_balance(FIOISSUER, quantity);
+
+
+        sub_balance(actor, asset(quantity, FIOSYMBOL));
     }
 
     bool token::can_transfer(const name &tokenowner, const uint64_t &feeamount, const uint64_t &transferamount,
