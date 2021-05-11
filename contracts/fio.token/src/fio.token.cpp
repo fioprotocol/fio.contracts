@@ -91,10 +91,10 @@ namespace eosio {
 
         eosiosystem::locked_tokens_table lockedTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value);
 
-
-
+        uint64_t remaining = 0;
         auto lockiter = lockedTokensTable.find(actor.value);
 
+        // Burn locked tokens first
         if (lockiter != lockedTokensTable.end()) {
           if (lockiter->grant_type == 1 && lockiter->grant_type == 3) {
 
@@ -105,13 +105,15 @@ namespace eosio {
 
 
 
-        statstable.modify(st, same_payer, [&](auto &s) {
-            s.supply -= asset(quantity, FIOSYMBOL);
-        });
+        // remaining = ?? // The rest of the token quanity to burn that is not locked
+        // Remove remaining tokens from supply and subtract from actor balance
+        if (remaining > 0) {
+          statstable.modify(st, same_payer, [&](auto &s) {
+              s.supply -= asset(remaining, FIOSYMBOL);
+          });
 
-
-
-        sub_balance(actor, asset(quantity, FIOSYMBOL));
+          sub_balance(actor, asset(remaining, FIOSYMBOL));
+          }
     }
 
     bool token::can_transfer(const name &tokenowner, const uint64_t &feeamount, const uint64_t &transferamount,
