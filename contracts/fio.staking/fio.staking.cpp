@@ -47,18 +47,10 @@ public:
         }
 
 
-    //FIP-21 actions to update staking state.
 
-
-
-    //(implement 7)
     //incgrewards performs the staking state increments when rewards are identified (including minted) during fee collection.
     //  params
     //      fioamountsufs, this is the amount of FIO being added to the rewards (from fees or when minted). units SUFs
-    //  logic
-    //     increment rewards_token_pool   total counter how much has come in from fees AND minting units SUFs
-    //     increment daily_staking_rewards
-    //     increment combined_token_pool.   increment whenever funds earmarked as staking rewards.
     [[eosio::action]]
     void incgrewards(const int64_t &fioamountsufs ) {
         eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
@@ -69,6 +61,7 @@ public:
         gstaking.combined_token_pool += fioamountsufs;
      }
 
+     //recorddaily will perform the daily update of global state, when bps claim rewards.
     [[eosio::action]]
     void recorddaily(const int64_t &amounttomint ) {
         eosio_assert( has_auth(TREASURYACCOUNT),
@@ -81,11 +74,7 @@ public:
         gstaking.daily_staking_rewards = 0;
     }
 
-    //(implement 9)
     //incgstkmint increments the staking_rewards_reserves_minted
-    // params
-    //     amountfiosufs, this is the amount of FIO that has been minted, units SUFs
-    //FIP-21 actions to update staking state.
     [[eosio::action]]
     void stakefio(const string &fio_address, const int64_t &amount, const int64_t &max_fee,
                          const string &tpid, const name &actor) {
@@ -150,8 +139,6 @@ public:
         fio_400_assert(fee_type == 1, "fee_type", to_string(fee_type),
                        "unexpected fee type for endpoint stake_fio_tokens, expected 0",
                        ErrorNoEndpoint);
-
-
 
         if (bundleeligiblecountdown > 0) {
             action{
@@ -341,17 +328,11 @@ public:
          //                                             this needs to be a floating point (double) operation
         uint64_t srpstoclaim = (uint64_t)((double)astakeiter->total_srp * (double)( (double)amount / (double)astakeiter->total_staked_fio));
 
-        print("EDEDEDEDEDED total staked fio is ",astakeiter->total_staked_fio, "\n");
-        print("EDEDEDEDEDED amount is ",amount, "\n");
-        print("EDEDEDEDEDED total srp is ",astakeiter->total_srp, "\n");
-
         //compute rate of exchange
         uint64_t rateofexchange =  1;
         if (gstaking.combined_token_pool >= COMBINEDTOKENPOOLMINIMUM) {
             rateofexchange = gstaking.combined_token_pool / gstaking.global_srp_count;
         }
-
-        print("EDEDEDEDEDED rate of exchange is ",rateofexchange, "\n");
 
         eosio_assert((srpstoclaim * rateofexchange) >= amount, "unstakefio, invalid calc in totalrewardamount, must be that (srpstoclaim * rateofexchange) > amount. ");
         uint64_t totalrewardamount = ((srpstoclaim * rateofexchange) - amount);
@@ -365,15 +346,12 @@ public:
         eosio_assert(astakeiter->total_srp >= srpstoclaim,"unstakefio, total srp for account must be greater than or equal srpstoclaim." );
         eosio_assert(astakeiter->total_staked_fio >= amount,"unstakefio, total staked fio for account must be greater than or equal fiostakedsufs." );
 
-        print("EDEDEDEDEDED updating astake by account!!!! ", "\n"); //100000000000
-
         //update the existing record
         astakebyaccount.modify(astakeiter, _self, [&](struct account_staking_info &a) {
             a.total_staked_fio -= amount;
             a.total_srp -= srpstoclaim;
         });
 
-        print("EDEDEDEDEDED after astake by account!!!! ", "\n"); //100000000000
         //transfer the staking reward amount.
         if (stakingrewardamount > 0) {
             //Staking Reward Amount is transferred to Staker's Account.
@@ -390,7 +368,6 @@ public:
         eosio_assert(gstaking.staked_token_pool >= amount,"unstakefio, staked token pool must be greater or equal to staked amount. " );
         eosio_assert(gstaking.global_srp_count >= srpstoclaim,"unstakefio, global srp count must be greater or equal to srpstoclaim. " );
 
-        print("EDEDEDEDEDED decr global state!!!! ", "\n"); //100000000000
         //     decrement the combined_token_pool by fiostaked+fiorewarded.
         gstaking.combined_token_pool -= (amount+stakingrewardamount);
         //     decrement the staked_token_pool by fiostaked.
@@ -398,7 +375,6 @@ public:
         //     decrement the global_srp_count by srpcount.
         gstaking.global_srp_count -= srpstoclaim;
 
-        print("EDEDEDEDEDED after decr global state!!!! ", "\n"); //100000000000
         const uint32_t present_time = now();
         //pay the tpid.
         if ((tpid.length() > 0)&&(tpidrewardamount>0)){
@@ -438,18 +414,9 @@ public:
             //get the remaining unlocked of the lock.
             int64_t newremaininglockamount = lockiter->remaining_lock_amount + (stakingrewardamount + amount);
             //get the timestamp of the lock.
-            print("EDEDDEDEDEDED present time ", present_time,"\n");
-            print("EDEDDEDEDEDED  time stamp lock ", lockiter->timestamp,"\n");
-
-
-            print("EDEDDEDEDEDED  lock amount ", lockiter->lock_amount,"\n");
-            print("EDEDDEDEDEDED  staking reward amount ", stakingrewardamount,"\n");
-            print("EDEDDEDEDEDED  unstake amount ", amount,"\n");
-
             uint32_t insertperiod = (present_time - lockiter->timestamp) + 604800;
             double oldlockpercentofnewtotal = (((double) lockiter->lock_amount) /
                                                (double) (lockiter->lock_amount + stakingrewardamount + amount));
-            print("EDEDDEDEDEDED  oldlockpercentofnewtotal ", oldlockpercentofnewtotal,"\n");
             vector <eosiosystem::lockperiods> newperiods;
             //gotta truncate tne new percent at 3 decimal places
             bool insertintoexisting = false;
@@ -461,7 +428,6 @@ public:
 
                 //truncate it at 3 digits resolution.
                 newpercent = ((double(int(newpercent * 1000.0))) / 1000.0);
-                print("EDEDEDEDED newpercent is ",newpercent,"\n");
                 totalnewpercent += newpercent;
                 if (lockiter->periods[i].duration == insertperiod) {
                     insertintoexisting = true;
@@ -481,9 +447,6 @@ public:
                 insertindex = lockiter->periods.size();
             }
 
-
-            print("EDEDEDEDEDEDEDED INSERT INDEX IS ",insertindex);
-
             //adapting an existing period.
             if (insertintoexisting) {
                 double t =  newperiods[insertindex - 1].percent + (100.0 - totalnewpercent);
@@ -496,7 +459,6 @@ public:
                 iperiod.duration = insertperiod;
                 iperiod.percent = t;
                 newperiods.insert(newperiods.begin() + insertindex, iperiod);
-                print("EDEDEDEDED newpercent added is ",t,"\n");
             }
 
            //update the locks table..   modgenlocked
@@ -506,39 +468,7 @@ public:
                     "modgenlocked"_n,
                     std::make_tuple(actor, newperiods, newlockamount, newremaininglockamount)
             ).send();
-
-            /*
-             * First compute origpercent as  (old amount of lock / (old lock amount + additional lock amount))/100.
-
-               For each percent in the lock
-                   newpercent = percent * (origpercent).
-                   If duration == new duration
-                         Add the new amount to the period
-                         Keep this as the index which will need the add on percent for final.
-                   If duration > new duration
-                         Add in the new period here!
-                         Keep this as the index which will need the add on percent for final.
-
-                   Lock amount start    22
-                   Lock amount added  100
-
-                   Periods
-                    1—     5%           .9%
-                    2—    15%          2.7%
-                    3—    80%         14.4%
-                    —————————————————
-                    22 is  18% 122 so multiply each percent by (18/100) to get new percent.
-             *
-             *
-             *
-             *
-             */
-            // insertperiod = (now - timestamp) + 7 days is the new unlock period we are adding.
-            // go through the periods until end of list or period >= insertperiod.
-            //                                                       5
-
         }else {
-            print("EDEDEDEDEDED making lock!!!! ", "\n"); //100000000000
             //else make new lock.
             bool canvote = true;
             int64_t lockamount = (int64_t)(stakingrewardamount + amount);
@@ -551,7 +481,6 @@ public:
                     ("eosio"_n, {{_self, "active"_n}},
                      {actor, periods, canvote, lockamount}
                     );
-            print("EDEDEDEDEDED done making lock!!!! ", "\n"); //100000000000
         }
 
         const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
