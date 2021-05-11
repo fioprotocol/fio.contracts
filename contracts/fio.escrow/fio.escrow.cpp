@@ -289,7 +289,7 @@ namespace fioio {
 
             auto saleprice           = asset(domainsale_iter->sale_price, FIOSYMBOL);
             auto buyer_max_buy_price = asset(max_buy_price, FIOSYMBOL);
-            fio_400_assert(buyer_max_buy_price, "saleprice", saleprice,
+            fio_400_assert(buyer_max_buy_price.amount <= saleprice.amount, "saleprice", to_string(saleprice.amount),
                            "Sale Price is greater than submitted buyer max buy price", ErrorNoWork);
 
             auto marketCommissionFee = marketplace_iter->commission_fee / 100.0;
@@ -387,8 +387,8 @@ namespace fioio {
 
             bool isMsig;
 
-            if((has_auth(SYSTEMACCOUNT) || has_auth(EscrowContract)){
-                isMsig = true
+            if(has_auth(SYSTEMACCOUNT) || has_auth(EscrowContract)){
+                isMsig = true;
             } else {
                 require_auth(actor);
                 isMsig = false;
@@ -424,7 +424,7 @@ namespace fioio {
             auto marketplace_iter = mrkplconfigs.begin();
 
             uint64_t  id        = mrkplconfigs.available_primary_key();
-            uint128_t ownerHash = string_to_uint128_hash(owner.to_string());
+            uint128_t ownerHash = string_to_uint128_hash(actor.to_string());
 
             if (marketplace_iter == mrkplconfigs.end()) {
                 // not found, emplace
@@ -433,7 +433,7 @@ namespace fioio {
                              "missing required authority of eosio or fio.escrow");
                 mrkplconfigs.emplace(EscrowContract, [&](auto &row) {
                     row.id             = id;
-                    row.owner          = owner.value;
+                    row.owner          = actor.value;
                     row.ownerhash      = ownerHash;
                     row.commission_fee = commission_fee;
                     row.listing_fee    = listing_fee;
@@ -454,7 +454,15 @@ namespace fioio {
 
             // charge fee if it isn't an msig
             if(!isMsig){
+
                 //fees
+                const uint128_t endpoint_hash = string_to_uint128_hash(LIST_DOMAIN_ENDPOINT);
+
+                auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
+                auto fee_iter         = fees_by_endpoint.find(endpoint_hash);
+                fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", LIST_DOMAIN_ENDPOINT,
+                               "FIO fee not found for endpoint", ErrorNoEndpoint);
+
                 const uint64_t fee_amount = fee_iter->suf_amount;
                 const uint64_t fee_type   = fee_iter->type;
 
