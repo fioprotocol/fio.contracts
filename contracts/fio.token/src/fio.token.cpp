@@ -82,12 +82,13 @@ namespace eosio {
     }
 
     void token::retire(const int &quantity, const string &memo, const name &actor) {
-        check(memo.size() <= 256, "memo has more than 256 bytes");
+        uint64_t amount = (uint64_t)quantity;
+        check(memo.size() <= 256,"memo has more than 256 bytes");
+        check(amount >= 100000000000, "Minimum 1000 FIO has to be retired");
         require_auth(actor);
         stats statstable(_self, FIOSYMBOL.raw());
         auto existing = statstable.find(FIOSYMBOL.raw());
         const auto &st = *existing;
-
 
         eosiosystem::locked_tokens_table lockedTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value);
 
@@ -103,9 +104,7 @@ namespace eosio {
           }
         }
 
-
-
-        // remaining = ?? // The rest of the token quanity to burn that is not locked
+        // remaining = ?? // The rest of the token amount to burn that is not locked
         // Remove remaining tokens from supply and subtract from actor balance
         if (remaining > 0) {
           statstable.modify(st, same_payer, [&](auto &s) {
@@ -113,7 +112,16 @@ namespace eosio {
           });
 
           sub_balance(actor, asset(remaining, FIOSYMBOL));
-          }
+        }
+
+
+      const string response_string = string("{\"status\": \"OK\"}");
+
+      fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+        "Transaction is too large", ErrorTransactionTooLarge);
+
+      send_response(response_string.c_str());
+
     }
 
     bool token::can_transfer(const name &tokenowner, const uint64_t &feeamount, const uint64_t &transferamount,
