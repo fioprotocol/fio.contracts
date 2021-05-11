@@ -208,8 +208,6 @@ public:
                         if (amounttomint > twentyfivekminusdaily){
                             amounttomint = twentyfivekminusdaily;
                         }
-                        print ("EDEDEDEDEDEDEDEDED minting staking rewards!!");
-                        print ("EDEDEDEDEDEDEDEDED minting staking rewards!!");
                         //mint and update accounting.
                         action(permission_level{get_self(), "active"_n},
                                TokenContract, "mintfio"_n,
@@ -218,18 +216,14 @@ public:
 
                     }
 
-                    print ("EDEDEDEDEDEDEDEDED updating staking rewards accounting!!");
                     //update daily accounting, and zero daily staking
                     action(permission_level{get_self(), "active"_n},
                            STAKINGACCOUNT, "recorddaily"_n,
                            make_tuple(amounttomint)
                     ).send();
-                    print ("EDEDEDEDEDEDEDEDED updating done staking rewards accounting!!", "\n");
 
                     //end process staking rewards.
 
-
-                    print ("EDEDEDEDEDEDEDEDED creating schedule!!","\n");
                     //Create the payment schedule
                     int64_t bpcounter = 0;
                     uint64_t activecount = 0;
@@ -253,8 +247,6 @@ public:
                         itr++;
                         if (bpcounter >= MAXBPS) break;
                     } // &itr : producers table
-                    print ("EDEDEDEDEDEDEDEDED done with schedule!!","\n");
-                    print ("EDEDEDEDEDEDEDEDED start bp reserve mint!!","\n");
                     //Move 1/365 of the bucketpool to the bpshare
                         bprewards.set(bpreward{bprewards.get().rewards + static_cast<uint64_t>(bucketrewards.get().rewards / YEARDAYS)}, get_self());
                         bucketrewards.set(bucketpool{bucketrewards.get().rewards - static_cast<uint64_t>(bucketrewards.get().rewards / YEARDAYS)}, get_self());
@@ -287,9 +279,6 @@ public:
                           print("Block producers reserve minting exhausted");
                         }
                         //!!!rewards is now 0 in the bprewards table and can no longer be referred to. If needed use projectedpay
-
-                    print ("EDEDEDEDEDEDEDEDED done minting!!","\n");
-                    print ("EDEDEDEDEDEDEDEDED start foundation mint!!","\n");
                         uint64_t fdtntomint = FDTNMAXTOMINT;
                         const uint64_t fdtnremainingreserve = FDTNMAXRESERVE - state.fdtnreservetokensminted;
 
@@ -339,7 +328,6 @@ public:
                         }
 
                 } //if new payschedule
-            print ("EDEDEDEDEDEDEDEDED end creat pay schedule!!","\n");
                   //*********** END OF CREATE PAYSCHEDULE **************
                 auto bpiter = voteshares.find(producer);
                 prodbyowner = producers.get_index<"byowner"_n>();
@@ -354,7 +342,6 @@ public:
                         check(proditer->is_active, "producer does not have an active key");
 
                         if (payout > 0) {
-                            print ("EDEDEDEDEDEDEDEDED payout to !!",bpiter->owner,"!!\n");
                                 action(permission_level{get_self(), "active"_n},
                                        TokenContract, "transfer"_n,
                                        make_tuple(TREASURYACCOUNT, name(bpiter->owner), asset(payout, FIOSYMBOL),
@@ -374,8 +361,7 @@ public:
                                    make_tuple(producer)
                                 ).send();
                         }
-
-                         print ("EDEDEDEDEDEDEDEDED payout to !!",FOUNDATIONACCOUNT,"!!\n");
+                        
                         // PAY FOUNDATION //
                         auto fdtnstate = fdtnrewards.get();
                         if(fdtnstate.rewards > 0) {
