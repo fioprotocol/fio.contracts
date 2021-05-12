@@ -77,7 +77,7 @@ namespace fioio {
 
         uint64_t primary_key() const { return id; }
         uint128_t by_idhash() const { return idhash; }
-        bool by_finished() const { return isComplete; }
+        uint64_t by_finished() const { return isComplete; }
 
         EOSLIB_SERIALIZE(oracle_votes, (id)(idhash)(obt_id)(fio_address)(amount)(voters)(isComplete)
         )
@@ -85,7 +85,7 @@ namespace fioio {
 
     typedef multi_index<"oravotes"_n, oracle_votes,
             indexed_by<"byidhash"_n, const_mem_fun < oracle_votes, uint128_t, &oracle_votes::by_idhash>>,
-    indexed_by<"byfinished"_n, const_mem_fun<oracle_votes, bool, &oracle_votes::by_finished>>
+    indexed_by<"byfinished"_n, const_mem_fun<oracle_votes, uint64_t, &oracle_votes::by_finished>>
     >
     oraclevoters_table;
 }
