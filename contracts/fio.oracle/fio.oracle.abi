@@ -79,6 +79,10 @@
                "type":"uint64"
             },
             {
+               "name":"timestamp",
+               "type":"uint64"
+            },
+            {
                "name":"voters",
                "type":"name[]"
             },
