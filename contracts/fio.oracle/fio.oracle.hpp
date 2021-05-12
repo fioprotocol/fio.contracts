@@ -85,7 +85,7 @@ namespace fioio {
 
     typedef multi_index<"oravotes"_n, oracle_votes,
             indexed_by<"byidhash"_n, const_mem_fun < oracle_votes, uint128_t, &oracle_votes::by_idhash>>,
-    indexed_by<"byfinished"_n, const_mem_fun<oracle_votes, bool, &oracle_votes::by_finished>>,
+    indexed_by<"byfinished"_n, const_mem_fun<oracle_votes, bool, &oracle_votes::by_finished>>
     >
     oraclevoters_table;
 }
