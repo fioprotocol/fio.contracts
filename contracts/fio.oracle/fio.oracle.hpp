@@ -71,6 +71,7 @@ namespace fioio {
         string obt_id;
         string fio_address;
         uint64_t amount;
+        uint64_t timestamp;
         vector<name> voters;
         bool isComplete = false;
 
