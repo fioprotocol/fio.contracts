@@ -205,6 +205,7 @@ namespace fioio {
                 });
             } else {
                 tempvoters.push_back(actor);
+                uint64_t timestamp = now();
 
                 voters.emplace(actor, [&](struct oracle_votes &p) {
                     p.id = voters.available_primary_key();
@@ -213,6 +214,7 @@ namespace fioio {
                     p.obt_id = obt_id;
                     p.fio_address = fio_address;
                     p.amount = amount;
+                    p.timestamp = timestamp;
                 });
             }
 
