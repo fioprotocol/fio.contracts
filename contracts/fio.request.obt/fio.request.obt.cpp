@@ -98,13 +98,15 @@ namespace fioio {
                             strt.req_content = "";
                             strt.req_time = 0;
                         });
+                    }
+                    count++;
 
+                    if (count == limit) {
                         mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
                             strc.currentobt = id + 1;
                         });
-                        count++;
+                        return;
                     }
-                    if (count == limit) { return; }
                     trxTable++;
                 }
             }
@@ -125,11 +127,6 @@ namespace fioio {
                             fr.obt_time = timestamp;
                             if (statTable->metadata != "") { fr.obt_content = statTable->metadata; }
                         });
-
-                        mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
-                            strc.currentsta = statTable->id + 1;
-                        });
-
                         count++;
                     }
                     statTable++;
@@ -141,7 +138,12 @@ namespace fioio {
                         print(" ALL RECORDS HAVE BEEN COPIED ");
                         return;
                     }
-                    if (count == limit) { return; }
+                    if (count == limit) {
+                        mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
+                            strc.currentsta = statTable->id + 1;
+                        });
+                        return;
+                    }
                 }
             }
         }
