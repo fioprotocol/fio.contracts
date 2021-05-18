@@ -203,8 +203,8 @@ namespace eosio {
                     //TEST LOCKED TOKENS
                     // TESTING ONLY!!! shorten genesis locking periods..DO NOT DELIVER THIS
                     uint32_t daysSinceGrant =  (int)((present_time  - lockiter->timestamp) / 60);
-                    uint32_t firstPayPeriod = 10;
-                    uint32_t payoutTimePeriod = 10;
+                    uint32_t firstPayPeriod = 2;
+                    uint32_t payoutTimePeriod = 2;
 
                     bool ninetyDaysSinceGrant = daysSinceGrant >= firstPayPeriod;
 
