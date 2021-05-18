@@ -140,7 +140,7 @@ namespace fioio {
                     }
                     if (count == limit) {
                         mgrStatsTable.modify(migrTable, _self, [&](struct migrledger &strc) {
-                            strc.currentsta = statTable->id + 1;
+                            strc.currentsta = statTable->id;
                         });
                         return;
                     }
