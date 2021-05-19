@@ -81,28 +81,47 @@ namespace eosio {
         }
     }
 
-    void token::retire(asset quantity, string memo) {
-        const symbol sym = quantity.symbol;
-        check(sym.is_valid(), "invalid symbol name");
-        check(memo.size() <= 256, "memo has more than 256 bytes");
-
-        stats statstable(_self, sym.code().raw());
-        auto existing = statstable.find(sym.code().raw());
-        check(existing != statstable.end(), "token with symbol does not exist");
+    void token::retire(const int &quantity, const string &memo, const name &actor) {
+        uint64_t amount = (uint64_t)quantity;
+        check(memo.size() <= 256,"memo has more than 256 bytes");
+        check(amount >= 100000000000, "Minimum 1000 FIO has to be retired");
+        require_auth(actor);
+        stats statstable(_self, FIOSYMBOL.raw());
+        auto existing = statstable.find(FIOSYMBOL.raw());
         const auto &st = *existing;
 
-        require_auth(FIOISSUER);
-        check(quantity.is_valid(), "invalid quantity");
-        check(quantity.amount > 0, "must retire positive quantity");
-        check(quantity.symbol == FIOSYMBOL, "symbol precision mismatch");
+        eosiosystem::locked_tokens_table lockedTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value);
 
-        check(quantity.symbol == st.supply.symbol, "symbol precision mismatch");
+        uint64_t remaining = 0;
+        auto lockiter = lockedTokensTable.find(actor.value);
 
-        statstable.modify(st, same_payer, [&](auto &s) {
-            s.supply -= quantity;
-        });
+        // Burn locked tokens first
+        if (lockiter != lockedTokensTable.end()) {
+          if (lockiter->grant_type == 1 && lockiter->grant_type == 3) {
 
-        sub_balance(FIOISSUER, quantity);
+
+
+          }
+        }
+
+        // remaining = ?? // The rest of the token amount to burn that is not locked
+        // Remove remaining tokens from supply and subtract from actor balance
+        if (remaining > 0) {
+          statstable.modify(st, same_payer, [&](auto &s) {
+              s.supply -= asset(remaining, FIOSYMBOL);
+          });
+
+          sub_balance(actor, asset(remaining, FIOSYMBOL));
+        }
+
+
+      const string response_string = string("{\"status\": \"OK\"}");
+
+      fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+        "Transaction is too large", ErrorTransactionTooLarge);
+
+      send_response(response_string.c_str());
+
     }
 
     bool token::can_transfer(const name &tokenowner, const uint64_t &feeamount, const uint64_t &transferamount,
