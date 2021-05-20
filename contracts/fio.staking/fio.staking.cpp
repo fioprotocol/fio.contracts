@@ -119,7 +119,8 @@ public:
 
         //get the usable balance for the account
         //this is account balance - genesis locked tokens - general locked balance.
-        auto stakeablebalance = eosio::token::computeusablebalance(actor,true);
+        print("EDEDEDEDEDEDEDEDEDED calling from staking!!!!!!!!!");
+        auto stakeablebalance = eosio::token::computeusablebalance(actor,false);
 
 
         uint64_t paid_fee_amount = 0;
@@ -266,7 +267,8 @@ public:
 
         //get the usable balance for the account
         //this is account balance - genesis locked tokens - general locked balance.
-        auto stakeablebalance = eosio::token::computeusablebalance(actor,true);
+       // print("EDEDEDEDEDEDEDEDEDED calling from unstaking!!!!!!!!!");
+        auto stakeablebalance = eosio::token::computeusablebalance(actor,false);
 
         uint64_t paid_fee_amount = 0;
         //begin, bundle eligible fee logic for staking
@@ -326,8 +328,9 @@ public:
         }
         //SRPs to Claim are computed: Staker's Account SRPs * (Unstaked amount / Total Tokens Staked in Staker's Account)
          //                                             this needs to be a floating point (double) operation
-        uint64_t srpstoclaim = (uint64_t)((double)astakeiter->total_srp * (double)( (double)amount / (double)astakeiter->total_staked_fio));
+        uint64_t srpstoclaim = (uint64_t)(((double)astakeiter->total_srp * (double)( (double)amount / (double)astakeiter->total_staked_fio))+0.5);
 
+        print("EDEEEDEDEDEDEDED srps to claim is ",to_string(srpstoclaim),"\n");
         //compute rate of exchange
         uint64_t rateofexchange =  1;
         if (gstaking.combined_token_pool >= COMBINEDTOKENPOOLMINIMUM) {
@@ -417,23 +420,27 @@ public:
             uint32_t insertperiod = (present_time - lockiter->timestamp) + 604800;
             double oldlockpercentofnewtotal = (((double) lockiter->lock_amount) /
                                                (double) (lockiter->lock_amount + stakingrewardamount + amount));
+
             vector <eosiosystem::lockperiods> newperiods;
-            //gotta truncate tne new percent at 3 decimal places
+
             bool insertintoexisting = false;
             uint32_t lastperiodduration = 0;
             int insertindex = -1;
             double totalnewpercent = 0.0;
-            for (int i = 0; i < lockiter->periods.size(); i++) {
-                double newpercent = lockiter->periods[i].percent * oldlockpercentofnewtotal;
 
-                //truncate it at 3 digits resolution.
+            for (int i = 0; i < lockiter->periods.size(); i++) {
+                uint64_t percentthisperiod = (lockiter->periods[i].percent * 1000);
+                uint64_t lockamountsmaller = lockiter->lock_amount / 10000;
+                uint64_t amountthisperiod = ((lockamountsmaller * percentthisperiod)/100000) * 10000;
+                double newpercent = ((double)amountthisperiod / (double) (lockiter->lock_amount + stakingrewardamount + amount)) * 100.0 ;
                 newpercent = ((double(int(newpercent * 1000.0))) / 1000.0);
                 totalnewpercent += newpercent;
-                if (lockiter->periods[i].duration == insertperiod) {
-                    insertintoexisting = true;
-                }
-                if (lockiter->periods[i].duration > insertperiod) {
+
+                if (lockiter->periods[i].duration >= insertperiod) {
                     insertindex = i;
+                    if (lockiter->periods[i].duration == insertperiod) {
+                        insertintoexisting = true;
+                    }
                 }
                 lastperiodduration = lockiter->periods[i].duration;
                 eosiosystem::lockperiods tperiod;
@@ -447,14 +454,30 @@ public:
                 insertindex = lockiter->periods.size();
             }
 
+            double newpercent = ((double)(stakingrewardamount + amount) / (double) (lockiter->lock_amount + stakingrewardamount + amount))*100.0 ;
+            newpercent = ((double(int(newpercent * 1000.0))) / 1000.0);
+
             //adapting an existing period.
             if (insertintoexisting) {
-                double t =  newperiods[insertindex - 1].percent + (100.0 - totalnewpercent);
-                t = ((double(int(t * 1000.0))) / 1000.0);
-                newperiods[insertindex - 1].percent = t;
+               // print("EDEDEDEDEDEDEDEDED totalnewpercent ",totalnewpercent,"\n");
+               // print("EDEDEDEDEDEDEDEDED newpercent ",newpercent,"\n");
+                double t1 = totalnewpercent + newpercent;
+                t1 = (100.0 - t1);
+               // print("EDEDEDEDEDEDEDEDED 100 minus t1 raw ",t1,"\n");
+                t1 = ((double(int((t1 * 1000.0)+0.5))) / 1000.0);
+              //  print("EDEDEDEDEDEDEDEDED 100 minus t1 ",t1,"\n");
+              //  print("EDEDEDEDEDEDEDEDED existing percent ",newperiods[insertindex].percent,"\n");
+                t1 =  newperiods[insertindex].percent + newpercent + t1;
+               // print("EDEDEDEDEDEDEDEDED t1 + newpercent + percent ",t1,"\n");
+                t1 = ((double(int((t1 * 1000.0)+0.5))) / 1000.0);
+               // print("EDEDEDEDEDEDEDEDED  t1 ",t1,"\n");
+                newperiods[insertindex].percent = t1;
             } else { //add the new period
+               // print("EDEDEDEDEDEDEDEDED totalnewpercent ",totalnewpercent,"\n");
                 double t =  (100.0 - totalnewpercent);
-                t = ((double(int(t * 1000.0))) / 1000.0);
+               // print("EDEDEDEDEDEDEDEDED 100 minus totalnewpercent ",t,"\n");
+                t = ((double(int((t * 1000.0)+0.5))) / 1000.0);
+               // print("EDEDEDEDEDEDEDEDED t ",t,"\n");
                 eosiosystem::lockperiods iperiod;
                 iperiod.duration = insertperiod;
                 iperiod.percent = t;

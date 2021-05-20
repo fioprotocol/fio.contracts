@@ -318,6 +318,8 @@ namespace eosio {
                         numberVestingPayouts--;
                     }
 
+
+
                     //process the rest of the payout periods, other than the first period.
                     if (payoutsDue > numberVestingPayouts) {
                         remainingPayouts = payoutsDue - numberVestingPayouts;
@@ -328,16 +330,22 @@ namespace eosio {
                             //this logic assumes to have 3 decimal places in the specified percentage
                             percentperblock = 18800;
                         } else if (lockiter->grant_type == 4) {
-                            //this is assumed to have 3 decimal places in the specified percentage
                             return lockiter->remaining_locked_amount;
                         } else {  //unknown lock type, dont unlock
                             return lockiter->remaining_locked_amount;
                         }
 
-                        //we eliminate the last 5 digits of the SUFs to avoid overflow in the calculations
-                        //that follow.
-                        uint64_t totalgrantsmaller = totalgrantamount/10000;
-                        amountpay = ((remainingPayouts * (totalgrantsmaller * percentperblock)) / 100000) * 10000;
+
+                        if(payoutsDue >= 5){
+                            //always pay all the rest at the end of the locks life.
+                            amountpay = lockiter->remaining_locked_amount;
+                        }
+                        else {
+                            //we eliminate the last 5 digits of the SUFs to avoid overflow in the calculations
+                            //that follow.
+                            uint64_t totalgrantsmaller = totalgrantamount / 10000;
+                            amountpay = ((remainingPayouts * (totalgrantsmaller * percentperblock)) / 100000) * 10000;
+                        }
 
                         if (newlockedamount > amountpay) {
                             newlockedamount -= amountpay;
@@ -346,6 +354,7 @@ namespace eosio {
                         }
                         didsomething = true;
                     }
+
 
                     if (didsomething && doupdate) {
                         //get fio balance for this account,
@@ -366,9 +375,7 @@ namespace eosio {
                             av.unlocked_period_count += remainingPayouts + addone;
                         });
                     }
-
                     return newlockedamount;
-
                 } else {
                     return lockiter->remaining_locked_amount;
                 }
@@ -392,6 +399,7 @@ namespace eosio {
                     uint32_t secondsSinceGrant = (present_time - lockiter->timestamp);
 
                     uint32_t payoutsDue = 0;
+
                     for (int i=0;i<lockiter->periods.size(); i++){
                         if (lockiter->periods[i].duration <= secondsSinceGrant){
                             payoutsDue++;
@@ -403,16 +411,22 @@ namespace eosio {
                     bool didsomething = false;
 
                     if (payoutsDue > lockiter->payouts_performed) {
-
-                        uint64_t percentperblock = 0;
-                       for (int i=lockiter->payouts_performed; i<payoutsDue;i++){
-                           //special note -- we allow 3 decimal places for precision. this needs enforced
-                           //in the input validation of these values.
-                           percentperblock = (lockiter->periods[i].percent * 1000);
-                           uint64_t lockamountsmaller = lockiter->lock_amount / 10000;
-                           uint64_t amountadded = ((lockamountsmaller * percentperblock)/100000) * 10000;
-                           amountpay += amountadded;
-                       }
+                        if((lockiter->payouts_performed + payoutsDue) >= lockiter->periods.size())
+                        {
+                            //payout the remaining lock amount.
+                            amountpay = newlockedamount;
+                        }
+                        else {
+                            uint64_t percentperblock = 0;
+                            for (int i = lockiter->payouts_performed; i < payoutsDue; i++) {
+                                //special note -- we allow 3 decimal places for precision. this needs enforced
+                                //in the input validation of these values.
+                                percentperblock = (lockiter->periods[i].percent * 1000);
+                                uint64_t lockamountsmaller = lockiter->lock_amount / 10000;
+                                uint64_t amountadded = ((lockamountsmaller * percentperblock) / 100000) * 10000;
+                                amountpay += amountadded;
+                            }
+                        }
 
                         if (newlockedamount > amountpay) {
                             newlockedamount -= amountpay;
