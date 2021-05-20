@@ -316,6 +316,7 @@ namespace eosio {
                        "Funds locked",
                        ErrorInsufficientUnlockedFunds);
 
+
         uint64_t uamount = computeusablebalance(actor,false);
         fio_400_assert(uamount >= qty.amount, "actor", to_string(actor.value),
                        "Insufficient Funds.",

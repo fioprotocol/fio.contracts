@@ -256,16 +256,22 @@ namespace eosiosystem {
             fio_400_assert(periods[i].percent > 0.0, "unlock_periods", "Invalid unlock periods",
                            "Invalid percentage value in unlock periods", ErrorInvalidUnlockPeriods);
             tv = periods[i].percent - (double(int(periods[i].percent * 1000.0)))/1000.0;
+            string t = "Invalid precision for percentage in unlock periods " + to_string(periods[i].percent);
             fio_400_assert(tv == 0.0, "unlock_periods", "Invalid unlock periods",
-                           "Invalid precision for percentage in unlock periods", ErrorInvalidUnlockPeriods);
+                           t , ErrorInvalidUnlockPeriods);
             fio_400_assert(periods[i].duration > 0, "unlock_periods", "Invalid unlock periods",
                            "Invalid duration value in unlock periods", ErrorInvalidUnlockPeriods);
+           // print("EDEDEDEDEDEDED adding in period percent ",periods[i].percent,"\n");
             totp += periods[i].percent;
             if (periods[i].duration > longestperiod){
                 longestperiod = periods[i].duration;
             }
         }
-        fio_400_assert(totp == 100.0, "unlock_periods", "Invalid unlock periods",
+
+        string thestr = "Invalid unlock periods " + to_string(totp);
+        //rounding!
+        int itotp = (int)((double)(totp) + 0.0001);
+        fio_400_assert(itotp == 100 , "unlock_periods", thestr,
                        "Invalid total percentage for unlock periods", ErrorInvalidUnlockPeriods);
 
         auto locks_by_owner = _generallockedtokens.get_index<"byowner"_n>();
