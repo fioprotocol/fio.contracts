@@ -262,7 +262,7 @@ namespace fioio {
                 trxtByRequestId.modify(fioreqctx_iter, _self, [&](struct fiotrxt_info &fr) {
                     fr.fio_data_type = static_cast<int64_t>(trxstatus::sent_to_blockchain);
                     fr.obt_content = content;
-                    fr.obt_time = current_time();
+                    fr.obt_time = present_time;
                 });
             } else {
                 const uint64_t id = fioTransactionsTable.available_primary_key();
@@ -275,7 +275,7 @@ namespace fioio {
                     obtinf.payee_fio_addr_hex = toHash;
                     obtinf.obt_content = content;
                     obtinf.fio_data_type = static_cast<int64_t>(trxstatus::obt_action);
-                    obtinf.obt_time = now();
+                    obtinf.obt_time = present_time;
                     obtinf.payer_fio_addr = payer_fio_address;
                     obtinf.payee_fio_addr = payee_fio_address;
                     obtinf.payee_key = payee_key;
@@ -645,7 +645,7 @@ namespace fioio {
                        fio_request_id, "No value specified",
                        ErrorRequestContextNotFound);
 
-        const uint64_t currentTime = current_time();
+        const uint64_t currentTime = now();
         uint64_t requestId;
 
         requestId = std::atoi(fio_request_id.c_str());
