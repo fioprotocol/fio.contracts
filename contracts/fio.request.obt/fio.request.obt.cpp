@@ -593,7 +593,7 @@ namespace fioio {
 
             trxtByRequestId.modify(fioreqctx_iter, _self, [&](struct fiotrxt_info &fr) {
                 fr.fio_data_type = static_cast<int64_t >(trxstatus::rejected);
-                fr.req_time = present_time;
+                fr.obt_time = present_time;
             });
 
             const string response_string = string("{\"status\": \"request_rejected\",\"fee_collected\":") +
@@ -734,7 +734,7 @@ namespace fioio {
         //end fees, bundle eligible fee logic
         trxtByRequestId.modify(fioreqctx_iter, _self, [&](struct fiotrxt_info &fr) {
             fr.fio_data_type = static_cast<int64_t >(trxstatus::cancelled);
-            fr.req_time = present_time;
+            fr.obt_time = present_time;
         });
 
         const string response_string = string("{\"status\": \"cancelled\",\"fee_collected\":") +
