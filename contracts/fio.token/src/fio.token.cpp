@@ -81,37 +81,70 @@ namespace eosio {
         }
     }
 
-    void token::retire(const int &quantity, const string &memo, const name &actor) {
-        uint64_t amount = (uint64_t)quantity;
+    void token::retire(const int64_t &quantity, const string &memo, const name &actor) {
+        asset qty;
+        qty.amount = quantity;
+        qty.symbol = FIOSYMBOL;
         check(memo.size() <= 256,"memo has more than 256 bytes");
-        check(amount >= 100000000000, "Minimum 1000 FIO has to be retired");
+        check(qty.amount >= 1000000000000LL, "Minimum 1000 FIO has to be retired");
         require_auth(actor);
-        stats statstable(_self, FIOSYMBOL.raw());
-        auto existing = statstable.find(FIOSYMBOL.raw());
+        stats statstable(_self, FIOSYMBOL.code().raw());
+        auto existing = statstable.find(FIOSYMBOL.code().raw());
         const auto &st = *existing;
 
-        eosiosystem::locked_tokens_table lockedTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value);
+        check(accountstaking.find(actor.value) == accountstaking.end(), "Staking account cannot retire FIO. Unstake first.");
 
-        uint64_t remaining = 0;
-        auto lockiter = lockedTokensTable.find(actor.value);
+        eosiosystem::locked_tokens_table lockedTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value);
+        eosiosystem::general_locks_table generalLocksTable(SYSTEMACCOUNT,SYSTEMACCOUNT.value);
+
+        uint64_t amount = qty.amount;
+        uint64_t extra;
+        auto lockediter = lockedTokensTable.find(actor.value);
 
         // Burn locked tokens first
-        if (lockiter != lockedTokensTable.end()) {
-          if (lockiter->grant_type == 1 && lockiter->grant_type == 3) {
+        if (lockediter != lockedTokensTable.end()) {
 
-
-
+          if (lockediter->remaining_locked_amount < amount) {
+            extra = amount - lockediter->remaining_locked_amount;
+            amount = lockediter->remaining_locked_amount;
           }
+
+           action(permission_level{get_self(), "active"_n},
+                  "eosio"_n, "updlocked"_n,
+                  make_tuple(actor, lockediter->remaining_locked_amount - amount)
+           ).send();
+
+
         }
+        if (extra > 0) amount = extra;
+
+        auto lock_by_owner = generalLocksTable.get_index<"byowner"_n>();
+        auto geniter = lock_by_owner.find(actor.value);
+        if (geniter != lock_by_owner.end()) {
+
+          if (geniter->remaining_lock_amount < amount) {
+            extra = amount - geniter->remaining_lock_amount;
+            amount = geniter->remaining_lock_amount;
+          }
+
+          action(permission_level{get_self(), "active"_n},
+                 "eosio"_n, "updlocks"_n,
+                 make_tuple(actor, geniter->remaining_lock_amount - amount)
+          ).send();
+
+
+        }
+
+        if (extra > 0) amount = extra;
 
         // remaining = ?? // The rest of the token amount to burn that is not locked
         // Remove remaining tokens from supply and subtract from actor balance
-        if (remaining > 0) {
-          statstable.modify(st, same_payer, [&](auto &s) {
-              s.supply -= asset(remaining, FIOSYMBOL);
+        if (amount > 0) {
+          statstable.modify(st, actor, [&](auto &s) {
+              s.supply -= asset(amount, FIOSYMBOL);
           });
 
-          sub_balance(actor, asset(remaining, FIOSYMBOL));
+          sub_balance(actor, asset(amount, FIOSYMBOL));
         }
 
 
