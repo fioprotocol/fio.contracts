@@ -262,7 +262,7 @@ namespace fioio {
                 trxtByRequestId.modify(fioreqctx_iter, _self, [&](struct fiotrxt_info &fr) {
                     fr.fio_data_type = static_cast<int64_t>(trxstatus::sent_to_blockchain);
                     fr.obt_content = content;
-                    fr.obt_time = current_time();
+                    fr.obt_time = present_time;
                 });
             } else {
                 const uint64_t id = fioTransactionsTable.available_primary_key();
@@ -275,7 +275,7 @@ namespace fioio {
                     obtinf.payee_fio_addr_hex = toHash;
                     obtinf.obt_content = content;
                     obtinf.fio_data_type = static_cast<int64_t>(trxstatus::obt_action);
-                    obtinf.obt_time = now();
+                    obtinf.obt_time = present_time;
                     obtinf.payer_fio_addr = payer_fio_address;
                     obtinf.payee_fio_addr = payee_fio_address;
                     obtinf.payee_key = payee_key;
@@ -436,7 +436,6 @@ namespace fioio {
             //end fees, bundle eligible fee logic
 
             const uint64_t id = fioTransactionsTable.available_primary_key();
-            const uint64_t currentTime = now();
             const uint128_t toHash = string_to_uint128_hash(payee_fio_address.c_str());
             const uint128_t fromHash = string_to_uint128_hash(payer_fio_address.c_str());
 
@@ -447,7 +446,7 @@ namespace fioio {
                 frc.payee_fio_addr_hex = toHash;
                 frc.req_content = content;
                 frc.fio_data_type = static_cast<int64_t>(trxstatus::requested);
-                frc.req_time = currentTime;
+                frc.req_time = present_time;
                 frc.payer_fio_addr = payer_fio_address;
                 frc.payee_fio_addr = payee_fio_address;
                 frc.payee_key = payee_key;
@@ -504,7 +503,7 @@ namespace fioio {
                            fio_request_id, "No value specified",
                            ErrorRequestContextNotFound);
 
-            const uint64_t currentTime = current_time();
+            const uint64_t present_time = now();
             uint64_t requestId;
             requestId = std::atoi(fio_request_id.c_str());
 
@@ -518,7 +517,6 @@ namespace fioio {
 
             const uint128_t payer128FioAddHashed = fioreqctx_iter->payer_fio_addr_hex;
             const string payer_key = fioreqctx_iter->payer_key;
-            const uint32_t present_time = now();
 
             auto namesbyname = fionames.get_index<"byname"_n>();
             auto fioname_iter = namesbyname.find(payer128FioAddHashed);
@@ -595,7 +593,7 @@ namespace fioio {
 
             trxtByRequestId.modify(fioreqctx_iter, _self, [&](struct fiotrxt_info &fr) {
                 fr.fio_data_type = static_cast<int64_t >(trxstatus::rejected);
-                fr.req_time = currentTime;
+                fr.req_time = present_time;
             });
 
             const string response_string = string("{\"status\": \"request_rejected\",\"fee_collected\":") +
@@ -645,7 +643,7 @@ namespace fioio {
                        fio_request_id, "No value specified",
                        ErrorRequestContextNotFound);
 
-        const uint64_t currentTime = current_time();
+        const uint64_t present_time = now();
         uint64_t requestId;
 
         requestId = std::atoi(fio_request_id.c_str());
@@ -659,7 +657,6 @@ namespace fioio {
         const string payer_key = fioreqctx_iter->payer_key;
         const string payee_key = fioreqctx_iter->payee_key;
         const uint64_t id = fioreqctx_iter->id;
-        const uint32_t present_time = now();
 
         fio_400_assert(fioreqctx_iter->fio_data_type == 0, "fio_request_id", fio_request_id,
                        "Only pending requests can be cancelled.", ErrorRequestStatusInvalid);
@@ -737,7 +734,7 @@ namespace fioio {
         //end fees, bundle eligible fee logic
         trxtByRequestId.modify(fioreqctx_iter, _self, [&](struct fiotrxt_info &fr) {
             fr.fio_data_type = static_cast<int64_t >(trxstatus::cancelled);
-            fr.req_time = currentTime;
+            fr.req_time = present_time;
         });
 
         const string response_string = string("{\"status\": \"cancelled\",\"fee_collected\":") +
