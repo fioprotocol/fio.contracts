@@ -770,7 +770,7 @@ namespace fioio {
             if(fioreqctx2_iter != trxtByRequestId.end()){
                 trxtByRequestId.modify(fioreqctx2_iter, _self, [&](struct fiotrxt_info &fr) {
                     fr.fio_data_type = static_cast<int64_t >(trxstatus::rejected);
-                    fr.obt_time = currentTime;
+                    fr.obt_time = present_time;
                 });
             }
             // USED FOR MIGRATION
@@ -935,7 +935,7 @@ namespace fioio {
         if(fioreqctx2_iter != trxtByRequestId.end()){
             trxtByRequestId.modify(fioreqctx2_iter, _self, [&](struct fiotrxt_info &fr) {
                 fr.fio_data_type = static_cast<int64_t >(trxstatus::cancelled);
-                fr.obt_time = currentTime;
+                fr.obt_time = present_time;
             });
         }
         // USED FOR MIGRATION
