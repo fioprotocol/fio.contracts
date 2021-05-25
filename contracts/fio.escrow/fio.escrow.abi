@@ -32,7 +32,7 @@
         },
         {
           "name": "commission_fee",
-          "type": "uint64"
+          "type": "float64"
         },
         {
           "name": "date_listed",
@@ -153,34 +153,24 @@
       "base": "",
       "fields": [
         {
-          "name": "owner",
-          "type": "name"
-        }
-      ]
-    },
-    {
-      "name": "updtmkplcfg",
-      "base": "",
-      "fields": [
-        {
           "name": "actor",
           "type": "name"
         },
         {
-          "name": "commission_fee",
+          "name":"commission_fee",
+          "type": "float64"
+        },
+        {
+          "name":"listing_fee",
           "type": "uint64"
         },
         {
-          "name": "listing_fee",
+          "name":"e_break",
           "type": "uint64"
         },
         {
-          "name": "e_break",
+          "name":"max_fee",
           "type": "uint64"
-        },
-        {
-          "name": "max_fee",
-          "type": "int64"
         }
       ]
     }
@@ -205,11 +195,6 @@
     {
       "name": "setmrkplcfg",
       "type": "setmrkplcfg",
-      "ricardian_contract": ""
-    },
-    {
-      "name": "updtmkplcfg",
-      "type": "updtmkplcfg",
       "ricardian_contract": ""
     }
   ],

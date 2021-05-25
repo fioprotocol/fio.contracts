@@ -51,7 +51,7 @@ namespace fioio {
         uint64_t id = 0;
         uint64_t owner = 0;
         uint128_t ownerhash = 0;
-        uint64_t commission_fee = 0;
+        double commission_fee = 0;
         uint64_t listing_fee = 0;
         uint64_t e_break = 0;
 
