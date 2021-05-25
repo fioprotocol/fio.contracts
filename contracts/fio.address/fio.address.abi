@@ -452,8 +452,12 @@
           "type": "string"
         },
         {
-          "name": "new_owner_fio_public_key",
+          "name": "public_key",
           "type": "string"
+        },
+        {
+          "name": "isEscrow",
+          "type": "bool"
         },
         {
           "name": "actor",
