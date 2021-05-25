@@ -87,7 +87,7 @@
           "type": "string"
         },
         {
-          "name": "buy_price",
+          "name": "max_buy_price",
           "type": "int64"
         },
         {

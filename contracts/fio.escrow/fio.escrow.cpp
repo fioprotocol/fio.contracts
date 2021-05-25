@@ -56,9 +56,11 @@ namespace fioio {
         /***********
         * This action will list a fio domain for sale. It also collects a fee for listing that is sent to the
          * marketplace. It transfers the domain ownership to `fio.escrow` while listed
-        * @param actor this is the fio account that has sent this transaction.
-        * @param fio_domain this is the fio domain to be sold.
-        * @param sale_price this is the amount of FIO the seller wants for the domain
+         * @param actor this is the fio account that has sent this transaction.
+         * @param fio_domain this is the fio domain to be sold.
+         * @param sale_price this is the amount of FIO the seller wants for the domain
+         * @param max_fee this is the max fee paid to the network for calling this action
+         * @param tpid this is the technology provider id that helped facilitate this action to the end user
         */
         [[eosio::action]]
         void listdomain(const name &actor, const string &fio_domain,
@@ -169,9 +171,11 @@ namespace fioio {
         // listdomain
 
         /***********
-        * This action will list a fio domain for sale
-        * @param actor this is the account name that listed the domain
-        * @param this is the name of the fio_domain
+        * This action will cancel a listing a fio domain
+         * @param actor this is the account name that listed the domain
+         * @param fio_domain this is the name of the fio_domain
+         * @param max_fee this is the max fee paid to the network for calling this action
+         * @param tpid this is the technology provider id that helped facilitate this action to the end user
         */
         [[eosio::action]]
         void cxlistdomain(const name &actor, const string &fio_domain,
@@ -210,11 +214,13 @@ namespace fioio {
                            "Account does not yet exist on the fio chain",
                            ErrorPubAddressExist);
 
+            bool isTransferToEscrow = false;
+
             action(
                     permission_level{EscrowContract, "active"_n},
                     AddressContract,
                     "xferescrow"_n,
-                    std::make_tuple(fio_domain, owner->clientkey, actor)
+                    std::make_tuple(fio_domain, owner->clientkey, isTransferToEscrow, actor)
             ).send();
 
             const uint128_t endpoint_hash = string_to_uint128_hash(CANCEL_LIST_DOMAIN_ENDPOINT);
@@ -262,8 +268,12 @@ namespace fioio {
 
         /***********
         * This action will list a fio domain for sale
-        * @param actor this is the account name that listed the domain
-        * @param this is the name of the fio_domain
+         * @param actor this is the account name that listed the domain
+         * @param sale_id this is the sale_id of the fio domain. This is used to make sure it's the correct
+         * @param fio_domain this is the name of the fio_domain
+         * @param max_buy_price this is the max buy price the buyer is willing to pay.
+         * @param max_fee this is the max fee paid to the network for calling this action
+         * @param tpid this is the technology provider id that helped facilitate this action to the end user
         */
         [[eosio::action]]
         void buydomain(const name &actor, const int64_t &sale_id,
@@ -287,12 +297,15 @@ namespace fioio {
             fio_400_assert(domainsale_iter != domainsalesbydomain.end(), "domainsale", fio_domain,
                            "Domain not found", ErrorDomainSaleNotFound);
 
+            fio_400_assert(domainSale_iter.id == sale_id, "sale_id", sale_id.to_string(),
+                           "Sale ID does not match", ErrorDomainSaleNotFound)
+
             auto saleprice           = asset(domainsale_iter->sale_price, FIOSYMBOL);
             auto buyer_max_buy_price = asset(max_buy_price, FIOSYMBOL);
             fio_400_assert(buyer_max_buy_price.amount <= saleprice.amount, "saleprice", to_string(saleprice.amount),
                            "Sale Price is greater than submitted buyer max buy price", ErrorNoWork);
 
-            auto marketCommissionFee = marketplace_iter->commission_fee / 100.0;
+            auto marketCommissionFee = domainsale_iter->commission_fee / 100.0;
             auto marketCommission    = (marketCommissionFee > 0) ?
                                        asset(saleprice.amount * marketCommissionFee, FIOSYMBOL) :
                                        asset(0, FIOSYMBOL);
@@ -313,10 +326,12 @@ namespace fioio {
                    make_tuple(actor, domainsale_iter->owner, toBuyer, string("Domain Purchase"))
             ).send();
 
-            action(permission_level{EscrowContract, "active"_n},
-                   TokenContract, "transfer"_n,
-                   make_tuple(actor, marketplace_iter->owner, marketCommission, string("Marketplace Commission"))
-            ).send();
+            if(marketCommission.amount > 0) {
+                action(permission_level{EscrowContract, "active"_n},
+                       TokenContract, "transfer"_n,
+                       make_tuple(actor, marketplace_iter->owner, marketCommission, string("Marketplace Commission"))
+                ).send();
+            }
 
             bool isTransferToEscrow = false;
 
