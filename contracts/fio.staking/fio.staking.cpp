@@ -182,7 +182,14 @@ public:
         //compute rate of exchange and SRPs
         uint64_t rateofexchange =  1;
         if (gstaking.combined_token_pool >= COMBINEDTOKENPOOLMINIMUM) {
+            print("EDEDEDEDEDEDEDEDEDEDED global srp count ", gstaking.global_srp_count);
+            print("EDEDEDEDEDEDEDEDEDEDED combined_token_pool ", gstaking.combined_token_pool);
             rateofexchange = gstaking.combined_token_pool / gstaking.global_srp_count;
+            print("EDEDEDEDEDEDEDEDEDEDED rate of exchange set to ", rateofexchange);
+            if(rateofexchange < 1) {
+                print("EDEDEDEDEDEDEDEDEDEDED RATE OF EXCHANGE LESS THAN 1 ", rateofexchange);
+                rateofexchange = 1;
+            }
         }
 
         uint64_t srptoaward = amount / rateofexchange;
@@ -328,20 +335,30 @@ public:
         }
         //SRPs to Claim are computed: Staker's Account SRPs * (Unstaked amount / Total Tokens Staked in Staker's Account)
          //                                             this needs to be a floating point (double) operation
+       //round this to avoid issues with decimal representations
         uint64_t srpstoclaim = (uint64_t)(((double)astakeiter->total_srp * (double)( (double)amount / (double)astakeiter->total_staked_fio))+0.5);
 
         print("EDEEEDEDEDEDEDED srps to claim is ",to_string(srpstoclaim),"\n");
         //compute rate of exchange
         uint64_t rateofexchange =  1;
         if (gstaking.combined_token_pool >= COMBINEDTOKENPOOLMINIMUM) {
+            print("EDEDEDEDEDEDEDEDEDEDED global srp count ", gstaking.global_srp_count);
+            print("EDEDEDEDEDEDEDEDEDEDED combined_token_pool ", gstaking.combined_token_pool);
             rateofexchange = gstaking.combined_token_pool / gstaking.global_srp_count;
+            print("EDEDEDEDEDEDEDEDEDEDED rate of exchange set to ", rateofexchange);
+            if(rateofexchange < 1) {
+                print("EDEDEDEDEDEDEDEDEDEDED RATE OF EXCHANGE LESS THAN 1 ", rateofexchange);
+                rateofexchange = 1;
+            }
         }
 
         eosio_assert((srpstoclaim * rateofexchange) >= amount, "unstakefio, invalid calc in totalrewardamount, must be that (srpstoclaim * rateofexchange) > amount. ");
         uint64_t totalrewardamount = ((srpstoclaim * rateofexchange) - amount);
+        print("EDEDEDEDEDEDEDEDEDEDED total reward amount is ", totalrewardamount);
         uint64_t tenpercent = totalrewardamount / 10;
         //Staking Reward Amount is computed: ((SRPs to Claim * Rate of Exchnage) - Unstake amount) * 0.9
         uint64_t stakingrewardamount = tenpercent * 9;
+        print("EDEDEDEDEDEDEDEDEDEDED staking reward amount is ", totalrewardamount);
         // TPID Reward Amount is computed: ((SRPs to Claim * Rate of Exchnage) - Unstake amount) * 0.1
         uint64_t tpidrewardamount = tenpercent;
 
@@ -418,9 +435,6 @@ public:
             int64_t newremaininglockamount = lockiter->remaining_lock_amount + (stakingrewardamount + amount);
             //get the timestamp of the lock.
             uint32_t insertperiod = (present_time - lockiter->timestamp) + 604800;
-            double oldlockpercentofnewtotal = (((double) lockiter->lock_amount) /
-                                               (double) (lockiter->lock_amount + stakingrewardamount + amount));
-
             vector <eosiosystem::lockperiods> newperiods;
 
             bool insertintoexisting = false;
@@ -429,11 +443,19 @@ public:
             double totalnewpercent = 0.0;
 
             for (int i = 0; i < lockiter->periods.size(); i++) {
+                print("EDEDEDEDEDEDED percent this period ",lockiter->periods[i].percent,"\n");
                 uint64_t percentthisperiod = (lockiter->periods[i].percent * 1000);
                 uint64_t lockamountsmaller = lockiter->lock_amount / 10000;
                 uint64_t amountthisperiod = ((lockamountsmaller * percentthisperiod)/100000) * 10000;
-                double newpercent = ((double)amountthisperiod / (double) (lockiter->lock_amount + stakingrewardamount + amount)) * 100.0 ;
-                newpercent = ((double(int(newpercent * 1000.0))) / 1000.0);
+                print("EDEDEDEDEDEDED percentthisperiod times 1000 ",percentthisperiod,"\n");
+                print("EDEDEDEDEDEDED amountthisperiod sufs ",amountthisperiod,"\n");
+                uint64_t newtotal = lockiter->lock_amount + stakingrewardamount + amount;
+                print("EDEDEDEDEDEDED new lock total ",newtotal,"\n");
+                double newpercent = ((double)amountthisperiod / (double) (newtotal)) * 100.0 ;
+                print("EDEDEDEDEDEDED new percent ",newpercent,"\n");
+                newpercent = ((double(int((newpercent * 1000.0)+0.5))) / 1000.0);
+               // newpercent = ((double(int(newpercent * 1000.0))) / 1000.0);
+                print("EDEDEDEDEDEDED new percent three digits. ",newpercent,"\n");
                 totalnewpercent += newpercent;
 
                 if (lockiter->periods[i].duration >= insertperiod) {
@@ -445,6 +467,8 @@ public:
                 lastperiodduration = lockiter->periods[i].duration;
                 eosiosystem::lockperiods tperiod;
                 tperiod.duration = lockiter->periods[i].duration;
+                eosio_assert(newpercent > 0.0,"unstakefio, ERROR -- zero percent not permitted during adaptation of general locks. " );
+
                 tperiod.percent = newpercent;
                 newperiods.push_back(tperiod);
             }
@@ -455,7 +479,8 @@ public:
             }
 
             double newpercent = ((double)(stakingrewardamount + amount) / (double) (lockiter->lock_amount + stakingrewardamount + amount))*100.0 ;
-            newpercent = ((double(int(newpercent * 1000.0))) / 1000.0);
+            newpercent = ((double(int((newpercent * 1000.0)+0.5))) / 1000.0);
+            //newpercent = ((double(int(newpercent * 1000.0))) / 1000.0);
 
             //adapting an existing period.
             if (insertintoexisting) {
@@ -464,6 +489,7 @@ public:
                 double t1 = totalnewpercent + newpercent;
                 t1 = (100.0 - t1);
                // print("EDEDEDEDEDEDEDEDED 100 minus t1 raw ",t1,"\n");
+                //address rounding on very small deltas.
                 t1 = ((double(int((t1 * 1000.0)+0.5))) / 1000.0);
               //  print("EDEDEDEDEDEDEDEDED 100 minus t1 ",t1,"\n");
               //  print("EDEDEDEDEDEDEDEDED existing percent ",newperiods[insertindex].percent,"\n");
@@ -471,6 +497,8 @@ public:
                // print("EDEDEDEDEDEDEDEDED t1 + newpercent + percent ",t1,"\n");
                 t1 = ((double(int((t1 * 1000.0)+0.5))) / 1000.0);
                // print("EDEDEDEDEDEDEDEDED  t1 ",t1,"\n");
+                eosio_assert(t1 > 0.0,"unstakefio, ERROR -- zero percent not permitted during adaptation of existing general locks period. " );
+
                 newperiods[insertindex].percent = t1;
             } else { //add the new period
                // print("EDEDEDEDEDEDEDEDED totalnewpercent ",totalnewpercent,"\n");
@@ -481,6 +509,8 @@ public:
                 eosiosystem::lockperiods iperiod;
                 iperiod.duration = insertperiod;
                 iperiod.percent = t;
+                eosio_assert(t > 0.0,"unstakefio, ERROR -- zero percent not permitted during insertion of new general locks period. " );
+
                 newperiods.insert(newperiods.begin() + insertindex, iperiod);
             }
 
@@ -495,6 +525,7 @@ public:
             //else make new lock.
             bool canvote = true;
             int64_t lockamount = (int64_t)(stakingrewardamount + amount);
+            print("EDEDEDEDEDEDEDEDED creating general lock for amount ", lockamount, "\n");
             vector <eosiosystem::lockperiods> periods;
             eosiosystem::lockperiods period;
             period.duration = 604800;
