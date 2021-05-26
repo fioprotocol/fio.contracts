@@ -240,7 +240,8 @@ namespace eosiosystem {
     }
 
     void eosiosystem::system_contract::modgenlocked(const name &owner, const vector<lockperiods> &periods,
-                                                    const int64_t &amount, const int64_t &rem_lock_amount) {
+                                                    const int64_t &amount, const int64_t &rem_lock_amount,
+                                                    const uint32_t &payouts) {
 
         eosio_assert( has_auth(StakingContract),
                      "missing required authority of fio.staking");
@@ -248,6 +249,7 @@ namespace eosiosystem {
         check(is_account(owner),"account must pre exist");
         check(amount > 0,"cannot add locked token amount less or equal 0.");
         check(rem_lock_amount > 0,"cannot add remaining locked token amount less or equal 0.");
+        check(payouts >= 0,"cannot add payouts less than 0.");
 
         double totp = 0.0;
         double tv = 0.0;
@@ -272,7 +274,7 @@ namespace eosiosystem {
         string thestr = "Invalid unlock periods " + to_string(totp);
         //rounding!
         int itotp = (int)((double)(totp) + 0.0001);
-        fio_400_assert(itotp == 100 , "unlock_periods", thestr,
+        fio_400_assert(itotp <= 100 , "unlock_periods", thestr,
                        "Invalid total percentage for unlock periods", ErrorInvalidUnlockPeriods);
 
         auto locks_by_owner = _generallockedtokens.get_index<"byowner"_n>();
@@ -282,7 +284,9 @@ namespace eosiosystem {
         locks_by_owner.modify(lockiter, get_self(), [&](auto &av) {
             av.remaining_lock_amount = rem_lock_amount;
             av.lock_amount = amount;
+            av.payouts_performed = payouts;
             av.periods = periods;
+
         });
     }
 
