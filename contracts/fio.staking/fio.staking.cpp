@@ -119,7 +119,7 @@ public:
 
         //get the usable balance for the account
         //this is account balance - genesis locked tokens - general locked balance.
-        print("EDEDEDEDEDEDEDEDEDED calling from staking!!!!!!!!!");
+       // print("EDEDEDEDEDEDEDEDEDED calling from staking!!!!!!!!!");
         auto stakeablebalance = eosio::token::computeusablebalance(actor,false);
 
 
@@ -249,6 +249,8 @@ public:
 
         uint64_t bundleeligiblecountdown = 0;
 
+        const uint32_t present_time = now();
+
         if (!fio_address.empty()) {
             const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
             auto namesbyname = fionames.get_index<"byname"_n>();
@@ -259,7 +261,7 @@ public:
             fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature);
 
             const uint32_t expiration = fioname_iter->expiration;
-            const uint32_t present_time = now();
+
             fio_400_assert(present_time <= expiration, "fio_address", fio_address, "FIO Address expired. Renew first.",
                            ErrorDomainExpired);
             bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
@@ -338,7 +340,7 @@ public:
        //round this to avoid issues with decimal representations
         uint64_t srpstoclaim = (uint64_t)(((double)astakeiter->total_srp * (double)( (double)amount / (double)astakeiter->total_staked_fio))+0.5);
 
-        print("EDEEEDEDEDEDEDED srps to claim is ",to_string(srpstoclaim),"\n");
+        //print("EDEEEDEDEDEDEDED srps to claim is ",to_string(srpstoclaim),"\n");
         //compute rate of exchange
         uint64_t rateofexchange =  1;
         if (gstaking.combined_token_pool >= COMBINEDTOKENPOOLMINIMUM) {
@@ -395,7 +397,6 @@ public:
         //     decrement the global_srp_count by srpcount.
         gstaking.global_srp_count -= srpstoclaim;
 
-        const uint32_t present_time = now();
         //pay the tpid.
         if ((tpid.length() > 0)&&(tpidrewardamount>0)){
             //get the owner of the tpid and pay them.
@@ -435,32 +436,42 @@ public:
             int64_t newremaininglockamount = lockiter->remaining_lock_amount + (stakingrewardamount + amount);
             //get the timestamp of the lock.
             uint32_t insertperiod = (present_time - lockiter->timestamp) + 604800;
+            //the days since launch.
+            uint32_t insertday = (lockiter->timestamp + insertperiod) / SECONDSPERDAY;
+            //if your duration is less than this the period is in the past.
+            uint32_t expirednowduration = present_time - lockiter->timestamp;
+            uint32_t payouts = lockiter->payouts_performed;
+
+
             vector <eosiosystem::lockperiods> newperiods;
 
             bool insertintoexisting = false;
             uint32_t lastperiodduration = 0;
             int insertindex = -1;
             double totalnewpercent = 0.0;
+            uint32_t daysforperiod = 0;
 
             for (int i = 0; i < lockiter->periods.size(); i++) {
-                print("EDEDEDEDEDEDED percent this period ",lockiter->periods[i].percent,"\n");
+               // print("EDEDEDEDEDEDED percent this period ",lockiter->periods[i].percent,"\n");
                 uint64_t percentthisperiod = (lockiter->periods[i].percent * 1000);
                 uint64_t lockamountsmaller = lockiter->lock_amount / 10000;
                 uint64_t amountthisperiod = ((lockamountsmaller * percentthisperiod)/100000) * 10000;
-                print("EDEDEDEDEDEDED percentthisperiod times 1000 ",percentthisperiod,"\n");
-                print("EDEDEDEDEDEDED amountthisperiod sufs ",amountthisperiod,"\n");
+              //  print("EDEDEDEDEDEDED percentthisperiod times 1000 ",percentthisperiod,"\n");
+              //  print("EDEDEDEDEDEDED amountthisperiod sufs ",amountthisperiod,"\n");
                 uint64_t newtotal = lockiter->lock_amount + stakingrewardamount + amount;
-                print("EDEDEDEDEDEDED new lock total ",newtotal,"\n");
+              //  print("EDEDEDEDEDEDED new lock total ",newtotal,"\n");
                 double newpercent = ((double)amountthisperiod / (double) (newtotal)) * 100.0 ;
-                print("EDEDEDEDEDEDED new percent ",newpercent,"\n");
+              //  print("EDEDEDEDEDEDED new percent ",newpercent,"\n");
                 newpercent = ((double(int((newpercent * 1000.0)+0.5))) / 1000.0);
                // newpercent = ((double(int(newpercent * 1000.0))) / 1000.0);
-                print("EDEDEDEDEDEDED new percent three digits. ",newpercent,"\n");
+              //  print("EDEDEDEDEDEDED new percent three digits. ",newpercent,"\n");
                 totalnewpercent += newpercent;
+                daysforperiod = (lockiter->timestamp + lockiter->periods[i].duration)/SECONDSPERDAY;
 
-                if (lockiter->periods[i].duration >= insertperiod) {
-                    insertindex = i;
-                    if (lockiter->periods[i].duration == insertperiod) {
+                if (daysforperiod >= insertday) {
+                    insertindex = newperiods.size();
+                    //always insert into the same day.
+                    if (daysforperiod == insertday) {
                         insertintoexisting = true;
                     }
                 }
@@ -468,14 +479,21 @@ public:
                 eosiosystem::lockperiods tperiod;
                 tperiod.duration = lockiter->periods[i].duration;
                 eosio_assert(newpercent > 0.0,"unstakefio, ERROR -- zero percent not permitted during adaptation of general locks. " );
-
                 tperiod.percent = newpercent;
-                newperiods.push_back(tperiod);
+
+                //only those periods not in the past go into the list of periods.
+                //remove old periods.
+                if( tperiod.duration >= expirednowduration) {
+                    newperiods.push_back(tperiod);
+                }else{
+                    eosio_assert(payouts > 0 ,"unstakefio,  internal error decrementing payouts. " );
+                    payouts --;
+                }
             }
 
             if(insertperiod > lastperiodduration)
             {
-                insertindex = lockiter->periods.size();
+                insertindex = newperiods.size();
             }
 
             double newpercent = ((double)(stakingrewardamount + amount) / (double) (lockiter->lock_amount + stakingrewardamount + amount))*100.0 ;
@@ -485,21 +503,22 @@ public:
             //adapting an existing period.
             if (insertintoexisting) {
                // print("EDEDEDEDEDEDEDEDED totalnewpercent ",totalnewpercent,"\n");
-               // print("EDEDEDEDEDEDEDEDED newpercent ",newpercent,"\n");
-                double t1 = totalnewpercent + newpercent;
-                t1 = (100.0 - t1);
+
+               // double t1 = totalnewpercent + newpercent;
+               // t1 = (100.0 - t1);
                // print("EDEDEDEDEDEDEDEDED 100 minus t1 raw ",t1,"\n");
                 //address rounding on very small deltas.
-                t1 = ((double(int((t1 * 1000.0)+0.5))) / 1000.0);
+               // t1 = ((double(int((t1 * 1000.0)+0.5))) / 1000.0);
               //  print("EDEDEDEDEDEDEDEDED 100 minus t1 ",t1,"\n");
               //  print("EDEDEDEDEDEDEDEDED existing percent ",newperiods[insertindex].percent,"\n");
-                t1 =  newperiods[insertindex].percent + newpercent + t1;
+               double  t1 =  newperiods[insertindex-1].percent + newpercent;
                // print("EDEDEDEDEDEDEDEDED t1 + newpercent + percent ",t1,"\n");
                 t1 = ((double(int((t1 * 1000.0)+0.5))) / 1000.0);
+                print("EDEDEDEDEDEDEDEDED newpercent set for period  ",newperiods[insertindex-1].duration," percent is ", t1,"\n");
                // print("EDEDEDEDEDEDEDEDED  t1 ",t1,"\n");
                 eosio_assert(t1 > 0.0,"unstakefio, ERROR -- zero percent not permitted during adaptation of existing general locks period. " );
 
-                newperiods[insertindex].percent = t1;
+                newperiods[insertindex-1].percent = t1;
             } else { //add the new period
                // print("EDEDEDEDEDEDEDEDED totalnewpercent ",totalnewpercent,"\n");
                 double t =  (100.0 - totalnewpercent);
@@ -519,7 +538,7 @@ public:
                     permission_level{get_self(), "active"_n},
                     SYSTEMACCOUNT,
                     "modgenlocked"_n,
-                    std::make_tuple(actor, newperiods, newlockamount, newremaininglockamount)
+                    std::make_tuple(actor, newperiods, newlockamount, newremaininglockamount, payouts)
             ).send();
         }else {
             //else make new lock.
