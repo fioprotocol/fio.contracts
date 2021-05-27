@@ -240,7 +240,8 @@ namespace eosiosystem {
     }
 
     void eosiosystem::system_contract::modgenlocked(const name &owner, const vector<lockperiods> &periods,
-                                                    const int64_t &amount, const int64_t &rem_lock_amount) {
+                                                    const int64_t &amount, const int64_t &rem_lock_amount,
+                                                    const uint32_t &payouts) {
 
         eosio_assert( has_auth(StakingContract),
                      "missing required authority of fio.staking");
@@ -248,6 +249,7 @@ namespace eosiosystem {
         check(is_account(owner),"account must pre exist");
         check(amount > 0,"cannot add locked token amount less or equal 0.");
         check(rem_lock_amount > 0,"cannot add remaining locked token amount less or equal 0.");
+        check(payouts >= 0,"cannot add payouts less than 0.");
 
         double totp = 0.0;
         double tv = 0.0;
@@ -255,10 +257,11 @@ namespace eosiosystem {
         for(int i=0;i<periods.size();i++){
             fio_400_assert(periods[i].percent > 0.0, "unlock_periods", "Invalid unlock periods",
                            "Invalid percentage value in unlock periods", ErrorInvalidUnlockPeriods);
-            tv = periods[i].percent - (double(int(periods[i].percent * 1000.0)))/1000.0;
-            string t = "Invalid precision for percentage in unlock periods " + to_string(periods[i].percent);
+            double t1 = (double(int((periods[i].percent * 1000.0)+0.5)))/1000.0;
+            tv = periods[i].percent - t1;
+            string ts = "Invalid precision for percentage in unlock periods " + to_string(periods[i].percent);
             fio_400_assert(tv == 0.0, "unlock_periods", "Invalid unlock periods",
-                           t , ErrorInvalidUnlockPeriods);
+                           ts , ErrorInvalidUnlockPeriods);
             fio_400_assert(periods[i].duration > 0, "unlock_periods", "Invalid unlock periods",
                            "Invalid duration value in unlock periods", ErrorInvalidUnlockPeriods);
            // print("EDEDEDEDEDEDED adding in period percent ",periods[i].percent,"\n");
@@ -271,7 +274,7 @@ namespace eosiosystem {
         string thestr = "Invalid unlock periods " + to_string(totp);
         //rounding!
         int itotp = (int)((double)(totp) + 0.0001);
-        fio_400_assert(itotp == 100 , "unlock_periods", thestr,
+        fio_400_assert(itotp <= 100 , "unlock_periods", thestr,
                        "Invalid total percentage for unlock periods", ErrorInvalidUnlockPeriods);
 
         auto locks_by_owner = _generallockedtokens.get_index<"byowner"_n>();
@@ -281,7 +284,9 @@ namespace eosiosystem {
         locks_by_owner.modify(lockiter, get_self(), [&](auto &av) {
             av.remaining_lock_amount = rem_lock_amount;
             av.lock_amount = amount;
+            av.payouts_performed = payouts;
             av.periods = periods;
+
         });
     }
 

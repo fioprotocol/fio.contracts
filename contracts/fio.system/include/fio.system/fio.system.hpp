@@ -342,7 +342,8 @@ public:
     void addgenlocked(const name &owner, const vector<lockperiods> &periods, const bool &canvote,const int64_t &amount);
 
     [[eosio::action]]
-    void modgenlocked(const name &owner, const vector<lockperiods> &periods, const int64_t &amount,const int64_t &rem_lock_amount);
+    void modgenlocked(const name &owner, const vector<lockperiods> &periods, const int64_t &amount,const int64_t &rem_lock_amount,
+                      const uint32_t &payouts);
 
     [[eosio::action]]
     void onblock(ignore <block_header> header);

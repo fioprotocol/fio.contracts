@@ -421,8 +421,12 @@ namespace eosio {
                             for (int i = lockiter->payouts_performed; i < payoutsDue; i++) {
                                 //special note -- we allow 3 decimal places for precision. this needs enforced
                                 //in the input validation of these values.
+                                //1.234 goes to (int) 1234
                                 percentperblock = (lockiter->periods[i].percent * 1000);
+                                //we take off 4 zeros from the SUFs to protect against overflow.
                                 uint64_t lockamountsmaller = lockiter->lock_amount / 10000;
+                                //we divide by 100000 to get back to lockamountsmaller units, then multiply
+                                // by 10000 to get back to SUFs
                                 uint64_t amountadded = ((lockamountsmaller * percentperblock) / 100000) * 10000;
                                 amountpay += amountadded;
                             }
