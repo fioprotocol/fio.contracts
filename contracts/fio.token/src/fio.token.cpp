@@ -98,7 +98,7 @@ namespace eosio {
         eosiosystem::general_locks_table generalLocksTable(SYSTEMACCOUNT,SYSTEMACCOUNT.value);
 
         uint64_t amount = qty.amount;
-        uint64_t extra;
+        uint64_t extra = 0;
         auto lockediter = lockedTokensTable.find(actor.value);
 
         // Burn locked tokens first
@@ -113,10 +113,9 @@ namespace eosio {
                   "eosio"_n, "updlocked"_n,
                   make_tuple(actor, lockediter->remaining_locked_amount - amount)
            ).send();
-
+           if (extra > 0) amount = extra;
 
         }
-        if (extra > 0) amount = extra;
 
         auto lock_by_owner = generalLocksTable.get_index<"byowner"_n>();
         auto geniter = lock_by_owner.find(actor.value);
@@ -131,27 +130,22 @@ namespace eosio {
                  "eosio"_n, "updlocks"_n,
                  make_tuple(actor, geniter->remaining_lock_amount - amount)
           ).send();
-
-
+          if (extra > 0) amount = extra;
         }
 
-        if (extra > 0) amount = extra;
-
-        // remaining = ?? // The rest of the token amount to burn that is not locked
         // Remove remaining tokens from supply and subtract from actor balance
         if (amount > 0) {
           statstable.modify(st, actor, [&](auto &s) {
               s.supply -= asset(amount, FIOSYMBOL);
           });
 
-          sub_balance(actor, asset(amount, FIOSYMBOL));
+          sub_balance(actor, asset(amount, FIOSYMBOL)); //has fio_400_assert if insufficient balance
         }
-
-
-      const string response_string = string("{\"status\": \"OK\"}");
 
       fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
         "Transaction is too large", ErrorTransactionTooLarge);
+
+      const string response_string = string("{\"status\": \"OK\"}");
 
       send_response(response_string.c_str());
 
