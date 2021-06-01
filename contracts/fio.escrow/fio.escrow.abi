@@ -37,6 +37,14 @@
         {
           "name": "date_listed",
           "type": "uint64"
+        },
+        {
+          "name": "status",
+          "type": "uint8"
+        },
+        {
+          "name": "date_updated",
+          "type": "uint64"
         }
       ]
     },

@@ -29,6 +29,8 @@ namespace fioio {
         uint64_t sale_price = 0;
         double commission_fee = 0;
         uint64_t date_listed;
+        uint8_t status; // status = 1: on sale, status = 2: Sold, status = 3; Cancelled
+        uint64_t date_updated = 0; // 0 until either sold or cancelled
 
         uint64_t primary_key() const { return id; }
         uint128_t by_domain() const { return domainhash; }
@@ -38,6 +40,7 @@ namespace fioio {
                          (id)(owner)(ownerhash)
                          (domain)(domainhash)(sale_price)
                          (commission_fee)(date_listed)
+                         (status)(date_updated)
         )
     };
 
