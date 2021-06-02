@@ -451,7 +451,7 @@ namespace eosio {
 
     void token::trnsloctoks(const string &payee_public_key,
                              const int32_t &can_vote,
-                             const vector<eosiosystem::lockperiods> periods,
+                             const vector<eosiosystem::lockperiodv2> periods,
                              const int64_t &amount,
                              const int64_t &max_fee,
                              const name &actor,
@@ -459,25 +459,25 @@ namespace eosio {
 
         fio_400_assert(((periods.size()) >= 1 && (periods.size() <= 365)), "unlock_periods", "Invalid unlock periods",
                        "Invalid number of unlock periods", ErrorTransactionTooLarge);
-        double totp = 0.0;
+        uint64_t tota = 0;
         double tv = 0.0;
         int64_t longestperiod = 0;
         for(int i=0;i<periods.size();i++){
-            fio_400_assert(periods[i].percent > 0.0, "unlock_periods", "Invalid unlock periods",
-                           "Invalid percentage value in unlock periods", ErrorInvalidUnlockPeriods);
-            tv = periods[i].percent - (double(int((periods[i].percent * 1000.0)+0.5)))/1000.0;
-            //tv = periods[i].percent - (double(int(periods[i].percent * 1000.0)))/1000.0;
-            fio_400_assert(tv == 0.0, "unlock_periods", "Invalid unlock periods",
-                           "Invalid precision for percentage in unlock periods", ErrorInvalidUnlockPeriods);
+            fio_400_assert(periods[i].amount > 0, "unlock_periods", "Invalid unlock periods",
+                           "Invalid amount value in unlock periods", ErrorInvalidUnlockPeriods);
             fio_400_assert(periods[i].duration > 0, "unlock_periods", "Invalid unlock periods",
                            "Invalid duration value in unlock periods", ErrorInvalidUnlockPeriods);
-            totp += periods[i].percent;
+            tota += periods[i].amount;
+            if (i>1){
+                fio_400_assert(periods[i].duration > periods[i-1].duration, "unlock_periods", "Invalid unlock periods",
+                               "Invalid duration value in unlock periods, must be sorted", ErrorInvalidUnlockPeriods);
+            }
             if (periods[i].duration > longestperiod){
                 longestperiod = periods[i].duration;
             }
         }
-        fio_400_assert(totp == 100.0, "unlock_periods", "Invalid unlock periods",
-                       "Invalid total percentage for unlock periods", ErrorInvalidUnlockPeriods);
+        fio_400_assert(tota == amount, "unlock_periods", "Invalid unlock periods",
+                       "Invalid total amount for unlock periods", ErrorInvalidUnlockPeriods);
 
         fio_400_assert(((can_vote == 0)||(can_vote == 1)), "can_vote", to_string(can_vote),
                        "Invalid can_vote value", ErrorInvalidValue);

@@ -32,7 +32,7 @@ namespace eosio {
         fioio::tpids_table tpids;
         fioio::fionames_table fionames;
         eosiosystem::locked_tokens_table lockedTokensTable;
-        eosiosystem::general_locks_table generalLockTokensTable;
+        eosiosystem::general_locks_table_v2 generalLockTokensTable;
         fioio::account_staking_table accountstaking;
 
     public:
@@ -78,7 +78,7 @@ namespace eosio {
         [[eosio::action]]
         void trnsloctoks(const string &payee_public_key,
                                 const int32_t &can_vote,
-                                const vector<eosiosystem::lockperiods> periods,
+                                const vector<eosiosystem::lockperiodv2> periods,
                                 const int64_t &amount,
                                 const int64_t &max_fee,
                                 const name &actor,
@@ -390,7 +390,7 @@ namespace eosio {
         static uint64_t computegenerallockedtokens(const name &actor, bool doupdate) {
             uint32_t present_time = now();
 
-            eosiosystem::general_locks_table generalLockTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value);
+            eosiosystem::general_locks_table_v2 generalLockTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value);
             auto locks_by_owner = generalLockTokensTable.get_index<"byowner"_n>();
             auto lockiter = locks_by_owner.find(actor.value);
             if (lockiter != locks_by_owner.end()) {
@@ -417,18 +417,9 @@ namespace eosio {
                             amountpay = newlockedamount;
                         }
                         else {
-                            uint64_t percentperblock = 0;
+
                             for (int i = lockiter->payouts_performed; i < payoutsDue; i++) {
-                                //special note -- we allow 3 decimal places for precision. this needs enforced
-                                //in the input validation of these values.
-                                //1.234 goes to (int) 1234
-                                percentperblock = (lockiter->periods[i].percent * 1000);
-                                //we take off 4 zeros from the SUFs to protect against overflow.
-                                uint64_t lockamountsmaller = lockiter->lock_amount / 10000;
-                                //we divide by 100000 to get back to lockamountsmaller units, then multiply
-                                // by 10000 to get back to SUFs
-                                uint64_t amountadded = ((lockamountsmaller * percentperblock) / 100000) * 10000;
-                                amountpay += amountadded;
+                                amountpay += lockiter->periods[i].amount;
                             }
                         }
 
