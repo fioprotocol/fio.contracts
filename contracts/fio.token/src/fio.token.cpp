@@ -95,7 +95,7 @@ namespace eosio {
         fio_403_assert(accountstaking.find(actor.value) == accountstaking.end(), ErrorSignature);
 
         eosiosystem::locked_tokens_table lockedTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value);
-        eosiosystem::general_locks_table generalLocksTable(SYSTEMACCOUNT,SYSTEMACCOUNT.value);
+        eosiosystem::general_locks_table_v2 generalLocksTable(SYSTEMACCOUNT,SYSTEMACCOUNT.value);
 
         uint64_t amount = qty.amount;
         uint64_t extra = 0;
