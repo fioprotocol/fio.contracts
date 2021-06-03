@@ -85,14 +85,14 @@ namespace eosio {
         asset qty;
         qty.amount = quantity;
         qty.symbol = FIOSYMBOL;
-        check(memo.size() <= 256,"memo has more than 256 bytes");
-        check(qty.amount >= 1000000000000LL, "Minimum 1000 FIO has to be retired");
+        fio_400_assert(memo.size() <= 256, "memo", memo, "memo has more than 256 bytes", ErrorInvalidMemo);
+        fio_400_assert(qty.amount >= 1000000000000LL,"quantity", std::to_string(quantity), "Minimum 1000 FIO has to be retired", ErrorRetireQuantity);
         require_auth(actor);
         stats statstable(_self, FIOSYMBOL.code().raw());
         auto existing = statstable.find(FIOSYMBOL.code().raw());
         const auto &st = *existing;
 
-        check(accountstaking.find(actor.value) == accountstaking.end(), "Staking account cannot retire FIO. Unstake first.");
+        fio_403_assert(accountstaking.find(actor.value) == accountstaking.end(), ErrorSignature);
 
         eosiosystem::locked_tokens_table lockedTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value);
         eosiosystem::general_locks_table generalLocksTable(SYSTEMACCOUNT,SYSTEMACCOUNT.value);
@@ -108,11 +108,12 @@ namespace eosio {
             extra = amount - lockediter->remaining_locked_amount;
             amount = lockediter->remaining_locked_amount;
           }
-
+          if (lockediter->remaining_locked_amount >= amount) {
            action(permission_level{get_self(), "active"_n},
                   "eosio"_n, "updlocked"_n,
                   make_tuple(actor, lockediter->remaining_locked_amount - amount)
            ).send();
+          }
            if (extra > 0) amount = extra;
 
         }
@@ -125,12 +126,14 @@ namespace eosio {
             extra = amount - geniter->remaining_lock_amount;
             amount = geniter->remaining_lock_amount;
           }
-
-          action(permission_level{get_self(), "active"_n},
-                 "eosio"_n, "updlocks"_n,
-                 make_tuple(actor, geniter->remaining_lock_amount - amount)
-          ).send();
+          if (amount <= geniter->remaining_lock_amount) {
+            action(permission_level{get_self(), "active"_n},
+                   "eosio"_n, "updlocks"_n,
+                   make_tuple(actor, geniter->remaining_lock_amount - amount)
+            ).send();
+          }
           if (extra > 0) amount = extra;
+
         }
 
         // Remove remaining tokens from supply and subtract from actor balance
