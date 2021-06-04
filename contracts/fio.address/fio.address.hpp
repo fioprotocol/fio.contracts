@@ -111,4 +111,28 @@ namespace fioio {
             indexed_by<"bykey"_n, const_mem_fun < eosio_name, uint128_t, &eosio_name::by_keyhash>>
     >
     eosio_names_table;
+
+    // Maps NFT information to FIO Address
+    struct [[eosio::action]] nftinfo {
+      uint64_t id;
+      string handle; //fio_address
+      uint128_t handlehash;
+      string chain_code;
+      string contract_address;
+      uint64_t token_id;
+      string url;
+      uint128_t hash;
+      string metadata;
+
+      uint64_t primary_key() const { return id; }
+      uint128_t by_handle() const { return handlehash; }
+      uint128_t by_keyhash() const { return hash; }
+    };
+
+    typedef multi_index<"nfts"_n, nftinfo,
+    indexed_by<"byhandle"_n, const_mem_fun<nftinfo, uint128_t, &nftinfo::by_handle>>,
+    indexed_by<"byhash"_n, const_mem_fun<nftinfo, uint128_t, &nftinfo::by_keyhash>>
+    >
+    nftstable;
+
 }
