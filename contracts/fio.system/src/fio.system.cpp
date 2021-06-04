@@ -259,7 +259,7 @@ namespace eosiosystem {
             fio_400_assert(periods[i].duration > 0, "unlock_periods", "Invalid unlock periods",
                            "Invalid duration value in unlock periods", ErrorInvalidUnlockPeriods);
             tota += periods[i].amount;
-            if (i>1){
+            if (i>0){
                 fio_400_assert(periods[i].duration > periods[i-1].duration, "unlock_periods", "Invalid unlock periods",
                                "Invalid duration value in unlock periods, must be sorted", ErrorInvalidUnlockPeriods);
             }
