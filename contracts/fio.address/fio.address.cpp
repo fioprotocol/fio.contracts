@@ -32,8 +32,6 @@ namespace fioio {
         eosiosystem::producers_table producers;
         eosiosystem::locked_tokens_table lockedTokensTable;
         config appConfig;
-        recordobt_table recordObtTable; //TEMP FOR XFERADDRESS
-        fiorequest_contexts_table fiorequestContextsTable; //TEMP FOR XFERADDRESS
 
     public:
         using contract::contract;
@@ -46,12 +44,10 @@ namespace fioio {
                                                                         bundlevoters(FeeContract, FeeContract.value),
                                                                         accountmap(_self, _self.value),
                                                                         tpids(TPIDContract, TPIDContract.value),
-                                                                        voters(AddressContract, AddressContract.value),
+                                                                        voters(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                                                                         topprods(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                                                                         producers(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
-                                                                        lockedTokensTable(SYSTEMACCOUNT,SYSTEMACCOUNT.value),
-                                                                        recordObtTable(REQOBTACCOUNT, REQOBTACCOUNT.value), //TEMP FOR XFERADDRESS
-                                                                        fiorequestContextsTable(REQOBTACCOUNT, REQOBTACCOUNT.value){ //TEMP FOR XFERADDRESS
+                                                                        lockedTokensTable(SYSTEMACCOUNT,SYSTEMACCOUNT.value){
             configs_singleton configsSingleton(FeeContract, FeeContract.value);
             appConfig = configsSingleton.get_or_default(config());
         }
@@ -1369,8 +1365,7 @@ namespace fioio {
 
         [[eosio::action]]
         void xferaddress(const string &fio_address, const string &new_owner_fio_public_key, const int64_t &max_fee,
-                        const string &tpid, const name &actor) {
-
+                         const name &actor, const string &tpid ) {
             require_auth(actor);
             FioAddress fa;
             getFioAddressStruct(fio_address, fa);
@@ -1399,24 +1394,6 @@ namespace fioio {
 
             fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature);
             const uint128_t endpoint_hash = string_to_uint128_hash(TRANSFER_ADDRESS_ENDPOINT);
-
-            //TEMP
-            auto obtbyname = recordObtTable.get_index<"bypayee"_n>();
-            auto name_iter = obtbyname.find(nameHash);
-            check(name_iter == obtbyname.end(), "Transferring a FIO address is currently disabled for some fio.addresses");
-
-            auto obtbyname2 = recordObtTable.get_index<"bypayer"_n>();
-            auto name_iter2 = obtbyname2.find(nameHash);
-            check(name_iter2 == obtbyname2.end(), "Transferring a FIO address is currently disabled for some fio.addresses");
-
-            auto reqbyname = fiorequestContextsTable.get_index<"byreceiver"_n>();
-            auto name_iter3 = reqbyname.find(nameHash);
-            check(name_iter3 == reqbyname.end(), "Transferring a FIO address is currently disabled for some fio.addresses");
-
-            auto reqbyname2 = fiorequestContextsTable.get_index<"byoriginator"_n>();
-            auto name_iter4 = reqbyname2.find(nameHash);
-            check(name_iter4 == reqbyname2.end(), "Transferring a FIO address is currently disabled for some fio.addresses");
-            //TEMP
 
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
@@ -1660,7 +1637,7 @@ namespace fioio {
                            ErrorPubKeyValid);
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
-            fio_400_assert(bundle_sets >= 0, "bundle_sets", to_string(bundle_sets), "Invalid bundle_sets value",
+            fio_400_assert(bundle_sets > 0, "bundle_sets", to_string(bundle_sets), "Invalid bundle_sets value",
                            ErrorMaxFeeInvalid);
 
             const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
@@ -1683,12 +1660,10 @@ namespace fioio {
             fio_400_assert(present_time <= expiration, "fio_address", fa.fioaddress, "FIO Address expired.",
                            ErrorDomainExpired);
 
-            fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature);
             const uint128_t endpoint_hash = string_to_uint128_hash("add_bundled_transactions");
-
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "add_bundled_transactions",
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", ADD_BUNDLED_TRANSACTION_ENDPOINT,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             //Add bundle
