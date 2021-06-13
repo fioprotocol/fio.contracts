@@ -1,6 +1,6 @@
 # fio.contracts
 
-## Version : 2.2.1
+## Version : 2.3.5
 
 Smart contracts that provide some of the basic functions of the FIO blockchain
 
@@ -28,8 +28,10 @@ Dependencies:
 
 The included icons are provided under the same terms as the software and accompanying documentation, the MIT License.  We welcome contributions from the artistically-inclined members of the community, and if you do send us alternative icons, then you are providing them under those same terms.
 
-## Important
+## Information on FIO
 
-See [LICENSE](./LICENSE) for copyright and license terms.
+For information on FIO, visit the [FIO website](https://fio.foundation).
 
-All repositories and other materials are provided subject to the terms of this [IMPORTANT](./IMPORTANT.md) notice and you must familiarize yourself with its terms.  The notice contains important information, limitations and restrictions relating to our software, publications, trademarks, third-party resources, and forward-looking statements.  By accessing any of our repositories and other materials, you accept and agree to the terms of the notice.
+For information on the FIO Chain, API, and SDKs visit the [FIO Protocol Developer Hub](https://developers.fioprotocol.io).
+
+To get updates on the development roadmap, releases, and technical documentation visit the [development wiki](https://fioprotocol.atlassian.net/jira/software/c/projects/BD/boards/2/roadmap).
