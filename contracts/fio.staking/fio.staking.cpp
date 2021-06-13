@@ -19,13 +19,19 @@ class [[eosio::contract("Staking")]]  Staking: public eosio::contract {
 
 private:
 
+        //these holds global staking state for fio
         global_staking_singleton         staking;
         global_staking_state             gstaking;
         account_staking_table            accountstaking;
+        //access to the voters table for voting info.
         eosiosystem::voters_table        voters;
+        //access to fionames for address info
         fionames_table                   fionames;
+        //access to fio fees for computation of fees.
         fiofee_table                     fiofees;
+        //access to general locks to adapt general locks on unstake
         eosiosystem::general_locks_table_v2 generallocks;
+        //debug output flag
         bool debugout = false;
 
 public:
@@ -74,27 +80,19 @@ public:
         gstaking.daily_staking_rewards = 0;
     }
 
-    //incgstkmint increments the staking_rewards_reserves_minted
+    //this action performs staking of fio tokens
     [[eosio::action]]
     void stakefio(const string &fio_address, const int64_t &amount, const int64_t &max_fee,
                          const string &tpid, const name &actor) {
         //signer not actor.
         require_auth(actor);
-       
-        //check if the actor has voted.
-        auto votersbyowner = voters.get_index<"byowner"_n>();
-        auto voter = votersbyowner.find(actor.value);
-        fio_400_assert(voter != votersbyowner.end(), "actor",
-                actor.to_string(), "Account has not voted and has not proxied.",ErrorInvalidValue);
-        //if they are in the table check if they are is_auto_proxy, or if they have a proxy, or if they have producers not empty
-        fio_400_assert((((voter->proxy) || (voter->producers.size() > 0) || (voter->is_auto_proxy))),
-                "actor", actor.to_string(), "Account has not voted and has not proxied.",ErrorInvalidValue);
 
-        fio_400_assert(amount > 0, "amount", to_string(amount), "Invalid amount value",ErrorInvalidValue);
-        fio_400_assert(max_fee >= 0, "amount", to_string(max_fee), "Invalid fee value",ErrorInvalidValue);
-        fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,"TPID must be empty or valid FIO address",ErrorPubKeyValid);
+        if(debugout) {
+            print(" calling stakefio fio address ", fio_address);
+        }
 
         uint64_t bundleeligiblecountdown = 0;
+
         //process the fio address specified
         FioAddress fa;
         getFioAddressStruct(fio_address, fa);
@@ -117,13 +115,9 @@ public:
             bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
         }
 
-        //get the usable balance for the account
-        //this is account balance - genesis locked tokens - general locked balance.
-       // print("EDEDEDEDEDEDEDEDEDED calling from staking!!!!!!!!!");
-        auto stakeablebalance = eosio::token::computeusablebalance(actor,false);
-
 
         uint64_t paid_fee_amount = 0;
+        bool skipvotecheck = false;
         //begin, bundle eligible fee logic for staking
         const uint128_t endpoint_hash = string_to_uint128_hash(STAKE_FIO_TOKENS_ENDPOINT);
 
@@ -148,6 +142,35 @@ public:
                     "decrcounter"_n,
                     make_tuple(fio_address, 1)
             }.send();
+
+            if (debugout) {
+                print(" calling process auto proxy with ", tpid);
+            }
+            set_auto_proxy(tpid, 0,get_self(), actor);
+
+            //when a tpid is used, if this is the first call for this account to use a tpid,
+            //then the auto proxy will be set in an inline action which executes outside of this
+            //execution stack. We check if the tpid is a proxy, and if it is then we know that
+            //the owner will be auto proxied in this transaction, but in an action outside of this one.
+            //so we set a local flag to skip the checks for the "has voted" requirement since we
+            //know the owner is auto proxied, this handles the edge condition if the staking is called
+            //very early by a new account integrated using tpid.
+            FioAddress fa1;
+            getFioAddressStruct(tpid, fa1);
+            const uint128_t nameHash = string_to_uint128_hash(fa1.fioaddress.c_str());
+            auto namesbyname = fionames.get_index<"byname"_n>();
+            auto fioname_iter = namesbyname.find(nameHash);
+            fio_400_assert(fioname_iter != namesbyname.end(), "tpid", fa.fioaddress,
+                           "FIO Address not registered", ErrorFioNameAlreadyRegistered);
+            //now use the owner to find the voting record.
+            auto votersbyowner = voters.get_index<"byowner"_n>();
+            const auto viter = votersbyowner.find(fioname_iter->owner_account);
+            if (viter != votersbyowner.end()) {
+                if (viter->is_proxy){
+                    skipvotecheck = true;
+                }
+            }
+
         } else {
             paid_fee_amount = fee_iter->suf_amount;
             fio_400_assert(max_fee >= (int64_t)paid_fee_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
@@ -163,10 +186,30 @@ public:
                         );
             }
         }
+        //End, bundle eligible fee logic for staking
 
+        //if we are not auto proxying for the first time, check if the actor has voted.
+        if (!skipvotecheck) {
+          auto votersbyowner = voters.get_index<"byowner"_n>();
+          auto voter = votersbyowner.find(actor.value);
+          fio_400_assert(voter != votersbyowner.end(), "actor",
+                       actor.to_string(), "Account has not voted and has not proxied.",ErrorInvalidValue);
+          //if they are in the table check if they are is_auto_proxy, or if they have a proxy, or if they have producers not empty
+          fio_400_assert((((voter->proxy) || (voter->producers.size() > 0) || (voter->is_auto_proxy))),
+                           "actor", actor.to_string(), "Account has not voted and has not proxied.", ErrorInvalidValue);
+        }
+
+
+        fio_400_assert(amount > 0, "amount", to_string(amount), "Invalid amount value",ErrorInvalidValue);
+        fio_400_assert(max_fee >= 0, "amount", to_string(max_fee), "Invalid fee value",ErrorInvalidValue);
+        fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,"TPID must be empty or valid FIO address",ErrorPubKeyValid);
+
+
+
+        //get the usable balance for the account
+        auto stakeablebalance = eosio::token::computeusablebalance(actor,false);
         fio_400_assert(stakeablebalance >= (paid_fee_amount + (uint64_t)amount), "max_fee", to_string(max_fee), "Insufficient balance.",
                        ErrorMaxFeeExceeded);
-        //End, bundle eligible fee logic for staking
 
         //RAM bump
         if (STAKEFIOTOKENSRAM > 0) {
@@ -182,12 +225,18 @@ public:
         //compute rate of exchange and SRPs
         uint64_t rateofexchange =  1;
         if (gstaking.combined_token_pool >= COMBINEDTOKENPOOLMINIMUM) {
-            print("EDEDEDEDEDEDEDEDEDEDED global srp count ", gstaking.global_srp_count);
-            print("EDEDEDEDEDEDEDEDEDEDED combined_token_pool ", gstaking.combined_token_pool);
+            if (debugout) {
+                print(" global srp count ", gstaking.global_srp_count);
+                print(" combined_token_pool ", gstaking.combined_token_pool);
+            }
             rateofexchange = gstaking.combined_token_pool / gstaking.global_srp_count;
-            print("EDEDEDEDEDEDEDEDEDEDED rate of exchange set to ", rateofexchange);
+            if(debugout) {
+                print(" rate of exchange set to ", rateofexchange);
+            }
             if(rateofexchange < 1) {
-                print("EDEDEDEDEDEDEDEDEDEDED RATE OF EXCHANGE LESS THAN 1 ", rateofexchange);
+                if(debugout) {
+                    print(" RATE OF EXCHANGE LESS THAN 1 ", rateofexchange);
+                }
                 rateofexchange = 1;
             }
         }
@@ -220,6 +269,9 @@ public:
             });
         }
         //end increment account staking info
+
+
+
         const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
                                        to_string(paid_fee_amount) + string("}");
 
@@ -230,6 +282,7 @@ public:
     }
 
 
+    //this action performs the unstaking of fio tokens.
     [[eosio::action]]
     void unstakefio(const string &fio_address,const int64_t &amount, const int64_t &max_fee,
                            const string &tpid, const name &actor) {
@@ -275,8 +328,6 @@ public:
                        ErrorInvalidValue);
 
         //get the usable balance for the account
-        //this is account balance - genesis locked tokens - general locked balance.
-       // print("EDEDEDEDEDEDEDEDEDED calling from unstaking!!!!!!!!!");
         auto stakeablebalance = eosio::token::computeusablebalance(actor,false);
 
         uint64_t paid_fee_amount = 0;
@@ -340,27 +391,39 @@ public:
        //round this to avoid issues with decimal representations
         uint64_t srpstoclaim = (uint64_t)(((double)astakeiter->total_srp * (double)( (double)amount / (double)astakeiter->total_staked_fio))+0.5);
 
-        //print("EDEEEDEDEDEDEDED srps to claim is ",to_string(srpstoclaim),"\n");
+        if (debugout) {
+            print("srps to claim is ", to_string(srpstoclaim), "\n");
+        }
         //compute rate of exchange
         uint64_t rateofexchange =  1;
         if (gstaking.combined_token_pool >= COMBINEDTOKENPOOLMINIMUM) {
-            print("EDEDEDEDEDEDEDEDEDEDED global srp count ", gstaking.global_srp_count);
-            print("EDEDEDEDEDEDEDEDEDEDED combined_token_pool ", gstaking.combined_token_pool);
+            if(debugout) {
+                print(" global srp count ", gstaking.global_srp_count);
+                print(" combined_token_pool ", gstaking.combined_token_pool);
+            }
             rateofexchange = gstaking.combined_token_pool / gstaking.global_srp_count;
-            print("EDEDEDEDEDEDEDEDEDEDED rate of exchange set to ", rateofexchange);
+            if (debugout) {
+                print(" rate of exchange set to ", rateofexchange);
+            }
             if(rateofexchange < 1) {
-                print("EDEDEDEDEDEDEDEDEDEDED RATE OF EXCHANGE LESS THAN 1 ", rateofexchange);
+                if(debugout) {
+                    print(" RATE OF EXCHANGE LESS THAN 1 ", rateofexchange);
+                }
                 rateofexchange = 1;
             }
         }
 
         eosio_assert((srpstoclaim * rateofexchange) >= amount, "unstakefio, invalid calc in totalrewardamount, must be that (srpstoclaim * rateofexchange) > amount. ");
         uint64_t totalrewardamount = ((srpstoclaim * rateofexchange) - amount);
-        print("EDEDEDEDEDEDEDEDEDEDED total reward amount is ", totalrewardamount);
+        if(debugout) {
+            print("total reward amount is ", totalrewardamount);
+        }
         uint64_t tenpercent = totalrewardamount / 10;
         //Staking Reward Amount is computed: ((SRPs to Claim * Rate of Exchnage) - Unstake amount) * 0.9
         uint64_t stakingrewardamount = tenpercent * 9;
-        print("EDEDEDEDEDEDEDEDEDEDED staking reward amount is ", totalrewardamount);
+        if(debugout) {
+            print(" staking reward amount is ", totalrewardamount);
+        }
         // TPID Reward Amount is computed: ((SRPs to Claim * Rate of Exchnage) - Unstake amount) * 0.1
         uint64_t tpidrewardamount = tenpercent;
 
@@ -499,7 +562,9 @@ public:
             //else make new lock.
             bool canvote = true;
             int64_t lockamount = (int64_t)(stakingrewardamount + amount);
-            print("EDEDEDEDEDEDEDEDED creating general lock for amount ", lockamount, "\n");
+            if(debugout) {
+                print(" creating general lock for amount ", lockamount, "\n");
+            }
             vector <eosiosystem::lockperiodv2> periods;
             eosiosystem::lockperiodv2 period;
             period.duration = 604800;

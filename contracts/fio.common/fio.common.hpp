@@ -241,6 +241,25 @@ namespace fioio {
 
     typedef singleton<"bounties"_n, bounty> bounties_table;
 
+    //this will call update tpid in the tpid contract,
+    //add the info to the tpid table for this TPID and also set up the auto proxy if needed.
+    void set_auto_proxy(const string &tpid, const uint64_t &amount, const name &auth, const name &actor){
+        fionames_table fionames(AddressContract, AddressContract.value);
+        uint128_t fioaddhash = string_to_uint128_hash(tpid.c_str());
+
+        auto namesbyname = fionames.get_index<"byname"_n>();
+        auto fionamefound = namesbyname.find(fioaddhash);
+
+        if (fionamefound != namesbyname.end()) {
+            action(
+                    permission_level{auth, "active"_n},
+                    TPIDContract,
+                    "updatetpid"_n,
+                    std::make_tuple(tpid, actor, amount)
+            ).send();
+        }
+    }
+
     void process_rewards(const string &tpid, const uint64_t &amount, const name &auth, const name &actor) {
 
         action(
