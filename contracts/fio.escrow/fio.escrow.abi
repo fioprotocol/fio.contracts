@@ -66,7 +66,7 @@
         },
         {
           "name": "commission_fee",
-          "type": "uint64"
+          "type": "float64"
         },
         {
           "name": "listing_fee",
