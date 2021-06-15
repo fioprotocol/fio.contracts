@@ -92,12 +92,20 @@ namespace eosio {
         auto existing = statstable.find(FIOSYMBOL.code().raw());
         const auto &st = *existing;
 
-        fio_403_assert(accountstaking.find(actor.value) == accountstaking.end(), ErrorSignature);
+        fio_403_assert(accountstaking.find(actor.value) == accountstaking.end(), ErrorSignature); //signature error if user is in staking table
 
         eosiosystem::locked_tokens_table lockedTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value);
         eosiosystem::general_locks_table_v2 generalLocksTable(SYSTEMACCOUNT,SYSTEMACCOUNT.value);
 
         uint64_t amount = qty.amount;
+
+        // Remove remaining tokens from supply and subtract from actor balance
+          statstable.modify(st, actor, [&](auto &s) {
+              s.supply -= asset(amount, FIOSYMBOL);
+          });
+
+          sub_balance(actor, asset(amount, FIOSYMBOL)); //has fio_400_assert if insufficient balance
+
         uint64_t extra = 0;
         auto lockediter = lockedTokensTable.find(actor.value);
 
@@ -136,14 +144,6 @@ namespace eosio {
 
         }
 
-        // Remove remaining tokens from supply and subtract from actor balance
-        if (amount > 0) {
-          statstable.modify(st, actor, [&](auto &s) {
-              s.supply -= asset(amount, FIOSYMBOL);
-          });
-
-          sub_balance(actor, asset(amount, FIOSYMBOL)); //has fio_400_assert if insufficient balance
-        }
 
       fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
         "Transaction is too large", ErrorTransactionTooLarge);
