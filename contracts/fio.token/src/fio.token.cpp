@@ -81,28 +81,77 @@ namespace eosio {
         }
     }
 
-    void token::retire(asset quantity, string memo) {
-        const symbol sym = quantity.symbol;
-        check(sym.is_valid(), "invalid symbol name");
-        check(memo.size() <= 256, "memo has more than 256 bytes");
-
-        stats statstable(_self, sym.code().raw());
-        auto existing = statstable.find(sym.code().raw());
-        check(existing != statstable.end(), "token with symbol does not exist");
+    void token::retire(const int64_t &quantity, const string &memo, const name &actor) {
+        asset qty;
+        qty.amount = quantity;
+        qty.symbol = FIOSYMBOL;
+        fio_400_assert(memo.size() <= 256, "memo", memo, "memo has more than 256 bytes", ErrorInvalidMemo);
+        fio_400_assert(qty.amount >= 1000000000000LL,"quantity", std::to_string(quantity), "Minimum 1000 FIO has to be retired", ErrorRetireQuantity);
+        require_auth(actor);
+        stats statstable(_self, FIOSYMBOL.code().raw());
+        auto existing = statstable.find(FIOSYMBOL.code().raw());
         const auto &st = *existing;
 
-        require_auth(FIOISSUER);
-        check(quantity.is_valid(), "invalid quantity");
-        check(quantity.amount > 0, "must retire positive quantity");
-        check(quantity.symbol == FIOSYMBOL, "symbol precision mismatch");
+        fio_403_assert(accountstaking.find(actor.value) == accountstaking.end(), ErrorSignature); //signature error if user is in staking table
 
-        check(quantity.symbol == st.supply.symbol, "symbol precision mismatch");
+        eosiosystem::locked_tokens_table lockedTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value);
+        eosiosystem::general_locks_table_v2 generalLocksTable(SYSTEMACCOUNT,SYSTEMACCOUNT.value);
 
-        statstable.modify(st, same_payer, [&](auto &s) {
-            s.supply -= quantity;
-        });
+        uint64_t amount = qty.amount;
 
-        sub_balance(FIOISSUER, quantity);
+        // Remove remaining tokens from supply and subtract from actor balance
+          statstable.modify(st, actor, [&](auto &s) {
+              s.supply -= asset(amount, FIOSYMBOL);
+          });
+
+          sub_balance(actor, asset(amount, FIOSYMBOL)); //has fio_400_assert if insufficient balance
+
+        uint64_t extra = 0;
+        auto lockediter = lockedTokensTable.find(actor.value);
+
+        // Burn locked tokens first
+        if (lockediter != lockedTokensTable.end()) {
+
+          if (lockediter->remaining_locked_amount < amount) {
+            extra = amount - lockediter->remaining_locked_amount;
+            amount = lockediter->remaining_locked_amount;
+          }
+          if (lockediter->remaining_locked_amount >= amount) {
+           action(permission_level{get_self(), "active"_n},
+                  "eosio"_n, "updlocked"_n,
+                  make_tuple(actor, lockediter->remaining_locked_amount - amount)
+           ).send();
+          }
+           if (extra > 0) amount = extra;
+
+        }
+
+        auto lock_by_owner = generalLocksTable.get_index<"byowner"_n>();
+        auto geniter = lock_by_owner.find(actor.value);
+        if (geniter != lock_by_owner.end()) {
+
+          if (geniter->remaining_lock_amount < amount) {
+            extra = amount - geniter->remaining_lock_amount;
+            amount = geniter->remaining_lock_amount;
+          }
+          if (amount <= geniter->remaining_lock_amount) {
+            action(permission_level{get_self(), "active"_n},
+                   "eosio"_n, "updlocks"_n,
+                   make_tuple(actor, geniter->remaining_lock_amount - amount)
+            ).send();
+          }
+          if (extra > 0) amount = extra;
+
+        }
+
+
+      fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+        "Transaction is too large", ErrorTransactionTooLarge);
+
+      const string response_string = string("{\"status\": \"OK\"}");
+
+      send_response(response_string.c_str());
+
     }
 
     bool token::can_transfer(const name &tokenowner, const uint64_t &feeamount, const uint64_t &transferamount,
@@ -130,6 +179,7 @@ namespace eosio {
                     ) {
                 //recompute the remaining locked amount based on vesting.
                 uint64_t lockedTokenAmount = computeremaininglockedtokens(tokenowner, false);//-feeamount;
+
                 //subtract the lock amount from the balance
                 if (lockedTokenAmount < amount) {
                     amount -= lockedTokenAmount;
@@ -188,7 +238,8 @@ namespace eosio {
                              const name &actor,
                              const string &tpid,
                              const int64_t &feeamount,
-                             const bool &errorifaccountexists) {
+                             const bool &errorifaccountexists)
+                             {
 
         require_auth(actor);
         asset qty;
@@ -240,6 +291,7 @@ namespace eosio {
                            "Locked tokens can only be transferred to new account",
                            ErrorPubKeyValid);
         }
+
         auto other = eosionames.find(new_account_name.value);
 
         if (other == eosionames.end()) { //the name is not in the table.
@@ -304,6 +356,7 @@ namespace eosio {
                        "Insufficient balance",
                        ErrorLowFunds);
 
+        //must do these three in this order!! can transfer can transfer computeusablebalance
         fio_400_assert(can_transfer(actor, feeamount, qty.amount, false), "amount", to_string(qty.amount),
                        "Insufficient balance tokens locked",
                        ErrorInsufficientUnlockedFunds);
@@ -311,6 +364,13 @@ namespace eosio {
         fio_400_assert(can_transfer_general(actor, qty.amount), "actor", to_string(actor.value),
                        "Funds locked",
                        ErrorInsufficientUnlockedFunds);
+
+
+        uint64_t uamount = computeusablebalance(actor,false);
+        fio_400_assert(uamount >= qty.amount, "actor", to_string(actor.value),
+                       "Insufficient Funds.",
+                       ErrorInsufficientUnlockedFunds);
+
 
         sub_balance(actor, qty);
         add_balance(new_account_name, qty, actor);
@@ -380,6 +440,12 @@ namespace eosio {
                        "Funds locked",
                        ErrorInsufficientUnlockedFunds);
 
+
+        int64_t amount = computeusablebalance(from,false);
+        fio_400_assert(amount >= quantity.amount, "actor", to_string(from.value),
+                       "Insufficient Funds.",
+                       ErrorInsufficientUnlockedFunds);
+
         auto payer = has_auth(to) ? to : from;
 
         sub_balance(from, quantity);
@@ -434,7 +500,7 @@ namespace eosio {
 
     void token::trnsloctoks(const string &payee_public_key,
                              const int32_t &can_vote,
-                             const vector<eosiosystem::lockperiods> periods,
+                             const vector<eosiosystem::lockperiodv2> periods,
                              const int64_t &amount,
                              const int64_t &max_fee,
                              const name &actor,
@@ -442,24 +508,25 @@ namespace eosio {
 
         fio_400_assert(((periods.size()) >= 1 && (periods.size() <= 365)), "unlock_periods", "Invalid unlock periods",
                        "Invalid number of unlock periods", ErrorTransactionTooLarge);
-        double totp = 0.0;
+        uint64_t tota = 0;
         double tv = 0.0;
         int64_t longestperiod = 0;
         for(int i=0;i<periods.size();i++){
-            fio_400_assert(periods[i].percent > 0.0, "unlock_periods", "Invalid unlock periods",
-                           "Invalid percentage value in unlock periods", ErrorInvalidUnlockPeriods);
-            tv = periods[i].percent - (double(int(periods[i].percent * 1000.0)))/1000.0;
-            fio_400_assert(tv == 0.0, "unlock_periods", "Invalid unlock periods",
-                           "Invalid precision for percentage in unlock periods", ErrorInvalidUnlockPeriods);
+            fio_400_assert(periods[i].amount > 0, "unlock_periods", "Invalid unlock periods",
+                           "Invalid amount value in unlock periods", ErrorInvalidUnlockPeriods);
             fio_400_assert(periods[i].duration > 0, "unlock_periods", "Invalid unlock periods",
                            "Invalid duration value in unlock periods", ErrorInvalidUnlockPeriods);
-            totp += periods[i].percent;
+            tota += periods[i].amount;
+            if (i>0){
+                fio_400_assert(periods[i].duration > periods[i-1].duration, "unlock_periods", "Invalid unlock periods",
+                               "Invalid duration value in unlock periods, must be sorted", ErrorInvalidUnlockPeriods);
+            }
             if (periods[i].duration > longestperiod){
                 longestperiod = periods[i].duration;
             }
         }
-        fio_400_assert(totp == 100.0, "unlock_periods", "Invalid unlock periods",
-                       "Invalid total percentage for unlock periods", ErrorInvalidUnlockPeriods);
+        fio_400_assert(tota == amount, "unlock_periods", "Invalid unlock periods",
+                       "Invalid total amount for unlock periods", ErrorInvalidUnlockPeriods);
 
         fio_400_assert(((can_vote == 0)||(can_vote == 1)), "can_vote", to_string(can_vote),
                        "Invalid can_vote value", ErrorInvalidValue);
@@ -492,6 +559,7 @@ namespace eosio {
         //check for pre existing account is done here.
         name owner = transfer_public_key(payee_public_key,amount,max_fee,actor,tpid,reg_amount,true);
 
+        //if no locked tokens in the account do this.
         bool canvote = (can_vote == 1);
         INLINE_ACTION_SENDER(eosiosystem::system_contract, addgenlocked)
                 ("eosio"_n, {{_self, "active"_n}},

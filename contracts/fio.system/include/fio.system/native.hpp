@@ -147,7 +147,8 @@ namespace eosiosystem {
                  account == fioio::TokenContract ||
                  account == fioio::TREASURYACCOUNT ||
                  account == fioio::FIOSYSTEMACCOUNT ||
-                 account == fioio::FIOACCOUNT)
+                 account == fioio::STAKINGACCOUNT ||
+                 account == fioio::FIOACCOUNT )
                 ) {
 
                 //get the sizes of the tx.

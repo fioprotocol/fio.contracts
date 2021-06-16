@@ -31,6 +31,20 @@
         }
       ]
     },
+         {
+           "name": "paystake",
+           "base": "",
+           "fields": [
+             {
+               "name": "actor",
+               "type": "name"
+             },
+             {
+               "name": "amount",
+               "type": "uint64"
+             }
+           ]
+         },
     {
       "name": "treasurystate",
       "base": "",
@@ -151,6 +165,11 @@
       "type": "bpclaim",
       "ricardian_contract": ""
     },
+         {
+           "name": "paystake",
+           "type": "paystake",
+           "ricardian_contract": ""
+         },
     {
       "name": "startclock",
       "type": "startclock",
