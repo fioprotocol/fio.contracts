@@ -29,6 +29,7 @@ namespace fioio {
         eosiosystem::top_producers_table topprods;
         eosiosystem::producers_table producers;
         eosiosystem::locked_tokens_table lockedTokensTable;
+        nftstable nfts;
         config appConfig;
 
     public:
@@ -40,6 +41,7 @@ namespace fioio {
                                                                         fiofees(FeeContract, FeeContract.value),
                                                                         bundlevoters(FeeContract, FeeContract.value),
                                                                         accountmap(_self, _self.value),
+                                                                        nfts(_self, _self.value),
                                                                         tpids(TPIDContract, TPIDContract.value),
                                                                         voters(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                                                                         topprods(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
@@ -289,6 +291,8 @@ namespace fioio {
 
             fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
                            ErrorDomainExpired);
+
+
 
             tokenpubaddr tempStruct;
             string token;
@@ -1230,6 +1234,134 @@ namespace fioio {
         } //remalladdr
 
 
+        [[eosio::action]]
+        void
+        addnft(const string &fio_address,  const vector<nftparam> &nfts, const int64_t &max_fee,
+                   const name &actor, const string &tpid) {
+         require_auth(actor);
+
+         FioAddress fa;
+         getFioAddressStruct(fio_address, fa);
+         fio_400_assert(validateFioNameFormat(fa) && !fa.domainOnly, "fio_address", fa.fioaddress, "Invalid FIO Address",
+                        ErrorInvalidFioNameFormat);
+         fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                        ErrorMaxFeeInvalid);
+
+         fio_400_assert(nfts.size() != 5 && nfts.size() > 1, "fio_address", fio_address, "Min 1, Max 5 NFTs are allowed",
+                         ErrorInvalidFioNameFormat); // Don't forget to set the error amount if/when changing MAX_SET_ADDRESSES
+
+
+
+
+         const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+         const uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+         auto namesbyname = fionames.get_index<"byname"_n>();
+         auto fioname_iter = namesbyname.find(nameHash);
+         fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address, "Invalid FIO Address", ErrorFioNameNotRegistered);
+
+         fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature); // check if actor owns FIO Address
+
+         fio_400_assert(now() <= fioname_iter->expiration, "fio_address", fio_address,
+                        "FIO Address expired", ErrorFioNameExpired);
+
+         auto domainsbyname = domains.get_index<"byname"_n>();
+         auto domains_iter = domainsbyname.find(domainHash);
+
+         fio_404_assert(domains_iter != domainsbyname.end(), "FIO Domain not found", ErrorDomainNotFound);
+
+         fio_400_assert(now() <=  get_time_plus_seconds(domains_iter->expiration,SECONDS30DAYS),
+                        "domain", fa.fiodomain, "FIO Domain expired", ErrorDomainExpired);
+
+         const uint128_t endpoint_hash = string_to_uint128_hash(ADD_NFT_ENDPOINT);
+
+         auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
+         auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+
+         //if the fee isnt found for the endpoint, then 400 error.
+         fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", ADD_NFT_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+
+         const uint64_t fee_type = fee_iter->type;
+         fio_400_assert(fee_type == 1, "fee_type", to_string(fee_type),
+                        "unexpected fee type for endpoint record_obt_data, expected 1", ErrorNoEndpoint);
+
+          uint64_t fee_amount = 0;
+
+          if (fioname_iter->bundleeligiblecountdown > 1) {
+              action{
+                      permission_level{_self, "active"_n},
+                      AddressContract,
+                      "decrcounter"_n,
+                      make_tuple(fio_address, 1)
+              }.send();
+          } else {
+              fee_amount = fee_iter->suf_amount;
+              fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
+                             "Fee exceeds supplied maximum.",
+                             ErrorMaxFeeExceeded);
+
+              fio_fees(actor, asset(fee_amount, FIOSYMBOL), ADD_NFT_ENDPOINT);
+              process_rewards(tpid, fee_amount, get_self(), actor);
+
+              if (fee_amount > 0) {
+                  INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
+                          (SYSTEMACCOUNT, {{_self, "active"_n}},
+                           {actor, true}
+                          );
+              }
+          }
+
+
+          for (auto nft_iter = nfts.begin(); nft_iter != nfts.end(); ++nft_iter) {
+
+            fio_400_assert(validateChainNameFormat(nft_iter->chain_code.c_str()), "chain_code", nft_iter->chain_code, "Invalid chain code format",
+                           ErrorInvalidFioNameFormat);
+            if (!nft_iter->url.empty()) {
+              fio_400_assert(validateRFC3986Chars(nft_iter->url.c_str()), "url", nft_iter->url.c_str(), "Invalid URL",
+                             ErrorInvalidFioNameFormat);
+            }
+
+            if (!nft_iter->hash.empty()) {
+            //sha256 is 32 chars always and case insensitive
+              fio_400_assert(validateHexChars(nft_iter->hash) && nft_iter->hash.length() == 32, "hash", nft_iter->hash.c_str(), "Invalid hash",
+                            ErrorInvalidFioNameFormat);
+            }
+
+
+          }
+
+
+          const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                   to_string(fee_amount) + string("}");
+
+
+          fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+            "Transaction is too large", ErrorTransactionTooLarge);
+
+          send_response(response_string.c_str());
+
+        }
+
+        [[eosio::action]]
+        void
+        remnft(const string &fio_address,  const vector<remnftparam> &nfts, const int64_t &max_fee,
+                   const name &actor, const string &tpid) {
+
+
+
+
+        }
+
+        [[eosio::action]]
+        void
+        remallnfts(const string &fio_address, const int64_t &max_fee,
+                   const name &actor, const string &tpid) {
+
+
+
+
+        }
 
         [[eosio::action]]
         void
@@ -1713,5 +1845,5 @@ namespace fioio {
     };
 
     EOSIO_DISPATCH(FioNameLookup, (regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(renewaddress)(setdomainpub)(burnexpired)(decrcounter)
-    (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles))
+    (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(addnft)(remnft)(remallnfts))
 }

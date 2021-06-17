@@ -130,6 +130,23 @@ namespace fioio {
         return true;
     }
 
+    inline bool validateRFC3986Chars(const std::string &url) {
+      if (url.length() >= 10 && url.length() <= 128) {
+        if(url.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=") != std::string::npos) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+
+    inline bool validateHexChars(const std:: string &hex) {
+      if (makeLowerCase(hex).find_first_not_of("1234567890abcdef") != std::string::npos) {
+        return false;
+      }
+      return true;
+    }
+
     inline bool validateLocationFormat(const uint16_t &location) {
         if (std::find(locationMap.begin(), locationMap.end(), location) == locationMap.end()) {
             return false;

@@ -66,6 +66,7 @@
 #define SUBMIT_FEE_MULTIPLER_ENDPOINT "submit_fee_multiplier"
 #define BURN_FIO_ADDRESS_ENDPOINT "burn_fio_address"
 #define ADD_BUNDLED_TRANSACTION_ENDPOINT "add_bundled_transactions"
+#define ADD_NFT_ENDPOINT "add_nft"
 
 
 namespace fioio {

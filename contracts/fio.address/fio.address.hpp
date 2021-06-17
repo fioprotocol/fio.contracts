@@ -135,4 +135,19 @@ namespace fioio {
     >
     nftstable;
 
+    struct nftparam {
+      string chain_code;
+      string contract_address;
+      string token_id;
+      string url;
+      string hash;
+      string metadata;
+    };
+
+    struct remnftparam {
+      string chain_code;
+      string contract_address;
+      string token_id;
+    };
+
 }
