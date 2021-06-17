@@ -1251,8 +1251,6 @@ namespace fioio {
                          ErrorInvalidFioNameFormat); // Don't forget to set the error amount if/when changing MAX_SET_ADDRESSES
 
 
-
-
          const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
          const uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
          auto namesbyname = fionames.get_index<"byname"_n>();
@@ -1272,46 +1270,6 @@ namespace fioio {
          fio_400_assert(now() <=  get_time_plus_seconds(domains_iter->expiration,SECONDS30DAYS),
                         "domain", fa.fiodomain, "FIO Domain expired", ErrorDomainExpired);
 
-         const uint128_t endpoint_hash = string_to_uint128_hash(ADD_NFT_ENDPOINT);
-
-         auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
-         auto fee_iter = fees_by_endpoint.find(endpoint_hash);
-
-         //if the fee isnt found for the endpoint, then 400 error.
-         fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", ADD_NFT_ENDPOINT,
-                       "FIO fee not found for endpoint", ErrorNoEndpoint);
-
-
-         const uint64_t fee_type = fee_iter->type;
-         fio_400_assert(fee_type == 1, "fee_type", to_string(fee_type),
-                        "unexpected fee type for endpoint record_obt_data, expected 1", ErrorNoEndpoint);
-
-          uint64_t fee_amount = 0;
-
-          if (fioname_iter->bundleeligiblecountdown > 1) {
-              action{
-                      permission_level{_self, "active"_n},
-                      AddressContract,
-                      "decrcounter"_n,
-                      make_tuple(fio_address, 1)
-              }.send();
-          } else {
-              fee_amount = fee_iter->suf_amount;
-              fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
-                             "Fee exceeds supplied maximum.",
-                             ErrorMaxFeeExceeded);
-
-              fio_fees(actor, asset(fee_amount, FIOSYMBOL), ADD_NFT_ENDPOINT);
-              process_rewards(tpid, fee_amount, get_self(), actor);
-
-              if (fee_amount > 0) {
-                  INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
-                          (SYSTEMACCOUNT, {{_self, "active"_n}},
-                           {actor, true}
-                          );
-              }
-          }
-
 
           for (auto nft_iter = nfts.begin(); nft_iter != nfts.end(); ++nft_iter) {
 
@@ -1328,8 +1286,55 @@ namespace fioio {
                             ErrorInvalidFioNameFormat);
             }
 
+            // Add NFT record
+
 
           }
+
+
+          //
+
+          const uint128_t endpoint_hash = string_to_uint128_hash(ADD_NFT_ENDPOINT);
+
+          auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
+          auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+
+          //if the fee isnt found for the endpoint, then 400 error.
+          fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", ADD_NFT_ENDPOINT,
+                        "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+
+          const uint64_t fee_type = fee_iter->type;
+          fio_400_assert(fee_type == 1, "fee_type", to_string(fee_type),
+                         "unexpected fee type for endpoint record_obt_data, expected 1", ErrorNoEndpoint);
+
+           uint64_t fee_amount = 0;
+
+           if (fioname_iter->bundleeligiblecountdown > 1) {
+               action{
+                       permission_level{_self, "active"_n},
+                       AddressContract,
+                       "decrcounter"_n,
+                       make_tuple(fio_address, 1)
+               }.send();
+           } else {
+               fee_amount = fee_iter->suf_amount;
+               fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
+                              "Fee exceeds supplied maximum.",
+                              ErrorMaxFeeExceeded);
+
+               fio_fees(actor, asset(fee_amount, FIOSYMBOL), ADD_NFT_ENDPOINT);
+               process_rewards(tpid, fee_amount, get_self(), actor);
+
+               if (fee_amount > 0) {
+                   INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
+                           (SYSTEMACCOUNT, {{_self, "active"_n}},
+                            {actor, true}
+                           );
+               }
+           }
+
+           //
 
 
           const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
