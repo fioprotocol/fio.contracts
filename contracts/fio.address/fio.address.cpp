@@ -29,7 +29,7 @@ namespace fioio {
         eosiosystem::top_producers_table topprods;
         eosiosystem::producers_table producers;
         eosiosystem::locked_tokens_table lockedTokensTable;
-        nftstable nfts;
+        nfts_table nftstable;
         config appConfig;
 
     public:
@@ -41,7 +41,7 @@ namespace fioio {
                                                                         fiofees(FeeContract, FeeContract.value),
                                                                         bundlevoters(FeeContract, FeeContract.value),
                                                                         accountmap(_self, _self.value),
-                                                                        nfts(_self, _self.value),
+                                                                        nftstable(_self, _self.value),
                                                                         tpids(TPIDContract, TPIDContract.value),
                                                                         voters(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                                                                         topprods(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
@@ -1287,8 +1287,7 @@ namespace fioio {
             }
 
             // Add NFT record
-
-
+          //  auto nft_iter = nftstable.get_index<"byname"_n>();
 
           }
 

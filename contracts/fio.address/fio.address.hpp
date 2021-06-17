@@ -127,13 +127,15 @@ namespace fioio {
       uint64_t primary_key() const { return id; }
       uint128_t by_handle() const { return handlehash; }
       uint128_t by_keyhash() const { return hash; }
+      EOSLIB_SERIALIZE(nftinfo, (id)(handle)(handlehash)(chain_code)(contract_address)(token_id)(url)(hash)(metadata))
+
     };
 
     typedef multi_index<"nfts"_n, nftinfo,
     indexed_by<"byhandle"_n, const_mem_fun<nftinfo, uint128_t, &nftinfo::by_handle>>,
     indexed_by<"byhash"_n, const_mem_fun<nftinfo, uint128_t, &nftinfo::by_keyhash>>
     >
-    nftstable;
+    nfts_table;
 
     struct nftparam {
       string chain_code;
@@ -142,12 +144,16 @@ namespace fioio {
       string url;
       string hash;
       string metadata;
+
+      EOSLIB_SERIALIZE( nftparam, (chain_code)(contract_address)(token_id)(url)(hash)(metadata))
     };
 
     struct remnftparam {
       string chain_code;
       string contract_address;
       string token_id;
+
+      EOSLIB_SERIALIZE( remnftparam, (chain_code)(contract_address)(token_id))
     };
 
 }
