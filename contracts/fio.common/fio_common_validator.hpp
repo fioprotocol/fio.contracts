@@ -132,7 +132,7 @@ namespace fioio {
 
     inline bool validateRFC3986Chars(const std::string &url) {
       if (url.length() >= 10 && url.length() <= 128) {
-        if(url.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=") != std::string::npos) {
+        if(makeLowerCase(url).find_first_not_of("abcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=") != std::string::npos) {
           return false;
         }
       }
