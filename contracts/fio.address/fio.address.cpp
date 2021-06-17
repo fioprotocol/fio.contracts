@@ -1271,22 +1271,23 @@ namespace fioio {
                         "domain", fa.fiodomain, "FIO Domain expired", ErrorDomainExpired);
 
 
-          for (auto nft_iter = nfts.begin(); nft_iter != nfts.end(); ++nft_iter) {
+          for (auto nftobj = nfts.begin(); nftobj != nfts.end(); ++nftobj) {
 
-            fio_400_assert(validateChainNameFormat(nft_iter->chain_code.c_str()), "chain_code", nft_iter->chain_code, "Invalid chain code format",
+            fio_400_assert(validateChainNameFormat(nftobj->chain_code.c_str()), "chain_code", nftobj->chain_code, "Invalid chain code format",
                            ErrorInvalidFioNameFormat);
-            if (!nft_iter->url.empty()) {
-              fio_400_assert(validateRFC3986Chars(nft_iter->url.c_str()), "url", nft_iter->url.c_str(), "Invalid URL",
+            if (!nftobj->url.empty()) {
+              fio_400_assert(validateRFC3986Chars(nftobj->url.c_str()), "url", nftobj->url.c_str(), "Invalid URL",
                              ErrorInvalidFioNameFormat);
             }
 
-            if (!nft_iter->hash.empty()) {
+            if (!nftobj->hash.empty()) {
             //sha256 is 32 chars always and case insensitive
-              fio_400_assert(validateHexChars(nft_iter->hash) && nft_iter->hash.length() == 32, "hash", nft_iter->hash.c_str(), "Invalid hash",
+              fio_400_assert(validateHexChars(nftobj->hash) && nftobj->hash.length() == 32, "hash", nftobj->hash.c_str(), "Invalid hash",
                             ErrorInvalidFioNameFormat);
             }
 
             // Add NFT record
+
 
 
           }
