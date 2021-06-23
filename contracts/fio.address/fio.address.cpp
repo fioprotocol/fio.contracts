@@ -1247,7 +1247,7 @@ namespace fioio {
          fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                         ErrorMaxFeeInvalid);
 
-         fio_400_assert(nfts.size() != 5 && nfts.size() > 1, "fio_address", fio_address, "Min 1, Max 5 NFTs are allowed",
+         fio_400_assert(nfts.size() != 5 && nfts.size() >= 1, "fio_address", fio_address, "Min 1, Max 5 NFTs are allowed",
                          ErrorInvalidFioNameFormat); // Don't forget to set the error amount if/when changing MAX_SET_ADDRESSES
 
 
@@ -1319,7 +1319,7 @@ namespace fioio {
                 }
                 if (!nftobj->hash.empty()) {
                   n.hash = nftobj->hash;
-                  n.hash_index = string_to_uint128_hash(nftobj->hash);  
+                  n.hash_index = string_to_uint128_hash(nftobj->hash);
                 }
                 n.metadata = nftobj->metadata.empty() ? "" : nftobj->metadata;
                 n.url = nftobj->url.empty() ? "" : nftobj->url;
@@ -1340,6 +1340,8 @@ namespace fioio {
               }
 
 
+
+
             }
 
           } // for nftobj
@@ -1357,8 +1359,8 @@ namespace fioio {
 
 
           const uint64_t fee_type = fee_iter->type;
-          fio_400_assert(fee_type == 1, "fee_type", to_string(fee_type),
-                         "unexpected fee type for endpoint record_obt_data, expected 1", ErrorNoEndpoint);
+          fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                         "unexpected fee type for endpoint add+mft, expected 1", ErrorNoEndpoint);
 
            uint64_t fee_amount = 0;
 
