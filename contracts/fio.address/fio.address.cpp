@@ -1319,7 +1319,7 @@ namespace fioio {
                 }
                 if (!nftobj->hash.empty()) {
                   n.hash = nftobj->hash;
-                  n.hash_index = string_to_uint128_hash(nftobj->hash);
+                  n.hash_index = string_to_uint128_hash(nftobj->hash.c_str());
                 }
                 n.metadata = nftobj->metadata.empty() ? "" : nftobj->metadata;
                 n.url = nftobj->url.empty() ? "" : nftobj->url;
@@ -1343,6 +1343,26 @@ namespace fioio {
 
 
             }
+
+            print("\n nftparam->chain_code - ", nftobj->chain_code);
+            print("\n nftparam->contract_address - ", nftobj->contract_address);
+            print("\n nftparam->token_id - ", nftobj->token_id);
+            print("\n nftparam->url - ", nftobj->url);
+            print("\n nftparam->hash - ", nftobj->hash);
+            print("\n nftparam->metadata - ", nftobj->metadata);
+            auto i = indexbyaddress.begin();
+            print("\n address->chain_code - ", i->chain_code);
+            print("\n address->contract_address - ", i->contract_address);
+            print("\n address->token_id - ", i->token_id);
+            print("\n address->url - ", i->url);
+            print("\n address->hash - ", i->hash);
+            print("\n address->metadata - ", i->metadata);
+            print("\n address->id - ", i->id);
+            print("\n address->fio_address - ", i->fio_address);
+            print("\n address->fio_address_hash - ", i->fio_address_hash);
+            print("\n address->contract_address_hash - ", i->contract_address_hash);
+            print("\n address->hash_index - ", i->hash_index);
+
 
           } // for nftobj
 

@@ -184,7 +184,7 @@
         },
         {
           "name": "token_id",
-          "type": "string"
+          "type": "uint64"
         },
         {
           "name": "url",
@@ -660,14 +660,10 @@
     },
     {
       "name": "nfts",
+      "type": "nftinfo",
       "index_type": "i64",
-      "key_names": [
-        "id"
-      ],
-      "key_types": [
-        "string"
-      ],
-      "type": "nftinfo"
+      "key_names": [],
+      "key_types": [],
     },
   ],
   "ricardian_clauses": [],
