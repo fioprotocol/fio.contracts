@@ -1303,21 +1303,46 @@ namespace fioio {
 
 
             // Search table for owner (actor)
-            auto nft_owner = nftstable.get_index<"byowner"_n>();
-            auto owner_iter = nft_owner.find(actor.value);
-            if (owner_iter == nft_owner.end() ) {
-              //Create a new NFT record if the owner is not in table
+            auto indexbyaddress = nftstable.get_index<"byaddress"_n>();
+            auto nftfioaddressiter = indexbyaddress.find(string_to_uint128_hash(fio_address.c_str()));
+            if (nftfioaddressiter == indexbyaddress.end() ) {
+              //Create a new NFT record if the fio address does not exist
+
+              nftstable.emplace(actor, [&](auto &n) {
+                n.id = nftstable.available_primary_key();
+                n.fio_address = fio_address;
+                n.chain_code = nftobj->chain_code;
+                n.token_id = std::stoi(nftobj->token_id);
+                if (!nftobj->contract_address.empty()) {
+                  n.contract_address = nftobj->contract_address;
+                  n.contract_address_hash = string_to_uint128_hash(nftobj->contract_address.c_str());
+                }
+                if (!nftobj->hash.empty()) {
+                  n.hash = nftobj->hash;
+                  n.hash_index = string_to_uint128_hash(nftobj->hash);  
+                }
+                n.metadata = nftobj->metadata.empty() ? "" : nftobj->metadata;
+                n.url = nftobj->url.empty() ? "" : nftobj->url;
+                n.fio_address_hash = string_to_uint128_hash(fio_address);
+
+              });
 
             }
 
-            else {
+              else { //found
 
-              // search specific nft for the owner
+              // Deplication check (fioaddress + contract_address + chain_code + token_id)
+              for(auto i = indexbyaddress.begin(); i != indexbyaddress.end(); ++i) {
+                  fio_400_assert(i->contract_address != nftobj->contract_address &&
+                     std::to_string(i->token_id) != nftobj->token_id &&
+                      i->chain_code != nftobj->chain_code, "token_id", nftobj->token_id, "token_id exists for contract and chain code for this fio address",
+                        ErrorFioNameExpired);
+              }
 
 
             }
 
-          }
+          } // for nftobj
 
 
 
