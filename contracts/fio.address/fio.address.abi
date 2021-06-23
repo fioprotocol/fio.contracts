@@ -602,10 +602,10 @@
       "type": "bind2eosio",
       "ricardian_contract": ""
     },{
-           "name": "burnaddress",
-           "type": "burnaddress",
-           "ricardian_contract": ""
-         },{
+      "name": "burnaddress",
+      "type": "burnaddress",
+      "ricardian_contract": ""
+    },{
       "name": "xferdomain",
       "type": "xferdomain",
       "ricardian_contract": ""

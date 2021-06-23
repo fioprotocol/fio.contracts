@@ -1336,7 +1336,7 @@ namespace fioio {
                   fio_400_assert(i->contract_address != nftobj->contract_address &&
                      std::to_string(i->token_id) != nftobj->token_id &&
                       i->chain_code != nftobj->chain_code, "token_id", nftobj->token_id, "token_id exists for contract and chain code for this fio address",
-                        ErrorFioNameExpired);
+                        ErrorInvalidFioNameFormat);
               }
 
 
@@ -1366,22 +1366,6 @@ namespace fioio {
 
           } // for nftobj
 
-
-
-          const uint128_t endpoint_hash = string_to_uint128_hash(ADD_NFT_ENDPOINT);
-
-          auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
-          auto fee_iter = fees_by_endpoint.find(endpoint_hash);
-
-          //if the fee isnt found for the endpoint, then 400 error.
-          fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", ADD_NFT_ENDPOINT,
-                        "FIO fee not found for endpoint", ErrorNoEndpoint);
-
-
-          const uint64_t fee_type = fee_iter->type;
-          fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
-                         "unexpected fee type for endpoint add+mft, expected 1", ErrorNoEndpoint);
-
            uint64_t fee_amount = 0;
 
            if (fioname_iter->bundleeligiblecountdown > 1) {
@@ -1391,7 +1375,24 @@ namespace fioio {
                        "decrcounter"_n,
                        make_tuple(fio_address, 1)
                }.send();
+
            } else {
+
+               const uint128_t endpoint_hash = string_to_uint128_hash(ADD_NFT_ENDPOINT);
+
+               auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
+               auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+
+               //if the fee isnt found for the endpoint, then 400 error.
+               fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", ADD_NFT_ENDPOINT,
+                             "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+
+               const uint64_t fee_type = fee_iter->type;
+               fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                              "unexpected fee type for endpoint add+mft, expected 1", ErrorNoEndpoint);
+
+
                fee_amount = fee_iter->suf_amount;
                fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
                               "Fee exceeds supplied maximum.",

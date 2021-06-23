@@ -130,7 +130,7 @@ namespace fioio {
       uint128_t by_address() const { return fio_address_hash; }
       uint128_t by_hash() const { return hash_index; }
       uint128_t by_contract_address() const { return contract_address_hash; }
-      EOSLIB_SERIALIZE(nftinfo, (id)(fio_address)(chain_code)(contract_address)(contract_address_hash)(token_id)(url)(fio_address_hash)
+      EOSLIB_SERIALIZE(nftinfo, (id)(fio_address)(chain_code)(token_id)(url)(fio_address_hash)(contract_address)(contract_address_hash)
         (hash)(hash_index)(metadata))
 
     };
