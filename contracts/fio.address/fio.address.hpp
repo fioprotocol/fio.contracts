@@ -115,25 +115,31 @@ namespace fioio {
     // Maps NFT information to FIO Address
     struct [[eosio::action]] nftinfo {
       uint64_t id;
-      string handle; //fio_address
-      uint128_t handlehash;
+      uint64_t owner;
+      string fio_address; //fio_address
       string chain_code;
       string contract_address;
       uint64_t token_id;
       string url;
+      uint128_t fio_address_hash;
+      uint128_t contract_address_hash;
       uint128_t hash;
       string metadata;
 
       uint64_t primary_key() const { return id; }
-      uint128_t by_handle() const { return handlehash; }
-      uint128_t by_keyhash() const { return hash; }
-      EOSLIB_SERIALIZE(nftinfo, (id)(handle)(handlehash)(chain_code)(contract_address)(token_id)(url)(hash)(metadata))
+      uint64_t by_owner() const { return owner; }
+      uint128_t by_address() const { return fio_address_hash; }
+      uint128_t by_hash() const { return hash; }
+      uint128_t by_contract_address() const { return contract_address_hash; }
+      EOSLIB_SERIALIZE(nftinfo, (id)(owner)(fio_address)(chain_code)(contract_address)(token_id)(url)(fio_address_hash)
+        (contract_address_hash)(hash)(metadata))
 
     };
 
     typedef multi_index<"nfts"_n, nftinfo,
-    indexed_by<"byhandle"_n, const_mem_fun<nftinfo, uint128_t, &nftinfo::by_handle>>,
-    indexed_by<"byhash"_n, const_mem_fun<nftinfo, uint128_t, &nftinfo::by_keyhash>>
+    indexed_by<"byowner"_n, const_mem_fun < nftinfo, uint64_t, &nftinfo::by_owner>>,
+    indexed_by<"byaddress"_n, const_mem_fun<nftinfo, uint128_t, &nftinfo::by_address>>,
+    indexed_by<"byhash"_n, const_mem_fun<nftinfo, uint128_t, &nftinfo::by_hash>>
     >
     nfts_table;
 

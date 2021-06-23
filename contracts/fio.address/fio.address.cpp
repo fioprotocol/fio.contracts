@@ -1242,7 +1242,7 @@ namespace fioio {
 
          FioAddress fa;
          getFioAddressStruct(fio_address, fa);
-         fio_400_assert(validateFioNameFormat(fa) && !fa.domainOnly, "fio_address", fa.fioaddress, "Invalid FIO Address",
+         fio_400_assert(!fa.domainOnly && validateFioNameFormat(fa) , "fio_address", fa.fioaddress, "Invalid FIO Address",
                         ErrorInvalidFioNameFormat);
          fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                         ErrorMaxFeeInvalid);
@@ -1275,24 +1275,51 @@ namespace fioio {
 
             fio_400_assert(validateChainNameFormat(nftobj->chain_code.c_str()), "chain_code", nftobj->chain_code, "Invalid chain code format",
                            ErrorInvalidFioNameFormat);
+
             if (!nftobj->url.empty()) {
               fio_400_assert(validateRFC3986Chars(nftobj->url.c_str()), "url", nftobj->url.c_str(), "Invalid URL",
                              ErrorInvalidFioNameFormat);
             }
 
             if (!nftobj->hash.empty()) {
-            //sha256 is 32 chars always and case insensitive
-              fio_400_assert(validateHexChars(nftobj->hash) && nftobj->hash.length() == 32, "hash", nftobj->hash.c_str(), "Invalid hash",
+              fio_400_assert(validateHexChars(nftobj->hash) && nftobj->hash.length() == 64, "hash", nftobj->hash.c_str(), "Invalid hash",
                             ErrorInvalidFioNameFormat);
             }
 
-            // Add NFT record
-          //  auto nft_iter = nftstable.get_index<"byname"_n>();
+            if (!nftobj->token_id.empty()) {
+              fio_400_assert(nftobj->token_id.find_first_not_of("0123456789"), "token_id", nftobj->token_id, "Invalid Token ID",
+                            ErrorInvalidFioNameFormat);
+            }
+
+            if (!nftobj->metadata.empty()) {
+              fio_400_assert(nftobj->metadata.length() <= 64, "metadata", nftobj->metadata, "Invalid metadata",
+                            ErrorInvalidFioNameFormat);
+            }
+
+            fio_400_assert(!nftobj->contract_address.empty(), "contract_address", nftobj->contract_address.c_str(), "Invalid Contract Address",
+                           ErrorInvalidFioNameFormat);
+
+            // Add NFT record //
+
+
+            // Search table for owner (actor)
+            auto nft_owner = nftstable.get_index<"byowner"_n>();
+            auto owner_iter = nft_owner.find(actor.value);
+            if (owner_iter == nft_owner.end() ) {
+              //Create a new NFT record if the owner is not in table
+
+            }
+
+            else {
+
+              // search specific nft for the owner
+
+
+            }
 
           }
 
 
-          //
 
           const uint128_t endpoint_hash = string_to_uint128_hash(ADD_NFT_ENDPOINT);
 
