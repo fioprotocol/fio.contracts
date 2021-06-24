@@ -103,6 +103,7 @@ public:
             const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
             auto namesbyname = fionames.get_index<"byname"_n>();
             auto fioname_iter = namesbyname.find(nameHash);
+
             fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fa.fioaddress,
                            "FIO Address not registered", ErrorFioNameAlreadyRegistered);
 
@@ -143,31 +144,36 @@ public:
                     make_tuple(fio_address, 1)
             }.send();
 
-            if (debugout) {
-                print(" calling process auto proxy with ", tpid);
-            }
-            set_auto_proxy(tpid, 0,get_self(), actor);
+            if (!tpid.empty()) {
+                if (debugout) {
+                    print(" calling process auto proxy with ", tpid);
+                }
+                set_auto_proxy(tpid, 0,get_self(), actor);
 
-            //when a tpid is used, if this is the first call for this account to use a tpid,
-            //then the auto proxy will be set in an inline action which executes outside of this
-            //execution stack. We check if the tpid is a proxy, and if it is then we know that
-            //the owner will be auto proxied in this transaction, but in an action outside of this one.
-            //so we set a local flag to skip the checks for the "has voted" requirement since we
-            //know the owner is auto proxied, this handles the edge condition if the staking is called
-            //very early by a new account integrated using tpid.
-            FioAddress fa1;
-            getFioAddressStruct(tpid, fa1);
-            const uint128_t nameHash = string_to_uint128_hash(fa1.fioaddress.c_str());
-            auto namesbyname = fionames.get_index<"byname"_n>();
-            auto fioname_iter = namesbyname.find(nameHash);
-            fio_400_assert(fioname_iter != namesbyname.end(), "tpid", fa.fioaddress,
-                           "FIO Address not registered", ErrorFioNameAlreadyRegistered);
-            //now use the owner to find the voting record.
-            auto votersbyowner = voters.get_index<"byowner"_n>();
-            const auto viter = votersbyowner.find(fioname_iter->owner_account);
-            if (viter != votersbyowner.end()) {
-                if (viter->is_proxy){
-                    skipvotecheck = true;
+                //when a tpid is used, if this is the first call for this account to use a tpid,
+                //then the auto proxy will be set in an inline action which executes outside of this
+                //execution stack. We check if the tpid is a proxy, and if it is then we know that
+                //the owner will be auto proxied in this transaction, but in an action outside of this one.
+                //so we set a local flag to skip the checks for the "has voted" requirement since we
+                //know the owner is auto proxied, this handles the edge condition if the staking is called
+                //very early by a new account integrated using tpid.
+
+
+                FioAddress fa1;
+                getFioAddressStruct(tpid, fa1);
+
+                const uint128_t nameHash = string_to_uint128_hash(fa1.fioaddress.c_str());
+                auto namesbyname = fionames.get_index<"byname"_n>();
+                auto fioname_iter = namesbyname.find(nameHash);
+                fio_400_assert(fioname_iter != namesbyname.end(), "tpid", fa1.fioaddress,
+                               "FIO Address not registered", ErrorFioNameAlreadyRegistered);
+                //now use the owner to find the voting record.
+                auto votersbyowner = voters.get_index<"byowner"_n>();
+                const auto viter = votersbyowner.find(fioname_iter->owner_account);
+                if (viter != votersbyowner.end()) {
+                    if (viter->is_proxy) {
+                        skipvotecheck = true;
+                    }
                 }
             }
 
