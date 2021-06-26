@@ -1296,7 +1296,8 @@ namespace fioio {
                             ErrorInvalidFioNameFormat);
             }
 
-            fio_400_assert(!nftobj->contract_address.empty(), "contract_address", nftobj->contract_address.c_str(), "Invalid Contract Address",
+            fio_400_assert(!nftobj->contract_address.empty(),
+                             "contract_address", nftobj->contract_address.c_str(), "Invalid Contract Address",
                            ErrorInvalidFioNameFormat);
 
             // Add NFT record //
@@ -1304,34 +1305,39 @@ namespace fioio {
             auto contractindex = nftstable.get_index<"bycontract"_n>();
             auto nftiter = contractindex.find(string_to_uint128_hash(nftobj->contract_address.c_str()));
 
-              // now check for chain_code, token_id
-              for (auto c = contractindex.begin(); c != contractindex.end(); c++) {
-                if (c->chain_code == nftobj->chain_code) {
-                fio_400_assert(c->token_id != std::stoi(nftobj->token_id.c_str()), "token_id", nftobj->token_id,
-                                "chain_code and token_id already exist for contract address", ErrorInvalidFioNameFormat);
-                 }
-               }
 
-                //Create a new NFT record if the contract address does not exist
+            // now check for chain_code, token_id
+            for (auto c = contractindex.begin(); c != contractindex.end(); c++) {
+              if (c->chain_code == nftobj->chain_code) {
+                  fio_400_assert(c->token_id != (nftobj->token_id.empty() ? 0 : std::stoi(nftobj->token_id.c_str())), "token_id", nftobj->token_id,
+                                "chain_code with this token_id already exist for contract address", ErrorInvalidFioNameFormat);
 
-                  nftstable.emplace(actor, [&](auto &n) {
-                    n.id = nftstable.available_primary_key();
-                    n.fio_address = fio_address;
-                    n.chain_code = nftobj->chain_code;
-                    n.token_id = std::stoi(nftobj->token_id);
-                    if (!nftobj->contract_address.empty()) {
-                      n.contract_address = nftobj->contract_address;
-                      n.contract_address_hash = string_to_uint128_hash(nftobj->contract_address.c_str());
-                    }
-                    if (!nftobj->hash.empty()) {
-                      n.hash = nftobj->hash;
-                      n.hash_index = string_to_uint128_hash(nftobj->hash.c_str());
-                    }
-                    n.metadata = nftobj->metadata.empty() ? "" : nftobj->metadata;
-                    n.url = nftobj->url.empty() ? "" : nftobj->url;
-                    n.fio_address_hash = string_to_uint128_hash(fio_address);
 
-                  });
+              } //if chain_code
+
+
+            } // for auto c
+
+            //Create a new NFT record
+
+              nftstable.emplace(actor, [&](auto &n) {
+                n.id = nftstable.available_primary_key();
+                n.fio_address = fio_address;
+                n.chain_code = nftobj->chain_code;
+                n.token_id = nftobj->token_id.empty() ? 0 : std::stoi(nftobj->token_id.c_str());
+                if (!nftobj->contract_address.empty()) {
+                  n.contract_address = nftobj->contract_address;
+                  n.contract_address_hash = string_to_uint128_hash(nftobj->contract_address.c_str());
+                }
+                if (!nftobj->hash.empty()) {
+                  n.hash = nftobj->hash;
+                  n.hash_index = string_to_uint128_hash(nftobj->hash.c_str());
+                }
+                n.metadata = nftobj->metadata.empty() ? "" : nftobj->metadata;
+                n.url = nftobj->url.empty() ? "" : nftobj->url;
+                n.fio_address_hash = string_to_uint128_hash(fio_address);
+
+              });
 
             print("\n nftparam->chain_code - ", nftobj->chain_code);
             print("\n nftparam->contract_address - ", nftobj->contract_address);
@@ -1417,8 +1423,56 @@ namespace fioio {
         remnft(const string &fio_address,  const vector<remnftparam> &nfts, const int64_t &max_fee,
                    const name &actor, const string &tpid) {
 
+                     require_auth(actor);
+
+                     FioAddress fa;
+                     getFioAddressStruct(fio_address, fa);
+                     fio_400_assert(!fa.domainOnly && validateFioNameFormat(fa) , "fio_address", fa.fioaddress, "Invalid FIO Address",
+                                    ErrorInvalidFioNameFormat);
+                     fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                                    ErrorMaxFeeInvalid);
+
+                     fio_400_assert(nfts.size() <= 3 && nfts.size() >= 1, "fio_address", fio_address, "Min 1, Max 5 NFTs are allowed",
+                                     ErrorInvalidFioNameFormat); // Don't forget to set the error amount if/when changing MAX_SET_ADDRESSES
 
 
+                     const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+                     const uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+                     auto namesbyname = fionames.get_index<"byname"_n>();
+                     auto fioname_iter = namesbyname.find(nameHash);
+                     fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address, "Invalid FIO Address", ErrorFioNameNotRegistered);
+
+                     fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature); // check if actor owns FIO Address
+
+                     fio_400_assert(now() <= fioname_iter->expiration, "fio_address", fio_address,
+                                    "FIO Address expired", ErrorFioNameExpired);
+
+                     auto domainsbyname = domains.get_index<"byname"_n>();
+                     auto domains_iter = domainsbyname.find(domainHash);
+
+                     fio_404_assert(domains_iter != domainsbyname.end(), "FIO Domain not found", ErrorDomainNotFound);
+
+                     fio_400_assert(now() <=  get_time_plus_seconds(domains_iter->expiration,SECONDS30DAYS),
+                                    "domain", fa.fiodomain, "FIO Domain expired", ErrorDomainExpired);
+
+
+                      for (auto nftobj = nfts.begin(); nftobj != nfts.end(); ++nftobj) {
+
+                        fio_400_assert(validateChainNameFormat(nftobj->chain_code.c_str()), "chain_code", nftobj->chain_code, "Invalid chain code format",
+                                       ErrorInvalidFioNameFormat);
+
+
+                        if (!nftobj->token_id.empty()) {
+                          fio_400_assert(nftobj->token_id.find_first_not_of("0123456789"), "token_id", nftobj->token_id, "Invalid Token ID",
+                                        ErrorInvalidFioNameFormat);
+                        }
+
+
+
+                        fio_400_assert(!nftobj->contract_address.empty(), "contract_address", nftobj->contract_address.c_str(), "Invalid Contract Address",
+                                       ErrorInvalidFioNameFormat);
+
+                      }
 
         }
 
