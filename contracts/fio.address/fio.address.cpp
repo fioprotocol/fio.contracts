@@ -1381,7 +1381,7 @@ namespace fioio {
 
                const uint64_t fee_type = fee_iter->type;
                fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
-                              "unexpected fee type for endpoint add+mft, expected 1", ErrorNoEndpoint);
+                              "unexpected fee type for endpoint add_nft, expected 0", ErrorNoEndpoint);
 
 
                fee_amount = fee_iter->suf_amount;
@@ -1466,17 +1466,75 @@ namespace fioio {
               auto nft_iter = contractsbyname.find(nameHash);
 
               // now check for chain_code, token_id
+              uint32_t count_erase = 0;
               auto c = contractsbyname.begin();
               while (c != contractsbyname.end()) {
                 if (c->chain_code == nftobj->chain_code &&
                   c->contract_address == nftobj->contract_address &&
                   std::to_string(c->token_id) == nftobj->token_id) {
                       c = contractsbyname.erase(c);
+                      count_erase++;
                   }
 
               } // while c
 
+              fio_400_assert(count_erase > 0, "contract_address", nftobj->contract_address, "No NFTs to erase",
+                            ErrorInvalidFioNameFormat);
+
             } // for auto nftobj
+
+             uint64_t fee_amount = 0;
+
+             if (fioname_iter->bundleeligiblecountdown > 1) {
+                 action{
+                         permission_level{_self, "active"_n},
+                         AddressContract,
+                         "decrcounter"_n,
+                         make_tuple(fio_address, 1)
+                 }.send();
+
+             } else {
+
+                 const uint128_t endpoint_hash = string_to_uint128_hash(REM_NFT_ENDPOINT);
+
+                 auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
+                 auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+
+                 //if the fee isnt found for the endpoint, then 400 error.
+                 fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", REM_NFT_ENDPOINT,
+                               "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+
+                 const uint64_t fee_type = fee_iter->type;
+                 fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                                "unexpected fee type for endpoint rem_nft, expected 0", ErrorNoEndpoint);
+
+
+                 fee_amount = fee_iter->suf_amount;
+                 fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
+                                "Fee exceeds supplied maximum.",
+                                ErrorMaxFeeExceeded);
+
+                 fio_fees(actor, asset(fee_amount, FIOSYMBOL), REM_NFT_ENDPOINT);
+                 process_rewards(tpid, fee_amount, get_self(), actor);
+
+                 if (fee_amount > 0) {
+                     INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
+                             (SYSTEMACCOUNT, {{_self, "active"_n}},
+                              {actor, true}
+                             );
+                 }
+             }
+
+            const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                     to_string(fee_amount) + string("}");
+
+
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+              "Transaction is too large", ErrorTransactionTooLarge);
+
+            send_response(response_string.c_str());
+
         }
 
 
