@@ -1576,7 +1576,7 @@ namespace fioio {
           auto contractsbyname = nftstable.get_index<"byaddress"_n>();
           auto nft_iter = contractsbyname.find(nameHash);
 
-          fio_404_assert(nft_iter != contractsbyname.end(), "fio_address", fio_address, "FIO Address not in NFTs table",
+          fio_404_assert(nft_iter != contractsbyname.end(), "FIO Address not in NFTs table",
                          ErrorDomainNotFound);
 
           // now check for chain_code, token_id
@@ -1837,6 +1837,17 @@ namespace fioio {
                 a.addresses =  pubaddresses;
             });
 
+            // Burn the NFTs belonging to the FIO address that was just transferred
+
+            auto contractsbyname = nftstable.get_index<"byaddress"_n>();
+            auto nft_iter = contractsbyname.find(nameHash);
+            
+            auto c = contractsbyname.begin();
+            while (c != contractsbyname.end()) {
+              c = contractsbyname.erase(c);
+            } // while c
+
+
             //fees
             const uint64_t fee_amount = fee_iter->suf_amount;
             const uint64_t fee_type = fee_iter->type;
@@ -1918,6 +1929,15 @@ namespace fioio {
             const uint64_t bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
             namesbyname.erase(fioname_iter);
             if( tpid_iter != tpid_by_name.end() ){ tpid_by_name.erase(tpid_iter); }
+
+            auto contractsbyname = nftstable.get_index<"byaddress"_n>();
+            auto nft_iter = contractsbyname.find(nameHash);
+
+            // Burn the NFTs belonging to the FIO address that was just burned
+            auto c = contractsbyname.begin();
+            while (c != contractsbyname.end()) {
+              c = contractsbyname.erase(c);
+            } // while c
 
             //fees
             uint64_t fee_amount = 0;
