@@ -167,6 +167,24 @@
       ]
     },
     {
+      "name": "remnftparam",
+      "base": "",
+      "fields": [
+        {
+          "name": "chain_code",
+          "type": "string"
+        },
+        {
+          "name": "contract_address",
+          "type": "string"
+        },
+        {
+          "name": "token_id",
+          "type": "string"
+        },
+      ]
+    },
+    {
       "name": "nftinfo",
       "base": "",
       "fields": [
@@ -545,6 +563,32 @@
           }
         ]
       },
+      {
+        "name": "remnft",
+        "base": "",
+        "fields": [
+          {
+            "name": "fio_address",
+            "type": "string"
+          },
+          {
+            "name": "nfts",
+            "type": "remnftparam[]"
+          },
+          {
+            "name": "max_fee",
+            "type": "int64"
+          },
+          {
+            "name": "actor",
+            "type": "name"
+          },
+          {
+            "name": "tpid",
+            "type": "string"
+          }
+        ]
+      },
   ],
   "actions": [
     {
@@ -620,6 +664,10 @@
     },{
       "name": "addnft",
       "type": "addnft",
+      "ricardian_contract": ""
+    },{
+      "name": "remnft",
+      "type": "remnft",
       "ricardian_contract": ""
     }
 
