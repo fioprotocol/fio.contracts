@@ -1478,7 +1478,7 @@ namespace fioio {
 
               } // while c
 
-              fio_400_assert(count_erase > 0, "contract_address", nftobj->contract_address, "No NFTs to erase",
+              fio_400_assert(count_erase > 0, "contract_address", nftobj->contract_address, "NFT not currently mapped",
                             ErrorInvalidFioNameFormat);
 
             } // for auto nftobj
@@ -1576,7 +1576,7 @@ namespace fioio {
           auto contractsbyname = nftstable.get_index<"byaddress"_n>();
           auto nft_iter = contractsbyname.find(nameHash);
 
-          fio_404_assert(nft_iter != contractsbyname.end(), "FIO Address not in NFTs table",
+          fio_404_assert(nft_iter != contractsbyname.end(), "FIO Address invalid, does not exist.",
                          ErrorDomainNotFound);
 
           // now check for chain_code, token_id
@@ -1587,7 +1587,7 @@ namespace fioio {
             count_erase++;
           } // while c
 
-          fio_400_assert(count_erase > 0, "fio_address", fio_address, "No NFTs to erase",
+          fio_400_assert(count_erase > 0, "fio_address", fio_address, "NFT not currently mapped",
                         ErrorInvalidFioNameFormat);
 
            uint64_t fee_amount = 0;
@@ -1841,7 +1841,7 @@ namespace fioio {
 
             auto contractsbyname = nftstable.get_index<"byaddress"_n>();
             auto nft_iter = contractsbyname.find(nameHash);
-            
+
             auto c = contractsbyname.begin();
             while (c != contractsbyname.end()) {
               c = contractsbyname.erase(c);
