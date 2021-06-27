@@ -1543,7 +1543,104 @@ namespace fioio {
         remallnfts(const string &fio_address, const int64_t &max_fee,
                    const name &actor, const string &tpid) {
 
+         require_auth(actor);
 
+         FioAddress fa;
+         getFioAddressStruct(fio_address, fa);
+         fio_400_assert(!fa.domainOnly && validateFioNameFormat(fa) , "fio_address", fa.fioaddress, "Invalid FIO Address",
+                        ErrorInvalidFioNameFormat);
+         fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                        ErrorMaxFeeInvalid);
+
+
+         const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+         const uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+         auto namesbyname = fionames.get_index<"byname"_n>();
+         auto fioname_iter = namesbyname.find(nameHash);
+         fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address, "Invalid FIO Address", ErrorFioNameNotRegistered);
+
+         fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature); // check if actor owns FIO Address
+
+         fio_400_assert(now() <= fioname_iter->expiration, "fio_address", fio_address,
+                        "FIO Address expired", ErrorFioNameExpired);
+
+         auto domainsbyname = domains.get_index<"byname"_n>();
+         auto domains_iter = domainsbyname.find(domainHash);
+
+         fio_404_assert(domains_iter != domainsbyname.end(), "FIO Domain not found", ErrorDomainNotFound);
+
+         fio_400_assert(now() <=  get_time_plus_seconds(domains_iter->expiration,SECONDS30DAYS),
+                        "domain", fa.fiodomain, "FIO Domain expired", ErrorDomainExpired);
+
+
+          auto contractsbyname = nftstable.get_index<"byaddress"_n>();
+          auto nft_iter = contractsbyname.find(nameHash);
+
+          fio_404_assert(nft_iter != contractsbyname.end(), "fio_address", fio_address, "FIO Address not in NFTs table",
+                         ErrorDomainNotFound);
+
+          // now check for chain_code, token_id
+          uint32_t count_erase = 0;
+          auto c = contractsbyname.begin();
+          while (c != contractsbyname.end()) {
+            c = contractsbyname.erase(c);
+            count_erase++;
+          } // while c
+
+          fio_400_assert(count_erase > 0, "fio_address", fio_address, "No NFTs to erase",
+                        ErrorInvalidFioNameFormat);
+
+           uint64_t fee_amount = 0;
+
+           if (fioname_iter->bundleeligiblecountdown > 1) {
+               action{
+                       permission_level{_self, "active"_n},
+                       AddressContract,
+                       "decrcounter"_n,
+                       make_tuple(fio_address, 1)
+               }.send();
+
+           } else {
+
+               const uint128_t endpoint_hash = string_to_uint128_hash(REM_ALL_NFTS_ENDPOINT);
+
+               auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
+               auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+
+               //if the fee isnt found for the endpoint, then 400 error.
+               fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", REM_ALL_NFTS_ENDPOINT,
+                             "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+
+               const uint64_t fee_type = fee_iter->type;
+               fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                              "unexpected fee type for endpoint rem_all_nfts, expected 0", ErrorNoEndpoint);
+
+
+               fee_amount = fee_iter->suf_amount;
+               fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
+                              "Fee exceeds supplied maximum.",
+                              ErrorMaxFeeExceeded);
+
+               fio_fees(actor, asset(fee_amount, FIOSYMBOL), REM_ALL_NFTS_ENDPOINT);
+               process_rewards(tpid, fee_amount, get_self(), actor);
+
+               if (fee_amount > 0) {
+                   INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
+                           (SYSTEMACCOUNT, {{_self, "active"_n}},
+                            {actor, true}
+                           );
+               }
+           }
+
+          const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                   to_string(fee_amount) + string("}");
+
+
+          fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+            "Transaction is too large", ErrorTransactionTooLarge);
+
+          send_response(response_string.c_str());
 
 
         }

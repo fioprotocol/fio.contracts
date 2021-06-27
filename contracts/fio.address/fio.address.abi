@@ -589,6 +589,28 @@
           }
         ]
       },
+      {
+        "name": "remallnfts",
+        "base": "",
+        "fields": [
+          {
+            "name": "fio_address",
+            "type": "string"
+          },
+          {
+            "name": "max_fee",
+            "type": "int64"
+          },
+          {
+            "name": "actor",
+            "type": "name"
+          },
+          {
+            "name": "tpid",
+            "type": "string"
+          }
+        ]
+      },
   ],
   "actions": [
     {
@@ -668,6 +690,10 @@
     },{
       "name": "remnft",
       "type": "remnft",
+      "ricardian_contract": ""
+    },{
+      "name": "remallnfts",
+      "type": "remallnfts",
       "ricardian_contract": ""
     }
 

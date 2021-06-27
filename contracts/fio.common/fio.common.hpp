@@ -68,7 +68,7 @@
 #define ADD_BUNDLED_TRANSACTION_ENDPOINT "add_bundled_transactions"
 #define ADD_NFT_ENDPOINT "add_nft"
 #define REM_NFT_ENDPOINT "rem_nft"
-
+#define REM_ALL_NFTS_ENDPOINT "rem_all_nfts"
 
 namespace fioio {
 
