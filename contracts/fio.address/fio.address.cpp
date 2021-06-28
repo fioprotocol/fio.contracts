@@ -1086,8 +1086,18 @@ namespace fioio {
 
                     namesbyname.erase(fionamesiter);
                     tpidbyname.erase(tpiditer);
+
                 }
-                //remove from the
+                
+                auto contractsbyname = nftstable.get_index<"byaddress"_n>();
+                auto nft_iter = contractsbyname.find(burner);
+
+                // Burn the NFTs belonging to the FIO address that was just burned
+                auto c = contractsbyname.begin();
+                while (c != contractsbyname.end()) {
+                  c = contractsbyname.erase(c);
+                } // while c
+
             }
 
             for (int i = 0; i < domainburnlist.size(); i++) {
