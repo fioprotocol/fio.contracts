@@ -1088,7 +1088,7 @@ namespace fioio {
                     tpidbyname.erase(tpiditer);
 
                 }
-                
+
                 auto contractsbyname = nftstable.get_index<"byaddress"_n>();
                 auto nft_iter = contractsbyname.find(burner);
 
@@ -1257,9 +1257,8 @@ namespace fioio {
          fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                         ErrorMaxFeeInvalid);
 
-         fio_400_assert(nfts.size() <= 3 && nfts.size() >= 1, "fio_address", fio_address, "Min 1, Max 5 NFTs are allowed",
+         fio_400_assert(nfts.size() <= 3 && nfts.size() >= 1, "fio_address", fio_address, "Min 1, Max 3 NFTs are allowed",
                          ErrorInvalidFioNameFormat); // Don't forget to set the error amount if/when changing MAX_SET_ADDRESSES
-
 
          const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
          const uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
@@ -1345,25 +1344,6 @@ namespace fioio {
 
               });
 
-            print("\n nftparam->chain_code - ", nftobj->chain_code);
-            print("\n nftparam->contract_address - ", nftobj->contract_address);
-            print("\n nftparam->token_id - ", nftobj->token_id);
-            print("\n nftparam->url - ", nftobj->url);
-            print("\n nftparam->hash - ", nftobj->hash);
-            print("\n nftparam->metadata - ", nftobj->metadata);
-            auto i = contractindex.begin();
-            print("\n contract->chain_code - ", i->chain_code);
-            print("\n contract->contract_address - ", i->contract_address);
-            print("\n contract->token_id - ", i->token_id);
-            print("\n contract->url - ", i->url);
-            print("\n contract->hash - ", i->hash);
-            print("\n contract->metadata - ", i->metadata);
-            print("\n contract->id - ", i->id);
-            print("\n contract->fio_address - ", i->fio_address);
-            print("\n contract->fio_address_hash - ", i->fio_address_hash);
-            print("\n contract->contract_address_hash - ", i->contract_address_hash);
-            print("\n contract->hash_index - ", i->hash_index);
-
 
           } // for nftobj
 
@@ -1410,6 +1390,16 @@ namespace fioio {
                }
            }
 
+           if (ADDNFTRAM > 0) {
+               action(
+                       permission_level{SYSTEMACCOUNT, "active"_n},
+                       "eosio"_n,
+                       "incram"_n,
+                       std::make_tuple(actor, ADDNFTRAM)
+               ).send();
+           }
+
+
           const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
                                    to_string(fee_amount) + string("}");
 
@@ -1435,7 +1425,7 @@ namespace fioio {
            fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                           ErrorMaxFeeInvalid);
 
-           fio_400_assert(nfts.size() <= 3 && nfts.size() >= 1, "fio_address", fio_address, "Min 1, Max 5 NFTs are allowed",
+           fio_400_assert(nfts.size() <= 3 && nfts.size() >= 1, "fio_address", fio_address, "Min 1, Max 3 NFTs are allowed",
                            ErrorInvalidFioNameFormat); // Don't forget to set the error amount if/when changing MAX_SET_ADDRESSES
 
 

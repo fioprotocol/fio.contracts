@@ -38,6 +38,7 @@
 #define MAXBPS 42
 #define MAXACTIVEBPS 21
 #define DEFAULTBUNDLEAMT 100
+#define MAXADDRESSNFTS 40
 
 #define REGISTER_ADDRESS_ENDPOINT "register_fio_address"
 #define REGISTER_DOMAIN_ENDPOINT "register_fio_domain"
@@ -421,6 +422,7 @@ namespace fioio {
     static const uint64_t SETFEEVOTERAM = 4000; //integrated. //note this bump allows consecutive calls to voting with
                                                               //different fees to avoid ram limits for non top 21 producers.
     static const uint64_t BUNDLEVOTERAM = 0; //integrated.
+    static const uint64_t ADDNFTRAM = 4098; 
 
 
 
