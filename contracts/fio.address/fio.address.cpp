@@ -1316,7 +1316,7 @@ namespace fioio {
             // now check for chain_code, token_id
             for (auto c = contractindex.begin(); c != contractindex.end(); c++) {
               if (c->chain_code == nftobj->chain_code) {
-                  fio_400_assert(c->token_id != (nftobj->token_id.empty() ? 0 : std::stoi(nftobj->token_id.c_str())), "token_id", nftobj->token_id,
+                  fio_400_assert(c->token_id != (nftobj->token_id.empty() ? "" : nftobj->token_id), "token_id", nftobj->token_id,
                                 "chain_code with this token_id already exist for contract address", ErrorInvalidFioNameFormat);
 
               } //if chain_code
@@ -1329,7 +1329,7 @@ namespace fioio {
                 n.id = nftstable.available_primary_key();
                 n.fio_address = fio_address;
                 n.chain_code = nftobj->chain_code;
-                n.token_id = nftobj->token_id.empty() ? 0 : std::stoi(nftobj->token_id.c_str());
+                n.token_id = nftobj->token_id.empty() ? "" :nftobj->token_id.c_str();
                 if (!nftobj->contract_address.empty()) {
                   n.contract_address = nftobj->contract_address;
                   n.contract_address_hash = string_to_uint128_hash(nftobj->contract_address.c_str());
@@ -1458,7 +1458,7 @@ namespace fioio {
                              ErrorInvalidFioNameFormat);
 
               if (!nftobj->token_id.empty()) {
-                fio_400_assert(nftobj->token_id.find_first_not_of("0123456789"), "token_id", nftobj->token_id, "Invalid Token ID",
+                fio_400_assert(nftobj->token_id.length() <= 128, "token_id", nftobj->token_id, "Invalid Token ID",
                               ErrorInvalidFioNameFormat);
               }
 
@@ -1471,7 +1471,7 @@ namespace fioio {
               while (c != contractsbyname.end()) {
                 if (c->chain_code == nftobj->chain_code &&
                   c->contract_address == nftobj->contract_address &&
-                  std::to_string(c->token_id) == nftobj->token_id) {
+                  c->token_id == nftobj->token_id) {
                       c = contractsbyname.erase(c);
                       count_erase++;
                   }

@@ -117,7 +117,7 @@ namespace fioio {
       uint64_t id;
       string fio_address; //fio_address
       string chain_code;
-      uint64_t token_id;
+      string token_id;
       string url;
       uint128_t fio_address_hash;
       string contract_address;
