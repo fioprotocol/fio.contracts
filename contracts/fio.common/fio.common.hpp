@@ -67,6 +67,10 @@
 #define BURN_FIO_ADDRESS_ENDPOINT "burn_fio_address"
 #define ADD_BUNDLED_TRANSACTION_ENDPOINT "add_bundled_transactions"
 
+#define LIST_DOMAIN_ENDPOINT "list_domain"
+#define CANCEL_LIST_DOMAIN_ENDPOINT "cancel_list_domain"
+#define BUY_DOMAIN_ENDPOINT "buy_domain"
+#define SET_MARKETPLACE_CONFIG_ENDPOINT "set_marketplace_config"
 
 namespace fioio {
 
@@ -116,7 +120,8 @@ namespace fioio {
              actor == fioio::TokenContract ||
              actor == fioio::TREASURYACCOUNT ||
              actor == fioio::FIOSYSTEMACCOUNT ||
-             actor == fioio::FIOACCOUNT);
+             actor == fioio::FIOACCOUNT ||
+             actor == fioio::EscrowContract);
     }
 
     static constexpr uint64_t string_to_uint64_hash(const char *str) {
@@ -298,7 +303,6 @@ namespace fioio {
 
     void processbucketrewards(const string &tpid, const uint64_t &amount, const name &auth, const name &actor) {
 
-
         action(
                 permission_level{auth, "active"_n},
                 TREASURYACCOUNT,
@@ -420,7 +424,5 @@ namespace fioio {
                                                               //different fees to avoid ram limits for non top 21 producers.
     static const uint64_t BUNDLEVOTERAM = 0; //integrated.
 
-
-
-
+    static const uint64_t FIOESCROWRAM = 512; // FIOESCROW
 } // namespace fioio

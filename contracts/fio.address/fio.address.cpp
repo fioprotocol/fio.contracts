@@ -12,6 +12,7 @@
 #include <fio.token/include/fio.token/fio.token.hpp>
 #include <eosiolib/asset.hpp>
 #include <fio.request.obt/fio.request.obt.hpp> //TEMP FOR XFERADDRESS
+#include <fio.escrow/fio.escrow.hpp>
 
 namespace fioio {
 
@@ -20,6 +21,7 @@ namespace fioio {
     private:
         const int MIN_VOTES_FOR_AVERAGING = 15;
         domains_table domains;
+        domainsales_table  domainsales;
         fionames_table fionames;
         fiofee_table fiofees;
         eosio_names_table accountmap;
@@ -36,6 +38,7 @@ namespace fioio {
 
         FioNameLookup(name s, name code, datastream<const char *> ds) : contract(s, code, ds),
                                                                         domains(_self, _self.value),
+                                                                        domainsales(EscrowContract, EscrowContract.value),
                                                                         fionames(_self, _self.value),
                                                                         fiofees(FeeContract, FeeContract.value),
                                                                         bundlevoters(FeeContract, FeeContract.value),
@@ -226,9 +229,7 @@ namespace fioio {
             return expiration_time;
         }
 
-        uint32_t fio_domain_update(const name &owner,
-                                   const FioAddress &fa,
-                                   const name &actor) {
+        uint32_t fio_domain_update(const name &owner, const FioAddress &fa, const name &actor) {
 
             uint128_t domainHash = string_to_uint128_hash(fa.fioaddress.c_str());
             uint32_t expiration_time;
@@ -637,9 +638,10 @@ namespace fioio {
          * @return  the decremented now() time by nyearsago
          */
         inline uint32_t get_now_plus_years(const uint32_t nyearsago) {
-
             return now() + (YEARTOSECONDS * nyearsago);
         }
+
+
 
         /********* CONTRACT ACTIONS ********/
 
@@ -1095,6 +1097,14 @@ namespace fioio {
                 if (domainsiter != domainsbyname.end()) {
                     domainsbyname.erase(domainsiter);
                 }
+
+                // Find any domains listed for sale on the fio.escrow contract table
+                auto domainsalesbydomain = domainsales.get_index<"bydomain"_n>();
+                auto domainsaleiter = domainsalesbydomain.find(burner);
+                // if found, erase the entry
+                if(domainsaleiter != domainsalesbydomain.end()){
+                    domainsalesbydomain.erase(domainsaleiter);
+                }
             }
 
             const string response_string = string("{\"status\": \"OK\",\"items_burned\":") +
@@ -1229,8 +1239,6 @@ namespace fioio {
             send_response(response_string.c_str());
         } //remalladdr
 
-
-
         [[eosio::action]]
         void
         setdomainpub(const string &fio_domain, const int8_t is_public, const int64_t &max_fee, const name &actor,
@@ -1329,7 +1337,7 @@ namespace fioio {
          * and domains. bind2eosio, the space restricted variant of "Bind to EOSIO"
          * takes a platform-specific account name and a wallet generated public key.
          *
-         * First it verifie that either tsi is a new account and none othe exists, or this
+         * First it verify that either its is a new account and none other exists, or this
          * is an existing eosio account and it is indeed bound to this key. If it is a new,
          * unbound account name, then bind name to the key and add it to the list.
          *
@@ -1340,7 +1348,7 @@ namespace fioio {
                          "missing required authority of fio.address,  fio.token, or eosio");
 
            fio_400_assert(isPubKeyValid(client_key), "client_key", client_key,
-                          "Invalid FIO Public Key", ErrorPubKeyValid);
+                          "Invalid FIO  Public Key", ErrorPubKeyValid);
             auto other = accountmap.find(account.value);
             if (other != accountmap.end()) {
                 eosio_assert_message_code(existing && client_key == other->clientkey, "EOSIO account already bound",
@@ -1710,8 +1718,47 @@ namespace fioio {
             }
             else check(false, "Failed to decrement eligible bundle counter"); // required to fail the parent transaction
         }
+
+        [[eosio::action]]
+        void xferescrow(const string &fio_domain, const string &public_key, const bool isEscrow, const name &actor){
+            require_auth(EscrowContract);
+
+            FioAddress fa;
+            getFioAddressStruct(fio_domain, fa);
+
+            register_errors(fa, true);
+            if(!isEscrow) {
+                fio_400_assert(isPubKeyValid(public_key), "public_key", public_key,
+                               "Invalid FIO Public Key", ErrorChainAddressEmpty);
+            }
+
+            auto domainsbyname = domains.get_index<"byname"_n>();
+            auto domains_iter = domainsbyname.find(string_to_uint128_hash(fio_domain));
+            fio_400_assert(domains_iter != domainsbyname.end(), "fio_domain", fio_domain,
+                           "FIO Domain not registered", ErrorDomainNotRegistered);
+
+            const uint32_t domain_expiration = domains_iter->expiration;
+            const uint32_t present_time = now();
+            fio_400_assert(present_time <= domain_expiration, "fio_domain", fio_domain, "FIO Domain expired. Renew first.",
+                           ErrorDomainExpired);
+
+            //Transfer the domain
+            name nm = name("fio.escrow");
+            if(!isEscrow){
+                string owner_account;
+                key_to_account(public_key, owner_account);
+                nm = name(owner_account);
+            }
+
+            domainsbyname.modify(domains_iter, _self, [&](struct domain &a) {
+                a.account = nm.value;
+            });
+
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransaction);
+        }
     };
 
     EOSIO_DISPATCH(FioNameLookup, (regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(renewaddress)(setdomainpub)(burnexpired)(decrcounter)
-    (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles))
+    (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(xferescrow))
 }

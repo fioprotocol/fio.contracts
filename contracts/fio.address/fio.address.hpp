@@ -76,7 +76,6 @@ namespace fioio {
         uint8_t is_public = 0;
         uint64_t expiration;
 
-
         uint64_t primary_key() const { return id; }
         uint64_t by_account() const { return account; }
         uint64_t by_expiration() const { return expiration; }
