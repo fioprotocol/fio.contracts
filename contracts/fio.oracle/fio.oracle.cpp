@@ -163,8 +163,7 @@ namespace fioio {
         [[eosio::action]]
         void unwraptokens(uint64_t &amount, string &obt_id, string &fio_address, name &actor) {
             require_auth(actor);
-            //obt id check ( add to fip )
-            //max amount?
+            //max amount would go here
             fio_400_assert(amount >= 0, "amount", to_string(amount), "Invalid amount",
                            ErrorMaxFeeInvalid);
 
@@ -172,6 +171,10 @@ namespace fioio {
             getFioAddressStruct(fio_address, fa);
             fio_400_assert(validateFioNameFormat(fa), "fio_address", fa.fioaddress, "Invalid FIO Address",
                            ErrorDomainAlreadyRegistered);
+
+            uint8_t oracle_size = std::distance(oracles.cbegin(), oracles.cend());
+            fio_400_assert(3 <= oracle_size, "actor", actor.to_string(), "Not enough registered oracles.",
+                           ErrorMaxFeeInvalid);
 
             auto oraclesearch = oracles.find(actor.value);
             fio_400_assert(oraclesearch != oracles.end(), "actor", actor.to_string(),
@@ -221,7 +224,6 @@ namespace fioio {
             voters_iter = votesbyid.find(idHash); // 1 oracle hack?
             
             //verify obt and address match other entries
-            auto oracle_size = std::distance(oracles.cbegin(), oracles.cend());
             uint8_t size = tempvoters.size();
             // if entries vs. number of regoracles meet consensus.
             if (oracle_size == size) {
