@@ -1581,9 +1581,8 @@ namespace fioio {
 
           // now check for chain_code, token_id
           uint32_t count_erase = 0;
-          auto c = contractsbyname.begin();
-          while (c != contractsbyname.end()) {
-            c = contractsbyname.erase(c);
+          while (nft_iter != contractsbyname.end()) {
+            nft_iter = contractsbyname.erase(nft_iter);
             count_erase++;
           } // while c
 
