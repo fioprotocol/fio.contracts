@@ -59,6 +59,10 @@ namespace fioio {
             fio_400_assert(max_oracle_fee >= 0, "max_oracle_fee", to_string(max_oracle_fee), "Invalid oracle fee value",
                            ErrorMaxFeeInvalid);
 
+            uint8_t oracle_size = std::distance(oracles.cbegin(), oracles.cend());
+            fio_400_assert(3 <= oracle_size, "actor", actor.to_string(), "Not enough registered oracles.",
+                           ErrorMaxFeeInvalid);
+
             //force uppercase chain code
             std::transform(chain_code.begin(), chain_code.end(),chain_code.begin(), ::toupper);
 
@@ -75,7 +79,6 @@ namespace fioio {
             int index = 0;
             vector<uint64_t> totalfees;
             uint64_t feeFinal;
-            uint8_t oracle_size = std::distance(oracles.cbegin(), oracles.cend());
 
             while( idx != oracles.end() ){
                 uint64_t tempfee = idx->fees[1].fee_amount;
