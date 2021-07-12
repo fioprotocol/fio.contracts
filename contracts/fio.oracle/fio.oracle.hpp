@@ -79,7 +79,7 @@ namespace fioio {
         uint128_t by_idhash() const { return idhash; }
         uint64_t by_finished() const { return isComplete; }
 
-        EOSLIB_SERIALIZE(oracle_votes, (id)(idhash)(obt_id)(fio_address)(amount)(voters)(isComplete)
+        EOSLIB_SERIALIZE(oracle_votes, (id)(idhash)(obt_id)(fio_address)(amount)(timestamp)(voters)(isComplete)
         )
     };
 
