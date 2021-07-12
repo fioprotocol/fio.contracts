@@ -194,7 +194,7 @@ namespace fioio {
             fio_404_assert(fioname_iter != namesbyname.end(), "FIO Address not found", ErrorFioNameNotRegistered);
             const uint64_t recAcct = fioname_iter->owner_account;
 
-            vector <name> tempvoters;
+            vector<name> tempvoters;
 
             //if found, search for actor in table
             if (voters_iter != votesbyid.end()) {
