@@ -1,0 +1,224 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Thu Jun 13 20:29:09 2019",
+    "version": "eosio::abi/1.1",
+    "structs": [
+
+               {
+                   "name": "global_staking_state",
+                   "base": "",
+                   "fields": [
+                                {
+                                    "name": "staked_token_pool",
+                                    "type": "uint64"
+                                },
+                                {
+                                    "name": "combined_token_pool",
+                                    "type": "uint64"
+                                },
+                                {
+                                    "name": "rewards_token_pool",
+                                    "type": "uint64"
+                                },
+                                {
+                                    "name": "global_srp_count",
+                                    "type": "uint64"
+                                },
+                                {
+                                    "name": "daily_staking_rewards",
+                                    "type": "uint64"
+                                },
+                                {
+                                    "name": "staking_rewards_reserves_minted",
+                                    "type": "uint64"
+                                }
+                            ]
+               },{
+                   "name": "account_staking_info",
+                   "base": "",
+                   "fields": [
+                                {
+                                  "name": "id",
+                                  "type": "uint64"
+                                },
+                                {
+                                  "name": "account",
+                                  "type": "name"
+                                },
+                                {
+                                  "name": "total_srp",
+                                  "type": "uint64"
+                                },
+                                {
+                                  "name": "total_staked_fio",
+                                  "type": "uint64"
+                                }
+                             ]
+               },{
+                   "name": "decgstake",
+                   "base": "",
+                   "fields": [
+                      {
+                        "name": "fiostakedsufs",
+                        "type": "int64"
+                      },
+                      {
+                         "name": "fiorewardedsufs",
+                         "type": "int64"
+                      },
+                      {
+                        "name": "srpcountsus",
+                        "type": "int64"
+                      }
+                   ]
+               },{
+                   "name": "incgstake",
+                   "base": "",
+                   "fields": [
+                      {
+                         "name": "fiostakedsufs",
+                         "type": "int64"
+                      },
+                      {
+                         "name": "srpcountsus",
+                         "type": "int64"
+                      }
+                   ]
+               },{
+                   "name": "incacctstake",
+                   "base": "",
+                   "fields": [
+                      {
+                         "name": "owner",
+                         "type": "name"
+                      },
+                      {
+                         "name": "fiostakedsufs",
+                         "type": "int64"
+                      },
+                      {
+                         "name": "srpaawardedsus",
+                         "type": "int64"
+                      }
+                   ]
+               },{
+                   "name": "decacctstake",
+                   "base": "",
+                   "fields": [
+                      {
+                         "name": "owner",
+                         "type": "name"
+                      },
+                      {
+                         "name": "fiostakedsufs",
+                         "type": "int64"
+                      },
+                      {
+                         "name": "srprewardedsus",
+                         "type": "int64"
+                      }
+                   ]
+               },{
+                   "name": "stakefio",
+                   "base": "",
+                   "fields": [
+                               {
+                                 "name": "fio_address",
+                                 "type": "string"
+                               },
+                               {
+                                 "name": "amount",
+                                 "type": "int64"
+                               },
+                               {
+                                 "name": "max_fee",
+                                 "type": "int64"
+                               },
+                               {
+                                 "name": "tpid",
+                                 "type": "string"
+                               },
+                               {
+                                 "name": "actor",
+                                 "type": "name"
+                               }
+                             ]
+               },{
+                   "name": "unstakefio",
+                   "base": "",
+                   "fields": [
+                               {
+                                 "name": "fio_address",
+                                 "type": "string"
+                               },
+                               {
+                                 "name": "amount",
+                                 "type": "int64"
+                               },
+                               {
+                                 "name": "max_fee",
+                                 "type": "int64"
+                               },
+                               {
+                                 "name": "tpid",
+                                 "type": "string"
+                               },
+                               {
+                                 "name": "actor",
+                                 "type": "name"
+                               }
+                             ]
+                   }
+          ],
+    "types": [],
+    "actions": [
+                 {
+                    "name": "decgstake",
+                    "type": "decgstake",
+                    "ricardian_contract": ""
+                 },
+                 {
+                    "name": "incgstake",
+                    "type": "incgstake",
+                    "ricardian_contract": ""
+                 },
+                 {
+                    "name": "incacctstake",
+                    "type": "incacctstake",
+                    "ricardian_contract": ""
+                 },
+                 {
+                    "name": "decacctstake",
+                    "type": "decacctstake",
+                    "ricardian_contract": ""
+                 },
+                 {
+                    "name": "stakefio",
+                    "type": "stakefio",
+                    "ricardian_contract": ""
+                 },
+                 {
+                    "name": "unstakefio",
+                    "type": "unstakefio",
+                    "ricardian_contract": ""
+                 }
+               ],
+    "tables": [
+               {
+                 "name": "staking",
+                 "type": "global_staking_state",
+                 "index_type": "i64",
+                 "key_names": [],
+                 "key_types": []
+               },
+               {
+                 "name": "accountstake",
+                 "type": "account_staking_info",
+                 "index_type": "i64",
+                 "key_names": [],
+                 "key_types": []
+               }
+             ],
+    "ricardian_clauses": [],
+    "variants": [],
+    "abi_extensions": []
+}

@@ -13,6 +13,7 @@
 #include <fio.system/include/fio.system/fio.system.hpp>
 #include <fio.fee/fio.fee.hpp>
 #include <fio.tpid/fio.tpid.hpp>
+#include <fio.staking/fio.staking.hpp>
 
 namespace eosiosystem {
     class system_contract;
@@ -31,7 +32,8 @@ namespace eosio {
         fioio::tpids_table tpids;
         fioio::fionames_table fionames;
         eosiosystem::locked_tokens_table lockedTokensTable;
-        eosiosystem::general_locks_table generalLockTokensTable;
+        eosiosystem::general_locks_table_v2 generalLockTokensTable;
+        fioio::account_staking_table accountstaking;
 
     public:
         token(name s, name code, datastream<const char *> ds) : contract(s, code, ds),
@@ -42,7 +44,8 @@ namespace eosio {
                                                                 fiofees(fioio::FeeContract, fioio::FeeContract.value),
                                                                 tpids(TPIDContract, TPIDContract.value),
                                                                 lockedTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
-                                                                generalLockTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value){
+                                                                generalLockTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
+                                                                accountstaking(STAKINGACCOUNT,STAKINGACCOUNT.value){
             fioio::configs_singleton configsSingleton(fioio::FeeContract, fioio::FeeContract.value);
             appConfig = configsSingleton.get_or_default(fioio::config());
         }
@@ -75,7 +78,7 @@ namespace eosio {
         [[eosio::action]]
         void trnsloctoks(const string &payee_public_key,
                                 const int32_t &can_vote,
-                                const vector<eosiosystem::lockperiods> periods,
+                                const vector<eosiosystem::lockperiodv2> periods,
                                 const int64_t &amount,
                                 const int64_t &max_fee,
                                 const name &actor,
@@ -151,6 +154,29 @@ namespace eosio {
             bool existing;
         };
 
+        //This action will compute the number of unlocked tokens contained within an account.
+        // This considers
+        static uint64_t computeusablebalance(const name &owner,bool updatelocks){
+            uint64_t genesislockedamount = computeremaininglockedtokens(owner,updatelocks);
+            uint64_t generallockedamount = computegenerallockedtokens(owner,updatelocks);
+            uint64_t stakedfio = 0;
+
+            fioio::account_staking_table accountstaking(STAKINGACCOUNT, STAKINGACCOUNT.value);
+            auto astakebyaccount = accountstaking.get_index<"byaccount"_n>();
+            auto astakeiter = astakebyaccount.find(owner.value);
+            if (astakeiter != astakebyaccount.end()) {
+                check(astakeiter->account == owner,"incacctstake owner lookup error." );
+                stakedfio = astakeiter->total_staked_fio;
+            }
+            //apply a little QC.
+            const auto my_balance = eosio::token::get_balance("fio.token"_n, owner, FIOSYMBOL.code());
+            check(my_balance.amount >= (generallockedamount + genesislockedamount + stakedfio),
+                         "computeusablebalance, amount of locked fio plus staked is greater than balance!! for " + owner.to_string() );
+            uint64_t amount = my_balance.amount - (generallockedamount + genesislockedamount + stakedfio);
+            return amount;
+
+        }
+
 
 
         //this will compute the present unlocked tokens for this user based on the
@@ -167,14 +193,11 @@ namespace eosio {
                 }
                 if (lockiter->unlocked_period_count < 6) {
                     //to shorten the vesting schedule adapt these variables.
+                    // TESTING ONLY!!! comment out genesis locking periods..DO NOT DELIVER THIS
                     uint32_t daysSinceGrant = (int) ((present_time - lockiter->timestamp) / SECONDSPERDAY);
                     uint32_t firstPayPeriod = 90;
                     uint32_t payoutTimePeriod = 180;
-
-                    //TEST LOCKED TOKENS uint32_t daysSinceGrant =  (int)((present_time  - lockiter->timestamp) / 60);
-                    //TEST LOCKED TOKENS uint32_t firstPayPeriod = 15;
-                    //TEST LOCKED TOKENS uint32_t payoutTimePeriod = 15;
-
+                    
                     bool ninetyDaysSinceGrant = daysSinceGrant >= firstPayPeriod;
 
                     uint64_t payoutsDue = 0;
@@ -287,6 +310,8 @@ namespace eosio {
                         numberVestingPayouts--;
                     }
 
+
+
                     //process the rest of the payout periods, other than the first period.
                     if (payoutsDue > numberVestingPayouts) {
                         remainingPayouts = payoutsDue - numberVestingPayouts;
@@ -297,16 +322,22 @@ namespace eosio {
                             //this logic assumes to have 3 decimal places in the specified percentage
                             percentperblock = 18800;
                         } else if (lockiter->grant_type == 4) {
-                            //this is assumed to have 3 decimal places in the specified percentage
                             return lockiter->remaining_locked_amount;
                         } else {  //unknown lock type, dont unlock
                             return lockiter->remaining_locked_amount;
                         }
 
-                        //we eliminate the last 5 digits of the SUFs to avoid overflow in the calculations
-                        //that follow.
-                        uint64_t totalgrantsmaller = totalgrantamount/10000;
-                        amountpay = ((remainingPayouts * (totalgrantsmaller * percentperblock)) / 100000) * 10000;
+
+                        if(payoutsDue >= 5){
+                            //always pay all the rest at the end of the locks life.
+                            amountpay = lockiter->remaining_locked_amount;
+                        }
+                        else {
+                            //we eliminate the last 5 digits of the SUFs to avoid overflow in the calculations
+                            //that follow.
+                            uint64_t totalgrantsmaller = totalgrantamount / 10000;
+                            amountpay = ((remainingPayouts * (totalgrantsmaller * percentperblock)) / 100000) * 10000;
+                        }
 
                         if (newlockedamount > amountpay) {
                             newlockedamount -= amountpay;
@@ -315,6 +346,7 @@ namespace eosio {
                         }
                         didsomething = true;
                     }
+
 
                     if (didsomething && doupdate) {
                         //get fio balance for this account,
@@ -335,9 +367,7 @@ namespace eosio {
                             av.unlocked_period_count += remainingPayouts + addone;
                         });
                     }
-
                     return newlockedamount;
-
                 } else {
                     return lockiter->remaining_locked_amount;
                 }
@@ -352,7 +382,7 @@ namespace eosio {
         static uint64_t computegenerallockedtokens(const name &actor, bool doupdate) {
             uint32_t present_time = now();
 
-            eosiosystem::general_locks_table generalLockTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value);
+            eosiosystem::general_locks_table_v2 generalLockTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value);
             auto locks_by_owner = generalLockTokensTable.get_index<"byowner"_n>();
             auto lockiter = locks_by_owner.find(actor.value);
             if (lockiter != locks_by_owner.end()) {
@@ -361,6 +391,7 @@ namespace eosio {
                     uint32_t secondsSinceGrant = (present_time - lockiter->timestamp);
 
                     uint32_t payoutsDue = 0;
+
                     for (int i=0;i<lockiter->periods.size(); i++){
                         if (lockiter->periods[i].duration <= secondsSinceGrant){
                             payoutsDue++;
@@ -372,16 +403,17 @@ namespace eosio {
                     bool didsomething = false;
 
                     if (payoutsDue > lockiter->payouts_performed) {
+                        if((lockiter->payouts_performed + payoutsDue) >= lockiter->periods.size())
+                        {
+                            //payout the remaining lock amount.
+                            amountpay = newlockedamount;
+                        }
+                        else {
 
-                        uint64_t percentperblock = 0;
-                       for (int i=lockiter->payouts_performed; i<payoutsDue;i++){
-                           //special note -- we allow 3 decimal places for precision. this needs enforced
-                           //in the input validation of these values.
-                           percentperblock = (lockiter->periods[i].percent * 1000);
-                           uint64_t lockamountsmaller = lockiter->lock_amount / 10000;
-                           uint64_t amountadded = ((lockamountsmaller * percentperblock)/100000) * 10000;
-                           amountpay += amountadded;
-                       }
+                            for (int i = lockiter->payouts_performed; i < payoutsDue; i++) {
+                                amountpay += lockiter->periods[i].amount;
+                            }
+                        }
 
                         if (newlockedamount > amountpay) {
                             newlockedamount -= amountpay;
