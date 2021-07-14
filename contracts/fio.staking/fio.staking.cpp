@@ -337,7 +337,7 @@ public:
         auto stakeablebalance = eosio::token::computeusablebalance(actor,false);
 
         uint64_t paid_fee_amount = 0;
-        //begin, bundle eligible fee logic for staking
+        //begin, bundle eligible fee logic for unstaking
         const uint128_t endpoint_hash = string_to_uint128_hash(UNSTAKE_FIO_TOKENS_ENDPOINT);
 
         auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
@@ -378,9 +378,6 @@ public:
                         );
             }
         }
-
-        //fio_400_assert(stakeablebalance >= (paid_fee_amount + (uint64_t)amount), "max_fee", to_string(max_fee), "Insufficient balance.",
-         //              ErrorMaxFeeExceeded);
         //End, bundle eligible fee logic for staking
 
         //RAM bump
@@ -393,7 +390,7 @@ public:
             ).send();
         }
         //SRPs to Claim are computed: Staker's Account SRPs * (Unstaked amount / Total Tokens Staked in Staker's Account)
-         //                                             this needs to be a floating point (double) operation
+         //  this needs to be a floating point (double) operation
        //round this to avoid issues with decimal representations
         uint64_t srpstoclaim = (uint64_t)(((double)astakeiter->total_srp * (double)( (double)amount / (double)astakeiter->total_staked_fio))+0.5);
 
@@ -493,6 +490,8 @@ public:
             }
         }
 
+        //7 days unstaking lock duration.
+        int64_t UNSTAKELOCKDURATIONSECONDS = 604800;
 
         //look and see if they have any general locks.
         auto locks_by_owner = generallocks.get_index<"byowner"_n>();
@@ -504,7 +503,8 @@ public:
             //get the remaining unlocked of the lock.
             int64_t newremaininglockamount = lockiter->remaining_lock_amount + (stakingrewardamount + amount);
             //get the timestamp of the lock.
-            uint32_t insertperiod = (present_time - lockiter->timestamp) + 604800;
+            uint32_t insertperiod = (present_time - lockiter->timestamp) + UNSTAKELOCKDURATIONSECONDS;
+
             //the days since launch.
             uint32_t insertday = (lockiter->timestamp + insertperiod) / SECONDSPERDAY;
             //if your duration is less than this the period is in the past.
@@ -573,7 +573,7 @@ public:
             }
             vector <eosiosystem::lockperiodv2> periods;
             eosiosystem::lockperiodv2 period;
-            period.duration = 604800;
+            period.duration = UNSTAKELOCKDURATIONSECONDS;
             period.amount = lockamount;
             periods.push_back(period);
             INLINE_ACTION_SENDER(eosiosystem::system_contract, addgenlocked)
