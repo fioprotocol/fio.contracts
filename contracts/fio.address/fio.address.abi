@@ -201,8 +201,16 @@
           "type": "string"
         },
         {
+          "name": "chain_code_hash",
+          "type": "uint64"
+        },
+        {
           "name": "token_id",
           "type": "string"
+        },
+        {
+          "name": "token_id_hash",
+          "type": "uint128"
         },
         {
           "name": "url",

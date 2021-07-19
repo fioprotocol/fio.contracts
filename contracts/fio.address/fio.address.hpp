@@ -117,7 +117,9 @@ namespace fioio {
       uint64_t id;
       string fio_address; //fio_address
       string chain_code;
+      uint64_t chain_code_hash;
       string token_id;
+      uint128_t token_id_hash;
       string url;
       uint128_t fio_address_hash;
       string contract_address;
@@ -130,7 +132,9 @@ namespace fioio {
       uint128_t by_address() const { return fio_address_hash; }
       uint128_t by_contract_address() const { return contract_address_hash; }
       uint128_t by_hash() const { return hash_index; }
-      EOSLIB_SERIALIZE(nftinfo, (id)(fio_address)(chain_code)(token_id)(url)(fio_address_hash)(contract_address)(contract_address_hash)
+      uint64_t  by_chain() const { return chain_code_hash; }
+      uint128_t by_tokenid() const { return token_id_hash; }
+      EOSLIB_SERIALIZE(nftinfo, (id)(fio_address)(chain_code)(chain_code_hash)(token_id)(token_id_hash)(url)(fio_address_hash)(contract_address)(contract_address_hash)
         (hash)(hash_index)(metadata))
 
     };
@@ -138,7 +142,10 @@ namespace fioio {
     typedef multi_index<"nfts"_n, nftinfo,
     indexed_by<"byaddress"_n, const_mem_fun<nftinfo, uint128_t, &nftinfo::by_address>>,
     indexed_by<"bycontract"_n, const_mem_fun<nftinfo, uint128_t, &nftinfo::by_contract_address>>,
-    indexed_by<"byhash"_n, const_mem_fun<nftinfo, uint128_t, &nftinfo::by_hash>>
+    indexed_by<"byhash"_n, const_mem_fun<nftinfo, uint128_t, &nftinfo::by_hash>>,
+    indexed_by<"bychain"_n, const_mem_fun<nftinfo, uint64_t, &nftinfo::by_chain>>,
+    indexed_by<"bytokenid"_n, const_mem_fun<nftinfo, uint128_t, &nftinfo::by_tokenid>>
+
     >
     nfts_table;
 
