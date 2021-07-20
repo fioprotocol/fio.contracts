@@ -1691,6 +1691,49 @@ namespace fioio {
             send_response(response_string.c_str());
         }
 
+        [[eosio::action]]
+        void xfercontract(const string &fio_domain, const string &public_key, const bool isEscrow){
+
+            //require_auth(EscrowContract);
+            //name nm = name("fio.escrow");
+
+            require_auth(FIOORACLEContract);
+            name nm = name("fio.oracle"); // used for setting multiple domain owners
+
+            FioAddress fa;
+            getFioAddressStruct(fio_domain, fa);
+
+            register_errors(fa, true);
+            if(!isEscrow) {
+                fio_400_assert(isPubKeyValid(public_key), "public_key", public_key,
+                               "Invalid FIO Public Key", ErrorChainAddressEmpty);
+            }
+
+            auto domainsbyname = domains.get_index<"byname"_n>();
+            auto domains_iter = domainsbyname.find(string_to_uint128_hash(fio_domain));
+            fio_400_assert(domains_iter != domainsbyname.end(), "fio_domain", fio_domain,
+                           "FIO Domain not registered", ErrorDomainNotRegistered);
+
+            const uint32_t domain_expiration = domains_iter->expiration;
+            const uint32_t present_time = now();
+            fio_400_assert(present_time <= domain_expiration, "fio_domain", fio_domain, "FIO Domain expired. Renew first.",
+                           ErrorDomainExpired);
+
+            //Transfer the domain
+            if(!isEscrow){
+                string owner_account;
+                key_to_account(public_key, owner_account);
+                nm = name(owner_account);
+            }
+
+            domainsbyname.modify(domains_iter, _self, [&](struct domain &a) {
+                a.account = nm.value;
+            });
+
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransaction);
+        }
+
         void decrcounter(const string &fio_address, const int32_t &step) {
 
         check(step > 0, "step must be greater than 0");
@@ -1713,5 +1756,5 @@ namespace fioio {
     };
 
     EOSIO_DISPATCH(FioNameLookup, (regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(renewaddress)(setdomainpub)(burnexpired)(decrcounter)
-    (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles))
+    (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(xfercontract))
 }

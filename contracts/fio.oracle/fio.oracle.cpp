@@ -23,6 +23,7 @@ namespace fioio {
         oraclevoters_table voters;
         oracles_table oracles;
         fionames_table fionames;
+        domains_table domains;
         eosiosystem::producers_table producers;
         eosio_names_table accountmap;
         fiofee_table fiofees;
@@ -34,6 +35,7 @@ namespace fioio {
                 contract(s, code, ds),
                 receipts(_self, _self.value),
                 voters(_self, _self.value),
+                domains(_self, _self.value),
                 oracles(_self, _self.value),
                 producers(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                 accountmap(AddressContract, AddressContract.value),
@@ -200,6 +202,9 @@ namespace fioio {
             if (voters_iter != votesbyid.end()) {
                 tempvoters = voters_iter->voters;
 
+                fio_400_assert(voters_iter->amount == amount, "amount", std::to_string(amount),
+                               "Token amount mismatch.", ErrorPubAddressExist);
+
                 auto it = std::find(tempvoters.begin(), tempvoters.end(), actor);
                 fio_400_assert(it == tempvoters.end(), "actor", actor.to_string(),
                                "Oracle has already voted.", ErrorPubAddressExist);
@@ -229,7 +234,7 @@ namespace fioio {
             //verify obt and address match other entries
             uint8_t size = tempvoters.size();
             // if entries vs. number of regoracles meet consensus.
-            if (oracle_size == size) {
+            if (oracle_size == size && !voters_iter->isComplete) {
                 votesbyid.modify(voters_iter, actor, [&](auto &p) {
                     p.isComplete = true;
                 });
@@ -338,11 +343,248 @@ namespace fioio {
 
             send_response(response_string.c_str());
         }
+
+        [[eosio::action]]
+        void wrapdomain(string &fio_domain, string &chain_code, string &public_address, uint64_t &max_oracle_fee,
+                        uint64_t &max_fee, string &tpid, name &actor) {
+            require_auth(actor);
+            fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
+                           "TPID must be empty or valid FIO address",
+                           ErrorPubKeyValid);
+            fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                           ErrorMaxFeeInvalid);
+            fio_400_assert(public_address.length() > 0, "public_address", public_address,
+                           "Invalid public address", ErrorInvalidFioNameFormat);
+            fio_400_assert(validateChainNameFormat(chain_code), "chain_code", chain_code, "Invalid chain code format",
+                           ErrorInvalidFioNameFormat);
+            fio_400_assert(max_oracle_fee >= 0, "max_oracle_fee", to_string(max_oracle_fee), "Invalid oracle fee value",
+                           ErrorMaxFeeInvalid);
+
+            uint8_t oracle_size = std::distance(oracles.cbegin(), oracles.cend());
+            fio_400_assert(3 <= oracle_size, "actor", actor.to_string(), "Not enough registered oracles.",
+                           ErrorMaxFeeInvalid);
+
+            //force uppercase chain code
+            std::transform(chain_code.begin(), chain_code.end(),chain_code.begin(), ::toupper);
+
+            FioAddress fa;
+            uint32_t expiration_time;
+            getFioAddressStruct(fio_domain, fa);
+            uint128_t domainHash = string_to_uint128_hash(fa.fioaddress.c_str());
+            fio_400_assert(fa.domainOnly, "fio_domain", fa.fioaddress, "Invalid FIO domain",
+                           ErrorInvalidFioNameFormat);
+
+            auto domainsbyname = domains.get_index<"byname"_n>();
+            auto domains_iter = domainsbyname.find(domainHash);
+
+            fio_400_assert(domains_iter != domainsbyname.end(), "fio_domain", fa.fioaddress,
+                           "FIO Domain not registered",
+                           ErrorDomainNotRegistered);
+
+            fio_400_assert(domains_iter->account == actor.value, "fio_domain", fa.fioaddress,
+                           "Actor and domain owner mismatch.",
+                           ErrorDomainNotRegistered);
+
+            const uint32_t present_time = now();
+            const uint32_t domain_expiration = domains_iter->expiration;
+            fio_400_assert(present_time <= domain_expiration, "fio_domain", fa.fioaddress, "FIO Domain expired",
+                           ErrorDomainExpired);
+
+            //Oracle fee is transferred from actor account to all registered oracles in even amount.
+            auto idx = oracles.begin();
+            fio_400_assert(idx != oracles.end(), "max_oracle_fee", to_string(max_oracle_fee), "No Oracles registered or fees set",
+                           ErrorMaxFeeInvalid);
+
+            int index = 0;
+            vector<uint64_t> totalfees;
+            uint64_t feeFinal;
+
+            while( idx != oracles.end() ){
+                uint64_t tempfee = idx->fees[0].fee_amount; //0 is domain in fee vector
+                totalfees.push_back(tempfee);
+                idx++;
+            }
+
+            fio_400_assert(totalfees.size() == oracle_size, "max_oracle_fee", to_string(max_oracle_fee), "Not all oracles have voted for fees",
+                           ErrorMaxFeeInvalid);
+
+            // median fee / oracle_info.size = fee paid
+            sort(totalfees.begin(), totalfees.end());
+            if (oracle_size % 2 == 0) {
+                feeFinal = (totalfees[oracle_size / 2 - 1] + totalfees[oracle_size / 2]) / 2;
+            } else {
+                feeFinal = totalfees[oracle_size / 2];
+            }
+
+            idx = oracles.begin();
+            uint64_t feeTotal = feeFinal * oracle_size;
+            fio_400_assert(max_oracle_fee >= feeTotal, "max_oracle_fee", to_string(max_oracle_fee), "Invalid oracle fee value",
+                           ErrorMaxFeeInvalid);
+
+            while( idx != oracles.end() ){
+                action(permission_level{get_self(), "active"_n},
+                       TokenContract, "transfer"_n,
+                       make_tuple(actor, name{idx->actor}, asset(feeFinal, FIOSYMBOL), string("Token Wrapping Oracle Fee"))
+                ).send();
+
+                idx++;
+            }
+
+            //Copy information to receipt table
+            receipts.emplace(actor, [&](struct oracleledger &p) {
+                p.id = receipts.available_primary_key();
+                p.actor = actor.value;
+                p.chaincode = chain_code;
+                p.pubaddress = public_address;
+                p.nftname = fio_domain;
+                p.timestamp = present_time;
+            });
+
+            //Transfer Domain
+            action(
+                    permission_level{FIOORACLEContract, "active"_n},
+                    AddressContract,
+                    "xfercontract"_n,
+                    std::make_tuple(fio_domain, nullptr, true)
+            ).send();
+
+            //Chain wrap_fio_token fee is collected.
+            const uint128_t endpoint_hash = string_to_uint128_hash(WRAP_FIO_DOMAIN_ENDPOINT);
+
+            auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
+            auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+            const uint64_t fee_type = fee_iter->type;
+            const int64_t wrap_amount = fee_iter->suf_amount;
+
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", WRAP_FIO_DOMAIN_ENDPOINT,
+                           "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+            uint64_t fee_amount = fee_iter->suf_amount;
+            fio_400_assert(max_fee >= (int64_t)fee_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                           ErrorMaxFeeExceeded);
+
+            fio_fees(actor, asset(wrap_amount, FIOSYMBOL), WRAP_FIO_TOKENS_ENDPOINT);
+            process_rewards(tpid, wrap_amount,get_self(), actor);
+
+            //RAM of signer is increased (512) more?
+            action(
+                    permission_level{SYSTEMACCOUNT, "active"_n},
+                    "eosio"_n,
+                    "incram"_n,
+                    std::make_tuple(actor, WRAPTOKENRAM)
+            ).send();
+
+            const string response_string = string("{\"status\": \"OK\",\"oracle_fee_collected\":\"") +
+                                           to_string(feeTotal) + string("\",\"fee_collected\":") +
+                                           to_string(fee_amount) + string("}");
+
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransaction);
+
+            send_response(response_string.c_str());
+        }
+
+        [[eosio::action]]
+        void unwrapdomain(string &fio_domain, string &obt_id, string &fio_address, name &actor) {
+            require_auth(actor);
+
+            FioAddress fa;
+            getFioAddressStruct(fio_domain, fa);
+            fio_400_assert(fa.domainOnly, "fio_domain", fa.fioaddress, "Invalid FIO domain",
+                           ErrorInvalidFioNameFormat);
+
+            const uint128_t domainHash    = string_to_uint128_hash(fio_domain.c_str());
+            auto domainsbyname = domains.get_index<"byname"_n>();
+            auto domains_iter  = domainsbyname.find(domainHash);
+            name nm = name("fio.oracle");
+
+            fio_400_assert(domains_iter != domainsbyname.end(), "fio_domain", fio_domain,
+                           "FIO domain not found", ErrorDomainNotRegistered);
+
+            fio_400_assert(domains_iter->account == nm.value, "fio_domain", fio_domain,
+                           "FIO domain not owned by Oracle contract.", ErrorDomainNotRegistered);
+
+            uint8_t oracle_size = std::distance(oracles.cbegin(), oracles.cend());
+            fio_400_assert(3 <= oracle_size, "actor", actor.to_string(), "Not enough registered oracles.",
+                           ErrorMaxFeeInvalid);
+
+            auto oraclesearch = oracles.find(actor.value);
+            fio_400_assert(oraclesearch != oracles.end(), "actor", actor.to_string(),
+                           "Not a registered Oracle", ErrorPubAddressExist);
+
+            const uint128_t nameHash = string_to_uint128_hash(fio_address);
+            auto namesbyname = fionames.get_index<"byname"_n>();
+            auto fioname_iter = namesbyname.find(nameHash);
+
+            const uint128_t idHash = string_to_uint128_hash(obt_id);
+            auto votesbyid = voters.get_index<"byidhash"_n>();
+            auto voters_iter = votesbyid.find(idHash);
+
+            fio_404_assert(fioname_iter != namesbyname.end(), "FIO Address not found", ErrorFioNameNotRegistered);
+            const uint64_t recAcct = fioname_iter->owner_account;
+
+            vector<name> tempvoters;
+
+            //if found, search for actor in table
+            if (voters_iter != votesbyid.end()) {
+                tempvoters = voters_iter->voters;
+
+                auto it = std::find(tempvoters.begin(), tempvoters.end(), actor);
+                fio_400_assert(it == tempvoters.end(), "actor", actor.to_string(),
+                               "Oracle has already voted.", ErrorPubAddressExist);
+                fio_400_assert(fio_domain == voters_iter->nftname, "fio_domain", fio_domain,
+                               "Domain name mismatch.", ErrorPubAddressExist);
+
+                tempvoters.push_back(actor);
+
+                votesbyid.modify(voters_iter, actor, [&](auto &p) {
+                    p.voters = tempvoters;
+                });
+            } else {
+                tempvoters.push_back(actor);
+                uint64_t currenttime = now();
+
+                voters.emplace(actor, [&](struct oracle_votes &p) {
+                    p.id = voters.available_primary_key();
+                    p.idhash = idHash;
+                    p.voters = tempvoters;
+                    p.obt_id = obt_id;
+                    p.fio_address = fio_address;
+                    p.nftname = fio_domain;
+                    p.timestamp = currenttime;
+                });
+            }
+
+            voters_iter = votesbyid.find(idHash);
+
+            //verify obt and address match other entries
+            uint8_t size = tempvoters.size();
+            // if entries vs. number of regoracles meet consensus.
+            if (oracle_size == size && !voters_iter->isComplete) {
+                votesbyid.modify(voters_iter, actor, [&](auto &p) {
+                    p.isComplete = true;
+                });
+
+                //transfer ownership to new owner
+                auto owner = accountmap.find(recAcct);
+                action(
+                        permission_level{FIOORACLEContract, "active"_n},
+                        AddressContract,
+                        "xfercontract"_n,
+                        std::make_tuple(fio_domain, owner->clientkey, false)
+                ).send();
+            }
+
+            const string response_string = string("{\"status\": \"OK\"}");
+
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransaction);
+
+            send_response(response_string.c_str());
+        }
     };
 
     EOSIO_DISPATCH(FIOOracle, (wraptokens)(unwraptokens)(regoracle)(unregoracle)
-    (setoraclefee)
-    //wrapdomain - xferdomain to fio.oracle
-    //unwrapdomain - change owner to supplied fio address
+    (setoraclefee)(wrapdomain)(unwrapdomain)
     )
 }

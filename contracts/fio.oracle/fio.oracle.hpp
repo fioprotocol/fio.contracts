@@ -70,7 +70,8 @@ namespace fioio {
         uint128_t idhash;
         string obt_id;
         string fio_address;
-        uint64_t amount;
+        uint64_t amount = 0;
+        string nftname = "";
         uint64_t timestamp;
         vector<name> voters;
         bool isComplete = false;
@@ -79,7 +80,7 @@ namespace fioio {
         uint128_t by_idhash() const { return idhash; }
         uint64_t by_finished() const { return isComplete; }
 
-        EOSLIB_SERIALIZE(oracle_votes, (id)(idhash)(obt_id)(fio_address)(amount)(timestamp)(voters)(isComplete)
+        EOSLIB_SERIALIZE(oracle_votes, (id)(idhash)(obt_id)(fio_address)(amount)(nftname)(timestamp)(voters)(isComplete)
         )
     };
 
