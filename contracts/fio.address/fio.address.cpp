@@ -1694,10 +1694,9 @@ namespace fioio {
         [[eosio::action]]
         void xfercontract(const string &fio_domain, const string &public_key, const bool isEscrow){
 
-            //require_auth(EscrowContract);
-            //name nm = name("fio.escrow");
+            eosio_assert(has_auth(EscrowContract) || has_auth(FIOORACLEContract),
+                         "missing required authority of fio.escrow or fio.orcale");
 
-            require_auth(FIOORACLEContract);
             name nm = name("fio.oracle"); // used for setting multiple domain owners
 
             FioAddress fa;
