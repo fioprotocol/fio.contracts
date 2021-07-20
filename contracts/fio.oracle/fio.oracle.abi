@@ -79,6 +79,10 @@
                "type":"uint64"
             },
             {
+               "name":"nftname",
+               "type":"string"
+            },
+            {
                "name":"timestamp",
                "type":"uint64"
             },
@@ -207,6 +211,62 @@
                "type":"name"
             }
          ]
+      },
+      {
+         "name":"wrapdomain",
+         "base":"",
+         "fields":[
+            {
+               "name":"fio_domain",
+               "type":"string"
+            },
+            {
+               "name":"chain_code",
+               "type":"string"
+            },
+            {
+               "name":"public_address",
+               "type":"string"
+            },
+            {
+               "name":"max_oracle_fee",
+               "type":"int64"
+            },
+            {
+               "name":"max_fee",
+               "type":"int64"
+            },
+            {
+               "name":"tpid",
+               "type":"string"
+            },
+            {
+               "name":"actor",
+               "type":"name"
+            }
+         ]
+      },
+      {
+         "name":"unwrapdomain",
+         "base":"",
+         "fields":[
+            {
+               "name":"fio_domain",
+               "type":"string"
+            },
+            {
+               "name":"obt_id",
+               "type":"string"
+            },
+            {
+               "name":"fio_address",
+               "type":"string"
+            },
+            {
+               "name":"actor",
+               "type":"name"
+            }
+         ]
       }
    ],
    "actions":[
@@ -233,6 +293,16 @@
       {
          "name":"setoraclefee",
          "type":"setoraclefee",
+         "ricardian_contract":""
+      },
+      {
+         "name":"wrapdomain",
+         "type":"wrapdomain",
+         "ricardian_contract":""
+      },
+      {
+         "name":"unwrapdomain",
+         "type":"unwrapdomain",
          "ricardian_contract":""
       }
    ],
