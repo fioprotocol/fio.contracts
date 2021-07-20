@@ -1696,8 +1696,8 @@ namespace fioio {
 
             eosio_assert(has_auth(EscrowContract) || has_auth(FIOORACLEContract),
                          "missing required authority of fio.escrow or fio.orcale");
-
-            name nm = name("fio.oracle"); // used for setting multiple domain owners
+            name nm;
+            has_auth(EscrowContract) ? nm = name("fio.escrow") : nm = name("fio.oracle"); // used for setting multiple domain owners
 
             FioAddress fa;
             getFioAddressStruct(fio_domain, fa);
