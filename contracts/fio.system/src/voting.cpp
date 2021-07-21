@@ -801,9 +801,7 @@ namespace eosiosystem {
                     return amount;
                 }
             }
-           //TEST TEST TEST LOCKED TOKENS
-           //TEST TEST TEST LOCKED TOKENS  uint32_t issueplus210 = lockiter->timestamp+(25*60);
-           //TEST TEST TEST LOCKED TOKENS
+
            uint32_t issueplus210 = lockiter->timestamp+(210*SECONDSPERDAY);
 
             //if lock type 2 only subtract remaining locked amount if 210 days since launch, and inhibit locking true.
