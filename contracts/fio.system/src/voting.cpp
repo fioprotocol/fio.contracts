@@ -789,7 +789,16 @@ namespace eosiosystem {
                     }else{
                         amount = damount;
                     }
-
+                   
+                }else{
+                    //amount is balance - remaining locked.
+                    if (amount >= lockiter->remaining_locked_amount){
+                        amount -= lockiter->remaining_locked_amount;
+                    }
+                    else {
+                        amount = 0;
+                    }
+                    return amount;
                 }
             }
 
