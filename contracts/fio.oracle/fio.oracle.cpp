@@ -370,24 +370,24 @@ namespace fioio {
             FioAddress fa;
             uint32_t expiration_time;
             getFioAddressStruct(fio_domain, fa);
-            uint128_t domainHash = string_to_uint128_hash(fa.fioaddress.c_str());
-            fio_400_assert(fa.domainOnly, "fio_domain", fa.fioaddress, "Invalid FIO domain",
+            uint128_t domainHash = string_to_uint128_hash(fio_domain);
+            fio_400_assert(fa.domainOnly, "fio_domain", fio_domain, "Invalid FIO domain",
                            ErrorInvalidFioNameFormat);
 
             auto domainsbyname = domains.get_index<"byname"_n>();
             auto domains_iter = domainsbyname.find(domainHash);
 
-            fio_400_assert(domains_iter != domainsbyname.end(), "fio_domain", fa.fioaddress,
+            fio_400_assert(domains_iter != domainsbyname.end(), "fio_domain", fio_domain,
                            "FIO Domain not registered",
                            ErrorDomainNotRegistered);
 
-            fio_400_assert(domains_iter->account == actor.value, "fio_domain", fa.fioaddress,
+            fio_400_assert(domains_iter->account == actor.value, "fio_domain", fio_domain,
                            "Actor and domain owner mismatch.",
                            ErrorDomainNotRegistered);
 
             const uint32_t present_time = now();
             const uint32_t domain_expiration = domains_iter->expiration;
-            fio_400_assert(present_time <= domain_expiration, "fio_domain", fa.fioaddress, "FIO Domain expired",
+            fio_400_assert(present_time <= domain_expiration, "fio_domain", fio_domain, "FIO Domain expired",
                            ErrorDomainExpired);
 
             //Oracle fee is transferred from actor account to all registered oracles in even amount.
