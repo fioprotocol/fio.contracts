@@ -35,7 +35,7 @@ namespace fioio {
                 contract(s, code, ds),
                 receipts(_self, _self.value),
                 voters(_self, _self.value),
-                domains(_self, _self.value),
+                domains(AddressContract, AddressContract.value),
                 oracles(_self, _self.value),
                 producers(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                 accountmap(AddressContract, AddressContract.value),
