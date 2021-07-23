@@ -491,7 +491,8 @@ public:
         }
 
         //7 days unstaking lock duration.
-        int64_t UNSTAKELOCKDURATIONSECONDS = 604800;
+        //int64_t UNSTAKELOCKDURATIONSECONDS = 604800;
+        int64_t UNSTAKELOCKDURATIONSECONDS = 60;
 
         //look and see if they have any general locks.
         auto locks_by_owner = generallocks.get_index<"byowner"_n>();
