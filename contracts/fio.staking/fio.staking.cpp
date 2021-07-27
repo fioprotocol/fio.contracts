@@ -547,7 +547,7 @@ public:
                 if (daysforperiod >= insertday) {
                     insertindex = newperiods.size();
                     //always insert into the same day.
-                    if (daysforperiod == insertday) {
+                   if (daysforperiod == insertday) {
                         insertintoexisting = true;
                         amountthisperiod += (stakingrewardamount + amount);
                     }
@@ -574,7 +574,7 @@ public:
             if (!insertintoexisting) {
                // print("EDEDEDEDEDEDEDEDED totalnewpercent ",totalnewpercent,"\n");
                 eosiosystem::lockperiodv2 iperiod;
-                iperiod.duration = insertperiod;
+                iperiod.duration = UNSTAKELOCKDURATIONSECONDS;
                 iperiod.amount = amount;
                 newperiods.insert(newperiods.begin() + insertindex, iperiod);
             }
