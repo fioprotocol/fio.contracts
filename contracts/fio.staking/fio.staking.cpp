@@ -574,7 +574,7 @@ public:
             if (!insertintoexisting) {
                // print("EDEDEDEDEDEDEDEDED totalnewpercent ",totalnewpercent,"\n");
                 eosiosystem::lockperiodv2 iperiod;
-                iperiod.duration = UNSTAKELOCKDURATIONSECONDS;
+                iperiod.duration = insertperiod;
                 iperiod.amount = amount;
                 newperiods.insert(newperiods.begin() + insertindex, iperiod);
             }
