@@ -368,7 +368,6 @@ namespace fioio {
             std::transform(chain_code.begin(), chain_code.end(),chain_code.begin(), ::toupper);
 
             FioAddress fa;
-            uint32_t expiration_time;
             getFioAddressStruct(fio_domain, fa);
             uint128_t domainHash = string_to_uint128_hash(fio_domain);
             fio_400_assert(fa.domainOnly, "fio_domain", fio_domain, "Invalid FIO domain",
@@ -384,11 +383,6 @@ namespace fioio {
             fio_400_assert(domains_iter->account == actor.value, "fio_domain", fio_domain,
                            "Actor and domain owner mismatch.",
                            ErrorDomainNotRegistered);
-
-            const uint32_t present_time = now();
-            const uint32_t domain_expiration = domains_iter->expiration;
-            fio_400_assert(present_time <= domain_expiration, "fio_domain", fio_domain, "FIO Domain expired",
-                           ErrorDomainExpired);
 
             //Oracle fee is transferred from actor account to all registered oracles in even amount.
             auto idx = oracles.begin();
@@ -430,6 +424,8 @@ namespace fioio {
                 idx++;
             }
 
+            const uint32_t present_time = now();
+
             //Copy information to receipt table
             receipts.emplace(actor, [&](struct oracleledger &p) {
                 p.id = receipts.available_primary_key();
@@ -440,7 +436,7 @@ namespace fioio {
                 p.timestamp = present_time;
             });
 
-            //Transfer Domain
+            //Transfer Domain to escrow
             action(
                     permission_level{FIOORACLEContract, "active"_n},
                     AddressContract,
