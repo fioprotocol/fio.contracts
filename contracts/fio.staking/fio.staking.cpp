@@ -543,17 +543,20 @@ public:
             uint32_t lastperiodduration = 0;
             int insertindex = -1;
             uint32_t daysforperiod = 0;
+            bool foundinsix = false;
 
             for (int i = 0; i < lockiter->periods.size(); i++) {
                 daysforperiod = (lockiter->timestamp + lockiter->periods[i].duration)/SECONDSPERDAY;
                 uint64_t amountthisperiod = lockiter->periods[i].amount;
-                if (daysforperiod >= insertday) {
+                //only set the insertindex on the first one greater than or equal.
+                if ((daysforperiod >= insertday) && !foundinsix) {
                     insertindex = newperiods.size();
                     //always insert into the same day.
                    if (daysforperiod == insertday) {
                         insertintoexisting = true;
                         amountthisperiod += (stakingrewardamount + amount);
                     }
+                    foundinsix = true;
                 }
                 lastperiodduration = lockiter->periods[i].duration;
                 eosiosystem::lockperiodv2 tperiod;
