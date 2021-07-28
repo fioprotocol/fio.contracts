@@ -445,7 +445,7 @@ public:
         //Staking Reward Amount is computed: ((SRPs to Claim * Rate of Exchnage) - Unstake amount) * 0.9
         uint64_t stakingrewardamount = tenpercent * 9;
         if(debugout) {
-            print(" staking reward amount is ", totalrewardamount);
+            print(" staking reward amount is ", stakingrewardamount);
         }
         // TPID Reward Amount is computed: ((SRPs to Claim * Rate of Exchnage) - Unstake amount) * 0.1
         uint64_t tpidrewardamount = tenpercent;
@@ -522,6 +522,9 @@ public:
             //if they have general locks then adapt the locks.
             //get the amount of the lock.
             int64_t newlockamount = lockiter->lock_amount + (stakingrewardamount + amount);
+            if(debugout){
+                print (" New lock amount is ",newlockamount);
+            }
             //get the remaining unlocked of the lock.
             int64_t newremaininglockamount = lockiter->remaining_lock_amount + (stakingrewardamount + amount);
             //get the timestamp of the lock.
@@ -547,7 +550,7 @@ public:
                 if (daysforperiod >= insertday) {
                     insertindex = newperiods.size();
                     //always insert into the same day.
-                    if (daysforperiod == insertday) {
+                   if (daysforperiod == insertday) {
                         insertintoexisting = true;
                         amountthisperiod += (stakingrewardamount + amount);
                     }
@@ -572,12 +575,21 @@ public:
 
             //add the period to the list.
             if (!insertintoexisting) {
-               // print("EDEDEDEDEDEDEDEDED totalnewpercent ",totalnewpercent,"\n");
+               // print(" totalnewpercent ",totalnewpercent,"\n");
                 eosiosystem::lockperiodv2 iperiod;
                 iperiod.duration = insertperiod;
                 iperiod.amount = amount;
-                newperiods.insert(newperiods.begin() + insertindex, iperiod);
+                if (debugout){
+                    print (" adding element at index ",insertindex);
+                }
+                if (insertindex == -1) {
+                    //insert at the end of the list, my duration is greater than all in the list.
+                    newperiods.push_back(iperiod);
+                }else {
+                        newperiods.insert(newperiods.begin() + insertindex, iperiod);
+                }
             }
+
 
            //update the locks table..   modgenlocked
             action(
