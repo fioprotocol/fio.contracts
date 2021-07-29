@@ -32,7 +32,7 @@ private:
         //access to general locks to adapt general locks on unstake
         eosiosystem::general_locks_table_v2 generallocks;
         //debug output flag
-        bool debugout = false;
+        bool debugout = true;
 
 public:
         using contract::contract;
@@ -62,9 +62,17 @@ public:
         eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
                       has_auth(STAKINGACCOUNT) ||  has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) || has_auth(FeeContract)),
                      "missing required authority of fio.address, fio.treasury, fio.fee, fio.token, fio.stakng, eosio or fio.reqobt");
+
+
         gstaking.rewards_token_pool += fioamountsufs;
         gstaking.daily_staking_rewards += fioamountsufs;
         gstaking.combined_token_pool += fioamountsufs;
+
+        if (debugout) {
+            print(" rewards token pool incremented to ", gstaking.rewards_token_pool);
+            print(" daily staking rewards incremented to ", gstaking.daily_staking_rewards);
+            print(" combined_token_pool incremented to ", gstaking.combined_token_pool);
+        }
      }
 
      //recorddaily will perform the daily update of global state, when bps claim rewards.
@@ -78,6 +86,9 @@ public:
         }
         gstaking.combined_token_pool += gstaking.daily_staking_rewards;
         gstaking.daily_staking_rewards = 0;
+        if(debugout){
+            print("recorddaily completed successfully.");
+        }
     }
 
     //this action performs staking of fio tokens
@@ -227,33 +238,31 @@ public:
             ).send();
         }
 
-
-        //compute rate of exchange and SRPs
-        uint64_t rateofexchange =  1;
+        //compute rate of exchange
+        uint64_t rateofexchange =  1000000000;
         if (gstaking.combined_token_pool >= COMBINEDTOKENPOOLMINIMUM) {
-            if (debugout) {
+            if(debugout) {
                 print(" global srp count ", gstaking.global_srp_count);
                 print(" combined_token_pool ", gstaking.combined_token_pool);
             }
-            rateofexchange = gstaking.combined_token_pool / gstaking.global_srp_count;
-            if(debugout) {
+            rateofexchange = (uint64_t)((double)((double)(gstaking.combined_token_pool) / (double)(gstaking.global_srp_count)) * 1000000000.0);
+            if (debugout) {
                 print(" rate of exchange set to ", rateofexchange);
             }
-            if(rateofexchange < 1) {
+            if(rateofexchange < 1000000000) {
                 if(debugout) {
                     print(" RATE OF EXCHANGE LESS THAN 1 ", rateofexchange);
                 }
-                rateofexchange = 1;
+                rateofexchange = 1000000000;
             }
         }
 
-        uint64_t srptoaward = amount / rateofexchange;
+        uint64_t srptoaward = (uint64_t)((double)amount / (double) ((double)rateofexchange / 1000000000.0));
 
         //update global staking state
         gstaking.combined_token_pool += amount;
         gstaking.global_srp_count += srptoaward;
         gstaking.staked_token_pool += amount;
-
 
         //update account staking info
         auto astakebyaccount = accountstaking.get_index<"byaccount"_n>();
@@ -375,6 +384,9 @@ public:
             process_rewards(tpid, fee_amount,get_self(), actor);
 
             if (fee_amount > 0) {
+                if (debugout) {
+                    print("collecting fee amount ", fee_amount, "\n");
+                }
                 INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
                         ("eosio"_n, {{_self, "active"_n}},
                          {actor, true}
@@ -401,26 +413,34 @@ public:
             print("srps to claim is ", to_string(srpstoclaim), "\n");
         }
         //compute rate of exchange
-        uint64_t rateofexchange =  1;
+        uint64_t rateofexchange =  1000000000;
         if (gstaking.combined_token_pool >= COMBINEDTOKENPOOLMINIMUM) {
             if(debugout) {
                 print(" global srp count ", gstaking.global_srp_count);
                 print(" combined_token_pool ", gstaking.combined_token_pool);
             }
-            rateofexchange = gstaking.combined_token_pool / gstaking.global_srp_count;
+           rateofexchange = (uint64_t)((double)((double)(gstaking.combined_token_pool) / (double)(gstaking.global_srp_count)) * 1000000000.0);
             if (debugout) {
                 print(" rate of exchange set to ", rateofexchange);
             }
-            if(rateofexchange < 1) {
+            if(rateofexchange < 1000000000) {
                 if(debugout) {
                     print(" RATE OF EXCHANGE LESS THAN 1 ", rateofexchange);
                 }
-                rateofexchange = 1;
+                rateofexchange = 1000000000;
             }
         }
 
-        eosio_assert((srpstoclaim * rateofexchange) >= amount, "unstakefio, invalid calc in totalrewardamount, must be that (srpstoclaim * rateofexchange) > amount. ");
-        uint64_t totalrewardamount = ((srpstoclaim * rateofexchange) - amount);
+        uint64_t srpsclaimed = (uint64_t)((double)srpstoclaim * ((double)rateofexchange/1000000000.0));
+        const string message = "unstakefio, srps to claim "+ to_string(srpstoclaim) + " rate of exchange "+ to_string(rateofexchange) +
+                " srpsclaimed " + to_string(srpsclaimed) + " amount "+ to_string(amount) + " srpsclaimed must be >= amount. "
+                         " must be greater than or equal srpstoclaim " + to_string(srpstoclaim) ;
+        if (debugout){
+            print(message, "\n");
+        }
+        const char* mptr = &message[0];
+        eosio_assert(srpsclaimed >= amount, mptr);
+        uint64_t totalrewardamount = (srpsclaimed  - amount);
         if(debugout) {
             print("total reward amount is ", totalrewardamount);
         }
@@ -428,10 +448,12 @@ public:
         //Staking Reward Amount is computed: ((SRPs to Claim * Rate of Exchnage) - Unstake amount) * 0.9
         uint64_t stakingrewardamount = tenpercent * 9;
         if(debugout) {
-            print(" staking reward amount is ", totalrewardamount);
+            print(" staking reward amount is ", stakingrewardamount);
         }
         // TPID Reward Amount is computed: ((SRPs to Claim * Rate of Exchnage) - Unstake amount) * 0.1
         uint64_t tpidrewardamount = tenpercent;
+
+
 
         //decrement staking by account.
         eosio_assert(astakeiter->total_srp >= srpstoclaim,"unstakefio, total srp for account must be greater than or equal srpstoclaim." );
@@ -504,6 +526,9 @@ public:
             //if they have general locks then adapt the locks.
             //get the amount of the lock.
             int64_t newlockamount = lockiter->lock_amount + (stakingrewardamount + amount);
+            if(debugout){
+                print (" New lock amount is ",newlockamount);
+            }
             //get the remaining unlocked of the lock.
             int64_t newremaininglockamount = lockiter->remaining_lock_amount + (stakingrewardamount + amount);
             //get the timestamp of the lock.
@@ -522,17 +547,20 @@ public:
             uint32_t lastperiodduration = 0;
             int insertindex = -1;
             uint32_t daysforperiod = 0;
+            bool foundinsix = false;
 
             for (int i = 0; i < lockiter->periods.size(); i++) {
                 daysforperiod = (lockiter->timestamp + lockiter->periods[i].duration)/10;
                 uint64_t amountthisperiod = lockiter->periods[i].amount;
-                if (daysforperiod >= insertday) {
+                //only set the insertindex on the first one greater than or equal.
+                if ((daysforperiod >= insertday) && !foundinsix) {
                     insertindex = newperiods.size();
                     //always insert into the same day.
-                    if (daysforperiod == insertday) {
+                   if (daysforperiod == insertday) {
                         insertintoexisting = true;
                         amountthisperiod += (stakingrewardamount + amount);
                     }
+                    foundinsix = true;
                 }
                 lastperiodduration = lockiter->periods[i].duration;
                 eosiosystem::lockperiodv2 tperiod;
@@ -554,12 +582,21 @@ public:
 
             //add the period to the list.
             if (!insertintoexisting) {
-               // print("EDEDEDEDEDEDEDEDED totalnewpercent ",totalnewpercent,"\n");
+               // print(" totalnewpercent ",totalnewpercent,"\n");
                 eosiosystem::lockperiodv2 iperiod;
                 iperiod.duration = insertperiod;
                 iperiod.amount = amount;
-                newperiods.insert(newperiods.begin() + insertindex, iperiod);
+                if (debugout){
+                    print (" adding element at index ",insertindex);
+                }
+                if (insertindex == -1) {
+                    //insert at the end of the list, my duration is greater than all in the list.
+                    newperiods.push_back(iperiod);
+                }else {
+                        newperiods.insert(newperiods.begin() + insertindex, iperiod);
+                }
             }
+
 
            //update the locks table..   modgenlocked
             action(
