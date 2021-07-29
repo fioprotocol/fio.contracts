@@ -328,6 +328,9 @@ public:
 
         auto astakebyaccount = accountstaking.get_index<"byaccount"_n>();
         auto astakeiter = astakebyaccount.find(actor.value);
+
+        cout << "stake debug 1" << astakeiter << "stake debug 2" << astakebyaccount.end() << endl;
+
         eosio_assert(astakeiter != astakebyaccount.end(),"incacctstake, actor has no accountstake record." );
         eosio_assert(astakeiter->account == actor,"incacctstake, actor accountstake lookup error." );
         fio_400_assert(astakeiter->total_staked_fio >= amount, "amount", to_string(amount), "Cannot unstake more than staked.",
@@ -492,7 +495,7 @@ public:
 
         //7 days unstaking lock duration.
         //int64_t UNSTAKELOCKDURATIONSECONDS = 604800;
-        int64_t UNSTAKELOCKDURATIONSECONDS = 60;
+        int64_t UNSTAKELOCKDURATIONSECONDS = 70;
 
         //look and see if they have any general locks.
         auto locks_by_owner = generallocks.get_index<"byowner"_n>();
@@ -507,7 +510,7 @@ public:
             uint32_t insertperiod = (present_time - lockiter->timestamp) + UNSTAKELOCKDURATIONSECONDS;
 
             //the days since launch.
-            uint32_t insertday = (lockiter->timestamp + insertperiod) / SECONDSPERDAY;
+            uint32_t insertday = (lockiter->timestamp + insertperiod) / 10;
             //if your duration is less than this the period is in the past.
             uint32_t expirednowduration = present_time - lockiter->timestamp;
             uint32_t payouts = lockiter->payouts_performed;
@@ -521,7 +524,7 @@ public:
             uint32_t daysforperiod = 0;
 
             for (int i = 0; i < lockiter->periods.size(); i++) {
-                daysforperiod = (lockiter->timestamp + lockiter->periods[i].duration)/SECONDSPERDAY;
+                daysforperiod = (lockiter->timestamp + lockiter->periods[i].duration)/10;
                 uint64_t amountthisperiod = lockiter->periods[i].amount;
                 if (daysforperiod >= insertday) {
                     insertindex = newperiods.size();
