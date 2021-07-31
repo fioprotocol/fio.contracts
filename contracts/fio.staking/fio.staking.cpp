@@ -13,6 +13,8 @@
 #include <fio.fee/fio.fee.hpp>
 #include <fio.system/include/fio.system/fio.system.hpp>
 
+#define ENABLESTAKINGREWARDSEPOCHSEC  1627686000  //July 30 5:00PM MST 11:00PM GMT
+
 namespace fioio {
 
 class [[eosio::contract("Staking")]]  Staking: public eosio::contract {
@@ -97,6 +99,7 @@ public:
                          const string &tpid, const name &actor) {
         //signer not actor.
         require_auth(actor);
+        const uint32_t present_time = now();
 
         if(debugout) {
             print(" calling stakefio fio address ", fio_address);
@@ -121,7 +124,7 @@ public:
             fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature);
 
             const uint32_t expiration = fioname_iter->expiration;
-            const uint32_t present_time = now();
+
             fio_400_assert(present_time <= expiration, "fio_address", fio_address, "FIO Address expired. Renew first.",
                            ErrorDomainExpired);
             bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
@@ -240,7 +243,8 @@ public:
 
         //compute rate of exchange
         uint64_t rateofexchange =  1000000000;
-        if (gstaking.combined_token_pool >= COMBINEDTOKENPOOLMINIMUM) {
+
+        if ((gstaking.combined_token_pool >= COMBINEDTOKENPOOLMINIMUM) && (present_time > ENABLESTAKINGREWARDSEPOCHSEC)) {
             if(debugout) {
                 print(" global srp count ", gstaking.global_srp_count);
                 print(" combined_token_pool ", gstaking.combined_token_pool);
@@ -411,7 +415,7 @@ public:
         }
         //compute rate of exchange
         uint64_t rateofexchange =  1000000000;
-        if (gstaking.combined_token_pool >= COMBINEDTOKENPOOLMINIMUM) {
+        if ((gstaking.combined_token_pool >= COMBINEDTOKENPOOLMINIMUM) && (present_time > ENABLESTAKINGREWARDSEPOCHSEC)) {
             if(debugout) {
                 print(" global srp count ", gstaking.global_srp_count);
                 print(" combined_token_pool ", gstaking.combined_token_pool);
