@@ -29,12 +29,14 @@ namespace fioio {
         uint64_t sale_price = 0;
         double commission_fee = 0;
         uint64_t date_listed;
-        uint8_t status; // status = 1: on sale, status = 2: Sold, status = 3; Cancelled
-        uint64_t date_updated = 0; // 0 until either sold or cancelled
+        uint64_t status; // status = 1: on sale, status = 2: Sold, status = 3; Cancelled
+        uint64_t date_updated;
 
         uint64_t primary_key() const { return id; }
         uint128_t by_domain() const { return domainhash; }
         uint128_t by_owner() const { return ownerhash; }
+        uint64_t by_status() const { return status; }
+        uint64_t by_updated() const { return date_updated; }
 
         EOSLIB_SERIALIZE(domainsale,
                          (id)(owner)(ownerhash)
@@ -44,9 +46,11 @@ namespace fioio {
         )
     };
 
-    typedef multi_index<"domainsales"_n, domainsale,
-            indexed_by<"bydomain"_n, const_mem_fun<domainsale, uint128_t, &domainsale::by_domain>>,
-            indexed_by<"byowner"_n, const_mem_fun<domainsale, uint128_t, &domainsale::by_owner>>
+    typedef multi_index<"domainsales"_n, domainsale
+            ,indexed_by<"bydomain"_n, const_mem_fun<domainsale, uint128_t, &domainsale::by_domain>>
+            ,indexed_by<"byowner"_n, const_mem_fun<domainsale, uint128_t, &domainsale::by_owner>>
+            ,indexed_by<"bystatus"_n, const_mem_fun<domainsale, uint64_t, &domainsale::by_status>>
+            ,indexed_by<"byupdated"_n, const_mem_fun<domainsale, uint64_t, &domainsale::by_updated>>
     >
     domainsales_table;
 
@@ -67,10 +71,7 @@ namespace fioio {
         )
     };
 
-    typedef multi_index<"mrkplconfigs"_n, mrkplconfig,
-            indexed_by<"byowner"_n, const_mem_fun<mrkplconfig, uint128_t, &mrkplconfig::by_owner>>
-    >
-    mrkplconfigs_table;
+    typedef multi_index<"mrkplconfigs"_n, mrkplconfig> mrkplconfigs_table;
 }
 
 #endif //FIO_CONTRACTS_FIO_ESCROW_H
