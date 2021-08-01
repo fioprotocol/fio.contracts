@@ -40,7 +40,7 @@
         },
         {
           "name": "status",
-          "type": "uint8"
+          "type": "uint64"
         },
         {
           "name": "date_updated",
