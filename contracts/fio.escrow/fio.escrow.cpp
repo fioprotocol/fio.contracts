@@ -48,6 +48,7 @@ namespace fioio {
                 d.sale_price     = sale_price;
                 d.commission_fee = commission_fee;
                 d.date_listed    = now();
+                d.date_updated   = now();
                 d.status         = 1; // status = 1: on sale, status = 2: Sold, status = 3; Cancelled
             });
             return id;
@@ -71,6 +72,8 @@ namespace fioio {
 
             fio_400_assert(sale_price >= 1000000000, "sale_price", std::to_string(sale_price),
                            "Sale price should be greater than 1 FIO (1,000,000,000 SUF)", ErrorInvalidAmount);
+            fio_400_assert(sale_price <= 999999000000000, "sale_price", std::to_string(sale_price),
+                           "Sale price should be less than 999,999 FIO (999,999,000,000,000 SUF)", ErrorInvalidAmount);
             fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
                            "TPID must be empty or valid FIO address",
                            ErrorPubKeyValid);
@@ -336,7 +339,7 @@ namespace fioio {
                    make_tuple(actor, domainsale_iter->owner, toBuyer, string("Domain Purchase"))
             ).send();
 
-            if(marketCommission.amount > 0) {
+            if (marketCommission.amount > 0) {
                 action(permission_level{EscrowContract, "active"_n},
                        TokenContract, "transfer"_n,
                        make_tuple(actor, marketplace_iter->owner, marketCommission, string("Marketplace Commission"))
@@ -414,7 +417,7 @@ namespace fioio {
 
             bool isMsig;
 
-            if(has_auth(SYSTEMACCOUNT) || has_auth(EscrowContract)){
+            if (has_auth(SYSTEMACCOUNT) || has_auth(EscrowContract)) {
                 isMsig = true;
             } else {
                 require_auth(actor);
@@ -439,7 +442,7 @@ namespace fioio {
                            "E-break setting must be present", ErrorNoWork);
 
             const bool accountExists = is_account(actor);
-            auto acctmap_itr = accountmap.find(actor.value);
+            auto       acctmap_itr   = accountmap.find(actor.value);
 
             fio_400_assert(acctmap_itr != accountmap.end(), "actor", actor.to_string(),
                            "Account is not bound on the fio chain",
@@ -480,7 +483,7 @@ namespace fioio {
             }
 
             // charge fee if it isn't an msig
-            if(!isMsig){
+            if (!isMsig) {
 
                 //fees
                 const uint128_t endpoint_hash = string_to_uint128_hash(LIST_DOMAIN_ENDPOINT);
@@ -526,5 +529,6 @@ namespace fioio {
         } // setmrkplcfg
     }; // class FioEscrow
 
-    EOSIO_DISPATCH(FioEscrow, (listdomain)(cxlistdomain)(buydomain)(setmrkplcfg))
+    EOSIO_DISPATCH(FioEscrow, (listdomain)(cxlistdomain)(buydomain)
+    (setmrkplcfg))
 }
