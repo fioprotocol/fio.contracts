@@ -526,19 +526,23 @@ public:
             //if they have general locks then adapt the locks.
             //get the amount of the lock.
             int64_t newlockamount = lockiter->lock_amount + (stakingrewardamount + amount);
-            if(debugout){
-                print (" New lock amount is ",newlockamount);
-            }
+
             //get the remaining unlocked of the lock.
             int64_t newremaininglockamount = lockiter->remaining_lock_amount + (stakingrewardamount + amount);
             //get the timestamp of the lock.
             uint32_t insertperiod = (present_time - lockiter->timestamp) + UNSTAKELOCKDURATIONSECONDS;
-
+            if(debugout){
+                print (" New lock amount is ",newlockamount,"\n");
+                print (" newremaininglockamount ",newremaininglockamount,"\n");
+            }
             //the days since launch.
             uint32_t insertday = (lockiter->timestamp + insertperiod) / SECONDSPERDAY;
             //if your duration is less than this the period is in the past.
             uint32_t expirednowduration = present_time - lockiter->timestamp;
             uint32_t payouts = lockiter->payouts_performed;
+            if(debugout){
+                print ("number of payouts performed is ",payouts,"\n");
+            }
 
 
             vector <eosiosystem::lockperiodv2> newperiods;
@@ -568,14 +572,24 @@ public:
                 tperiod.amount = amountthisperiod;
 
                 //only those periods not in the past go into the list of periods.
-                //remove old periods.
+                //remove old periods. be sure to adapt the lock information correctly when
+                //removing locking periods, sometimes the lock period has not been paid, but
+                //is in the past and gets removed.
                 if( tperiod.duration >= expirednowduration) {
                     newperiods.push_back(tperiod);
-                }else{
-                    eosio_assert(payouts > 0 ,"unstakefio,  internal error decrementing payouts. " );
+                }else{ //we are not placing into the result list, so adapt the lock info.
                     newlockamount -= tperiod.amount;
-                    eosio_assert(newlockamount >= newremaininglockamount,"unstakefio, inconsistent general lock state lock amount less than remaining lock amount. " );
-                    payouts --;
+                    if((newlockamount < newremaininglockamount)&&(payouts == 0)){
+                         //if we are removing a lock period that has not been paid out yet adapt the remaining lock amount.
+                         newremaininglockamount = newlockamount;
+                    }
+                     else{
+                         //this check is here for code safety. if there were payouts left we should never see newlockamount < newremaininglockamount
+                         eosio_assert(newlockamount >= newremaininglockamount,"unstakefio, inconsistent general lock state lock amount less than remaining lock amount. " );
+                     }
+                    if(payouts >0) {
+                        payouts--;
+                    }
                 }
             }
 
