@@ -338,8 +338,6 @@ public:
         auto astakebyaccount = accountstaking.get_index<"byaccount"_n>();
         auto astakeiter = astakebyaccount.find(actor.value);
 
-        cout << "stake debug 1" << astakeiter << "stake debug 2" << astakebyaccount.end() << endl;
-
         eosio_assert(astakeiter != astakebyaccount.end(),"incacctstake, actor has no accountstake record." );
         eosio_assert(astakeiter->account == actor,"incacctstake, actor accountstake lookup error." );
         fio_400_assert(astakeiter->total_staked_fio >= amount, "amount", to_string(amount), "Cannot unstake more than staked.",
@@ -572,6 +570,7 @@ public:
                 if( tperiod.duration >= expirednowduration) {
                     newperiods.push_back(tperiod);
                 }else{
+                    print ("[DBG] payouts ", payouts, " tperiod duration: ", tperiod.duration, " expirednowduration: ", expirednowduration);
                     eosio_assert(payouts > 0 ,"unstakefio,  internal error decrementing payouts. " );
                     newlockamount -= tperiod.amount;
                     eosio_assert(newlockamount >= newremaininglockamount,"unstakefio, inconsistent general lock state lock amount less than remaining lock amount. " );
