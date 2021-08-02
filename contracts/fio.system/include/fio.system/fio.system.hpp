@@ -167,11 +167,11 @@ struct lockperiodv2 {
 struct [[eosio::table, eosio::contract("fio.system")]] locked_tokens_info_v2 {
     int64_t id; //this is the identifier of the lock, primary key
     name owner_account; //this is the account that owns the lock, secondary key
-    int64_t lock_amount = 0; //this is the amount of the lock in FIO SUF
-    int32_t payouts_performed = 0; //this is the number of payouts performed thus far.
+    uint64_t lock_amount = 0; //this is the amount of the lock in FIO SUF
+    uint32_t payouts_performed = 0; //this is the number of payouts performed thus far.
     int32_t can_vote = 0; //this is the flag indicating if the lock is votable/proxy-able
     std::vector<lockperiodv2> periods;// this is the locking periods for the lock
-    int64_t remaining_lock_amount = 0; //this is the amount remaining in the lock in FIO SUF, get decremented as unlocking occurs.
+    uint64_t remaining_lock_amount = 0; //this is the amount remaining in the lock in FIO SUF, get decremented as unlocking occurs.
     uint32_t timestamp = 0; //this is the time of creation of the lock, locking periods are relative to this time.
 
     uint64_t primary_key() const { return id; }
