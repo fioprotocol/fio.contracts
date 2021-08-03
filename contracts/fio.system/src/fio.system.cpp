@@ -216,6 +216,9 @@ namespace eosiosystem {
                 a.remaining_locked_amount = amount;
                 a.timestamp = now();
             });
+        //return status added for staking, to permit unit testing using typescript sdk.
+        const string response_string = string("{\"status\": \"OK\"}");
+        send_response(response_string.c_str());
     }
 
     void eosiosystem::system_contract::addgenlocked(const name &owner, const vector<lockperiodv2> &periods, const bool &canvote,

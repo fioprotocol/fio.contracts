@@ -13,6 +13,8 @@
 #include <fio.fee/fio.fee.hpp>
 #include <fio.system/include/fio.system/fio.system.hpp>
 
+#define ENABLESTAKINGREWARDSEPOCHSEC  1627686000  //July 30 5:00PM MST 11:00PM GMT
+
 namespace fioio {
 
 class [[eosio::contract("Staking")]]  Staking: public eosio::contract {
@@ -32,7 +34,7 @@ private:
         //access to general locks to adapt general locks on unstake
         eosiosystem::general_locks_table_v2 generallocks;
         //debug output flag
-        bool debugout = false;
+        bool debugout = true;
 
 public:
         using contract::contract;
@@ -62,9 +64,17 @@ public:
         eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
                       has_auth(STAKINGACCOUNT) ||  has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) || has_auth(FeeContract)),
                      "missing required authority of fio.address, fio.treasury, fio.fee, fio.token, fio.stakng, eosio or fio.reqobt");
+
+
         gstaking.rewards_token_pool += fioamountsufs;
         gstaking.daily_staking_rewards += fioamountsufs;
         gstaking.combined_token_pool += fioamountsufs;
+
+        if (debugout) {
+            print(" rewards token pool incremented to ", gstaking.rewards_token_pool);
+            print(" daily staking rewards incremented to ", gstaking.daily_staking_rewards);
+            print(" combined_token_pool incremented to ", gstaking.combined_token_pool);
+        }
      }
 
      //recorddaily will perform the daily update of global state, when bps claim rewards.
@@ -78,6 +88,9 @@ public:
         }
         gstaking.combined_token_pool += gstaking.daily_staking_rewards;
         gstaking.daily_staking_rewards = 0;
+        if(debugout){
+            print("recorddaily completed successfully.");
+        }
     }
 
     //this action performs staking of fio tokens
@@ -86,6 +99,7 @@ public:
                          const string &tpid, const name &actor) {
         //signer not actor.
         require_auth(actor);
+        const uint32_t present_time = now();
 
         if(debugout) {
             print(" calling stakefio fio address ", fio_address);
@@ -103,13 +117,14 @@ public:
             const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
             auto namesbyname = fionames.get_index<"byname"_n>();
             auto fioname_iter = namesbyname.find(nameHash);
+
             fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fa.fioaddress,
                            "FIO Address not registered", ErrorFioNameAlreadyRegistered);
 
             fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature);
 
             const uint32_t expiration = fioname_iter->expiration;
-            const uint32_t present_time = now();
+
             fio_400_assert(present_time <= expiration, "fio_address", fio_address, "FIO Address expired. Renew first.",
                            ErrorDomainExpired);
             bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
@@ -143,31 +158,36 @@ public:
                     make_tuple(fio_address, 1)
             }.send();
 
-            if (debugout) {
-                print(" calling process auto proxy with ", tpid);
-            }
-            set_auto_proxy(tpid, 0,get_self(), actor);
+            if (!tpid.empty()) {
+                if (debugout) {
+                    print(" calling process auto proxy with ", tpid);
+                }
+                set_auto_proxy(tpid, 0,get_self(), actor);
 
-            //when a tpid is used, if this is the first call for this account to use a tpid,
-            //then the auto proxy will be set in an inline action which executes outside of this
-            //execution stack. We check if the tpid is a proxy, and if it is then we know that
-            //the owner will be auto proxied in this transaction, but in an action outside of this one.
-            //so we set a local flag to skip the checks for the "has voted" requirement since we
-            //know the owner is auto proxied, this handles the edge condition if the staking is called
-            //very early by a new account integrated using tpid.
-            FioAddress fa1;
-            getFioAddressStruct(tpid, fa1);
-            const uint128_t nameHash = string_to_uint128_hash(fa1.fioaddress.c_str());
-            auto namesbyname = fionames.get_index<"byname"_n>();
-            auto fioname_iter = namesbyname.find(nameHash);
-            fio_400_assert(fioname_iter != namesbyname.end(), "tpid", fa.fioaddress,
-                           "FIO Address not registered", ErrorFioNameAlreadyRegistered);
-            //now use the owner to find the voting record.
-            auto votersbyowner = voters.get_index<"byowner"_n>();
-            const auto viter = votersbyowner.find(fioname_iter->owner_account);
-            if (viter != votersbyowner.end()) {
-                if (viter->is_proxy){
-                    skipvotecheck = true;
+                //when a tpid is used, if this is the first call for this account to use a tpid,
+                //then the auto proxy will be set in an inline action which executes outside of this
+                //execution stack. We check if the tpid is a proxy, and if it is then we know that
+                //the owner will be auto proxied in this transaction, but in an action outside of this one.
+                //so we set a local flag to skip the checks for the "has voted" requirement since we
+                //know the owner is auto proxied, this handles the edge condition if the staking is called
+                //very early by a new account integrated using tpid.
+
+
+                FioAddress fa1;
+                getFioAddressStruct(tpid, fa1);
+
+                const uint128_t nameHash = string_to_uint128_hash(fa1.fioaddress.c_str());
+                auto namesbyname = fionames.get_index<"byname"_n>();
+                auto fioname_iter = namesbyname.find(nameHash);
+                fio_400_assert(fioname_iter != namesbyname.end(), "tpid", fa1.fioaddress,
+                               "FIO Address not registered", ErrorFioNameAlreadyRegistered);
+                //now use the owner to find the voting record.
+                auto votersbyowner = voters.get_index<"byowner"_n>();
+                const auto viter = votersbyowner.find(fioname_iter->owner_account);
+                if (viter != votersbyowner.end()) {
+                    if (viter->is_proxy) {
+                        skipvotecheck = true;
+                    }
                 }
             }
 
@@ -221,33 +241,32 @@ public:
             ).send();
         }
 
+        //compute rate of exchange
+        uint64_t rateofexchange =  1000000000;
 
-        //compute rate of exchange and SRPs
-        uint64_t rateofexchange =  1;
-        if (gstaking.combined_token_pool >= COMBINEDTOKENPOOLMINIMUM) {
-            if (debugout) {
+        if ((gstaking.combined_token_pool >= COMBINEDTOKENPOOLMINIMUM) && (present_time > ENABLESTAKINGREWARDSEPOCHSEC)) {
+            if(debugout) {
                 print(" global srp count ", gstaking.global_srp_count);
                 print(" combined_token_pool ", gstaking.combined_token_pool);
             }
-            rateofexchange = gstaking.combined_token_pool / gstaking.global_srp_count;
-            if(debugout) {
+            rateofexchange = (uint64_t)((double)((double)(gstaking.combined_token_pool) / (double)(gstaking.global_srp_count)) * 1000000000.0);
+            if (debugout) {
                 print(" rate of exchange set to ", rateofexchange);
             }
-            if(rateofexchange < 1) {
+            if(rateofexchange < 1000000000) {
                 if(debugout) {
                     print(" RATE OF EXCHANGE LESS THAN 1 ", rateofexchange);
                 }
-                rateofexchange = 1;
+                rateofexchange = 1000000000;
             }
         }
 
-        uint64_t srptoaward = amount / rateofexchange;
+        uint64_t srptoaward = (uint64_t)((double)amount / (double) ((double)rateofexchange / 1000000000.0));
 
         //update global staking state
         gstaking.combined_token_pool += amount;
         gstaking.global_srp_count += srptoaward;
         gstaking.staked_token_pool += amount;
-
 
         //update account staking info
         auto astakebyaccount = accountstaking.get_index<"byaccount"_n>();
@@ -331,7 +350,7 @@ public:
         auto stakeablebalance = eosio::token::computeusablebalance(actor,false);
 
         uint64_t paid_fee_amount = 0;
-        //begin, bundle eligible fee logic for staking
+        //begin, bundle eligible fee logic for unstaking
         const uint128_t endpoint_hash = string_to_uint128_hash(UNSTAKE_FIO_TOKENS_ENDPOINT);
 
         auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
@@ -366,15 +385,15 @@ public:
             process_rewards(tpid, fee_amount,get_self(), actor);
 
             if (fee_amount > 0) {
+                if (debugout) {
+                    print("collecting fee amount ", fee_amount, "\n");
+                }
                 INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
                         ("eosio"_n, {{_self, "active"_n}},
                          {actor, true}
                         );
             }
         }
-
-        //fio_400_assert(stakeablebalance >= (paid_fee_amount + (uint64_t)amount), "max_fee", to_string(max_fee), "Insufficient balance.",
-         //              ErrorMaxFeeExceeded);
         //End, bundle eligible fee logic for staking
 
         //RAM bump
@@ -387,7 +406,7 @@ public:
             ).send();
         }
         //SRPs to Claim are computed: Staker's Account SRPs * (Unstaked amount / Total Tokens Staked in Staker's Account)
-         //                                             this needs to be a floating point (double) operation
+         //  this needs to be a floating point (double) operation
        //round this to avoid issues with decimal representations
         uint64_t srpstoclaim = (uint64_t)(((double)astakeiter->total_srp * (double)( (double)amount / (double)astakeiter->total_staked_fio))+0.5);
 
@@ -395,26 +414,34 @@ public:
             print("srps to claim is ", to_string(srpstoclaim), "\n");
         }
         //compute rate of exchange
-        uint64_t rateofexchange =  1;
-        if (gstaking.combined_token_pool >= COMBINEDTOKENPOOLMINIMUM) {
+        uint64_t rateofexchange =  1000000000;
+        if ((gstaking.combined_token_pool >= COMBINEDTOKENPOOLMINIMUM) && (present_time > ENABLESTAKINGREWARDSEPOCHSEC)) {
             if(debugout) {
                 print(" global srp count ", gstaking.global_srp_count);
                 print(" combined_token_pool ", gstaking.combined_token_pool);
             }
-            rateofexchange = gstaking.combined_token_pool / gstaking.global_srp_count;
+           rateofexchange = (uint64_t)((double)((double)(gstaking.combined_token_pool) / (double)(gstaking.global_srp_count)) * 1000000000.0);
             if (debugout) {
                 print(" rate of exchange set to ", rateofexchange);
             }
-            if(rateofexchange < 1) {
+            if(rateofexchange < 1000000000) {
                 if(debugout) {
                     print(" RATE OF EXCHANGE LESS THAN 1 ", rateofexchange);
                 }
-                rateofexchange = 1;
+                rateofexchange = 1000000000;
             }
         }
 
-        eosio_assert((srpstoclaim * rateofexchange) >= amount, "unstakefio, invalid calc in totalrewardamount, must be that (srpstoclaim * rateofexchange) > amount. ");
-        uint64_t totalrewardamount = ((srpstoclaim * rateofexchange) - amount);
+        uint64_t srpsclaimed = (uint64_t)((double)srpstoclaim * ((double)rateofexchange/1000000000.0));
+        const string message = "unstakefio, srps to claim "+ to_string(srpstoclaim) + " rate of exchange "+ to_string(rateofexchange) +
+                " srpsclaimed " + to_string(srpsclaimed) + " amount "+ to_string(amount) + " srpsclaimed must be >= amount. "
+                         " must be greater than or equal srpstoclaim " + to_string(srpstoclaim) ;
+        if (debugout){
+            print(message, "\n");
+        }
+        const char* mptr = &message[0];
+        eosio_assert(srpsclaimed >= amount, mptr);
+        uint64_t totalrewardamount = (srpsclaimed  - amount);
         if(debugout) {
             print("total reward amount is ", totalrewardamount);
         }
@@ -422,10 +449,12 @@ public:
         //Staking Reward Amount is computed: ((SRPs to Claim * Rate of Exchnage) - Unstake amount) * 0.9
         uint64_t stakingrewardamount = tenpercent * 9;
         if(debugout) {
-            print(" staking reward amount is ", totalrewardamount);
+            print(" staking reward amount is ", stakingrewardamount);
         }
         // TPID Reward Amount is computed: ((SRPs to Claim * Rate of Exchnage) - Unstake amount) * 0.1
         uint64_t tpidrewardamount = tenpercent;
+
+
 
         //decrement staking by account.
         eosio_assert(astakeiter->total_srp >= srpstoclaim,"unstakefio, total srp for account must be greater than or equal srpstoclaim." );
@@ -487,6 +516,8 @@ public:
             }
         }
 
+        //7 days unstaking lock duration.
+        int64_t UNSTAKELOCKDURATIONSECONDS = 604800;
 
         //look and see if they have any general locks.
         auto locks_by_owner = generallocks.get_index<"byowner"_n>();
@@ -495,15 +526,23 @@ public:
             //if they have general locks then adapt the locks.
             //get the amount of the lock.
             int64_t newlockamount = lockiter->lock_amount + (stakingrewardamount + amount);
+
             //get the remaining unlocked of the lock.
             int64_t newremaininglockamount = lockiter->remaining_lock_amount + (stakingrewardamount + amount);
             //get the timestamp of the lock.
-            uint32_t insertperiod = (present_time - lockiter->timestamp) + 604800;
+            uint32_t insertperiod = (present_time - lockiter->timestamp) + UNSTAKELOCKDURATIONSECONDS;
+            if(debugout){
+                print (" New lock amount is ",newlockamount,"\n");
+                print (" newremaininglockamount ",newremaininglockamount,"\n");
+            }
             //the days since launch.
             uint32_t insertday = (lockiter->timestamp + insertperiod) / SECONDSPERDAY;
             //if your duration is less than this the period is in the past.
             uint32_t expirednowduration = present_time - lockiter->timestamp;
             uint32_t payouts = lockiter->payouts_performed;
+            if(debugout){
+                print ("number of payouts performed is ",payouts,"\n");
+            }
 
 
             vector <eosiosystem::lockperiodv2> newperiods;
@@ -512,17 +551,20 @@ public:
             uint32_t lastperiodduration = 0;
             int insertindex = -1;
             uint32_t daysforperiod = 0;
+            bool foundinsix = false;
 
             for (int i = 0; i < lockiter->periods.size(); i++) {
                 daysforperiod = (lockiter->timestamp + lockiter->periods[i].duration)/SECONDSPERDAY;
                 uint64_t amountthisperiod = lockiter->periods[i].amount;
-                if (daysforperiod >= insertday) {
+                //only set the insertindex on the first one greater than or equal.
+                if ((daysforperiod >= insertday) && !foundinsix) {
                     insertindex = newperiods.size();
                     //always insert into the same day.
-                    if (daysforperiod == insertday) {
+                   if (daysforperiod == insertday) {
                         insertintoexisting = true;
                         amountthisperiod += (stakingrewardamount + amount);
                     }
+                    foundinsix = true;
                 }
                 lastperiodduration = lockiter->periods[i].duration;
                 eosiosystem::lockperiodv2 tperiod;
@@ -530,26 +572,45 @@ public:
                 tperiod.amount = amountthisperiod;
 
                 //only those periods not in the past go into the list of periods.
-                //remove old periods.
+                //remove old periods. be sure to adapt the lock information correctly when
+                //removing locking periods, sometimes the lock period has not been paid, but
+                //is in the past and gets removed.
                 if( tperiod.duration >= expirednowduration) {
                     newperiods.push_back(tperiod);
-                }else{
-                    eosio_assert(payouts > 0 ,"unstakefio,  internal error decrementing payouts. " );
+                }else{ //we are not placing into the result list, so adapt the lock info.
                     newlockamount -= tperiod.amount;
-                    eosio_assert(newlockamount >= newremaininglockamount,"unstakefio, inconsistent general lock state lock amount less than remaining lock amount. " );
-                    payouts --;
+                    if((newlockamount < newremaininglockamount)&&(payouts == 0)){
+                         //if we are removing a lock period that has not been paid out yet adapt the remaining lock amount.
+                         newremaininglockamount = newlockamount;
+                    }
+                     else{
+                         //this check is here for code safety. if there were payouts left we should never see newlockamount < newremaininglockamount
+                         eosio_assert(newlockamount >= newremaininglockamount,"unstakefio, inconsistent general lock state lock amount less than remaining lock amount. " );
+                     }
+                    if(payouts >0) {
+                        payouts--;
+                    }
                 }
             }
 
 
             //add the period to the list.
             if (!insertintoexisting) {
-               // print("EDEDEDEDEDEDEDEDED totalnewpercent ",totalnewpercent,"\n");
+               // print(" totalnewpercent ",totalnewpercent,"\n");
                 eosiosystem::lockperiodv2 iperiod;
                 iperiod.duration = insertperiod;
                 iperiod.amount = amount;
-                newperiods.insert(newperiods.begin() + insertindex, iperiod);
+                if (debugout){
+                    print (" adding element at index ",insertindex);
+                }
+                if (insertindex == -1) {
+                    //insert at the end of the list, my duration is greater than all in the list.
+                    newperiods.push_back(iperiod);
+                }else {
+                        newperiods.insert(newperiods.begin() + insertindex, iperiod);
+                }
             }
+
 
            //update the locks table..   modgenlocked
             action(
@@ -567,7 +628,7 @@ public:
             }
             vector <eosiosystem::lockperiodv2> periods;
             eosiosystem::lockperiodv2 period;
-            period.duration = 604800;
+            period.duration = UNSTAKELOCKDURATIONSECONDS;
             period.amount = lockamount;
             periods.push_back(period);
             INLINE_ACTION_SENDER(eosiosystem::system_contract, addgenlocked)

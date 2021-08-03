@@ -506,11 +506,11 @@ namespace eosio {
                              const name &actor,
                              const string &tpid) {
 
-        fio_400_assert(((periods.size()) >= 1 && (periods.size() <= 365)), "unlock_periods", "Invalid unlock periods",
+        fio_400_assert(((periods.size()) >= 1 && (periods.size() <= 50)), "unlock_periods", "Invalid unlock periods",
                        "Invalid number of unlock periods", ErrorTransactionTooLarge);
         uint64_t tota = 0;
         double tv = 0.0;
-        int64_t longestperiod = 0;
+
         for(int i=0;i<periods.size();i++){
             fio_400_assert(periods[i].amount > 0, "unlock_periods", "Invalid unlock periods",
                            "Invalid amount value in unlock periods", ErrorInvalidUnlockPeriods);
@@ -521,10 +521,8 @@ namespace eosio {
                 fio_400_assert(periods[i].duration > periods[i-1].duration, "unlock_periods", "Invalid unlock periods",
                                "Invalid duration value in unlock periods, must be sorted", ErrorInvalidUnlockPeriods);
             }
-            if (periods[i].duration > longestperiod){
-                longestperiod = periods[i].duration;
-            }
         }
+
         fio_400_assert(tota == amount, "unlock_periods", "Invalid unlock periods",
                        "Invalid total amount for unlock periods", ErrorInvalidUnlockPeriods);
 
@@ -549,8 +547,9 @@ namespace eosio {
         fio_400_assert(max_fee >= reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
                        ErrorMaxFeeExceeded);
 
-        int64_t ninetydayperiods = longestperiod / (SECONDSPERDAY * 90);
-        int64_t rem = longestperiod % (SECONDSPERDAY * 90);
+
+        int64_t ninetydayperiods = periods[periods.size()-1].duration / (SECONDSPERDAY * 90);
+        int64_t rem = periods[periods.size()-1].duration % (SECONDSPERDAY * 90);
         if (rem > 0){
             ninetydayperiods++;
         }
