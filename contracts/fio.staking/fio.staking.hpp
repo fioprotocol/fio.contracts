@@ -29,10 +29,11 @@ namespace fioio {
         uint64_t daily_staking_rewards = 0; //this is used to track the daily staking rewards collected from fees,
         // its used only to determine if the protocol should mint FIO whe rewards are under the DAILYSTAKINGMINTTHRESHOLD
         uint64_t staking_rewards_reserves_minted = 0; //the total amount of FIO used in minting rewards tokens, will not exceed STAKINGREWARDSRESERVEMAXIMUM
+        int64_t staking_rewards_activated = 0; //this flag indicates that the staking rewards has crossed the startup threshold.
 
         EOSLIB_SERIALIZE( global_staking_state,(staked_token_pool)
                 (combined_token_pool)(rewards_token_pool)(global_srp_count)
-                (daily_staking_rewards)(staking_rewards_reserves_minted)
+                (daily_staking_rewards)(staking_rewards_reserves_minted)(staking_rewards_activated)
         )
     };
 

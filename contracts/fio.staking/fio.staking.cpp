@@ -244,7 +244,7 @@ public:
         //compute rate of exchange
         uint64_t rateofexchange =  1000000000;
 
-        if ((gstaking.combined_token_pool >= COMBINEDTOKENPOOLMINIMUM) && (present_time > ENABLESTAKINGREWARDSEPOCHSEC)) {
+        if (gstaking.staking_rewards_activated || ((gstaking.combined_token_pool >= COMBINEDTOKENPOOLMINIMUM) && (present_time > ENABLESTAKINGREWARDSEPOCHSEC))) {
             if(debugout) {
                 print(" global srp count ", gstaking.global_srp_count);
                 print(" combined_token_pool ", gstaking.combined_token_pool);
@@ -258,6 +258,9 @@ public:
                     print(" RATE OF EXCHANGE LESS THAN 1 ", rateofexchange);
                 }
                 rateofexchange = 1000000000;
+            }
+            if(!gstaking.staking_rewards_activated){
+                gstaking.staking_rewards_activated = 1;
             }
         }
 
@@ -413,22 +416,27 @@ public:
         if (debugout) {
             print("srps to claim is ", to_string(srpstoclaim), "\n");
         }
+
         //compute rate of exchange
         uint64_t rateofexchange =  1000000000;
-        if ((gstaking.combined_token_pool >= COMBINEDTOKENPOOLMINIMUM) && (present_time > ENABLESTAKINGREWARDSEPOCHSEC)) {
+
+        if (gstaking.staking_rewards_activated || ((gstaking.combined_token_pool >= COMBINEDTOKENPOOLMINIMUM) && (present_time > ENABLESTAKINGREWARDSEPOCHSEC))) {
             if(debugout) {
-                print(" global srp count ", gstaking.global_srp_count);
+                print(" global srp count ", gstaking.global_srp_count,"\n");
                 print(" combined_token_pool ", gstaking.combined_token_pool);
             }
-           rateofexchange = (uint64_t)((double)((double)(gstaking.combined_token_pool) / (double)(gstaking.global_srp_count)) * 1000000000.0);
+            rateofexchange = (uint64_t)((double)((double)(gstaking.combined_token_pool) / (double)(gstaking.global_srp_count)) * 1000000000.0);
             if (debugout) {
-                print(" rate of exchange set to ", rateofexchange);
+                print(" rate of exchange set to ", rateofexchange,"\n");
             }
             if(rateofexchange < 1000000000) {
                 if(debugout) {
-                    print(" RATE OF EXCHANGE LESS THAN 1 ", rateofexchange);
+                    print(" RATE OF EXCHANGE LESS THAN 1 ", rateofexchange,"\n");
                 }
                 rateofexchange = 1000000000;
+            }
+            if(!gstaking.staking_rewards_activated){
+                gstaking.staking_rewards_activated = 1;
             }
         }
 
@@ -443,13 +451,13 @@ public:
         eosio_assert(srpsclaimed >= amount, mptr);
         uint64_t totalrewardamount = (srpsclaimed  - amount);
         if(debugout) {
-            print("total reward amount is ", totalrewardamount);
+            print("total reward amount is ", totalrewardamount,"\n");
         }
         uint64_t tenpercent = totalrewardamount / 10;
         //Staking Reward Amount is computed: ((SRPs to Claim * Rate of Exchnage) - Unstake amount) * 0.9
         uint64_t stakingrewardamount = tenpercent * 9;
         if(debugout) {
-            print(" staking reward amount is ", stakingrewardamount);
+            print(" staking reward amount is ", stakingrewardamount,"\n");
         }
         // TPID Reward Amount is computed: ((SRPs to Claim * Rate of Exchnage) - Unstake amount) * 0.1
         uint64_t tpidrewardamount = tenpercent;
@@ -490,6 +498,9 @@ public:
         gstaking.global_srp_count -= srpstoclaim;
 
         //pay the tpid.
+
+
+
         if ((tpid.length() > 0)&&(tpidrewardamount>0)){
             //get the owner of the tpid and pay them.
             const uint128_t tnameHash = string_to_uint128_hash(tpid.c_str());
@@ -556,8 +567,8 @@ public:
             for (int i = 0; i < lockiter->periods.size(); i++) {
                 daysforperiod = (lockiter->timestamp + lockiter->periods[i].duration)/SECONDSPERDAY;
                 uint64_t amountthisperiod = lockiter->periods[i].amount;
-                //only set the insertindex on the first one greater than or equal.
-                if ((daysforperiod >= insertday) && !foundinsix) {
+                //only set the insertindex on the first one greater than or equal that HAS NOT been paid out.
+                if ((daysforperiod >= insertday) && !foundinsix && (i > (int)lockiter->payouts_performed-1)) {
                     insertindex = newperiods.size();
                     //always insert into the same day.
                    if (daysforperiod == insertday) {
@@ -583,10 +594,11 @@ public:
                          //if we are removing a lock period that has not been paid out yet adapt the remaining lock amount.
                          newremaininglockamount = newlockamount;
                     }
-                     else{
+                    else{
+                         string msg = "unstakefio, inconsistent general lock state lock amount "+ to_string(newlockamount) +" less than remaining lock amount. "+ to_string(newremaininglockamount);
                          //this check is here for code safety. if there were payouts left we should never see newlockamount < newremaininglockamount
-                         eosio_assert(newlockamount >= newremaininglockamount,"unstakefio, inconsistent general lock state lock amount less than remaining lock amount. " );
-                     }
+                         eosio_assert(newlockamount >= newremaininglockamount,msg.c_str() );
+                    }
                     if(payouts >0) {
                         payouts--;
                     }
@@ -596,7 +608,6 @@ public:
 
             //add the period to the list.
             if (!insertintoexisting) {
-               // print(" totalnewpercent ",totalnewpercent,"\n");
                 eosiosystem::lockperiodv2 iperiod;
                 iperiod.duration = insertperiod;
                 iperiod.amount = amount;
