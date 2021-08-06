@@ -1471,8 +1471,8 @@ namespace fioio {
 
                 auto nft_iter2 = nftbyid.find(string_to_uint128_hash(string(nftobj->token_id.c_str() + string(nftobj->chain_code.c_str()))));
 
-                if (nft_iter2 != nftbyid.end() && nft_iter2->fio_address == fio_address) {
-                  //fio_403_assert(nft_iter2->fio_address == fio_address, ErrorSignature);
+                if (nft_iter2 != nftbyid.end()) {
+                  fio_403_assert(nft_iter2->fio_address == fio_address, ErrorSignature);
                   nft_iter2 = nftbyid.erase(nft_iter2);
                   count_erase++;
                 }
