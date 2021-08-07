@@ -1581,8 +1581,11 @@ namespace fioio {
 
           uint32_t count_erase = 0;
           while (nft_iter != contractsbyname.end()) {
-            nft_iter = contractsbyname.erase(nft_iter);
+            if (nft_iter->fio_address == fio_address.c_str()) {
+              nft_iter = contractsbyname.erase(nft_iter);
+            }
             count_erase++;
+            if (count_erase == 5) break;
           } // while c
 
           fio_400_assert(count_erase > 0, "fio_address", fio_address, "NFT not currently mapped",
