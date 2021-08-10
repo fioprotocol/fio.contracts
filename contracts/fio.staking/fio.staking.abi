@@ -30,6 +30,10 @@
                                 {
                                     "name": "staking_rewards_reserves_minted",
                                     "type": "uint64"
+                                },
+                                {
+                                    "name": "staking_rewards_activated",
+                                    "type": "int64"
                                 }
                             ]
                },{
