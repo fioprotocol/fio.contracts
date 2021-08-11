@@ -194,9 +194,9 @@ namespace eosio {
                 if (lockiter->unlocked_period_count < 6) {
                     //to shorten the vesting schedule adapt these variables.
                     // TESTING ONLY!!! comment out genesis locking periods..DO NOT DELIVER THIS
-                    uint32_t daysSinceGrant = (int) ((present_time - lockiter->timestamp) / 30);
-                    uint32_t firstPayPeriod = 2;
-                    uint32_t payoutTimePeriod = 2;
+                    uint32_t daysSinceGrant = (int) ((present_time - lockiter->timestamp) / 60);
+                    uint32_t firstPayPeriod = 1;
+                    uint32_t payoutTimePeriod = 1;
 
                     bool ninetyDaysSinceGrant = daysSinceGrant >= firstPayPeriod;
 
