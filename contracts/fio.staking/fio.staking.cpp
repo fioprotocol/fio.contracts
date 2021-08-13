@@ -71,9 +71,9 @@ public:
         gstaking.combined_token_pool += fioamountsufs;
 
         if (debugout) {
-            print(" rewards token pool incremented to ", gstaking.rewards_token_pool);
-            print(" daily staking rewards incremented to ", gstaking.daily_staking_rewards);
-            print(" combined_token_pool incremented to ", gstaking.combined_token_pool);
+            print(" rewards token pool incremented to ", gstaking.rewards_token_pool,"\n");
+            print(" daily staking rewards incremented to ", gstaking.daily_staking_rewards,"\n");
+            print(" combined_token_pool incremented to ", gstaking.combined_token_pool,"\n");
         }
      }
 
@@ -89,7 +89,7 @@ public:
         gstaking.combined_token_pool += gstaking.daily_staking_rewards;
         gstaking.daily_staking_rewards = 0;
         if(debugout){
-            print("recorddaily completed successfully.");
+            print("recorddaily completed successfully.","\n");
         }
     }
 
@@ -102,7 +102,7 @@ public:
         const uint32_t present_time = now();
 
         if(debugout) {
-            print(" calling stakefio fio address ", fio_address);
+            print(" calling stakefio fio address ", fio_address,"\n");
         }
 
         uint64_t bundleeligiblecountdown = 0;
@@ -160,7 +160,7 @@ public:
 
             if (!tpid.empty()) {
                 if (debugout) {
-                    print(" calling process auto proxy with ", tpid);
+                    print(" calling process auto proxy with ", tpid,"\n");
                 }
                 set_auto_proxy(tpid, 0,get_self(), actor);
 
@@ -244,32 +244,34 @@ public:
         //compute rate of exchange
         uint64_t rateofexchange =  1000000000;
 
-        if (gstaking.staking_rewards_activated || ((gstaking.combined_token_pool >= COMBINEDTOKENPOOLMINIMUM) && (present_time > ENABLESTAKINGREWARDSEPOCHSEC))) {
+
+        if (gstaking.staking_rewards_activated) {
             if(debugout) {
-                print(" global srp count ", gstaking.global_srp_count);
-                print(" combined_token_pool ", gstaking.combined_token_pool);
+                print(" global srp count ", gstaking.global_srp_count,"\n");
+                print(" staked_token_pool ", gstaking.staked_token_pool,"\n");
             }
-            rateofexchange = (uint64_t)((double)((double)(gstaking.combined_token_pool) / (double)(gstaking.global_srp_count)) * 1000000000.0);
+            rateofexchange = (uint64_t)((double)((double)(gstaking.staked_token_pool) / (double)(gstaking.global_srp_count)) * 1000000000.0);
             if (debugout) {
-                print(" rate of exchange set to ", rateofexchange);
+                print(" rate of exchange set to ", rateofexchange,"\n");
             }
             if(rateofexchange < 1000000000) {
                 if(debugout) {
-                    print(" RATE OF EXCHANGE LESS THAN 1 ", rateofexchange);
+                    print(" RATE OF EXCHANGE LESS THAN 1 ", rateofexchange,"\n");
                 }
                 rateofexchange = 1000000000;
             }
-            if(!gstaking.staking_rewards_activated){
-                gstaking.staking_rewards_activated = 1;
-            }
         }
-
         uint64_t srptoaward = (uint64_t)((double)amount / (double) ((double)rateofexchange / 1000000000.0));
 
         //update global staking state
         gstaking.combined_token_pool += amount;
         gstaking.global_srp_count += srptoaward;
         gstaking.staked_token_pool += amount;
+
+        //set the ROE activation.
+        if (!gstaking.staking_rewards_activated && ((gstaking.staked_token_pool >= STAKEDTOKENPOOLMINIMUM) && (present_time > ENABLESTAKINGREWARDSEPOCHSEC))) {
+                gstaking.staking_rewards_activated = 1;
+        }
 
         //update account staking info
         auto astakebyaccount = accountstaking.get_index<"byaccount"_n>();
@@ -420,12 +422,12 @@ public:
         //compute rate of exchange
         uint64_t rateofexchange =  1000000000;
 
-        if (gstaking.staking_rewards_activated || ((gstaking.combined_token_pool >= COMBINEDTOKENPOOLMINIMUM) && (present_time > ENABLESTAKINGREWARDSEPOCHSEC))) {
+        if (gstaking.staking_rewards_activated) {
             if(debugout) {
                 print(" global srp count ", gstaking.global_srp_count,"\n");
-                print(" combined_token_pool ", gstaking.combined_token_pool);
+                print(" staked_token_pool ", gstaking.staked_token_pool,"\n");
             }
-            rateofexchange = (uint64_t)((double)((double)(gstaking.combined_token_pool) / (double)(gstaking.global_srp_count)) * 1000000000.0);
+            rateofexchange = (uint64_t)((double)((double)(gstaking.staked_token_pool) / (double)(gstaking.global_srp_count)) * 1000000000.0);
             if (debugout) {
                 print(" rate of exchange set to ", rateofexchange,"\n");
             }
@@ -434,9 +436,6 @@ public:
                     print(" RATE OF EXCHANGE LESS THAN 1 ", rateofexchange,"\n");
                 }
                 rateofexchange = 1000000000;
-            }
-            if(!gstaking.staking_rewards_activated){
-                gstaking.staking_rewards_activated = 1;
             }
         }
 
@@ -612,7 +611,7 @@ public:
                 iperiod.duration = insertperiod;
                 iperiod.amount = amount;
                 if (debugout){
-                    print (" adding element at index ",insertindex);
+                    print (" adding element at index ",insertindex,"\n");
                 }
                 if (insertindex == -1) {
                     //insert at the end of the list, my duration is greater than all in the list.
