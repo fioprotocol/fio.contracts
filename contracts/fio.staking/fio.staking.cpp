@@ -250,7 +250,7 @@ public:
                 print(" global srp count ", gstaking.global_srp_count,"\n");
                 print(" staked_token_pool ", gstaking.staked_token_pool,"\n");
             }
-            rateofexchange = (uint64_t)((double)((double)(gstaking.staked_token_pool) / (double)(gstaking.global_srp_count)) * 1000000000.0);
+            rateofexchange = (uint64_t)((double)((double)(gstaking.combined_token_pool) / (double)(gstaking.global_srp_count)) * 1000000000.0);
             if (debugout) {
                 print(" rate of exchange set to ", rateofexchange,"\n");
             }
@@ -427,7 +427,7 @@ public:
                 print(" global srp count ", gstaking.global_srp_count,"\n");
                 print(" staked_token_pool ", gstaking.staked_token_pool,"\n");
             }
-            rateofexchange = (uint64_t)((double)((double)(gstaking.staked_token_pool) / (double)(gstaking.global_srp_count)) * 1000000000.0);
+            rateofexchange = (uint64_t)((double)((double)(gstaking.combined_token_pool) / (double)(gstaking.global_srp_count)) * 1000000000.0);
             if (debugout) {
                 print(" rate of exchange set to ", rateofexchange,"\n");
             }
