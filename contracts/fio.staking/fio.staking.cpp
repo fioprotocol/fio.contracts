@@ -441,11 +441,24 @@ public:
 
         uint64_t srpsclaimed = (uint64_t)((double)srpstoclaim * ((double)rateofexchange/1000000000.0));
 
+
+        //revise
+        const string message = "unstakefio, srps to claim "+ to_string(srpstoclaim) + " rate of exchange "+ to_string(rateofexchange) +
+                               " srpsclaimed " + to_string(srpsclaimed) + " amount "+ to_string(amount) + " srpsclaimed must be >= amount. "
+                                                                                                          " must be greater than or equal srpstoclaim " + to_string(srpstoclaim) ;
+        if (debugout) {
+            print(message, "\n");
+        }
+
         uint64_t totalrewardamount = 0;
 
         if (srpsclaimed >= amount) {
-            totalrewardamount = (srpsclaimed - amount);
+                totalrewardamount = (srpsclaimed - amount);
         }
+        const char* mptr = &message[0];
+        eosio_assert(srpsclaimed >= amount, mptr);
+        //revise
+
         if(debugout) {
             print("total reward amount is ", totalrewardamount,"\n");
         }
