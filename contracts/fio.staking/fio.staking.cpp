@@ -440,15 +440,25 @@ public:
         }
 
         uint64_t srpsclaimed = (uint64_t)((double)srpstoclaim * ((double)rateofexchange/1000000000.0));
+
+
+        //revise
         const string message = "unstakefio, srps to claim "+ to_string(srpstoclaim) + " rate of exchange "+ to_string(rateofexchange) +
-                " srpsclaimed " + to_string(srpsclaimed) + " amount "+ to_string(amount) + " srpsclaimed must be >= amount. "
-                         " must be greater than or equal srpstoclaim " + to_string(srpstoclaim) ;
-        if (debugout){
+                               " srpsclaimed " + to_string(srpsclaimed) + " amount "+ to_string(amount) + " srpsclaimed must be >= amount. "
+                                                                                                          " must be greater than or equal srpstoclaim " + to_string(srpstoclaim) ;
+        if (debugout) {
             print(message, "\n");
+        }
+
+        uint64_t totalrewardamount = 0;
+
+        if (srpsclaimed >= amount) {
+                totalrewardamount = (srpsclaimed - amount);
         }
         const char* mptr = &message[0];
         eosio_assert(srpsclaimed >= amount, mptr);
-        uint64_t totalrewardamount = (srpsclaimed  - amount);
+        //revise
+
         if(debugout) {
             print("total reward amount is ", totalrewardamount,"\n");
         }
@@ -528,6 +538,9 @@ public:
 
         //7 days unstaking lock duration.
         int64_t UNSTAKELOCKDURATIONSECONDS = 604800;
+       //TEST CODE DO NOT DELIVER, unstake to 7 minutes
+        //int64_t UNSTAKELOCKDURATIONSECONDS = 70;
+
 
         //look and see if they have any general locks.
         auto locks_by_owner = generallocks.get_index<"byowner"_n>();
@@ -547,6 +560,8 @@ public:
             }
             //the days since launch.
             uint32_t insertday = (lockiter->timestamp + insertperiod) / SECONDSPERDAY;
+           //TEST ONLY DO NOT DELIVER
+            //uint32_t insertday = (lockiter->timestamp + insertperiod) / 10;
             //if your duration is less than this the period is in the past.
             uint32_t expirednowduration = present_time - lockiter->timestamp;
             uint32_t payouts = lockiter->payouts_performed;
@@ -565,6 +580,8 @@ public:
 
             for (int i = 0; i < lockiter->periods.size(); i++) {
                 daysforperiod = (lockiter->timestamp + lockiter->periods[i].duration)/SECONDSPERDAY;
+               //TEST ONLY DO NOT DELIVER
+               // daysforperiod = (lockiter->timestamp + lockiter->periods[i].duration)/10;
                 uint64_t amountthisperiod = lockiter->periods[i].amount;
                 //only set the insertindex on the first one greater than or equal that HAS NOT been paid out.
                 if ((daysforperiod >= insertday) && !foundinsix && (i > (int)lockiter->payouts_performed-1)) {
@@ -604,12 +621,11 @@ public:
                 }
             }
 
-
             //add the period to the list.
             if (!insertintoexisting) {
                 eosiosystem::lockperiodv2 iperiod;
                 iperiod.duration = insertperiod;
-                iperiod.amount = amount;
+                iperiod.amount = amount + stakingrewardamount;
                 if (debugout){
                     print (" adding element at index ",insertindex,"\n");
                 }
@@ -621,8 +637,7 @@ public:
                 }
             }
 
-
-           //update the locks table..   modgenlocked
+            //update the locks table..   modgenlocked
             action(
                     permission_level{get_self(), "active"_n},
                     SYSTEMACCOUNT,
