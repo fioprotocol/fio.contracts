@@ -242,7 +242,7 @@ public:
         }
 
         //compute rate of exchange
-        long double rateofexchange =  1.0;
+        long double roesufspersrp =  1.0;
 
 
         if (gstaking.staking_rewards_activated) {
@@ -250,18 +250,18 @@ public:
                 print(" global srp count ", gstaking.global_srp_count,"\n");
                 print(" staked_token_pool ", gstaking.staked_token_pool,"\n");
             }
-            rateofexchange = (long double)(gstaking.combined_token_pool) / (long double)(gstaking.global_srp_count);
+            roesufspersrp = (long double)(gstaking.combined_token_pool) / (long double)(gstaking.global_srp_count);
             if (debugout) {
-                print(" rate of exchange set to ", rateofexchange,"\n");
+                print(" rate of exchange set to ", roesufspersrp,"\n");
             }
-            if(rateofexchange < 1.0) {
+            if(roesufspersrp < 1.0) {
                 if(debugout) {
-                    print(" RATE OF EXCHANGE LESS THAN 1 ", rateofexchange,"\n");
+                    print(" RATE OF EXCHANGE LESS THAN 1 ", roesufspersrp,"\n");
                 }
-                rateofexchange = 1.0;
+                roesufspersrp = 1.0;
             }
         }
-        uint64_t srpstoaward = (uint64_t)((long double)amount / rateofexchange);
+        uint64_t srpstoaward = (uint64_t)((long double)amount / roesufspersrp);
 
         //update global staking state
         gstaking.combined_token_pool += amount;
@@ -420,30 +420,30 @@ public:
         }
 
         //compute rate of exchange
-        long double rateofexchange =  1.0;
+        long double roesufspersrp =  1.0;
 
         if (gstaking.staking_rewards_activated) {
             if(debugout) {
                 print(" global srp count ", gstaking.global_srp_count,"\n");
                 print(" staked_token_pool ", gstaking.staked_token_pool,"\n");
             }
-            rateofexchange = (long double)(gstaking.combined_token_pool) / (long double)(gstaking.global_srp_count);
+            roesufspersrp = (long double)(gstaking.combined_token_pool) / (long double)(gstaking.global_srp_count);
             if (debugout) {
-                print(" rate of exchange set to ", rateofexchange,"\n");
+                print(" rate of exchange set to ", roesufspersrp,"\n");
             }
-            if(rateofexchange < 1.0) {
+            if(roesufspersrp < 1.0) {
                 if(debugout) {
-                    print(" RATE OF EXCHANGE LESS THAN 1 ", rateofexchange,"\n");
+                    print(" RATE OF EXCHANGE LESS THAN 1 ", roesufspersrp,"\n");
                 }
-                rateofexchange = 1.0;
+                roesufspersrp = 1.0;
             }
         }
 
-        uint64_t sufclaimed = (uint64_t)((long double)(srpstoclaim) * rateofexchange);
+        uint64_t sufclaimed = (uint64_t)((long double)(srpstoclaim) * roesufspersrp);
 
 
         //revise
-        const string message = "unstakefio, srps to claim "+ to_string(srpstoclaim) + " rate of exchange "+ to_string(rateofexchange) +
+        const string message = "unstakefio, srps to claim "+ to_string(srpstoclaim) + " rate of exchange "+ to_string(roesufspersrp) +
                                " srpsclaimed " + to_string(sufclaimed) + " amount "+ to_string(amount) + " srpsclaimed must be >= amount. "
                                                                                                           " must be greater than or equal srpstoclaim " + to_string(srpstoclaim) ;
         if (debugout) {
