@@ -260,11 +260,11 @@ public:
                 rateofexchange = 1000000000;
             }
         }
-        uint64_t srptoaward = (uint64_t)((double)amount / (double) ((double)rateofexchange / 1000000000.0));
+        uint64_t suftoaward = (uint64_t)((double)amount / (double) ((double)rateofexchange / 1000000000.0));
 
         //update global staking state
         gstaking.combined_token_pool += amount;
-        gstaking.global_srp_count += srptoaward;
+        gstaking.global_srp_count += suftoaward;
         gstaking.staked_token_pool += amount;
 
         //set the ROE activation.
@@ -280,7 +280,7 @@ public:
             //update the existing record
             astakebyaccount.modify(astakeiter, _self, [&](struct account_staking_info &a) {
                 a.total_staked_fio += amount;
-                a.total_srp += srptoaward;
+                a.total_srp += suftoaward;
             });
         } else {
             const uint64_t id = accountstaking.available_primary_key();
@@ -288,7 +288,7 @@ public:
                 p.id = id;
                 p.account = actor;
                 p.total_staked_fio = amount;
-                p.total_srp = srptoaward;
+                p.total_srp = suftoaward;
             });
         }
         //end increment account staking info
@@ -438,12 +438,12 @@ public:
             }
         }
 
-        uint64_t srpsclaimed = (uint64_t)((double)srpstoclaim * ((double)rateofexchange/1000000000.0));
+        uint64_t sufclaimed = (uint64_t)((double)srpstoclaim * ((double)rateofexchange/1000000000.0));
 
 
         //revise
         const string message = "unstakefio, srps to claim "+ to_string(srpstoclaim) + " rate of exchange "+ to_string(rateofexchange) +
-                               " srpsclaimed " + to_string(srpsclaimed) + " amount "+ to_string(amount) + " srpsclaimed must be >= amount. "
+                               " srpsclaimed " + to_string(sufclaimed) + " amount "+ to_string(amount) + " srpsclaimed must be >= amount. "
                                                                                                           " must be greater than or equal srpstoclaim " + to_string(srpstoclaim) ;
         if (debugout) {
             print(message, "\n");
@@ -451,11 +451,11 @@ public:
 
         uint64_t totalrewardamount = 0;
 
-        if (srpsclaimed >= amount) {
-                totalrewardamount = (srpsclaimed - amount);
+        if (sufclaimed >= amount) {
+                totalrewardamount = (sufclaimed - amount);
         }
         const char* mptr = &message[0];
-        eosio_assert(srpsclaimed >= amount, mptr);
+        eosio_assert(sufclaimed >= amount, mptr);
         //revise
 
         if(debugout) {
