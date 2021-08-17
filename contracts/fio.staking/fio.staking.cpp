@@ -242,7 +242,7 @@ public:
         }
 
         //compute rate of exchange
-        uint64_t rateofexchange =  1000000000;
+        long double roesufspersrp =  1.0;
 
 
         if (gstaking.staking_rewards_activated) {
@@ -250,22 +250,22 @@ public:
                 print(" global srp count ", gstaking.global_srp_count,"\n");
                 print(" staked_token_pool ", gstaking.staked_token_pool,"\n");
             }
-            rateofexchange = (uint64_t)((double)((double)(gstaking.combined_token_pool) / (double)(gstaking.global_srp_count)) * 1000000000.0);
+            roesufspersrp = (long double)(gstaking.combined_token_pool) / (long double)(gstaking.global_srp_count);
             if (debugout) {
-                print(" rate of exchange set to ", rateofexchange,"\n");
+                print(" rate of exchange set to ", roesufspersrp,"\n");
             }
-            if(rateofexchange < 1000000000) {
+            if(roesufspersrp < 1.0) {
                 if(debugout) {
-                    print(" RATE OF EXCHANGE LESS THAN 1 ", rateofexchange,"\n");
+                    print(" RATE OF EXCHANGE LESS THAN 1 ", roesufspersrp,"\n");
                 }
-                rateofexchange = 1000000000;
+                roesufspersrp = 1.0;
             }
         }
-        uint64_t suftoaward = (uint64_t)((double)amount / (double) ((double)rateofexchange / 1000000000.0));
+        uint64_t srpstoaward = (uint64_t)((long double)amount / roesufspersrp);
 
         //update global staking state
         gstaking.combined_token_pool += amount;
-        gstaking.global_srp_count += suftoaward;
+        gstaking.global_srp_count += srpstoaward;
         gstaking.staked_token_pool += amount;
 
         //set the ROE activation.
@@ -281,7 +281,7 @@ public:
             //update the existing record
             astakebyaccount.modify(astakeiter, _self, [&](struct account_staking_info &a) {
                 a.total_staked_fio += amount;
-                a.total_srp += suftoaward;
+                a.total_srp += srpstoaward;
             });
         } else {
             const uint64_t id = accountstaking.available_primary_key();
@@ -289,7 +289,7 @@ public:
                 p.id = id;
                 p.account = actor;
                 p.total_staked_fio = amount;
-                p.total_srp = suftoaward;
+                p.total_srp = srpstoaward;
             });
         }
         //end increment account staking info
@@ -420,30 +420,30 @@ public:
         }
 
         //compute rate of exchange
-        uint64_t rateofexchange =  1000000000;
+        long double roesufspersrp =  1.0;
 
         if (gstaking.staking_rewards_activated) {
             if(debugout) {
                 print(" global srp count ", gstaking.global_srp_count,"\n");
                 print(" staked_token_pool ", gstaking.staked_token_pool,"\n");
             }
-            rateofexchange = (uint64_t)((double)((double)(gstaking.combined_token_pool) / (double)(gstaking.global_srp_count)) * 1000000000.0);
+            roesufspersrp = (long double)(gstaking.combined_token_pool) / (long double)(gstaking.global_srp_count);
             if (debugout) {
-                print(" rate of exchange set to ", rateofexchange,"\n");
+                print(" rate of exchange set to ", roesufspersrp,"\n");
             }
-            if(rateofexchange < 1000000000) {
+            if(roesufspersrp < 1.0) {
                 if(debugout) {
-                    print(" RATE OF EXCHANGE LESS THAN 1 ", rateofexchange,"\n");
+                    print(" RATE OF EXCHANGE LESS THAN 1 ", roesufspersrp,"\n");
                 }
-                rateofexchange = 1000000000;
+                roesufspersrp = 1.0;
             }
         }
 
-        uint64_t sufclaimed = (uint64_t)((double)srpstoclaim * ((double)rateofexchange/1000000000.0));
+        uint64_t sufclaimed = (uint64_t)((long double)(srpstoclaim) * roesufspersrp);
 
 
         //revise
-        const string message = "unstakefio, srps to claim "+ to_string(srpstoclaim) + " rate of exchange "+ to_string(rateofexchange) +
+        const string message = "unstakefio, srps to claim "+ to_string(srpstoclaim) + " rate of exchange "+ to_string(roesufspersrp) +
                                " srpsclaimed " + to_string(sufclaimed) + " amount "+ to_string(amount) + " srpsclaimed must be >= amount. "
                                                                                                           " must be greater than or equal srpstoclaim " + to_string(srpstoclaim) ;
         if (debugout) {
