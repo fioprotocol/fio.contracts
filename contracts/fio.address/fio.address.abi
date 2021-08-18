@@ -543,8 +543,8 @@
          "ricardian_contract":""
       },
       {
-         "name": "xfercontract",
-         "type": "xfercontract",
+         "name": "xferescrow",
+         "type": "xferescrow",
          "ricardian_contract": ""
        }
         ],
