@@ -84,9 +84,8 @@ public:
                      "missing required authority of fio.treasury");
         if (amounttomint > 0) {
             gstaking.staking_rewards_reserves_minted += amounttomint;
-            gstaking.daily_staking_rewards += amounttomint;
+            gstaking.combined_token_pool += amounttomint;
         }
-        gstaking.combined_token_pool += gstaking.daily_staking_rewards;
         gstaking.daily_staking_rewards = 0;
         if(debugout){
             print("recorddaily completed successfully.","\n");
