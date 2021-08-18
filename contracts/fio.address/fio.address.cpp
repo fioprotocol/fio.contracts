@@ -1692,7 +1692,7 @@ namespace fioio {
         }
 
         [[eosio::action]]
-        void xfercontract(const string &fio_domain, const string &public_key, const bool isEscrow){
+        void xferescrow(const string &fio_domain, const string &public_key, const bool isEscrow){
 
             eosio_assert(has_auth(EscrowContract) || has_auth(FIOORACLEContract),
                          "missing required authority of fio.escrow or fio.orcale");
@@ -1724,7 +1724,7 @@ namespace fioio {
                 key_to_account(public_key, owner_account);
                 nm = name(owner_account);
             }
-
+            print("do we even get here?");
             domainsbyname.modify(domains_iter, _self, [&](struct domain &a) {
                 a.account = nm.value;
             });
@@ -1755,5 +1755,5 @@ namespace fioio {
     };
 
     EOSIO_DISPATCH(FioNameLookup, (regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(renewaddress)(setdomainpub)(burnexpired)(decrcounter)
-    (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(xfercontract))
+    (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(xferescrow))
 }

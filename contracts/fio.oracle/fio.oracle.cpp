@@ -383,8 +383,6 @@ namespace fioio {
             fio_400_assert(domains_iter->account == actor.value, "fio_domain", fio_domain,
                            "Actor and domain owner mismatch.",
                            ErrorDomainNotRegistered);
-            
-            //TODO: Verify that domain is not already wrapped. 
 
             //Oracle fee is transferred from actor account to all registered oracles in even amount.
             auto idx = oracles.begin();
@@ -442,7 +440,7 @@ namespace fioio {
             action(
                     permission_level{FIOORACLEContract, "active"_n},
                     AddressContract,
-                    "xfercontract"_n,
+                    "xferescrow"_n,
                     std::make_tuple(fio_domain, nullptr, true)
             ).send();
 
