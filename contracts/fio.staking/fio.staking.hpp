@@ -24,7 +24,7 @@ namespace fioio {
         uint64_t combined_token_pool = 0;  //total fio tokens staked for all accounts plus fio rewards all accounts, units SUFs,
         // incremented by the staked amount when user stakes, when tokens are earmarked as staking rewards,
         // decremented by unstaked amount + reward amount when users unstake
-        uint64_t rewards_token_pool = 0; //total counter how much has come in from fees AND minting units SUFs
+        uint64_t rewards_token_pool = 0; //total counter how much has come in from fees units SUFs
         uint64_t global_srp_count = 0;  // units SUS, total SRP for all FIO users, increment when users stake, decrement when users unstake.
         uint64_t daily_staking_rewards = 0; //this is used to track the daily staking rewards collected from fees,
         // its used only to determine if the protocol should mint FIO whe rewards are under the DAILYSTAKINGMINTTHRESHOLD
