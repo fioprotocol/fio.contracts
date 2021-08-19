@@ -412,7 +412,7 @@ public:
         //SRPs to Claim are computed: Staker's Account SRPs * (Unstaked amount / Total Tokens Staked in Staker's Account)
          //  this needs to be a floating point (double) operation
        //round this to avoid issues with decimal representations
-        uint64_t srpstoclaim = (uint64_t)(((double)astakeiter->total_srp * (double)( (double)amount / (double)astakeiter->total_staked_fio))+0.5);
+        uint64_t srpstoclaim = (uint64_t)(((double)astakeiter->total_srp * (double)( (double)amount / (double)astakeiter->total_staked_fio)));
 
         if (debugout) {
             print("srps to claim is ", to_string(srpstoclaim), "\n");
