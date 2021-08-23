@@ -259,7 +259,13 @@ public:
                 roesufspersrp = 1.0;
             }
         }
-        uint64_t srpstoaward = (uint64_t)((long double)amount / roesufspersrp);
+        long double t1 = (long double)amount / roesufspersrp;
+
+        if(debugout){
+            print("the value of amount / roe is : ",t1,"\n");
+        }
+
+        uint64_t srpstoaward = (uint64_t) truncl(t1);
 
         //update global staking state
         gstaking.combined_token_pool += amount;
@@ -411,9 +417,11 @@ public:
         //SRPs to Claim are computed: Staker's Account SRPs * (Unstaked amount / Total Tokens Staked in Staker's Account)
          //  this needs to be a floating point (double) operation
        //round this to avoid issues with decimal representations
-        uint64_t srpstoclaim = (uint64_t)(((double)astakeiter->total_srp * (double)( (double)amount / (double)astakeiter->total_staked_fio)));
+       double t1 = (((double)astakeiter->total_srp * (double)( (double)amount / (double)astakeiter->total_staked_fio)));
+        uint64_t srpstoclaim = (uint64_t)trunc(t1);
 
         if (debugout) {
+            print(" the long double result of the srpstoclaim is : ",t1,"\n");
             print("srps to claim is ", to_string(srpstoclaim), "\n");
         }
 
@@ -437,9 +445,14 @@ public:
             }
         }
 
-        uint64_t sufclaimed = (uint64_t)((long double)(srpstoclaim) * roesufspersrp);
+        long double t2 = ((long double)(srpstoclaim) * roesufspersrp);
 
-
+        uint64_t sufclaimed = (uint64_t)truncl(t2);
+        if (debugout){
+            print("the long double of sufclaimed is : ",t2,"\n");
+            print("the value of sufclaimed is : ",sufclaimed,"\n");
+        }
+        
         //revise
         const string message = "unstakefio, srps to claim "+ to_string(srpstoclaim) + " rate of exchange "+ to_string(roesufspersrp) +
                                " srpsclaimed " + to_string(sufclaimed) + " amount "+ to_string(amount) + " srpsclaimed must be >= amount. "
