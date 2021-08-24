@@ -263,6 +263,7 @@ public:
 
         if(debugout){
             print("the value of amount / roe is : ",t1,"\n");
+            print("the value of combined_token_pool before state inc in stake: ",gstaking.combined_token_pool,"\n" );
         }
 
         uint64_t srpstoaward = (uint64_t) truncl(t1);
@@ -271,6 +272,11 @@ public:
         gstaking.combined_token_pool += amount;
         gstaking.global_srp_count += srpstoaward;
         gstaking.staked_token_pool += amount;
+
+        if(debugout){
+            print("the value of combined_token_pool after state inc in stake: ",gstaking.combined_token_pool,"\n" );
+        }
+
 
         //set the ROE activation.
         if (!gstaking.staking_rewards_activated && ((gstaking.staked_token_pool >= STAKEDTOKENPOOLMINIMUM) && (present_time > ENABLESTAKINGREWARDSEPOCHSEC))) {
@@ -452,7 +458,7 @@ public:
             print("the long double of sufclaimed is : ",t2,"\n");
             print("the value of sufclaimed is : ",sufclaimed,"\n");
         }
-        
+
         //revise
         const string message = "unstakefio, srps to claim "+ to_string(srpstoclaim) + " rate of exchange "+ to_string(roesufspersrp) +
                                " srpsclaimed " + to_string(sufclaimed) + " amount "+ to_string(amount) + " srpsclaimed must be >= amount. "
