@@ -67,6 +67,7 @@
 #define REJECT_FUNDS_REQUEST_ENDPOINT "reject_funds_request"
 #define NEW_FUNDS_REQUEST_ENDPOINT "new_funds_request"
 #define RECORD_OBT_DATA_ENDPOINT "record_obt_data"
+#define TRANSFER_TOKENS_FIO_ADD_ENDPOINT "transfer_tokens_fio_add"
 #define SUBMIT_BUNDLED_TRANSACTION_ENDPOINT "submit_bundled_transaction"
 #define SUBMIT_FEE_RATIOS_ENDPOINT "submit_fee_ratios"
 #define SUBMIT_FEE_MULTIPLER_ENDPOINT "submit_fee_multiplier"
