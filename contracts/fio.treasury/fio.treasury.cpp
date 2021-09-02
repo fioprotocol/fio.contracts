@@ -303,8 +303,8 @@ public:
 
                         if (bpcount <= MAXACTIVEBPS) abpcount = bpcount;
                         auto bprewardstat = bprewards.get();
-                        uint64_t tostandbybps = static_cast<uint64_t>(bprewardstat.rewards * .60);
-                        uint64_t toactivebps = static_cast<uint64_t>(bprewardstat.rewards * .40);
+                        uint64_t tostandbybps = static_cast<uint64_t>((bprewardstat.rewards / 10) * 6);
+                        uint64_t toactivebps = static_cast<uint64_t>((bprewardstat.rewards / 10) * 4);
 
                         bpcounter = 0;
                         auto votesharesiter = voteshares.get_index<"byvotes"_n>();
@@ -361,7 +361,7 @@ public:
                                    make_tuple(producer)
                                 ).send();
                         }
-                        
+
                         // PAY FOUNDATION //
                         auto fdtnstate = fdtnrewards.get();
                         if(fdtnstate.rewards > 0) {
