@@ -465,7 +465,7 @@ public:
         }
 
         //revise
-        const string message = "unstakefio, srps to claim "+ to_string(srpstoclaim) + " rate of exchange "+ roesufspersrp +
+        const string message = "unstakefio, srps to claim "+ to_string(srpstoclaim) +
                                " srpsclaimed " + to_string(sufclaimed) + " amount "+ to_string(amount) + " srpsclaimed must be >= amount. "
                                                                                                           " must be greater than or equal srpstoclaim " + to_string(srpstoclaim) ;
         if (debugout) {
