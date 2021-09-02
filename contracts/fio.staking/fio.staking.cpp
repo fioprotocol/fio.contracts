@@ -250,6 +250,8 @@ public:
                 print(" staked_token_pool ", gstaking.staked_token_pool,"\n");
             }
             roesufspersrp = (long double)(gstaking.combined_token_pool) / (long double)(gstaking.global_srp_count);
+            //round it after the 9th decimal place
+            roesufspersrp = roundl(roesufspersrp * 1000000000.0) / 1000000000.0;
             if (debugout) {
                 print(" rate of exchange set to ", roesufspersrp,"\n");
             }
@@ -441,6 +443,8 @@ public:
                 print(" staked_token_pool ", gstaking.staked_token_pool,"\n");
             }
             roesufspersrp = (long double)(gstaking.combined_token_pool) / (long double)(gstaking.global_srp_count);
+            //round it after the 9th decimal place
+            roesufspersrp = roundl(roesufspersrp * 1000000000.0) / 1000000000.0;
             if (debugout) {
                 print(" rate of exchange set to ", roesufspersrp,"\n");
             }
@@ -461,7 +465,7 @@ public:
         }
 
         //revise
-        const string message = "unstakefio, srps to claim "+ to_string(srpstoclaim) + " rate of exchange "+ to_string(roesufspersrp) +
+        const string message = "unstakefio, srps to claim "+ to_string(srpstoclaim) + " rate of exchange "+ roesufspersrp +
                                " srpsclaimed " + to_string(sufclaimed) + " amount "+ to_string(amount) + " srpsclaimed must be >= amount. "
                                                                                                           " must be greater than or equal srpstoclaim " + to_string(srpstoclaim) ;
         if (debugout) {
