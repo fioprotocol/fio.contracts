@@ -10,6 +10,8 @@
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/singleton.hpp>
 #include <eosiolib/asset.hpp>
+#include <eosiolib/binary_extension.hpp>
+
 #include <string>
 
 using std::string;
@@ -127,6 +129,8 @@ namespace fioio {
       string hash;
       uint128_t hash_index;
       string metadata;
+      eosio::binary_extension<uint64_t> property1;
+      eosio::binary_extension<uint128_t> property2;
 
       uint64_t primary_key() const { return id; }
       uint128_t by_address() const { return fio_address_hash; }
