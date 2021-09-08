@@ -93,6 +93,20 @@
       ]
     },
     {
+      "name": "nftburninfo",
+      "base": "",
+      "fields": [
+        {
+          "name": "id",
+          "type": "uint64"
+        },
+        {
+          "name": "fio_address_hash",
+          "type": "uint128"
+        }
+      ]
+    },
+    {
       "name": "regaddress",
       "base": "",
       "fields": [
@@ -746,6 +760,17 @@
       "index_type": "i64",
       "key_names": [],
       "key_types": [],
+    },
+    {
+      "name": "nftburnq",
+      "index_type": "i64",
+      "key_names": [
+        "id"
+      ],
+      "key_types": [
+        "uint64"
+      ],
+      "type": "nftburninfo"
     },
   ],
   "ricardian_clauses": [],
