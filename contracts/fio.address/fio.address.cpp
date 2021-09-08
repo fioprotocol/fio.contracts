@@ -985,123 +985,68 @@ namespace fioio {
          */
         [[eosio::action]]
         void burnexpired() {
+            name actor = name(_self);
+            auto prodbyowner = producers.get_index<"byowner"_n>();
+            auto proditer = prodbyowner.find(actor.value);
 
-            std::vector<uint128_t> burnlist;
-            std::vector<uint128_t> domainburnlist;
+            fio_400_assert(proditer != prodbyowner.end(), "actor", to_string(actor.value),
+                           "Actor not active producer", ErrorNoFioAddressProducer);
 
-            const int numbertoburn = 100;
-            const int windowmaxyears = 20;
-
+            int numbertoburn = 10;
+            unsigned int recordProcessed = 0;
             const uint64_t nowtime = now();
-
-            //this allows us to search through all of the domains.
-            const uint32_t minexpiration = get_now_minus_years(windowmaxyears);
+            uint32_t minexpiration = nowtime - DOMAINWAITFORBURNDAYS;
 
             auto domainexpidx = domains.get_index<"byexpiration"_n>();
-            auto domainiter = domainexpidx.lower_bound(minexpiration);
+            auto domainiter = domainexpidx.upper_bound(minexpiration);
 
-            while (domainiter != domainexpidx.end()) {
+            while (domainiter != domainexpidx.end() && recordProcessed != numbertoburn) {
                 const uint64_t expire = domainiter->expiration;
-                const uint128_t domainnamehash = domainiter->domainhash;
 
-                if ((expire + DOMAINWAITFORBURNDAYS) > nowtime){
-                    break;
-                } else {
-                    const auto domainhash = domainiter->domainhash;
-                    auto fionamesbydomainhashidx = fionames.get_index<"bydomain"_n>();
-                    auto nmiter = fionamesbydomainhashidx.lower_bound(domainhash);
-                    bool processed_all_in_domain = false;
-
-                    while (nmiter != fionamesbydomainhashidx.end()) {
-                        if (nmiter->domainhash == domainhash) {
-                            burnlist.push_back(nmiter->namehash);
-
-                            if (burnlist.size() >= numbertoburn) {
-                                break;
-                            }
-                            nmiter++;
-                        } else {
-                            processed_all_in_domain = true;
-                            break;
-                        }
-                    }
-
-                    if (processed_all_in_domain) {
-                        domainburnlist.push_back(domainnamehash);
-                    }
-                    if (burnlist.size() >= numbertoburn) {
-                        break;
-                    }
+                if ((expire + DOMAINWAITFORBURNDAYS) < nowtime) {
+                    domainexpidx.erase(domainiter);
+                    recordProcessed++;
+                    if (recordProcessed == numbertoburn) { break; }
                 }
                 domainiter++;
             }
 
-            if (burnlist.size() < numbertoburn) {
+            minexpiration = nowtime - ADDRESSWAITFORBURNDAYS;
+            numbertoburn = 20; // This will process 10 address burns if domain burns were maxed out
+            auto nameexpidx = fionames.get_index<"byexpiration"_n>();
+            auto nameiter = nameexpidx.upper_bound(minexpiration);
 
-                auto nameexpidx = fionames.get_index<"byexpiration"_n>();
-                auto nameiter = nameexpidx.lower_bound(minexpiration);
+            while (nameiter != nameexpidx.end() && recordProcessed != numbertoburn) {
+                const uint64_t expire = nameiter->expiration;
+                const uint64_t burner = nameiter->namehash;
 
-                while (nameiter != nameexpidx.end()) {
-                    const uint64_t expire = nameiter->expiration;
-                    if ((expire + ADDRESSWAITFORBURNDAYS) > nowtime){
-                        break;
-                    } else {
-                        if (!(std::find(burnlist.begin(), burnlist.end(), nameiter->namehash) != burnlist.end())) {
-                            burnlist.push_back(nameiter->namehash);
+                if ((expire + ADDRESSWAITFORBURNDAYS) < nowtime) {
+                    nameexpidx.erase(nameiter);
 
-                            if (burnlist.size() >= numbertoburn) {
-                                break;
-                            }
-                        }
-                    }
-                    nameiter++;
-                }
-            }
+                    auto tpidbyname = tpids.get_index<"byname"_n>();
+                    auto tpiditer = tpidbyname.find(burner);
+                    tpidbyname.erase(tpiditer);
 
-            fio_400_assert(((burnlist.size() > 0) && (domainburnlist.size() >0)), "burnexpired", "burnexpired",
-                           "No work.", ErrorNoWork);
-
-            //do the burning.
-            for (int i = 0; i < burnlist.size(); i++) {
-                const uint128_t burner = burnlist[i];
-                vector <uint64_t> ids;
-
-                auto namesbyname = fionames.get_index<"byname"_n>();
-                auto fionamesiter = namesbyname.find(burner);
-                auto tpidbyname = tpids.get_index<"byname"_n>();
-                auto tpiditer = tpidbyname.find(burner);
-
-                //look for any producer, or voter records associated with this name.
-                if (fionamesiter != namesbyname.end()) {
                     action(
                             permission_level{SYSTEMACCOUNT, "active"_n},
                             "eosio"_n,
                             "burnaction"_n,
                             std::make_tuple(burner)
                     ).send();
-
-                    namesbyname.erase(fionamesiter);
-                    tpidbyname.erase(tpiditer);
+                    recordProcessed++;
+                    if (recordProcessed == numbertoburn) { break; }
                 }
-                //remove from the
+                nameiter++;
             }
 
-            for (int i = 0; i < domainburnlist.size(); i++) {
-                const uint128_t burner = domainburnlist[i];
-
-                auto domainsbyname = domains.get_index<"byname"_n>();
-                auto domainsiter = domainsbyname.find(burner);
-
-                if (domainsiter != domainsbyname.end()) {
-                    domainsbyname.erase(domainsiter);
-                }
-            }
+            fio_400_assert(recordProcessed != 0, "burnexpired", "burnexpired",
+                           "No work.", ErrorNoWork);
 
             const string response_string = string("{\"status\": \"OK\",\"items_burned\":") +
-                                     to_string(burnlist.size() + domainburnlist.size()) + string("}");
+                                           to_string(recordProcessed) + string("}");
 
-           fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-             "Transaction is too large", ErrorTransactionTooLarge);
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransactionTooLarge);
 
             send_response(response_string.c_str());
         }
