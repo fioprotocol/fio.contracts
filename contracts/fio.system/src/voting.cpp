@@ -789,15 +789,19 @@ namespace eosiosystem {
                     }else{
                         amount = damount;
                     }
-
+                   
                 }else{
-                    //amount is all the available tokens in the account.
+                    //amount is balance - remaining locked.
+                    if (amount >= lockiter->remaining_locked_amount){
+                        amount -= lockiter->remaining_locked_amount;
+                    }
+                    else {
+                        amount = 0;
+                    }
                     return amount;
                 }
             }
-           //TEST TEST TEST LOCKED TOKENS
-           //TEST TEST TEST LOCKED TOKENS  uint32_t issueplus210 = lockiter->timestamp+(25*60);
-           //TEST TEST TEST LOCKED TOKENS
+
            uint32_t issueplus210 = lockiter->timestamp+(210*SECONDSPERDAY);
 
             //if lock type 2 only subtract remaining locked amount if 210 days since launch, and inhibit locking true.
@@ -812,36 +816,23 @@ namespace eosiosystem {
                 }
             }
         }
-        return amount;
-    }
 
-    glockresult system_contract::get_general_votable_balance(const name &tokenowner){
-
-        glockresult res;
-        //get fio balance for this account,
-        uint32_t present_time = now();
-        const auto my_balance = eosio::token::get_balance("fio.token"_n,tokenowner, FIOSYMBOL.code() );
-        uint64_t amount = my_balance.amount;
-
+        //STAKING
+        //now add in the logic for the general locks.
         auto locks_by_owner = _generallockedtokens.get_index<"byowner"_n>();
-        auto lockiter = locks_by_owner.find(tokenowner.value);
-        if(lockiter != locks_by_owner.end()){
-            res.lockfound = true;
+        auto glockiter = locks_by_owner.find(tokenowner.value);
+        if(glockiter != locks_by_owner.end()){
             //if can vote --
-            if (lockiter->can_vote == 1){
-                res.amount = amount;
-            }else{
-                if (amount > lockiter->remaining_lock_amount) {
-                    res.amount =  amount - lockiter->remaining_lock_amount;
+            if (glockiter->can_vote == 0){
+                if (amount > glockiter->remaining_lock_amount) {
+                    amount =  amount - glockiter->remaining_lock_amount;
                 }else{
-                    res.amount = 0;
+                    amount = 0;
                 }
             }
         }
-        if (!res.lockfound){
-         res.amount = amount;
-        }
-        return res;
+
+        return amount;
     }
 
 
@@ -865,18 +856,8 @@ namespace eosiosystem {
         check(voter != votersbyowner.end(), "user must vote before votes can be updated");
         check(!proxy || !voter->is_proxy, "account registered as a proxy is not allowed to use a proxy");
 
-
-        //change to get_unlocked_balance() Ed 11/25/2019
         uint64_t amount = 0;
-        glockresult res = get_general_votable_balance(voter->owner);
-        if(res.lockfound){
-            amount = res.amount;
-        }else {
-           amount = get_votable_balance(voter->owner);
-        }
-
-        //on the first vote we update the total voted fio.
-
+        amount = get_votable_balance(voter->owner);
 
         auto new_vote_weight = (double)amount;
         if (voter->is_proxy) {
@@ -952,7 +933,6 @@ namespace eosiosystem {
                         p.total_votes = 0;
                     }
                     _gstate.total_producer_vote_weight += pd.second.first;
-                    //check( p.total_votes >= 0, "something bad happened" );
                 });
             } else {
                 check(!pd.second.second , "Invalid or duplicated producers2"); //data corruption
@@ -1274,12 +1254,8 @@ namespace eosiosystem {
         check(!voter.proxy || !voter.is_proxy, "account registered as a proxy is not allowed to use a proxy");
 
         uint64_t amount = 0;
-        glockresult res = get_general_votable_balance(voter.owner);
-        if(res.lockfound){
-            amount = res.amount;
-        }else {
-            amount = get_votable_balance(voter.owner);
-        }
+        amount = get_votable_balance(voter.owner);
+
         //instead of staked we use the voters current FIO balance MAS-522 eliminate stake from voting.
         auto new_weight = (double)amount;
         if (voter.is_proxy) {

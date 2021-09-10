@@ -174,6 +174,7 @@ namespace eosiosystem {
                       acnt == TPIDContract ||
                       acnt == TokenContract ||
                       acnt == TREASURYACCOUNT ||
+                      acnt == STAKINGACCOUNT ||
                       acnt == FIOSYSTEMACCOUNT ||
                       acnt == EscrowContract ||
                       acnt == FIOACCOUNT),"set abi not permitted." );
@@ -216,17 +217,21 @@ namespace eosiosystem {
                 a.remaining_locked_amount = amount;
                 a.timestamp = now();
             });
+        //return status added for staking, to permit unit testing using typescript sdk.
+        const string response_string = string("{\"status\": \"OK\"}");
+        send_response(response_string.c_str());
     }
 
-
-    void eosiosystem::system_contract::addgenlocked(const name &owner, const vector<lockperiods> &periods, const bool &canvote,
+    void eosiosystem::system_contract::addgenlocked(const name &owner, const vector<lockperiodv2> &periods, const bool &canvote,
             const int64_t &amount) {
-        require_auth(TokenContract);
+
+        eosio_assert((has_auth(TokenContract) || has_auth(StakingContract)),
+                     "missing required authority of fio.token or fio.staking");
 
         check(is_account(owner),"account must pre exist");
         check(amount > 0,"cannot add locked token amount less or equal 0.");
 
-        _generallockedtokens.emplace(owner, [&](struct locked_tokens_info &a) {
+        _generallockedtokens.emplace(owner, [&](struct locked_tokens_info_v2 &a) {
             a.id = _generallockedtokens.available_primary_key();
             a.owner_account = owner;
             a.lock_amount = amount;
@@ -238,6 +243,48 @@ namespace eosiosystem {
         });
     }
 
+    void eosiosystem::system_contract::modgenlocked(const name &owner, const vector<lockperiodv2> &periods,
+                                                    const int64_t &amount, const int64_t &rem_lock_amount,
+                                                    const uint32_t &payouts) {
+
+        eosio_assert( has_auth(StakingContract),
+                     "missing required authority of fio.staking");
+
+        check(is_account(owner),"account must pre exist");
+        check(amount > 0,"cannot add locked token amount less or equal 0.");
+        check(rem_lock_amount > 0,"cannot add remaining locked token amount less or equal 0.");
+        check(payouts >= 0,"cannot add payouts less than 0.");
+
+        uint64_t tota = 0;
+
+        for(int i=0;i<periods.size();i++){
+            fio_400_assert(periods[i].amount > 0, "unlock_periods", "Invalid unlock periods",
+                           "Invalid amount value in unlock periods", ErrorInvalidUnlockPeriods);
+            fio_400_assert(periods[i].duration > 0, "unlock_periods", "Invalid unlock periods",
+                           "Invalid duration value in unlock periods", ErrorInvalidUnlockPeriods);
+            tota += periods[i].amount;
+            if (i>0){
+                fio_400_assert(periods[i].duration > periods[i-1].duration, "unlock_periods", "Invalid unlock periods",
+                               "Invalid duration value in unlock periods, must be sorted", ErrorInvalidUnlockPeriods);
+            }
+        }
+
+        fio_400_assert(tota == amount, "unlock_periods", "Invalid unlock periods",
+                       "Invalid total amount for unlock periods", ErrorInvalidUnlockPeriods);
+
+        auto locks_by_owner = _generallockedtokens.get_index<"byowner"_n>();
+        auto lockiter = locks_by_owner.find(owner.value);
+        check(lockiter != locks_by_owner.end(),"error looking up lock owner.");
+        //call the system contract and update the record.
+        locks_by_owner.modify(lockiter, get_self(), [&](auto &av) {
+            av.remaining_lock_amount = rem_lock_amount;
+            av.lock_amount = amount;
+            av.payouts_performed = payouts;
+            av.periods = periods;
+
+        });
+    }
+
 } /// fio.system
 
 
@@ -245,7 +292,7 @@ EOSIO_DISPATCH( eosiosystem::system_contract,
 // native.hpp (newaccount definition is actually in fio.system.cpp)
 (newaccount)(addaction)(remaction)(updateauth)(deleteauth)(linkauth)(unlinkauth)(canceldelay)(onerror)(setabi)
 // fio.system.cpp
-(init)(addlocked)(addgenlocked)(setparams)(setpriv)
+(init)(addlocked)(addgenlocked)(modgenlocked)(setparams)(setpriv)
         (rmvproducer)(updtrevision)
 // delegate_bandwidth.cpp
         (updatepower)
