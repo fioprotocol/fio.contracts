@@ -633,6 +633,17 @@
           }
         ]
       },
+      {
+        "name": "burnnfts",
+        "base": "",
+        "fields": [
+          {
+            "name": "actor",
+            "type": "name"
+          }
+        ]
+      },
+
   ],
   "actions": [
     {
@@ -716,6 +727,10 @@
     },{
       "name": "remallnfts",
       "type": "remallnfts",
+      "ricardian_contract": ""
+    },{
+      "name": "burnnfts",
+      "type": "burnnfts",
       "ricardian_contract": ""
     }
 

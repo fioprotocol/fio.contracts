@@ -1661,6 +1661,40 @@ namespace fioio {
 
         }
 
+
+        [[eosio::action]]
+        void
+        burnnfts(const name &actor) {
+
+          require_auth(actor);
+
+            auto burnqbyname = nftburnqueue.get_index<"byaddress"_n>();
+            auto nftburnq_iter = burnqbyname.begin();
+            auto contractsbyname = nftstable.get_index<"byaddress"_n>();
+            uint16_t counter = 0;
+            while (nftburnq_iter != burnqbyname.end()) {
+              auto nft_iter = contractsbyname.find(nftburnq_iter->fio_address_hash);
+              counter++;
+              if (nft_iter != contractsbyname.end()) { // if row, delete an nft
+                nft_iter = contractsbyname.erase(nft_iter);
+              } else {
+                nftburnq_iter = burnqbyname.erase(nftburnq_iter); // if no more rows, delete from nftburnqueue
+              }
+              if (counter == 50) break;
+            }
+
+          fio_400_assert(counter > 0, "nftburnq", std::to_string(counter),
+            "Nothing to burn", ErrorTransactionTooLarge);
+
+          const string response_string = string("{\"status\": \"OK\"}");
+
+          fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+            "Transaction is too large", ErrorTransactionTooLarge);
+
+          send_response(response_string.c_str());
+
+        }
+
         [[eosio::action]]
         void
         setdomainpub(const string &fio_domain, const int8_t is_public, const int64_t &max_fee, const name &actor,
@@ -1943,14 +1977,8 @@ namespace fioio {
             namesbyname.erase(fioname_iter);
             if( tpid_iter != tpid_by_name.end() ){ tpid_by_name.erase(tpid_iter); }
 
-            auto contractsbyname = nftstable.get_index<"byaddress"_n>();
-            auto nft_iter = contractsbyname.find(nameHash);
-
-            // Burn the NFTs belonging to the FIO address that was just burned
-            auto c = contractsbyname.begin();
-            while (c != contractsbyname.end()) {
-              c = contractsbyname.erase(c);
-            } // while c
+            //// NEW inline function call ////
+            addburnq(fio_address, nameHash );
 
             //fees
             uint64_t fee_amount = 0;
@@ -2160,5 +2188,5 @@ namespace fioio {
     };
 
     EOSIO_DISPATCH(FioNameLookup, (regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(renewaddress)(setdomainpub)(burnexpired)(decrcounter)
-    (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(addnft)(remnft)(remallnfts))
+    (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(addnft)(remnft)(remallnfts)(burnnfts))
 }
