@@ -172,7 +172,7 @@ namespace fioio {
             domexp = get_time_plus_seconds(domexp, SECONDS30DAYS);
 
             fio_400_assert(present_time <= domexp, "payer_fio_address", payer_fio_address,
-                           "FIO Domain expired", ErrorFioNameExpired);
+                           "FIO Domain expired", ErrorDomainExpired);
 
             auto account_iter = clientkeys.find(payer_acct);
             fio_400_assert(account_iter != clientkeys.end(), "payer_fio_address", payer_fio_address,
@@ -381,7 +381,7 @@ namespace fioio {
             //add 30 days to the domain expiration, this call will work until 30 days past expire.
             const uint64_t domexp = get_time_plus_seconds(iterdom->expiration, SECONDS30DAYS);
             fio_400_assert(present_time <= domexp, "payee_fio_address", payee_fio_address,
-                           "FIO Domain expired", ErrorFioNameExpired);
+                           "FIO Domain expired", ErrorDomainExpired);
 
             fio_403_assert(payee_acct == aActor.value, ErrorSignature);
 
@@ -532,7 +532,7 @@ namespace fioio {
             const uint64_t domexp = get_time_plus_seconds(iterdom->expiration, SECONDS30DAYS);
 
             fio_400_assert(present_time <= domexp, "payer_fio_address", payerFioAddress,
-                           "FIO Domain expired", ErrorFioNameExpired);
+                           "FIO Domain expired", ErrorDomainExpired);
 
             const string payer_fio_address = fioname_iter->name;
 
@@ -671,7 +671,7 @@ namespace fioio {
         const uint64_t domexp = get_time_plus_seconds(iterdom->expiration, SECONDS30DAYS);
 
         fio_400_assert(present_time <= domexp, "payee_fio_address", payeeFioAddress,
-                       "FIO Domain expired", ErrorFioNameExpired);
+                       "FIO Domain expired", ErrorDomainExpired);
 
         const string payee_fio_address = fioname_iter->name;
 

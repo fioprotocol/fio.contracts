@@ -125,7 +125,7 @@ namespace fioio {
           auto nftburnq_iter = burnqbyname.find(fioaddhash);
 
           fio_400_assert(nftburnq_iter ==  burnqbyname.end(), "fio_address", fio_address,
-                         "FIO Address NFTs already being burned", ErrorFioNameExpired);
+                         "FIO Address NFTs already being burned", ErrorDomainExpired);
 
           if (nftburnq_iter == burnqbyname.end() ) {
             nftburnqueue.emplace(get_self(), [&](auto &n) {
