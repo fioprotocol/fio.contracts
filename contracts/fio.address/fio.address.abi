@@ -93,6 +93,20 @@
       ]
     },
     {
+      "name": "nftburninfo",
+      "base": "",
+      "fields": [
+        {
+          "name": "id",
+          "type": "uint64"
+        },
+        {
+          "name": "fio_address_hash",
+          "type": "uint128"
+        }
+      ]
+    },
+    {
       "name": "regaddress",
       "base": "",
       "fields": [
@@ -619,6 +633,17 @@
           }
         ]
       },
+      {
+        "name": "burnnfts",
+        "base": "",
+        "fields": [
+          {
+            "name": "actor",
+            "type": "name"
+          }
+        ]
+      },
+
   ],
   "actions": [
     {
@@ -703,6 +728,10 @@
       "name": "remallnfts",
       "type": "remallnfts",
       "ricardian_contract": ""
+    },{
+      "name": "burnnfts",
+      "type": "burnnfts",
+      "ricardian_contract": ""
     }
 
   ],
@@ -746,6 +775,17 @@
       "index_type": "i64",
       "key_names": [],
       "key_types": [],
+    },
+    {
+      "name": "nftburnq",
+      "index_type": "i64",
+      "key_names": [
+        "id"
+      ],
+      "key_types": [
+        "uint64"
+      ],
+      "type": "nftburninfo"
     },
   ],
   "ricardian_clauses": [],

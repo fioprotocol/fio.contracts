@@ -25,6 +25,7 @@ namespace fioio {
         eosio_names_table accountmap;
         bundlevoters_table bundlevoters;
         tpids_table tpids;
+        nftburnq_table nftburnqueue;
         eosiosystem::voters_table voters;
         eosiosystem::top_producers_table topprods;
         eosiosystem::producers_table producers;
@@ -42,6 +43,7 @@ namespace fioio {
                                                                         bundlevoters(FeeContract, FeeContract.value),
                                                                         accountmap(_self, _self.value),
                                                                         nftstable(_self, _self.value),
+                                                                        nftburnqueue(get_self(), get_self().value),
                                                                         tpids(TPIDContract, TPIDContract.value),
                                                                         voters(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                                                                         topprods(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
@@ -115,6 +117,23 @@ namespace fioio {
                 }
             }
             return owner_account_name;
+        }
+
+        inline void addburnq(const string &fio_address, const uint128_t &fioaddhash) {
+
+          auto burnqbyname = nftburnqueue.get_index<"byaddress"_n>();
+          auto nftburnq_iter = burnqbyname.find(fioaddhash);
+
+          fio_400_assert(nftburnq_iter ==  burnqbyname.end(), "fio_address", fio_address,
+                         "FIO Address NFTs already being burned", ErrorFioNameExpired);
+
+          if (nftburnq_iter == burnqbyname.end() ) {
+            nftburnqueue.emplace(get_self(), [&](auto &n) {
+              n.id = nftburnqueue.available_primary_key();
+              n.fio_address_hash = fioaddhash;
+            });
+          }
+
         }
 
         inline void register_errors(const FioAddress &fa, bool domain) const {
@@ -1089,15 +1108,6 @@ namespace fioio {
 
                 }
 
-                auto contractsbyname = nftstable.get_index<"byaddress"_n>();
-                auto nft_iter = contractsbyname.find(burner);
-
-                // Burn the NFTs belonging to the FIO address that was just burned
-                auto c = contractsbyname.begin();
-                while (c != contractsbyname.end()) {
-                  c = contractsbyname.erase(c);
-                } // while c
-
             }
 
             for (int i = 0; i < domainburnlist.size(); i++) {
@@ -1593,17 +1603,8 @@ namespace fioio {
           fio_404_assert(nft_iter != contractsbyname.end(), "FIO Address invalid, does not exist.",
                          ErrorDomainNotFound);
 
-          uint32_t count_erase = 0;
-          while (nft_iter != contractsbyname.end()) {
-            if (nft_iter->fio_address == fio_address.c_str()) {
-              nft_iter = contractsbyname.erase(nft_iter);
-            }
-            count_erase++;
-            if (count_erase == 5) break;
-          } // while c
-
-          fio_400_assert(count_erase > 0, "fio_address", fio_address, "NFT not currently mapped",
-                        ErrorInvalidFioNameFormat);
+          //// NEW inline function call ////
+          addburnq(fio_address, nameHash );
 
            uint64_t fee_amount = 0;
 
@@ -1657,6 +1658,40 @@ namespace fioio {
 
           send_response(response_string.c_str());
 
+
+        }
+
+
+        [[eosio::action]]
+        void
+        burnnfts(const name &actor) {
+
+          require_auth(actor);
+
+            auto burnqbyname = nftburnqueue.get_index<"byaddress"_n>();
+            auto nftburnq_iter = burnqbyname.begin();
+            auto contractsbyname = nftstable.get_index<"byaddress"_n>();
+            uint16_t counter = 0;
+            while (nftburnq_iter != burnqbyname.end()) {
+              auto nft_iter = contractsbyname.find(nftburnq_iter->fio_address_hash);
+              counter++;
+              if (nft_iter != contractsbyname.end()) { // if row, delete an nft
+                nft_iter = contractsbyname.erase(nft_iter);
+              } else {
+                nftburnq_iter = burnqbyname.erase(nftburnq_iter); // if no more rows, delete from nftburnqueue
+              }
+              if (counter == 50) break;
+            }
+
+          fio_400_assert(counter > 0, "nftburnq", std::to_string(counter),
+            "Nothing to burn", ErrorTransactionTooLarge);
+
+          const string response_string = string("{\"status\": \"OK\"}");
+
+          fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+            "Transaction is too large", ErrorTransactionTooLarge);
+
+          send_response(response_string.c_str());
 
         }
 
@@ -1857,11 +1892,8 @@ namespace fioio {
             auto contractsbyname = nftstable.get_index<"byaddress"_n>();
             auto nft_iter = contractsbyname.find(nameHash);
 
-            auto c = contractsbyname.begin();
-            while (c != contractsbyname.end()) {
-              c = contractsbyname.erase(c);
-            } // while c
-
+            //// NEW inline function call ////
+            addburnq(fio_address, nameHash );
 
             //fees
             const uint64_t fee_amount = fee_iter->suf_amount;
@@ -1945,14 +1977,8 @@ namespace fioio {
             namesbyname.erase(fioname_iter);
             if( tpid_iter != tpid_by_name.end() ){ tpid_by_name.erase(tpid_iter); }
 
-            auto contractsbyname = nftstable.get_index<"byaddress"_n>();
-            auto nft_iter = contractsbyname.find(nameHash);
-
-            // Burn the NFTs belonging to the FIO address that was just burned
-            auto c = contractsbyname.begin();
-            while (c != contractsbyname.end()) {
-              c = contractsbyname.erase(c);
-            } // while c
+            //// NEW inline function call ////
+            addburnq(fio_address, nameHash );
 
             //fees
             uint64_t fee_amount = 0;
@@ -2162,5 +2188,5 @@ namespace fioio {
     };
 
     EOSIO_DISPATCH(FioNameLookup, (regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(renewaddress)(setdomainpub)(burnexpired)(decrcounter)
-    (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(addnft)(remnft)(remallnfts))
+    (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(addnft)(remnft)(remallnfts)(burnnfts))
 }

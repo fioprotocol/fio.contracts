@@ -10,6 +10,8 @@
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/singleton.hpp>
 #include <eosiolib/asset.hpp>
+#include <eosiolib/binary_extension.hpp>
+
 #include <string>
 
 using std::string;
@@ -127,6 +129,8 @@ namespace fioio {
       string hash;
       uint128_t hash_index;
       string metadata;
+      eosio::binary_extension<uint64_t> property1;
+      eosio::binary_extension<uint128_t> property2;
 
       uint64_t primary_key() const { return id; }
       uint128_t by_address() const { return fio_address_hash; }
@@ -167,5 +171,21 @@ namespace fioio {
 
       EOSLIB_SERIALIZE( remnftparam, (chain_code)(contract_address)(token_id))
     };
+
+
+    struct [[eosio::action]] nftburninfo {
+      uint64_t id;
+      uint128_t fio_address_hash;
+      uint128_t primary_key() const { return id; }
+      uint128_t by_address() const { return fio_address_hash; }
+      EOSLIB_SERIALIZE( nftburninfo, (id)(fio_address_hash))
+    };
+
+
+    typedef multi_index<"nftburnq"_n, nftburninfo,
+            indexed_by<"byaddress"_n, const_mem_fun < nftburninfo, uint128_t, &nftburninfo::by_address>>
+    >
+    nftburnq_table;
+
 
 }
