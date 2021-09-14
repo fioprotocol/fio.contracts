@@ -180,7 +180,7 @@ namespace fioio {
         uint32_t fio_address_update( const name &actor, const name &owner, const uint64_t max_fee, const FioAddress &fa,
                                     const string &tpid) {
 
-            const uint32_t expiration_time = get_now_plus_one_year();
+            const uint32_t expiration_time = 4294967295; //Sunday, February 7, 2106 6:28:15 AM GMT+0000 (Max 32 bit expiration)
             const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
             const uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
 

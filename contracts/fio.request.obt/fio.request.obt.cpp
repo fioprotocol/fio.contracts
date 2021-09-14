@@ -515,7 +515,6 @@ namespace fioio {
             fio_403_assert(fioname_iter != namesbyname.end(), ErrorSignature);
 
             const uint64_t account = fioname_iter->owner_account;
-            const uint64_t payernameexp = fioname_iter->expiration;
             const string payerFioAddress = fioname_iter->name;
             FioAddress payerfa;
             getFioAddressStruct(payerFioAddress, payerfa);
@@ -654,7 +653,6 @@ namespace fioio {
 
         fio_403_assert(fioname_iter != namesbyname.end(), ErrorSignature);
         const uint64_t account = fioname_iter->owner_account;
-        const uint64_t payeenameexp = fioname_iter->expiration;
         const string payeeFioAddress = fioname_iter->name;
         FioAddress payeefa;
         getFioAddressStruct(payeeFioAddress, payeefa);
