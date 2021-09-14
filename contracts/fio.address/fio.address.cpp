@@ -292,13 +292,9 @@ namespace fioio {
             auto namesbyname = fionames.get_index<"byname"_n>();
             auto fioname_iter = namesbyname.find(nameHash);
             fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fioaddress, "Invalid FIO Address", ErrorFioNameNotRegistered);
-            const uint32_t name_expiration = fioname_iter->expiration;
-            const uint32_t present_time = now();
 
             const uint64_t account = fioname_iter->owner_account;
             fio_403_assert(account == actor.value, ErrorSignature);
-            fio_400_assert(present_time <= name_expiration, "fio_address", fioaddress,
-                           "FIO Address expired", ErrorFioNameExpired);
 
             auto domainsbyname = domains.get_index<"byname"_n>();
             auto domains_iter = domainsbyname.find(domainHash);
@@ -308,10 +304,8 @@ namespace fioio {
             //add 30 days to the domain expiration, this call will work until 30 days past expire.
             const uint32_t expiration = get_time_plus_seconds(domains_iter->expiration,SECONDS30DAYS);
 
-            fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+            fio_400_assert(now() <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
                            ErrorDomainExpired);
-
-
 
             tokenpubaddr tempStruct;
             string token;
@@ -411,13 +405,8 @@ namespace fioio {
             auto fioname_iter = namesbyname.find(nameHash);
             fio_404_assert(fioname_iter != namesbyname.end(), "FIO Address not found", ErrorFioNameNotRegistered);
 
-            const uint32_t name_expiration = fioname_iter->expiration;
-            const uint32_t present_time = now();
-
             const uint64_t account = fioname_iter->owner_account;
             fio_403_assert(account == actor.value, ErrorSignature);
-            fio_400_assert(present_time <= name_expiration, "fio_address", fioaddress,
-                           "FIO Address expired", ErrorFioNameExpired);
 
             auto domainsbyname = domains.get_index<"byname"_n>();
             auto domains_iter = domainsbyname.find(domainHash);
@@ -427,7 +416,7 @@ namespace fioio {
             //add 30 days to the domain expiration, this call will work until 30 days past expire.
             const uint32_t expiration = get_time_plus_seconds(domains_iter->expiration, SECONDS30DAYS);
 
-            fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+            fio_400_assert(now() <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
                            ErrorDomainExpired);
 
             int idx = 0;
@@ -516,13 +505,8 @@ namespace fioio {
             auto fioname_iter = namesbyname.find(nameHash);
             fio_404_assert(fioname_iter != namesbyname.end(), "FIO Address not found", ErrorFioNameNotRegistered);
 
-            const uint32_t name_expiration = fioname_iter->expiration;
-            const uint32_t present_time = now();
-
             const uint64_t account = fioname_iter->owner_account;
             fio_403_assert(account == owner.value, ErrorSignature);
-            fio_400_assert(present_time <= name_expiration, "fio_address", fioaddress,
-                           "FIO Address expired", ErrorFioNameExpired);
 
             auto domainsbyname = domains.get_index<"byname"_n>();
             auto domains_iter = domainsbyname.find(domainHash);
@@ -532,7 +516,7 @@ namespace fioio {
             //add 30 days to the domain expiration, this call will work until 30 days past expire.
             const uint32_t expiration = get_time_plus_seconds(domains_iter->expiration,SECONDS30DAYS);
 
-            fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+            fio_400_assert(now() <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
                            ErrorDomainExpired);
 
             tokenpubaddr tempStruct;
@@ -991,20 +975,8 @@ namespace fioio {
 
         /*
          * This action will look for expired domains, then look for expired addresses, it will burn a total
-         * of 100 addresses each time called. please see the code for the logic of identifying expired domains
+         * of 25 addresses each time called. please see the code for the logic of identifying expired domains
          * and addresses.
-         *   Dev note on testing
-         *   to make an expired domain.
-         *   clio -u http://localhost:8889 push action -j fio.address expdomain '{"actor":"r41zuwovtn44","domain":"expired"}' --permission r41zuwovtn44@active
-         *   to create expired addresses under the specified domain.
-         *   clio -u http://localhost:8889 push action -j fio.address expaddresses '{"actor":"r41zuwovtn44","domain":"expired","address_prefix":"eddieexp","number_addresses_to_add":"5"}' --permission r41zuwovtn44@active
-         *   scenarios that need tested.
-         *   1) create an expired domain with fewer than 100 expired addresses within it. run the burnexpired
-         *   2) create an expired domain with over 100 expired addresses within it. run the burnexpired repeatedly until all are removed.
-         *   3) create an expired address under a non expired domain. run the burn expired.
-         *   4) create an expired domain with a few expired addresses. create an expired address under a non expired domain. run burnexpired.
-         *   5) create an expired domain with over 100 addresses, create over 100 expired addresses in a non expired domain. run burnexpired repeatedly until all are removed.
-         *
          */
         [[eosio::action]]
         void burnexpired() {
@@ -1225,9 +1197,6 @@ namespace fioio {
 
          fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature); // check if actor owns FIO Address
 
-         fio_400_assert(now() <= fioname_iter->expiration, "fio_address", fio_address,
-                        "FIO Address expired", ErrorFioNameExpired);
-
          auto domainsbyname = domains.get_index<"byname"_n>();
          auto domains_iter = domainsbyname.find(domainHash);
 
@@ -1403,7 +1372,6 @@ namespace fioio {
            fio_400_assert(nfts.size() <= 3 && nfts.size() >= 1, "fio_address", fio_address, "Min 1, Max 3 NFTs are allowed",
                            ErrorInvalidFioNameFormat); // Don't forget to set the error amount if/when changing MAX_SET_ADDRESSES
 
-
            const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
            const uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
            auto namesbyname = fionames.get_index<"byname"_n>();
@@ -1411,9 +1379,6 @@ namespace fioio {
            fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address, "Invalid FIO Address", ErrorFioNameNotRegistered);
 
            fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature); // check if actor owns FIO Address
-
-           fio_400_assert(now() <= fioname_iter->expiration, "fio_address", fio_address,
-                          "FIO Address expired", ErrorFioNameExpired);
 
            auto domainsbyname = domains.get_index<"byname"_n>();
            auto domains_iter = domainsbyname.find(domainHash);
@@ -1532,9 +1497,6 @@ namespace fioio {
          fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address, "Invalid FIO Address", ErrorFioNameNotRegistered);
 
          fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature); // check if actor owns FIO Address
-
-         fio_400_assert(now() <= fioname_iter->expiration, "fio_address", fio_address,
-                        "FIO Address expired", ErrorFioNameExpired);
 
          auto domainsbyname = domains.get_index<"byname"_n>();
          auto domains_iter = domainsbyname.find(domainHash);
@@ -1791,11 +1753,6 @@ namespace fioio {
             fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fa.fioaddress,
                            "FIO Address not registered", ErrorFioNameAlreadyRegistered);
 
-            const uint32_t expiration = fioname_iter->expiration;
-            const uint32_t present_time = now();
-            fio_400_assert(present_time <= expiration, "fio_address", fio_address, "FIO Address expired. Renew first.",
-                           ErrorDomainExpired);
-
             fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature);
             const uint128_t endpoint_hash = string_to_uint128_hash(TRANSFER_ADDRESS_ENDPOINT);
 
@@ -1897,11 +1854,6 @@ namespace fioio {
                            "FIO Address not registered", ErrorFioNameAlreadyRegistered);
 
             fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature);
-
-            const uint32_t expiration = fioname_iter->expiration;
-            const uint32_t present_time = now();
-            fio_400_assert(present_time <= expiration, "fio_address", fio_address, "FIO Address expired. Renew first.",
-                           ErrorDomainExpired);
 
             auto producersbyaddress = producers.get_index<"byaddress"_n>();
             auto prod_iter = producersbyaddress.find(nameHash);
@@ -2069,10 +2021,6 @@ namespace fioio {
             const uint32_t domain_expiration = domains_iter->expiration;
             const uint32_t present_time = now();
             fio_400_assert(present_time <= domain_expiration, "fio_address", fa.fioaddress, "FIO Domain expired",
-                           ErrorDomainExpired);
-
-            const uint32_t expiration = fioname_iter->expiration;
-            fio_400_assert(present_time <= expiration, "fio_address", fa.fioaddress, "FIO Address expired.",
                            ErrorDomainExpired);
 
             const uint128_t endpoint_hash = string_to_uint128_hash("add_bundled_transactions");

@@ -159,11 +159,6 @@ namespace fioio {
                            "No such FIO Address",
                            ErrorFioNameNotReg);
             uint64_t payer_acct = fioname_iter->owner_account;
-            uint64_t payernameexp = fioname_iter->expiration;
-
-            fio_400_assert(present_time <= payernameexp, "payer_fio_address", payer_fio_address,
-                           "FIO Address expired", ErrorFioNameExpired);
-
             uint128_t domHash = string_to_uint128_hash(payerfa.fiodomain.c_str());
 
             auto domainsbyname = domains.get_index<"byname"_n>();
@@ -375,10 +370,6 @@ namespace fioio {
                            ErrorClientKeyNotFound);
             string payee_key = account_iter->clientkey;
 
-            const uint64_t payeenameexp = fioname_iter->expiration;
-            fio_400_assert(present_time <= payeenameexp, "payee_fio_address", payee_fio_address,
-                           "FIO Address expired", ErrorFioNameExpired);
-
             const uint128_t domHash = string_to_uint128_hash(payeefa.fiodomain.c_str());
             auto domainsbyname = domains.get_index<"byname"_n>();
             auto iterdom = domainsbyname.find(domHash);
@@ -529,9 +520,6 @@ namespace fioio {
             FioAddress payerfa;
             getFioAddressStruct(payerFioAddress, payerfa);
 
-            fio_400_assert(present_time <= payernameexp, "payer_fio_address", payerFioAddress,
-                           "FIO Address expired", ErrorFioNameExpired);
-
             const uint128_t domHash = string_to_uint128_hash(payerfa.fiodomain.c_str());
             auto domainsbyname = domains.get_index<"byname"_n>();
             auto iterdom = domainsbyname.find(domHash);
@@ -670,9 +658,6 @@ namespace fioio {
         const string payeeFioAddress = fioname_iter->name;
         FioAddress payeefa;
         getFioAddressStruct(payeeFioAddress, payeefa);
-
-        fio_400_assert(present_time <= payeenameexp, "payee_fio_address", payeeFioAddress,
-                       "FIO Address expired", ErrorFioNameExpired);
 
         const uint128_t domHash = string_to_uint128_hash(payeefa.fiodomain.c_str());
         auto domainsbyname = domains.get_index<"byname"_n>();
