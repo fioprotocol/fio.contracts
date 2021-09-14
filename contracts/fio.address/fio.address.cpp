@@ -318,7 +318,6 @@ namespace fioio {
                 chaincode = tpa->chain_code.c_str();
                 public_address = tpa->public_address.c_str();
 
-
                 fio_400_assert(validateTokenNameFormat(token), "token_code", tpa->token_code, "Invalid token code format",
                                ErrorInvalidFioNameFormat);
                 fio_400_assert(validateChainNameFormat(chaincode), "chain_code", tpa->chain_code, "Invalid chain code format",
