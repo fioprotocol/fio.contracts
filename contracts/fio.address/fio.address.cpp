@@ -871,107 +871,6 @@ namespace fioio {
             send_response(response_string.c_str());
         }
 
-        /**********
-         * This action will renew a fio address, the expiration will be extended by one year from the
-         * previous value of the expiration
-         * @param fio_address this is the fio address to be renewed.
-         * @param max_fee this is the maximum fee the user is willing to pay for this transaction
-         * @param tpid this is the owner of the domain
-         * @param actor this is the account for the user requesting the renewal.
-         */
-        [[eosio::action]]
-        void
-        renewaddress(const string &fio_address, const int64_t &max_fee, const string &tpid, const name &actor) {
-            require_auth(actor);
-            fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
-                           "TPID must be empty or valid FIO address",
-                           ErrorPubKeyValid);
-            FioAddress fa;
-
-            fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
-                           ErrorMaxFeeInvalid);
-
-            getFioAddressStruct(fio_address, fa);
-            register_errors(fa, false);
-
-            const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
-            const uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
-
-            fio_400_assert(!fa.domainOnly, "fio_address", fa.fioaddress, "Invalid FIO address",
-                           ErrorInvalidFioNameFormat);
-
-            auto domainsbyname = domains.get_index<"byname"_n>();
-            auto domains_iter = domainsbyname.find(domainHash);
-
-            fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fa.fioaddress,
-                           "FIO Domain not registered",
-                           ErrorDomainNotRegistered);
-
-            //add 30 days to the domain expiration, this call will work until 30 days past expire.
-            const uint32_t domain_expiration = get_time_plus_seconds(domains_iter->expiration,SECONDS30DAYS);
-
-            const uint32_t present_time = now();
-            fio_400_assert(present_time <= domain_expiration, "fio_address", fa.fioaddress, "FIO Domain expired",
-                           ErrorDomainExpired);
-
-            auto namesbyname = fionames.get_index<"byname"_n>();
-            auto fioname_iter = namesbyname.find(nameHash);
-            fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fa.fioaddress,
-                           "FIO address not registered", ErrorFioNameNotRegistered);
-
-            const uint64_t expiration_time = fioname_iter->expiration;
-            const uint64_t bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
-            const uint128_t endpoint_hash = string_to_uint128_hash(RENEW_ADDRESS_ENDPOINT);
-
-            auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
-            auto fee_iter = fees_by_endpoint.find(endpoint_hash);
-
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", RENEW_ADDRESS_ENDPOINT,
-                           "FIO fee not found for endpoint", ErrorNoEndpoint);
-
-            const uint64_t reg_amount = fee_iter->suf_amount;
-            const uint64_t fee_type = fee_iter->type;
-
-            fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
-                           "unexpected fee type for endpoint renew_fio_address, expected 0",
-                           ErrorNoEndpoint);
-
-            fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
-                           ErrorMaxFeeExceeded);
-
-            fio_fees(actor, asset(reg_amount, FIOSYMBOL), RENEW_ADDRESS_ENDPOINT);
-            processbucketrewards(tpid, reg_amount, get_self(),actor);
-
-            const uint64_t new_expiration_time = get_time_plus_one_year(expiration_time);
-
-            struct tm timeinfo;
-            fioio::convertfiotime(new_expiration_time, &timeinfo);
-            std::string timebuffer = fioio::tmstringformat(timeinfo);
-
-            namesbyname.modify(fioname_iter, _self, [&](struct fioname &a) {
-                a.expiration = new_expiration_time;
-                a.bundleeligiblecountdown = getBundledAmount() + bundleeligiblecountdown;
-            });
-
-            const string response_string = string("{\"status\": \"OK\",\"expiration\":\"") +
-                                   timebuffer + string("\",\"fee_collected\":") +
-                                   to_string(reg_amount) + string("}");
-
-            if (RENEWADDRESSRAM > 0) {
-                action(
-                        permission_level{SYSTEMACCOUNT, "active"_n},
-                        "eosio"_n,
-                        "incram"_n,
-                        std::make_tuple(actor, RENEWADDRESSRAM)
-                ).send();
-            }
-
-            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-              "Transaction is too large", ErrorTransactionTooLarge);
-
-            send_response(response_string.c_str());
-        }
-
         /*
          * This action will look for expired domains, then look for expired addresses, it will burn a total
          * of 25 addresses each time called. please see the code for the logic of identifying expired domains
@@ -2082,6 +1981,6 @@ namespace fioio {
         }
     };
 
-    EOSIO_DISPATCH(FioNameLookup, (regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(renewaddress)(setdomainpub)(burnexpired)(decrcounter)
+    EOSIO_DISPATCH(FioNameLookup, (regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(setdomainpub)(burnexpired)(decrcounter)
     (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(addnft)(remnft)(remallnfts)(burnnfts))
 }
