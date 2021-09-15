@@ -48,7 +48,8 @@ namespace fioio {
                                                                         voters(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                                                                         topprods(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                                                                         producers(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
-                                                                        lockedTokensTable(SYSTEMACCOUNT,SYSTEMACCOUNT.value){
+                                                                        lockedTokensTable(SYSTEMACCOUNT,
+                                                                                          SYSTEMACCOUNT.value) {
             configs_singleton configsSingleton(FeeContract, FeeContract.value);
             appConfig = configsSingleton.get_or_default(config());
         }
@@ -121,18 +122,18 @@ namespace fioio {
 
         inline void addburnq(const string &fio_address, const uint128_t &fioaddhash) {
 
-          auto burnqbyname = nftburnqueue.get_index<"byaddress"_n>();
-          auto nftburnq_iter = burnqbyname.find(fioaddhash);
+            auto burnqbyname = nftburnqueue.get_index<"byaddress"_n>();
+            auto nftburnq_iter = burnqbyname.find(fioaddhash);
 
-          fio_400_assert(nftburnq_iter ==  burnqbyname.end(), "fio_address", fio_address,
-                         "FIO Address NFTs already being burned", ErrorFioNameExpired);
+            fio_400_assert(nftburnq_iter == burnqbyname.end(), "fio_address", fio_address,
+                           "FIO Address NFTs already being burned", ErrorDomainExpired);
 
-          if (nftburnq_iter == burnqbyname.end() ) {
-            nftburnqueue.emplace(get_self(), [&](auto &n) {
-              n.id = nftburnqueue.available_primary_key();
-              n.fio_address_hash = fioaddhash;
-            });
-          }
+            if (nftburnq_iter == burnqbyname.end()) {
+                nftburnqueue.emplace(get_self(), [&](auto &n) {
+                    n.id = nftburnqueue.available_primary_key();
+                    n.fio_address_hash = fioaddhash;
+                });
+            }
 
         }
 
@@ -148,7 +149,7 @@ namespace fioio {
 
         inline uint64_t getBundledAmount() {
             int totalcount = 0;
-            vector<uint64_t> votes;
+            vector <uint64_t> votes;
             uint64_t returnvalue = 0;
 
             if (bundlevoters.end() == bundlevoters.begin()) {
@@ -157,16 +158,16 @@ namespace fioio {
 
             for (const auto &itr : topprods) {
                 auto vote_iter = bundlevoters.find(itr.producer.value);
-                if( vote_iter != bundlevoters.end()){
+                if (vote_iter != bundlevoters.end()) {
                     votes.push_back(vote_iter->bundledbvotenumber);
                 }
             }
 
             size_t size = votes.size();
 
-            if (size < MIN_VOTES_FOR_AVERAGING ) {
+            if (size < MIN_VOTES_FOR_AVERAGING) {
                 return DEFAULTBUNDLEAMT;
-            } else if (size >= MIN_VOTES_FOR_AVERAGING){
+            } else if (size >= MIN_VOTES_FOR_AVERAGING) {
                 sort(votes.begin(), votes.end());
                 if (size % 2 == 0) {
                     return (votes[size / 2 - 1] + votes[size / 2]) / 2;
@@ -177,10 +178,10 @@ namespace fioio {
             return DEFAULTBUNDLEAMT;
         }
 
-        uint32_t fio_address_update( const name &actor, const name &owner, const uint64_t max_fee, const FioAddress &fa,
+        uint32_t fio_address_update(const name &actor, const name &owner, const uint64_t max_fee, const FioAddress &fa,
                                     const string &tpid) {
 
-            const uint32_t expiration_time = get_now_plus_one_year();
+            const uint32_t expiration_time = 4294967295; //Sunday, February 7, 2106 6:28:15 AM GMT+0000 (Max 32 bit expiration)
             const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
             const uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
 
@@ -222,7 +223,7 @@ namespace fioio {
                            "Owner is not bound in the account map.", ErrorActorNotInFioAccountMap);
 
             uint64_t id = fionames.available_primary_key();
-            vector<tokenpubaddr> pubaddresses;
+            vector <tokenpubaddr> pubaddresses;
             tokenpubaddr t1;
             t1.public_address = key_iter->clientkey;
             t1.token_code = "FIO";
@@ -279,7 +280,7 @@ namespace fioio {
 
 
         uint64_t perform_remove_address
-                (const string &fioaddress, const vector<tokenpubaddr> &pubaddresses,
+                (const string &fioaddress, const vector <tokenpubaddr> &pubaddresses,
                  const uint64_t &max_fee, const FioAddress &fa,
                  const name &actor, const string &tpid) {
 
@@ -291,14 +292,11 @@ namespace fioio {
 
             auto namesbyname = fionames.get_index<"byname"_n>();
             auto fioname_iter = namesbyname.find(nameHash);
-            fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fioaddress, "Invalid FIO Address", ErrorFioNameNotRegistered);
-            const uint32_t name_expiration = fioname_iter->expiration;
-            const uint32_t present_time = now();
+            fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fioaddress, "Invalid FIO Address",
+                           ErrorFioNameNotRegistered);
 
             const uint64_t account = fioname_iter->owner_account;
             fio_403_assert(account == actor.value, ErrorSignature);
-            fio_400_assert(present_time <= name_expiration, "fio_address", fioaddress,
-                           "FIO Address expired", ErrorFioNameExpired);
 
             auto domainsbyname = domains.get_index<"byname"_n>();
             auto domains_iter = domainsbyname.find(domainHash);
@@ -306,36 +304,36 @@ namespace fioio {
             fio_404_assert(domains_iter != domainsbyname.end(), "FIO Domain not found", ErrorDomainNotFound);
 
             //add 30 days to the domain expiration, this call will work until 30 days past expire.
-            const uint32_t expiration = get_time_plus_seconds(domains_iter->expiration,SECONDS30DAYS);
+            const uint32_t expiration = get_time_plus_seconds(domains_iter->expiration, SECONDS30DAYS);
 
-            fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+            fio_400_assert(now() <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
                            ErrorDomainExpired);
-
-
 
             tokenpubaddr tempStruct;
             string token;
             string chaincode;
             string public_address;
 
-            for(auto tpa = pubaddresses.begin(); tpa != pubaddresses.end(); ++tpa) {
+            for (auto tpa = pubaddresses.begin(); tpa != pubaddresses.end(); ++tpa) {
                 bool wasFound = false;
                 token = tpa->token_code.c_str();
                 chaincode = tpa->chain_code.c_str();
                 public_address = tpa->public_address.c_str();
 
-
-                fio_400_assert(validateTokenNameFormat(token), "token_code", tpa->token_code, "Invalid token code format",
+                fio_400_assert(validateTokenNameFormat(token), "token_code", tpa->token_code,
+                               "Invalid token code format",
                                ErrorInvalidFioNameFormat);
-                fio_400_assert(validateChainNameFormat(chaincode), "chain_code", tpa->chain_code, "Invalid chain code format",
+                fio_400_assert(validateChainNameFormat(chaincode), "chain_code", tpa->chain_code,
+                               "Invalid chain code format",
                                ErrorInvalidFioNameFormat);
                 fio_400_assert(validatePubAddressFormat(tpa->public_address), "public_address", tpa->public_address,
                                "Invalid public address format",
                                ErrorChainAddressEmpty);
 
                 int idx = 0;
-                for( auto it = fioname_iter->addresses.begin(); it != fioname_iter->addresses.end(); ++it ) {
-                    if( (it->token_code == token) && (it->chain_code == chaincode) && it->public_address == public_address ){
+                for (auto it = fioname_iter->addresses.begin(); it != fioname_iter->addresses.end(); ++it) {
+                    if ((it->token_code == token) && (it->chain_code == chaincode) &&
+                        it->public_address == public_address) {
                         wasFound = true;
                         break;
                     }
@@ -345,7 +343,7 @@ namespace fioio {
                                ErrorInvalidFioNameFormat);
 
                 namesbyname.modify(fioname_iter, actor, [&](struct fioname &a) {
-                    a.addresses.erase(a.addresses.begin()+idx);
+                    a.addresses.erase(a.addresses.begin() + idx);
                 });
 
             }
@@ -377,13 +375,14 @@ namespace fioio {
                 });
             } else {
                 fee_amount = fee_iter->suf_amount;
-                fio_400_assert(max_fee >= (int64_t)fee_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
+                               "Fee exceeds supplied maximum.",
                                ErrorMaxFeeExceeded);
 
                 //NOTE -- question here, should we always record the transfer for the fees, even when its zero,
                 //or should we do as this code does and not do a transaction when the fees are 0.
                 fio_fees(actor, asset(reg_amount, FIOSYMBOL), REMOVE_PUB_ADDRESS_ENDPOINT);
-                process_rewards(tpid, reg_amount,get_self(), actor);
+                process_rewards(tpid, reg_amount, get_self(), actor);
 
                 if (reg_amount > 0) {
                     INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
@@ -411,13 +410,8 @@ namespace fioio {
             auto fioname_iter = namesbyname.find(nameHash);
             fio_404_assert(fioname_iter != namesbyname.end(), "FIO Address not found", ErrorFioNameNotRegistered);
 
-            const uint32_t name_expiration = fioname_iter->expiration;
-            const uint32_t present_time = now();
-
             const uint64_t account = fioname_iter->owner_account;
             fio_403_assert(account == actor.value, ErrorSignature);
-            fio_400_assert(present_time <= name_expiration, "fio_address", fioaddress,
-                           "FIO Address expired", ErrorFioNameExpired);
 
             auto domainsbyname = domains.get_index<"byname"_n>();
             auto domains_iter = domainsbyname.find(domainHash);
@@ -427,7 +421,7 @@ namespace fioio {
             //add 30 days to the domain expiration, this call will work until 30 days past expire.
             const uint32_t expiration = get_time_plus_seconds(domains_iter->expiration, SECONDS30DAYS);
 
-            fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+            fio_400_assert(now() <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
                            ErrorDomainExpired);
 
             int idx = 0;
@@ -483,13 +477,14 @@ namespace fioio {
                 });
             } else {
                 fee_amount = fee_iter->suf_amount;
-                fio_400_assert(max_fee >= (int64_t)fee_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
+                               "Fee exceeds supplied maximum.",
                                ErrorMaxFeeExceeded);
 
                 //NOTE -- question here, should we always record the transfer for the fees, even when its zero,
                 //or should we do as this code does and not do a transaction when the fees are 0.
                 fio_fees(actor, asset(reg_amount, FIOSYMBOL), REMOVE_ALL_PUB_ENDPOINT);
-                process_rewards(tpid, reg_amount,get_self(), actor);
+                process_rewards(tpid, reg_amount, get_self(), actor);
 
                 if (reg_amount > 0) {
                     INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
@@ -502,9 +497,9 @@ namespace fioio {
         }
 
         uint64_t chain_data_update
-         (const string &fioaddress, const vector<tokenpubaddr> &pubaddresses,
-                          const uint64_t &max_fee, const FioAddress &fa,
-                          const name &actor, const name &owner, const bool &isFIO, const string &tpid) {
+                (const string &fioaddress, const vector <tokenpubaddr> &pubaddresses,
+                 const uint64_t &max_fee, const FioAddress &fa,
+                 const name &actor, const name &owner, const bool &isFIO, const string &tpid) {
 
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
@@ -516,13 +511,8 @@ namespace fioio {
             auto fioname_iter = namesbyname.find(nameHash);
             fio_404_assert(fioname_iter != namesbyname.end(), "FIO Address not found", ErrorFioNameNotRegistered);
 
-            const uint32_t name_expiration = fioname_iter->expiration;
-            const uint32_t present_time = now();
-
             const uint64_t account = fioname_iter->owner_account;
             fio_403_assert(account == owner.value, ErrorSignature);
-            fio_400_assert(present_time <= name_expiration, "fio_address", fioaddress,
-                           "FIO Address expired", ErrorFioNameExpired);
 
             auto domainsbyname = domains.get_index<"byname"_n>();
             auto domains_iter = domainsbyname.find(domainHash);
@@ -530,23 +520,25 @@ namespace fioio {
             fio_404_assert(domains_iter != domainsbyname.end(), "FIO Domain not found", ErrorDomainNotFound);
 
             //add 30 days to the domain expiration, this call will work until 30 days past expire.
-            const uint32_t expiration = get_time_plus_seconds(domains_iter->expiration,SECONDS30DAYS);
+            const uint32_t expiration = get_time_plus_seconds(domains_iter->expiration, SECONDS30DAYS);
 
-            fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+            fio_400_assert(now() <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
                            ErrorDomainExpired);
 
             tokenpubaddr tempStruct;
             string token;
             string chaincode;
 
-            for(auto tpa = pubaddresses.begin(); tpa != pubaddresses.end(); ++tpa) {
+            for (auto tpa = pubaddresses.begin(); tpa != pubaddresses.end(); ++tpa) {
                 bool wasFound = false;
                 token = tpa->token_code.c_str();
                 chaincode = tpa->chain_code.c_str();
 
-                fio_400_assert(validateTokenNameFormat(token), "token_code", tpa->token_code, "Invalid token code format",
+                fio_400_assert(validateTokenNameFormat(token), "token_code", tpa->token_code,
+                               "Invalid token code format",
                                ErrorInvalidFioNameFormat);
-                fio_400_assert(validateChainNameFormat(chaincode), "chain_code", tpa->chain_code, "Invalid chain code format",
+                fio_400_assert(validateChainNameFormat(chaincode), "chain_code", tpa->chain_code,
+                               "Invalid chain code format",
                                ErrorInvalidFioNameFormat);
                 fio_400_assert(validatePubAddressFormat(tpa->public_address), "public_address", tpa->public_address,
                                "Invalid public address format",
@@ -571,8 +563,9 @@ namespace fioio {
                     }
                 }
 
-                if(!wasFound){
-                    fio_400_assert(fioname_iter->addresses.size() != MAX_SET_ADDRESSES, "token_code", tpa->token_code, "Maximum token codes mapped to single FIO Address reached. Only 200 can be mapped.",
+                if (!wasFound) {
+                    fio_400_assert(fioname_iter->addresses.size() != MAX_SET_ADDRESSES, "token_code", tpa->token_code,
+                                   "Maximum token codes mapped to single FIO Address reached. Only 200 can be mapped.",
                                    ErrorInvalidFioNameFormat); // Don't forget to set the error amount if/when changing MAX_SET_ADDRESSES
 
                     tempStruct.public_address = tpa->public_address;
@@ -616,13 +609,14 @@ namespace fioio {
                 });
             } else {
                 fee_amount = fee_iter->suf_amount;
-                fio_400_assert(max_fee >= (int64_t)fee_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
+                               "Fee exceeds supplied maximum.",
                                ErrorMaxFeeExceeded);
 
                 //NOTE -- question here, should we always record the transfer for the fees, even when its zero,
                 //or should we do as this code does and not do a transaction when the fees are 0.
                 fio_fees(actor, asset(reg_amount, FIOSYMBOL), ADD_PUB_ADDRESS_ENDPOINT);
-                process_rewards(tpid, reg_amount,get_self(), actor);
+                process_rewards(tpid, reg_amount, get_self(), actor);
 
                 if (reg_amount > 0) {
                     INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
@@ -646,6 +640,7 @@ namespace fioio {
         inline uint32_t get_now_plus_one_year() {
             return now() + YEARTOSECONDS;
         }
+
         /***
          * This method will decrement the now time by the specified number of years.
          * @param nyearsago   this is the number of years ago from now to return as a value
@@ -654,6 +649,7 @@ namespace fioio {
         inline uint32_t get_now_minus_years(const uint32_t nyearsago) {
             return now() - (YEARTOSECONDS * nyearsago);
         }
+
         /***
          * This method will increment the now time by the specified number of years.
          * @param nyearsago   this is the number of years from now to return as a value
@@ -668,7 +664,8 @@ namespace fioio {
 
         [[eosio::action]]
         void
-        regaddress(const string &fio_address, const string &owner_fio_public_key, const int64_t &max_fee, const name &actor,
+        regaddress(const string &fio_address, const string &owner_fio_public_key, const int64_t &max_fee,
+                   const name &actor,
                    const string &tpid) {
 
             FioAddress fa;
@@ -676,12 +673,12 @@ namespace fioio {
                            "TPID must be empty or valid FIO address",
                            ErrorPubKeyValid);
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
-                          ErrorMaxFeeInvalid);
+                           ErrorMaxFeeInvalid);
 
-              if (owner_fio_public_key.length() > 0) {
-                fio_400_assert(isPubKeyValid(owner_fio_public_key),"owner_fio_public_key", owner_fio_public_key,
-                          "Invalid FIO Public Key",
-                          ErrorPubKeyValid);
+            if (owner_fio_public_key.length() > 0) {
+                fio_400_assert(isPubKeyValid(owner_fio_public_key), "owner_fio_public_key", owner_fio_public_key,
+                               "Invalid FIO Public Key",
+                               ErrorPubKeyValid);
             }
 
             name owner_account_name = accountmgnt(actor, owner_fio_public_key);
@@ -710,7 +707,8 @@ namespace fioio {
                            "unexpected fee type for endpoint register_fio_address, expected 0",
                            ErrorNoEndpoint);
 
-            fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+            fio_400_assert(max_fee >= (int64_t) reg_amount, "max_fee", to_string(max_fee),
+                           "Fee exceeds supplied maximum.",
                            ErrorMaxFeeExceeded);
 
             fio_fees(actor, asset(reg_amount, FIOSYMBOL), REGISTER_ADDRESS_ENDPOINT);
@@ -726,29 +724,29 @@ namespace fioio {
             }
 
 
-           const string response_string = string("{\"status\": \"OK\",\"expiration\":\"") +
-                                  timebuffer + string("\",\"fee_collected\":") +
-                                  to_string(reg_amount) + string("}");
+            const string response_string = string("{\"status\": \"OK\",\"expiration\":\"") +
+                                           timebuffer + string("\",\"fee_collected\":") +
+                                           to_string(reg_amount) + string("}");
 
-          fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-            "Transaction is too large", ErrorTransactionTooLarge);
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransactionTooLarge);
 
-           send_response(response_string.c_str());
+            send_response(response_string.c_str());
         }
 
         [[eosio::action]]
         void regdomain(const string &fio_domain, const string &owner_fio_public_key,
-                  const int64_t &max_fee, const name &actor, const string &tpid) {
+                       const int64_t &max_fee, const name &actor, const string &tpid) {
             fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
-                   "TPID must be empty or valid FIO address",
-                   ErrorPubKeyValid);
+                           "TPID must be empty or valid FIO address",
+                           ErrorPubKeyValid);
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
 
             if (owner_fio_public_key.length() > 0) {
-              fio_400_assert(isPubKeyValid(owner_fio_public_key),"owner_fio_public_key", owner_fio_public_key,
-                          "Invalid FIO Public Key",
-                          ErrorPubKeyValid);
+                fio_400_assert(isPubKeyValid(owner_fio_public_key), "owner_fio_public_key", owner_fio_public_key,
+                               "Invalid FIO Public Key",
+                               ErrorPubKeyValid);
             }
 
             name owner_account_name = accountmgnt(actor, owner_fio_public_key);
@@ -778,15 +776,16 @@ namespace fioio {
                            "unexpected fee type for endpoint register_fio_domain, expected 0",
                            ErrorNoEndpoint);
 
-            fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+            fio_400_assert(max_fee >= (int64_t) reg_amount, "max_fee", to_string(max_fee),
+                           "Fee exceeds supplied maximum.",
                            ErrorMaxFeeExceeded);
 
             fio_fees(actor, asset(reg_amount, FIOSYMBOL), REGISTER_DOMAIN_ENDPOINT);
             processbucketrewards(tpid, reg_amount, get_self(), actor);
 
             const string response_string = string("{\"status\": \"OK\",\"expiration\":\"") +
-                                   timebuffer + string("\",\"fee_collected\":") +
-                                   to_string(reg_amount) + string("}");
+                                           timebuffer + string("\",\"fee_collected\":") +
+                                           to_string(reg_amount) + string("}");
 
             if (REGDOMAINRAM > 0) {
                 action(
@@ -798,27 +797,27 @@ namespace fioio {
             }
 
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-              "Transaction is too large", ErrorTransactionTooLarge);
+                           "Transaction is too large", ErrorTransactionTooLarge);
 
             send_response(response_string.c_str());
         }
 
-       /***********
-        * This action will renew a fio domain, the domains expiration time will be extended by one year.
-        * @param fio_domain this is the fio domain to be renewed.
-        * @param max_fee  this is the maximum fee that is willing to be paid for this transaction on the blockchain.
-        * @param tpid  this is the fio address of the owner of the domain.
-        * @param actor this is the fio account that has sent this transaction.
-        */
+        /***********
+         * This action will renew a fio domain, the domains expiration time will be extended by one year.
+         * @param fio_domain this is the fio domain to be renewed.
+         * @param max_fee  this is the maximum fee that is willing to be paid for this transaction on the blockchain.
+         * @param tpid  this is the fio address of the owner of the domain.
+         * @param actor this is the fio account that has sent this transaction.
+         */
         [[eosio::action]]
         void
         renewdomain(const string &fio_domain, const int64_t &max_fee, const string &tpid, const name &actor) {
             require_auth(actor);
             fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
-                          "TPID must be empty or valid FIO address",
-                          ErrorPubKeyValid);
+                           "TPID must be empty or valid FIO address",
+                           ErrorPubKeyValid);
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
-                          ErrorMaxFeeInvalid);
+                           ErrorMaxFeeInvalid);
 
             FioAddress fa;
             getFioAddressStruct(fio_domain, fa);
@@ -851,11 +850,12 @@ namespace fioio {
                            "unexpected fee type for endpoint renew_fio_domain, expected 0",
                            ErrorNoEndpoint);
 
-            fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+            fio_400_assert(max_fee >= (int64_t) reg_amount, "max_fee", to_string(max_fee),
+                           "Fee exceeds supplied maximum.",
                            ErrorMaxFeeExceeded);
 
             fio_fees(actor, asset(reg_amount, FIOSYMBOL), RENEW_DOMAIN_ENDPOINT);
-            processbucketrewards(tpid, reg_amount, get_self(),actor);
+            processbucketrewards(tpid, reg_amount, get_self(), actor);
 
             const uint64_t new_expiration_time = get_time_plus_one_year(expiration_time);
 
@@ -868,22 +868,22 @@ namespace fioio {
             });
 
             const string response_string = string("{\"status\": \"OK\",\"expiration\":\"") +
-                                   timebuffer + string("\",\"fee_collected\":") +
-                                   to_string(reg_amount) + string("}");
+                                           timebuffer + string("\",\"fee_collected\":") +
+                                           to_string(reg_amount) + string("}");
 
 
-           if (RENEWDOMAINRAM > 0) {
-               action(
-                       permission_level{SYSTEMACCOUNT, "active"_n},
-                       "eosio"_n,
-                       "incram"_n,
-                       std::make_tuple(actor, RENEWDOMAINRAM)
-               ).send();
-           }
+            if (RENEWDOMAINRAM > 0) {
+                action(
+                        permission_level{SYSTEMACCOUNT, "active"_n},
+                        "eosio"_n,
+                        "incram"_n,
+                        std::make_tuple(actor, RENEWDOMAINRAM)
+                ).send();
+            }
 
 
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-              "Transaction is too large", ErrorTransactionTooLarge);
+                           "Transaction is too large", ErrorTransactionTooLarge);
 
             send_response(response_string.c_str());
         }
@@ -925,7 +925,7 @@ namespace fioio {
                            ErrorDomainNotRegistered);
 
             //add 30 days to the domain expiration, this call will work until 30 days past expire.
-            const uint32_t domain_expiration = get_time_plus_seconds(domains_iter->expiration,SECONDS30DAYS);
+            const uint32_t domain_expiration = get_time_plus_seconds(domains_iter->expiration, SECONDS30DAYS);
 
             const uint32_t present_time = now();
             fio_400_assert(present_time <= domain_expiration, "fio_address", fa.fioaddress, "FIO Domain expired",
@@ -953,13 +953,14 @@ namespace fioio {
                            "unexpected fee type for endpoint renew_fio_address, expected 0",
                            ErrorNoEndpoint);
 
-            fio_400_assert(max_fee >= (int64_t)reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+            fio_400_assert(max_fee >= (int64_t) reg_amount, "max_fee", to_string(max_fee),
+                           "Fee exceeds supplied maximum.",
                            ErrorMaxFeeExceeded);
 
             fio_fees(actor, asset(reg_amount, FIOSYMBOL), RENEW_ADDRESS_ENDPOINT);
-            processbucketrewards(tpid, reg_amount, get_self(),actor);
+            processbucketrewards(tpid, reg_amount, get_self(), actor);
 
-            const uint64_t new_expiration_time = get_time_plus_one_year(expiration_time);
+            const uint64_t new_expiration_time = 4294967295; //Sunday, February 7, 2106 6:28:15 AM GMT+0000 (Max 32 bit expiration)
 
             struct tm timeinfo;
             fioio::convertfiotime(new_expiration_time, &timeinfo);
@@ -971,8 +972,8 @@ namespace fioio {
             });
 
             const string response_string = string("{\"status\": \"OK\",\"expiration\":\"") +
-                                   timebuffer + string("\",\"fee_collected\":") +
-                                   to_string(reg_amount) + string("}");
+                                           timebuffer + string("\",\"fee_collected\":") +
+                                           to_string(reg_amount) + string("}");
 
             if (RENEWADDRESSRAM > 0) {
                 action(
@@ -984,27 +985,15 @@ namespace fioio {
             }
 
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-              "Transaction is too large", ErrorTransactionTooLarge);
+                           "Transaction is too large", ErrorTransactionTooLarge);
 
             send_response(response_string.c_str());
         }
 
         /*
          * This action will look for expired domains, then look for expired addresses, it will burn a total
-         * of 100 addresses each time called. please see the code for the logic of identifying expired domains
+         * of 25 addresses each time called. please see the code for the logic of identifying expired domains
          * and addresses.
-         *   Dev note on testing
-         *   to make an expired domain.
-         *   clio -u http://localhost:8889 push action -j fio.address expdomain '{"actor":"r41zuwovtn44","domain":"expired"}' --permission r41zuwovtn44@active
-         *   to create expired addresses under the specified domain.
-         *   clio -u http://localhost:8889 push action -j fio.address expaddresses '{"actor":"r41zuwovtn44","domain":"expired","address_prefix":"eddieexp","number_addresses_to_add":"5"}' --permission r41zuwovtn44@active
-         *   scenarios that need tested.
-         *   1) create an expired domain with fewer than 100 expired addresses within it. run the burnexpired
-         *   2) create an expired domain with over 100 expired addresses within it. run the burnexpired repeatedly until all are removed.
-         *   3) create an expired address under a non expired domain. run the burn expired.
-         *   4) create an expired domain with a few expired addresses. create an expired address under a non expired domain. run burnexpired.
-         *   5) create an expired domain with over 100 addresses, create over 100 expired addresses in a non expired domain. run burnexpired repeatedly until all are removed.
-         *
          */
         [[eosio::action]]
         void burnexpired() {
@@ -1056,7 +1045,7 @@ namespace fioio {
                         nameiter++;
                     }
 
-                    if(nameiter == nameexpidx.end()){
+                    if (nameiter == nameexpidx.end()) {
                         domainexpidx.erase(domainiter);
                         recordProcessed++;
                     }
@@ -1087,7 +1076,7 @@ namespace fioio {
          */
         [[eosio::action]]
         void
-        addaddress(const string &fio_address,  const vector<tokenpubaddr> &public_addresses, const int64_t &max_fee,
+        addaddress(const string &fio_address, const vector <tokenpubaddr> &public_addresses, const int64_t &max_fee,
                    const name &actor, const string &tpid) {
             require_auth(actor);
             FioAddress fa;
@@ -1101,18 +1090,20 @@ namespace fioio {
                            ErrorMaxFeeInvalid);
             fio_400_assert(validateFioNameFormat(fa), "fio_address", fa.fioaddress, "FIO Address not found",
                            ErrorDomainAlreadyRegistered);
-            fio_400_assert(public_addresses.size() <= 5 && public_addresses.size() > 0, "public_addresses", "public_addresses",
+            fio_400_assert(public_addresses.size() <= 5 && public_addresses.size() > 0, "public_addresses",
+                           "public_addresses",
                            "Min 1, Max 5 public addresses are allowed",
                            ErrorInvalidNumberAddresses);
 
-            const uint64_t fee_amount = chain_data_update(fio_address, public_addresses, max_fee, fa, actor, actor, false,
-                                                    tpid);
+            const uint64_t fee_amount = chain_data_update(fio_address, public_addresses, max_fee, fa, actor, actor,
+                                                          false,
+                                                          tpid);
 
             const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
-                                     to_string(fee_amount) + string("}");
+                                           to_string(fee_amount) + string("}");
 
-           fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-            "Transaction is too large", ErrorTransactionTooLarge);
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransactionTooLarge);
 
             if (ADDADDRESSRAM > 0) {
                 action(
@@ -1135,7 +1126,7 @@ namespace fioio {
         */
         [[eosio::action]]
         void
-        remaddress(const string &fio_address,  const vector<tokenpubaddr> &public_addresses, const int64_t &max_fee,
+        remaddress(const string &fio_address, const vector <tokenpubaddr> &public_addresses, const int64_t &max_fee,
                    const name &actor, const string &tpid) {
             require_auth(actor);
             FioAddress fa;
@@ -1149,12 +1140,13 @@ namespace fioio {
                            ErrorMaxFeeInvalid);
             fio_400_assert(validateFioNameFormat(fa), "fio_address", fa.fioaddress, "Invalid FIO Address",
                            ErrorDomainAlreadyRegistered);
-            fio_400_assert(public_addresses.size() <= 5 && public_addresses.size() > 0, "public_addresses", "public_addresses",
+            fio_400_assert(public_addresses.size() <= 5 && public_addresses.size() > 0, "public_addresses",
+                           "public_addresses",
                            "Min 1, Max 5 public addresses are allowed",
                            ErrorInvalidNumberAddresses);
 
             //we want to check pub addresses, collect fee....
-            const uint64_t fee_amount = perform_remove_address(fio_address, public_addresses, max_fee, fa, actor,tpid);
+            const uint64_t fee_amount = perform_remove_address(fio_address, public_addresses, max_fee, fa, actor, tpid);
 
             const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
                                            to_string(fee_amount) + string("}");
@@ -1175,7 +1167,7 @@ namespace fioio {
         */
         [[eosio::action]]
         void
-        remalladdr(const string &fio_address,  const int64_t &max_fee,
+        remalladdr(const string &fio_address, const int64_t &max_fee,
                    const name &actor, const string &tpid) {
             require_auth(actor);
             FioAddress fa;
@@ -1203,307 +1195,311 @@ namespace fioio {
 
         [[eosio::action]]
         void
-        addnft(const string &fio_address,  const vector<nftparam> &nfts, const int64_t &max_fee,
-                   const name &actor, const string &tpid) {
-         require_auth(actor);
+        addnft(const string &fio_address, const vector <nftparam> &nfts, const int64_t &max_fee,
+               const name &actor, const string &tpid) {
+            require_auth(actor);
 
-         FioAddress fa;
-         getFioAddressStruct(fio_address, fa);
-         fio_400_assert(!fa.domainOnly && validateFioNameFormat(fa) , "fio_address", fa.fioaddress, "Invalid FIO Address",
-                        ErrorInvalidFioNameFormat);
-         fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
-                        ErrorMaxFeeInvalid);
-
-         fio_400_assert(nfts.size() <= 3 && nfts.size() >= 1, "fio_address", fio_address, "Min 1, Max 3 NFTs are allowed",
-                         ErrorInvalidFioNameFormat); // Don't forget to set the error amount if/when changing MAX_SET_ADDRESSES
-
-         const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
-         const uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
-         auto namesbyname = fionames.get_index<"byname"_n>();
-         auto fioname_iter = namesbyname.find(nameHash);
-         fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address, "Invalid FIO Address", ErrorFioNameNotRegistered);
-
-         fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature); // check if actor owns FIO Address
-
-         fio_400_assert(now() <= fioname_iter->expiration, "fio_address", fio_address,
-                        "FIO Address expired", ErrorFioNameExpired);
-
-         auto domainsbyname = domains.get_index<"byname"_n>();
-         auto domains_iter = domainsbyname.find(domainHash);
-
-         fio_404_assert(domains_iter != domainsbyname.end(), "FIO Domain not found", ErrorDomainNotFound);
-
-         fio_400_assert(now() <=  get_time_plus_seconds(domains_iter->expiration,SECONDS30DAYS),
-                        "domain", fa.fiodomain, "FIO Domain expired", ErrorDomainExpired);
-
-          auto nftbyid = nftstable.get_index<"bytokenid"_n>();
-
-          for (auto nftobj = nfts.begin(); nftobj != nfts.end(); ++nftobj) {
-
-            fio_400_assert(validateChainNameFormat(nftobj->chain_code.c_str()), "chain_code", nftobj->chain_code, "Invalid chain code format",
+            FioAddress fa;
+            getFioAddressStruct(fio_address, fa);
+            fio_400_assert(!fa.domainOnly && validateFioNameFormat(fa), "fio_address", fa.fioaddress,
+                           "Invalid FIO Address",
                            ErrorInvalidFioNameFormat);
+            fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                           ErrorMaxFeeInvalid);
 
-            if (!nftobj->url.empty()) {
-              fio_400_assert(validateRFC3986Chars(nftobj->url.c_str()), "url", nftobj->url.c_str(), "Invalid URL",
-                             ErrorInvalidFioNameFormat);
-            }
+            fio_400_assert(nfts.size() <= 3 && nfts.size() >= 1, "fio_address", fio_address,
+                           "Min 1, Max 3 NFTs are allowed",
+                           ErrorInvalidFioNameFormat); // Don't forget to set the error amount if/when changing MAX_SET_ADDRESSES
 
-            if (!nftobj->hash.empty()) {
-              fio_400_assert(validateHexChars(nftobj->hash) && nftobj->hash.length() == 64, "hash", nftobj->hash.c_str(), "Invalid hash",
-                            ErrorInvalidFioNameFormat);
-            }
+            const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+            const uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+            auto namesbyname = fionames.get_index<"byname"_n>();
+            auto fioname_iter = namesbyname.find(nameHash);
+            fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address, "Invalid FIO Address",
+                           ErrorFioNameNotRegistered);
 
-            if (!nftobj->metadata.empty()) {
-              fio_400_assert(nftobj->metadata.length() <= 64, "metadata", nftobj->metadata, "Invalid metadata",
-                            ErrorInvalidFioNameFormat);
-            }
+            fio_403_assert(fioname_iter->owner_account == actor.value,
+                           ErrorSignature); // check if actor owns FIO Address
 
-            fio_400_assert(!nftobj->contract_address.empty(),
-                             "contract_address", nftobj->contract_address.c_str(), "Invalid Contract Address",
-                           ErrorInvalidFioNameFormat);
+            auto domainsbyname = domains.get_index<"byname"_n>();
+            auto domains_iter = domainsbyname.find(domainHash);
 
-            // now check for chain_code, token_id
-            // If the contract does not exist for fio address, emplace a new record
-            // If the contract does exist for fio address, test the existance of the token_id and chain_code pair then
-            // only update if the hash, url or metadata is different.
-            auto nft_iter = nftbyid.find(string_to_uint128_hash(string(fio_address.c_str()) +
-                                                                string(nftobj->contract_address.c_str()) +
-                                                                string(nftobj->token_id.c_str()) +
-                                                                string(nftobj->chain_code.c_str())));
-            if (nft_iter == nftbyid.end()) {
+            fio_404_assert(domains_iter != domainsbyname.end(), "FIO Domain not found", ErrorDomainNotFound);
 
-              //Create a new NFT record
+            fio_400_assert(now() <= get_time_plus_seconds(domains_iter->expiration, SECONDS30DAYS),
+                           "domain", fa.fiodomain, "FIO Domain expired", ErrorDomainExpired);
 
-                nftstable.emplace(actor, [&](auto &n) {
-                  n.id = nftstable.available_primary_key();
-                  n.fio_address = fio_address;
-                  n.chain_code = nftobj->chain_code;
-                  n.chain_code_hash = string_to_uint64_hash(nftobj->chain_code.c_str());
-                  if (!nftobj->token_id.empty()) {
-                      n.token_id = nftobj->token_id.c_str();
-                      n.token_id_hash = string_to_uint128_hash(string(fio_address.c_str()) +
-                                                               string(nftobj->contract_address.c_str()) +
-                                                               string(nftobj->token_id.c_str()) +
-                                                               string(nftobj->chain_code.c_str()));
-                  }
-                  if (!nftobj->contract_address.empty()) {
-                    n.contract_address = nftobj->contract_address;
-                    n.contract_address_hash = string_to_uint128_hash(nftobj->contract_address.c_str());
-                  }
-                  if (!nftobj->hash.empty()) {
-                    n.hash = nftobj->hash;
-                    n.hash_index = string_to_uint128_hash(nftobj->hash.c_str());
-                  }
-                  n.metadata = nftobj->metadata.empty() ? "" : nftobj->metadata;
-                  n.url = nftobj->url.empty() ? "" : nftobj->url;
-                  n.fio_address_hash = string_to_uint128_hash(fio_address);
+            auto nftbyid = nftstable.get_index<"bytokenid"_n>();
 
-                });
+            for (auto nftobj = nfts.begin(); nftobj != nfts.end(); ++nftobj) {
 
+                fio_400_assert(validateChainNameFormat(nftobj->chain_code.c_str()), "chain_code", nftobj->chain_code,
+                               "Invalid chain code format",
+                               ErrorInvalidFioNameFormat);
+
+                if (!nftobj->url.empty()) {
+                    fio_400_assert(validateRFC3986Chars(nftobj->url.c_str()), "url", nftobj->url.c_str(), "Invalid URL",
+                                   ErrorInvalidFioNameFormat);
+                }
+
+                if (!nftobj->hash.empty()) {
+                    fio_400_assert(validateHexChars(nftobj->hash) && nftobj->hash.length() == 64, "hash",
+                                   nftobj->hash.c_str(), "Invalid hash",
+                                   ErrorInvalidFioNameFormat);
+                }
+
+                if (!nftobj->metadata.empty()) {
+                    fio_400_assert(nftobj->metadata.length() <= 64, "metadata", nftobj->metadata, "Invalid metadata",
+                                   ErrorInvalidFioNameFormat);
+                }
+
+                fio_400_assert(!nftobj->contract_address.empty(),
+                               "contract_address", nftobj->contract_address.c_str(), "Invalid Contract Address",
+                               ErrorInvalidFioNameFormat);
+
+                // now check for chain_code, token_id
+                // If the contract does not exist for fio address, emplace a new record
+                // If the contract does exist for fio address, test the existance of the token_id and chain_code pair then
+                // only update if the hash, url or metadata is different.
+                auto nft_iter = nftbyid.find(string_to_uint128_hash(string(fio_address.c_str()) +
+                                                                    string(nftobj->contract_address.c_str()) +
+                                                                    string(nftobj->token_id.c_str()) +
+                                                                    string(nftobj->chain_code.c_str())));
+                if (nft_iter == nftbyid.end()) {
+
+                    //Create a new NFT record
+
+                    nftstable.emplace(actor, [&](auto &n) {
+                        n.id = nftstable.available_primary_key();
+                        n.fio_address = fio_address;
+                        n.chain_code = nftobj->chain_code;
+                        n.chain_code_hash = string_to_uint64_hash(nftobj->chain_code.c_str());
+                        if (!nftobj->token_id.empty()) {
+                            n.token_id = nftobj->token_id.c_str();
+                            n.token_id_hash = string_to_uint128_hash(string(fio_address.c_str()) +
+                                                                     string(nftobj->contract_address.c_str()) +
+                                                                     string(nftobj->token_id.c_str()) +
+                                                                     string(nftobj->chain_code.c_str()));
+                        }
+                        if (!nftobj->contract_address.empty()) {
+                            n.contract_address = nftobj->contract_address;
+                            n.contract_address_hash = string_to_uint128_hash(nftobj->contract_address.c_str());
+                        }
+                        if (!nftobj->hash.empty()) {
+                            n.hash = nftobj->hash;
+                            n.hash_index = string_to_uint128_hash(nftobj->hash.c_str());
+                        }
+                        n.metadata = nftobj->metadata.empty() ? "" : nftobj->metadata;
+                        n.url = nftobj->url.empty() ? "" : nftobj->url;
+                        n.fio_address_hash = string_to_uint128_hash(fio_address);
+
+                    });
+
+
+                } else {
+
+                    fio_400_assert(nft_iter->hash != nftobj->hash ||
+                                   nft_iter->url != nftobj->url ||
+                                   nft_iter->metadata != nftobj->metadata, "token_id", nftobj->token_id.c_str(),
+                                   "Nothing to update for this token_id",
+                                   ErrorInvalidFioNameFormat);
+
+                    nftbyid.modify(nft_iter, actor, [&](auto &n) {
+                        if (!nftobj->hash.empty()) {
+                            n.hash = nftobj->hash;
+                            n.hash_index = string_to_uint128_hash(nftobj->hash.c_str());
+                        }
+                        n.url = nftobj->url.empty() ? "" : nftobj->url;
+                        n.metadata = nftobj->metadata.empty() ? "" : nftobj->metadata;
+                    });
+
+                }
+
+            } // for nftobj
+
+            uint64_t fee_amount = 0;
+
+            if (fioname_iter->bundleeligiblecountdown > 1) {
+                action{
+                        permission_level{_self, "active"_n},
+                        AddressContract,
+                        "decrcounter"_n,
+                        make_tuple(fio_address, 1)
+                }.send();
 
             } else {
 
-                fio_400_assert(nft_iter->hash != nftobj->hash ||
-                               nft_iter->url != nftobj->url ||
-                               nft_iter->metadata != nftobj->metadata, "token_id", nftobj->token_id.c_str(),
-                                "Nothing to update for this token_id",
-                                ErrorInvalidFioNameFormat);
+                const uint128_t endpoint_hash = string_to_uint128_hash(ADD_NFT_ENDPOINT);
 
-                 nftbyid.modify(nft_iter, actor, [&](auto &n) {
-                 if (!nftobj->hash.empty()) {
-                   n.hash = nftobj->hash;
-                   n.hash_index = string_to_uint128_hash(nftobj->hash.c_str());
-                 }
-                 n.url = nftobj->url.empty() ? "" : nftobj->url;
-                 n.metadata = nftobj->metadata.empty() ? "" : nftobj->metadata;
-               });
+                auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
+                auto fee_iter = fees_by_endpoint.find(endpoint_hash);
 
-             }
-
-          } // for nftobj
-
-           uint64_t fee_amount = 0;
-
-           if (fioname_iter->bundleeligiblecountdown > 1) {
-               action{
-                       permission_level{_self, "active"_n},
-                       AddressContract,
-                       "decrcounter"_n,
-                       make_tuple(fio_address, 1)
-               }.send();
-
-           } else {
-
-               const uint128_t endpoint_hash = string_to_uint128_hash(ADD_NFT_ENDPOINT);
-
-               auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
-               auto fee_iter = fees_by_endpoint.find(endpoint_hash);
-
-               //if the fee isnt found for the endpoint, then 400 error.
-               fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", ADD_NFT_ENDPOINT,
-                             "FIO fee not found for endpoint", ErrorNoEndpoint);
+                //if the fee isnt found for the endpoint, then 400 error.
+                fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", ADD_NFT_ENDPOINT,
+                               "FIO fee not found for endpoint", ErrorNoEndpoint);
 
 
-               const uint64_t fee_type = fee_iter->type;
-               fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
-                              "unexpected fee type for endpoint add_nft, expected 0", ErrorNoEndpoint);
+                const uint64_t fee_type = fee_iter->type;
+                fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                               "unexpected fee type for endpoint add_nft, expected 0", ErrorNoEndpoint);
 
 
-               fee_amount = fee_iter->suf_amount;
-               fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
-                              "Fee exceeds supplied maximum.",
-                              ErrorMaxFeeExceeded);
+                fee_amount = fee_iter->suf_amount;
+                fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
+                               "Fee exceeds supplied maximum.",
+                               ErrorMaxFeeExceeded);
 
-               fio_fees(actor, asset(fee_amount, FIOSYMBOL), ADD_NFT_ENDPOINT);
-               process_rewards(tpid, fee_amount, get_self(), actor);
+                fio_fees(actor, asset(fee_amount, FIOSYMBOL), ADD_NFT_ENDPOINT);
+                process_rewards(tpid, fee_amount, get_self(), actor);
 
-               if (fee_amount > 0) {
-                   INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
-                           (SYSTEMACCOUNT, {{_self, "active"_n}},
-                            {actor, true}
-                           );
-               }
-           }
+                if (fee_amount > 0) {
+                    INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
+                            (SYSTEMACCOUNT, {{_self, "active"_n}},
+                             {actor, true}
+                            );
+                }
+            }
 
-           if (ADDNFTRAM > 0) {
-               action(
-                       permission_level{SYSTEMACCOUNT, "active"_n},
-                       "eosio"_n,
-                       "incram"_n,
-                       std::make_tuple(actor, ADDNFTRAM)
-               ).send();
-           }
-
-
-          const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
-                                   to_string(fee_amount) + string("}");
+            if (ADDNFTRAM > 0) {
+                action(
+                        permission_level{SYSTEMACCOUNT, "active"_n},
+                        "eosio"_n,
+                        "incram"_n,
+                        std::make_tuple(actor, ADDNFTRAM)
+                ).send();
+            }
 
 
-          fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-            "Transaction is too large", ErrorTransactionTooLarge);
+            const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                           to_string(fee_amount) + string("}");
 
-          send_response(response_string.c_str());
+
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransactionTooLarge);
+
+            send_response(response_string.c_str());
 
         }
 
         [[eosio::action]]
         void
-        remnft(const string &fio_address,  const vector<remnftparam> &nfts, const int64_t &max_fee,
-                   const name &actor, const string &tpid) {
+        remnft(const string &fio_address, const vector <remnftparam> &nfts, const int64_t &max_fee,
+               const name &actor, const string &tpid) {
 
-           require_auth(actor);
+            require_auth(actor);
 
-           FioAddress fa;
-           getFioAddressStruct(fio_address, fa);
-           fio_400_assert(!fa.domainOnly && validateFioNameFormat(fa) , "fio_address", fa.fioaddress, "Invalid FIO Address",
-                          ErrorInvalidFioNameFormat);
-           fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
-                          ErrorMaxFeeInvalid);
+            FioAddress fa;
+            getFioAddressStruct(fio_address, fa);
+            fio_400_assert(!fa.domainOnly && validateFioNameFormat(fa), "fio_address", fa.fioaddress,
+                           "Invalid FIO Address",
+                           ErrorInvalidFioNameFormat);
+            fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                           ErrorMaxFeeInvalid);
 
-           fio_400_assert(nfts.size() <= 3 && nfts.size() >= 1, "fio_address", fio_address, "Min 1, Max 3 NFTs are allowed",
+            fio_400_assert(nfts.size() <= 3 && nfts.size() >= 1, "fio_address", fio_address,
+                           "Min 1, Max 3 NFTs are allowed",
                            ErrorInvalidFioNameFormat); // Don't forget to set the error amount if/when changing MAX_SET_ADDRESSES
 
+            const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+            const uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+            auto namesbyname = fionames.get_index<"byname"_n>();
+            auto fioname_iter = namesbyname.find(nameHash);
+            fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address, "Invalid FIO Address",
+                           ErrorFioNameNotRegistered);
 
-           const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
-           const uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
-           auto namesbyname = fionames.get_index<"byname"_n>();
-           auto fioname_iter = namesbyname.find(nameHash);
-           fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address, "Invalid FIO Address", ErrorFioNameNotRegistered);
+            fio_403_assert(fioname_iter->owner_account == actor.value,
+                           ErrorSignature); // check if actor owns FIO Address
 
-           fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature); // check if actor owns FIO Address
+            auto domainsbyname = domains.get_index<"byname"_n>();
+            auto domains_iter = domainsbyname.find(domainHash);
 
-           fio_400_assert(now() <= fioname_iter->expiration, "fio_address", fio_address,
-                          "FIO Address expired", ErrorFioNameExpired);
+            fio_404_assert(domains_iter != domainsbyname.end(), "FIO Domain not found", ErrorDomainNotFound);
 
-           auto domainsbyname = domains.get_index<"byname"_n>();
-           auto domains_iter = domainsbyname.find(domainHash);
-
-           fio_404_assert(domains_iter != domainsbyname.end(), "FIO Domain not found", ErrorDomainNotFound);
-
-           fio_400_assert(now() <=  get_time_plus_seconds(domains_iter->expiration,SECONDS30DAYS),
-                          "domain", fa.fiodomain, "FIO Domain expired", ErrorDomainExpired);
+            fio_400_assert(now() <= get_time_plus_seconds(domains_iter->expiration, SECONDS30DAYS),
+                           "domain", fa.fiodomain, "FIO Domain expired", ErrorDomainExpired);
 
             auto nftbyid = nftstable.get_index<"bytokenid"_n>();
             uint32_t count_erase = 0;
 
             for (auto nftobj = nfts.begin(); nftobj != nfts.end(); nftobj++) {
 
-              fio_400_assert(validateChainNameFormat(nftobj->chain_code.c_str()), "chain_code", nftobj->chain_code, "Invalid chain code format",
-                             ErrorInvalidFioNameFormat);
+                fio_400_assert(validateChainNameFormat(nftobj->chain_code.c_str()), "chain_code", nftobj->chain_code,
+                               "Invalid chain code format",
+                               ErrorInvalidFioNameFormat);
 
-              fio_400_assert(!nftobj->contract_address.empty(), "contract_address", nftobj->contract_address.c_str(), "Invalid Contract Address",
-                             ErrorInvalidFioNameFormat);
+                fio_400_assert(!nftobj->contract_address.empty(), "contract_address", nftobj->contract_address.c_str(),
+                               "Invalid Contract Address",
+                               ErrorInvalidFioNameFormat);
 
-              if (!nftobj->token_id.empty()) {
-                fio_400_assert(nftobj->token_id.length() <= 128, "token_id", nftobj->token_id, "Invalid Token ID",
-                              ErrorInvalidFioNameFormat);
-              }
+                if (!nftobj->token_id.empty()) {
+                    fio_400_assert(nftobj->token_id.length() <= 128, "token_id", nftobj->token_id, "Invalid Token ID",
+                                   ErrorInvalidFioNameFormat);
+                }
 
-              auto nft_iter = nftbyid.find(string_to_uint128_hash(string(fio_address.c_str()) +
-                                                                  string(nftobj->contract_address.c_str()) +
-                                                                  string(nftobj->token_id.c_str()) +
-                                                                  string(nftobj->chain_code.c_str())));
+                auto nft_iter = nftbyid.find(string_to_uint128_hash(string(fio_address.c_str()) +
+                                                                    string(nftobj->contract_address.c_str()) +
+                                                                    string(nftobj->token_id.c_str()) +
+                                                                    string(nftobj->chain_code.c_str())));
 
-              if (nft_iter != nftbyid.end()) {
-                  fio_403_assert(nft_iter->fio_address == fio_address, ErrorSignature);
-                  nft_iter = nftbyid.erase(nft_iter);
-                  count_erase++;
-             }
+                if (nft_iter != nftbyid.end()) {
+                    fio_403_assert(nft_iter->fio_address == fio_address, ErrorSignature);
+                    nft_iter = nftbyid.erase(nft_iter);
+                    count_erase++;
+                }
 
             } // for auto nftobj
 
             fio_400_assert(count_erase > 0, "fio_address", fio_address, "NFT not currently mapped",
-                          ErrorInvalidFioNameFormat);
+                           ErrorInvalidFioNameFormat);
 
-             uint64_t fee_amount = 0;
+            uint64_t fee_amount = 0;
 
-             if (fioname_iter->bundleeligiblecountdown > 1) {
-                 action{
-                         permission_level{_self, "active"_n},
-                         AddressContract,
-                         "decrcounter"_n,
-                         make_tuple(fio_address, 1)
-                 }.send();
+            if (fioname_iter->bundleeligiblecountdown > 1) {
+                action{
+                        permission_level{_self, "active"_n},
+                        AddressContract,
+                        "decrcounter"_n,
+                        make_tuple(fio_address, 1)
+                }.send();
 
-             } else {
+            } else {
 
-                 const uint128_t endpoint_hash = string_to_uint128_hash(REM_NFT_ENDPOINT);
+                const uint128_t endpoint_hash = string_to_uint128_hash(REM_NFT_ENDPOINT);
 
-                 auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
-                 auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+                auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
+                auto fee_iter = fees_by_endpoint.find(endpoint_hash);
 
-                 //if the fee isnt found for the endpoint, then 400 error.
-                 fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", REM_NFT_ENDPOINT,
+                //if the fee isnt found for the endpoint, then 400 error.
+                fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", REM_NFT_ENDPOINT,
                                "FIO fee not found for endpoint", ErrorNoEndpoint);
 
 
-                 const uint64_t fee_type = fee_iter->type;
-                 fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
-                                "unexpected fee type for endpoint rem_nft, expected 0", ErrorNoEndpoint);
+                const uint64_t fee_type = fee_iter->type;
+                fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                               "unexpected fee type for endpoint rem_nft, expected 0", ErrorNoEndpoint);
 
 
-                 fee_amount = fee_iter->suf_amount;
-                 fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
-                                "Fee exceeds supplied maximum.",
-                                ErrorMaxFeeExceeded);
+                fee_amount = fee_iter->suf_amount;
+                fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
+                               "Fee exceeds supplied maximum.",
+                               ErrorMaxFeeExceeded);
 
-                 fio_fees(actor, asset(fee_amount, FIOSYMBOL), REM_NFT_ENDPOINT);
-                 process_rewards(tpid, fee_amount, get_self(), actor);
+                fio_fees(actor, asset(fee_amount, FIOSYMBOL), REM_NFT_ENDPOINT);
+                process_rewards(tpid, fee_amount, get_self(), actor);
 
-                 if (fee_amount > 0) {
-                     INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
-                             (SYSTEMACCOUNT, {{_self, "active"_n}},
-                              {actor, true}
-                             );
-                 }
-             }
+                if (fee_amount > 0) {
+                    INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
+                            (SYSTEMACCOUNT, {{_self, "active"_n}},
+                             {actor, true}
+                            );
+                }
+            }
 
             const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
-                                     to_string(fee_amount) + string("}");
-
+                                           to_string(fee_amount) + string("}");
 
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-              "Transaction is too large", ErrorTransactionTooLarge);
+                           "Transaction is too large", ErrorTransactionTooLarge);
 
             send_response(response_string.c_str());
 
@@ -1515,96 +1511,96 @@ namespace fioio {
         remallnfts(const string &fio_address, const int64_t &max_fee,
                    const name &actor, const string &tpid) {
 
-         require_auth(actor);
+            require_auth(actor);
 
-         FioAddress fa;
-         getFioAddressStruct(fio_address, fa);
-         fio_400_assert(!fa.domainOnly && validateFioNameFormat(fa) , "fio_address", fa.fioaddress, "Invalid FIO Address",
-                        ErrorInvalidFioNameFormat);
-         fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
-                        ErrorMaxFeeInvalid);
-
-
-         const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
-         const uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
-         auto namesbyname = fionames.get_index<"byname"_n>();
-         auto fioname_iter = namesbyname.find(nameHash);
-         fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address, "Invalid FIO Address", ErrorFioNameNotRegistered);
-
-         fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature); // check if actor owns FIO Address
-
-         fio_400_assert(now() <= fioname_iter->expiration, "fio_address", fio_address,
-                        "FIO Address expired", ErrorFioNameExpired);
-
-         auto domainsbyname = domains.get_index<"byname"_n>();
-         auto domains_iter = domainsbyname.find(domainHash);
-
-         fio_404_assert(domains_iter != domainsbyname.end(), "FIO Domain not found", ErrorDomainNotFound);
-
-         fio_400_assert(now() <=  get_time_plus_seconds(domains_iter->expiration,SECONDS30DAYS),
-                        "domain", fa.fiodomain, "FIO Domain expired", ErrorDomainExpired);
+            FioAddress fa;
+            getFioAddressStruct(fio_address, fa);
+            fio_400_assert(!fa.domainOnly && validateFioNameFormat(fa), "fio_address", fa.fioaddress,
+                           "Invalid FIO Address",
+                           ErrorInvalidFioNameFormat);
+            fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                           ErrorMaxFeeInvalid);
 
 
-          auto contractsbyname = nftstable.get_index<"byaddress"_n>();
-          auto nft_iter = contractsbyname.find(nameHash);
+            const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+            const uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+            auto namesbyname = fionames.get_index<"byname"_n>();
+            auto fioname_iter = namesbyname.find(nameHash);
+            fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address, "Invalid FIO Address",
+                           ErrorFioNameNotRegistered);
 
-          fio_404_assert(nft_iter != contractsbyname.end(), "FIO Address invalid, does not exist.",
-                         ErrorDomainNotFound);
+            fio_403_assert(fioname_iter->owner_account == actor.value,
+                           ErrorSignature); // check if actor owns FIO Address
 
-          //// NEW inline function call ////
-          addburnq(fio_address, nameHash );
+            auto domainsbyname = domains.get_index<"byname"_n>();
+            auto domains_iter = domainsbyname.find(domainHash);
 
-           uint64_t fee_amount = 0;
+            fio_404_assert(domains_iter != domainsbyname.end(), "FIO Domain not found", ErrorDomainNotFound);
 
-           if (fioname_iter->bundleeligiblecountdown > 1) {
-               action{
-                       permission_level{_self, "active"_n},
-                       AddressContract,
-                       "decrcounter"_n,
-                       make_tuple(fio_address, 1)
-               }.send();
-
-           } else {
-
-               const uint128_t endpoint_hash = string_to_uint128_hash(REM_ALL_NFTS_ENDPOINT);
-
-               auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
-               auto fee_iter = fees_by_endpoint.find(endpoint_hash);
-
-               //if the fee isnt found for the endpoint, then 400 error.
-               fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", REM_ALL_NFTS_ENDPOINT,
-                             "FIO fee not found for endpoint", ErrorNoEndpoint);
+            fio_400_assert(now() <= get_time_plus_seconds(domains_iter->expiration, SECONDS30DAYS),
+                           "domain", fa.fiodomain, "FIO Domain expired", ErrorDomainExpired);
 
 
-               const uint64_t fee_type = fee_iter->type;
-               fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
-                              "unexpected fee type for endpoint rem_all_nfts, expected 0", ErrorNoEndpoint);
+            auto contractsbyname = nftstable.get_index<"byaddress"_n>();
+            auto nft_iter = contractsbyname.find(nameHash);
+
+            fio_404_assert(nft_iter != contractsbyname.end(), "FIO Address invalid, does not exist.",
+                           ErrorDomainNotFound);
+
+            //// NEW inline function call ////
+            addburnq(fio_address, nameHash);
+
+            uint64_t fee_amount = 0;
+
+            if (fioname_iter->bundleeligiblecountdown > 1) {
+                action{
+                        permission_level{_self, "active"_n},
+                        AddressContract,
+                        "decrcounter"_n,
+                        make_tuple(fio_address, 1)
+                }.send();
+
+            } else {
+
+                const uint128_t endpoint_hash = string_to_uint128_hash(REM_ALL_NFTS_ENDPOINT);
+
+                auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
+                auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+
+                //if the fee isnt found for the endpoint, then 400 error.
+                fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", REM_ALL_NFTS_ENDPOINT,
+                               "FIO fee not found for endpoint", ErrorNoEndpoint);
 
 
-               fee_amount = fee_iter->suf_amount;
-               fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
-                              "Fee exceeds supplied maximum.",
-                              ErrorMaxFeeExceeded);
-
-               fio_fees(actor, asset(fee_amount, FIOSYMBOL), REM_ALL_NFTS_ENDPOINT);
-               process_rewards(tpid, fee_amount, get_self(), actor);
-
-               if (fee_amount > 0) {
-                   INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
-                           (SYSTEMACCOUNT, {{_self, "active"_n}},
-                            {actor, true}
-                           );
-               }
-           }
-
-          const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
-                                   to_string(fee_amount) + string("}");
+                const uint64_t fee_type = fee_iter->type;
+                fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                               "unexpected fee type for endpoint rem_all_nfts, expected 0", ErrorNoEndpoint);
 
 
-          fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-            "Transaction is too large", ErrorTransactionTooLarge);
+                fee_amount = fee_iter->suf_amount;
+                fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
+                               "Fee exceeds supplied maximum.",
+                               ErrorMaxFeeExceeded);
 
-          send_response(response_string.c_str());
+                fio_fees(actor, asset(fee_amount, FIOSYMBOL), REM_ALL_NFTS_ENDPOINT);
+                process_rewards(tpid, fee_amount, get_self(), actor);
+
+                if (fee_amount > 0) {
+                    INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
+                            (SYSTEMACCOUNT, {{_self, "active"_n}},
+                             {actor, true}
+                            );
+                }
+            }
+
+            const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                           to_string(fee_amount) + string("}");
+
+
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransactionTooLarge);
+
+            send_response(response_string.c_str());
 
 
         }
@@ -1614,32 +1610,32 @@ namespace fioio {
         void
         burnnfts(const name &actor) {
 
-          require_auth(actor);
+            require_auth(actor);
 
             auto burnqbyname = nftburnqueue.get_index<"byaddress"_n>();
             auto nftburnq_iter = burnqbyname.begin();
             auto contractsbyname = nftstable.get_index<"byaddress"_n>();
             uint16_t counter = 0;
             while (nftburnq_iter != burnqbyname.end()) {
-              auto nft_iter = contractsbyname.find(nftburnq_iter->fio_address_hash);
-              counter++;
-              if (nft_iter != contractsbyname.end()) { // if row, delete an nft
-                nft_iter = contractsbyname.erase(nft_iter);
-              } else {
-                nftburnq_iter = burnqbyname.erase(nftburnq_iter); // if no more rows, delete from nftburnqueue
-              }
-              if (counter == 50) break;
+                auto nft_iter = contractsbyname.find(nftburnq_iter->fio_address_hash);
+                counter++;
+                if (nft_iter != contractsbyname.end()) { // if row, delete an nft
+                    nft_iter = contractsbyname.erase(nft_iter);
+                } else {
+                    nftburnq_iter = burnqbyname.erase(nftburnq_iter); // if no more rows, delete from nftburnqueue
+                }
+                if (counter == 50) break;
             }
 
-          fio_400_assert(counter > 0, "nftburnq", std::to_string(counter),
-            "Nothing to burn", ErrorTransactionTooLarge);
+            fio_400_assert(counter > 0, "nftburnq", std::to_string(counter),
+                           "Nothing to burn", ErrorTransactionTooLarge);
 
-          const string response_string = string("{\"status\": \"OK\"}");
+            const string response_string = string("{\"status\": \"OK\"}");
 
-          fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-            "Transaction is too large", ErrorTransactionTooLarge);
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransactionTooLarge);
 
-          send_response(response_string.c_str());
+            send_response(response_string.c_str());
 
         }
 
@@ -1702,11 +1698,12 @@ namespace fioio {
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             uint64_t fee_amount = fee_iter->suf_amount;
-            fio_400_assert(max_fee >= (int64_t)fee_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+            fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
+                           "Fee exceeds supplied maximum.",
                            ErrorMaxFeeExceeded);
 
             fio_fees(actor, asset(reg_amount, FIOSYMBOL), SET_DOMAIN_PUBLIC);
-            process_rewards(tpid, reg_amount,get_self(), actor);
+            process_rewards(tpid, reg_amount, get_self(), actor);
             if (reg_amount > 0) {
                 //MAS-522 remove staking from voting.
                 INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
@@ -1726,11 +1723,11 @@ namespace fioio {
             }
 
             const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
-                                     to_string(fee_amount) + string("}");
+                                           to_string(fee_amount) + string("}");
 
 
-          fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-            "Transaction is too large", ErrorTransactionTooLarge);
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransactionTooLarge);
 
             send_response(response_string.c_str());
         }
@@ -1751,8 +1748,8 @@ namespace fioio {
             eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(SYSTEMACCOUNT)),
                          "missing required authority of fio.address,  fio.token, or eosio");
 
-           fio_400_assert(isPubKeyValid(client_key), "client_key", client_key,
-                          "Invalid FIO Public Key", ErrorPubKeyValid);
+            fio_400_assert(isPubKeyValid(client_key), "client_key", client_key,
+                           "Invalid FIO Public Key", ErrorPubKeyValid);
             auto other = accountmap.find(account.value);
             if (other != accountmap.end()) {
                 eosio_assert_message_code(existing && client_key == other->clientkey, "EOSIO account already bound",
@@ -1769,12 +1766,13 @@ namespace fioio {
 
         [[eosio::action]]
         void xferaddress(const string &fio_address, const string &new_owner_fio_public_key, const int64_t &max_fee,
-                         const name &actor, const string &tpid ) {
+                         const name &actor, const string &tpid) {
             require_auth(actor);
             FioAddress fa;
             getFioAddressStruct(fio_address, fa);
 
-            fio_400_assert(validateFioNameFormat(fa) && !fa.domainOnly, "fio_address", fa.fioaddress, "Invalid FIO Address",
+            fio_400_assert(validateFioNameFormat(fa) && !fa.domainOnly, "fio_address", fa.fioaddress,
+                           "Invalid FIO Address",
                            ErrorDomainAlreadyRegistered);
             fio_400_assert(isPubKeyValid(new_owner_fio_public_key), "new_owner_fio_public_key",
                            new_owner_fio_public_key,
@@ -1791,11 +1789,6 @@ namespace fioio {
             fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fa.fioaddress,
                            "FIO Address not registered", ErrorFioNameAlreadyRegistered);
 
-            const uint32_t expiration = fioname_iter->expiration;
-            const uint32_t present_time = now();
-            fio_400_assert(present_time <= expiration, "fio_address", fio_address, "FIO Address expired. Renew first.",
-                           ErrorDomainExpired);
-
             fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature);
             const uint128_t endpoint_hash = string_to_uint128_hash(TRANSFER_ADDRESS_ENDPOINT);
 
@@ -1810,19 +1803,19 @@ namespace fioio {
 
             auto producersbyaddress = producers.get_index<"byaddress"_n>();
             auto prod_iter = producersbyaddress.find(nameHash);
-            if(prod_iter != producersbyaddress.end()){
+            if (prod_iter != producersbyaddress.end()) {
                 fio_400_assert(!prod_iter->is_active, "fio_address", fio_address,
                                "FIO Address is active producer. Unregister first.", ErrorNoEndpoint);
             }
 
             auto proxybyaddress = voters.get_index<"byaddress"_n>();
             auto proxy_iter = proxybyaddress.find(nameHash);
-            if(proxy_iter != proxybyaddress.end()){
+            if (proxy_iter != proxybyaddress.end()) {
                 fio_400_assert(!proxy_iter->is_proxy, "fio_address", fio_address,
                                "FIO Address is proxy. Unregister first.", ErrorNoEndpoint);
             }
 
-            vector<tokenpubaddr> pubaddresses;
+            vector <tokenpubaddr> pubaddresses;
             tokenpubaddr t1;
             t1.public_address = new_owner_fio_public_key;
             t1.token_code = "FIO";
@@ -1832,7 +1825,7 @@ namespace fioio {
             //Transfer the address
             namesbyname.modify(fioname_iter, actor, [&](struct fioname &a) {
                 a.owner_account = nm.value;
-                a.addresses =  pubaddresses;
+                a.addresses = pubaddresses;
             });
 
             // Burn the NFTs belonging to the FIO address that was just transferred
@@ -1841,7 +1834,7 @@ namespace fioio {
             auto nft_iter = contractsbyname.find(nameHash);
 
             //// NEW inline function call ////
-            addburnq(fio_address, nameHash );
+            addburnq(fio_address, nameHash);
 
             //fees
             const uint64_t fee_amount = fee_iter->suf_amount;
@@ -1882,7 +1875,8 @@ namespace fioio {
             FioAddress fa;
             getFioAddressStruct(fio_address, fa);
 
-            fio_400_assert(validateFioNameFormat(fa) && !fa.domainOnly, "fio_address", fa.fioaddress, "Invalid FIO Address",
+            fio_400_assert(validateFioNameFormat(fa) && !fa.domainOnly, "fio_address", fa.fioaddress,
+                           "Invalid FIO Address",
                            ErrorDomainAlreadyRegistered);
             fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
                            "TPID must be empty or valid FIO address",
@@ -1898,21 +1892,16 @@ namespace fioio {
 
             fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature);
 
-            const uint32_t expiration = fioname_iter->expiration;
-            const uint32_t present_time = now();
-            fio_400_assert(present_time <= expiration, "fio_address", fio_address, "FIO Address expired. Renew first.",
-                           ErrorDomainExpired);
-
             auto producersbyaddress = producers.get_index<"byaddress"_n>();
             auto prod_iter = producersbyaddress.find(nameHash);
-            if(prod_iter != producersbyaddress.end()){
+            if (prod_iter != producersbyaddress.end()) {
                 fio_400_assert(!prod_iter->is_active, "fio_address", fio_address,
                                "FIO Address is active producer. Unregister first.", ErrorNoEndpoint);
             }
 
             auto proxybyaddress = voters.get_index<"byaddress"_n>();
             auto proxy_iter = proxybyaddress.find(nameHash);
-            if(proxy_iter != proxybyaddress.end()){
+            if (proxy_iter != proxybyaddress.end()) {
                 fio_400_assert(!proxy_iter->is_proxy, "fio_address", fio_address,
                                "FIO Address is proxy. Unregister first.", ErrorNoEndpoint);
             }
@@ -1923,10 +1912,10 @@ namespace fioio {
             //do the burn
             const uint64_t bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
             namesbyname.erase(fioname_iter);
-            if( tpid_iter != tpid_by_name.end() ){ tpid_by_name.erase(tpid_iter); }
+            if (tpid_iter != tpid_by_name.end()) { tpid_by_name.erase(tpid_iter); }
 
             //// NEW inline function call ////
-            addburnq(fio_address, nameHash );
+            addburnq(fio_address, nameHash);
 
             //fees
             uint64_t fee_amount = 0;
@@ -1965,13 +1954,14 @@ namespace fioio {
 
         [[eosio::action]]
         void xferdomain(const string &fio_domain, const string &new_owner_fio_public_key, const int64_t &max_fee,
-                        const name &actor, const string &tpid ) {
+                        const name &actor, const string &tpid) {
             require_auth(actor);
             FioAddress fa;
             getFioAddressStruct(fio_domain, fa);
 
             register_errors(fa, true);
-            fio_400_assert(isPubKeyValid(new_owner_fio_public_key), "new_owner_fio_public_key", new_owner_fio_public_key,
+            fio_400_assert(isPubKeyValid(new_owner_fio_public_key), "new_owner_fio_public_key",
+                           new_owner_fio_public_key,
                            "Invalid FIO Public Key", ErrorChainAddressEmpty);
             fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
                            "TPID must be empty or valid FIO address",
@@ -1986,7 +1976,8 @@ namespace fioio {
 
             const uint32_t domain_expiration = domains_iter->expiration;
             const uint32_t present_time = now();
-            fio_400_assert(present_time <= domain_expiration, "fio_domain", fio_domain, "FIO Domain expired. Renew first.",
+            fio_400_assert(present_time <= domain_expiration, "fio_domain", fio_domain,
+                           "FIO Domain expired. Renew first.",
                            ErrorDomainExpired);
 
             fio_403_assert(domains_iter->account == actor.value, ErrorSignature);
@@ -2040,12 +2031,13 @@ namespace fioio {
 
         [[eosio::action]]
         void addbundles(const string &fio_address, const int64_t &bundle_sets, const int64_t &max_fee,
-                         const string &tpid, const name &actor) {
+                        const string &tpid, const name &actor) {
             require_auth(actor);
             FioAddress fa;
             getFioAddressStruct(fio_address, fa);
 
-            fio_400_assert(validateFioNameFormat(fa) && !fa.domainOnly, "fio_address", fa.fioaddress, "Invalid FIO Address",
+            fio_400_assert(validateFioNameFormat(fa) && !fa.domainOnly, "fio_address", fa.fioaddress,
+                           "Invalid FIO Address",
                            ErrorDomainAlreadyRegistered);
             fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
                            "TPID must be empty or valid FIO address",
@@ -2071,10 +2063,6 @@ namespace fioio {
             fio_400_assert(present_time <= domain_expiration, "fio_address", fa.fioaddress, "FIO Domain expired",
                            ErrorDomainExpired);
 
-            const uint32_t expiration = fioname_iter->expiration;
-            fio_400_assert(present_time <= expiration, "fio_address", fa.fioaddress, "FIO Address expired.",
-                           ErrorDomainExpired);
-
             const uint128_t endpoint_hash = string_to_uint128_hash("add_bundled_transactions");
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
@@ -2084,10 +2072,10 @@ namespace fioio {
             //Add bundle
             uint64_t current_bundle = fioname_iter->bundleeligiblecountdown;
             uint64_t single_bundle = getBundledAmount();
-            uint64_t set_bundle = current_bundle + ( bundle_sets * single_bundle );
+            uint64_t set_bundle = current_bundle + (bundle_sets * single_bundle);
 
             namesbyname.modify(fioname_iter, actor, [&](struct fioname &a) {
-                a.bundleeligiblecountdown =  set_bundle;
+                a.bundleeligiblecountdown = set_bundle;
             });
 
             //fees
@@ -2116,10 +2104,10 @@ namespace fioio {
 
         void decrcounter(const string &fio_address, const int32_t &step) {
 
-        check(step > 0, "step must be greater than 0");
-        check((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
-                     has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) || has_auth(FeeContract)),
-                     "missing required authority of fio.address, fio.token, fio.fee, fio.treasury, fio.reqobt, fio.system");
+            check(step > 0, "step must be greater than 0");
+            check((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
+                   has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) || has_auth(FeeContract)),
+                  "missing required authority of fio.address, fio.token, fio.fee, fio.treasury, fio.reqobt, fio.system");
 
             auto namesbyname = fionames.get_index<"byname"_n>();
             auto fioname_iter = namesbyname.find(string_to_uint128_hash(fio_address.c_str()));
@@ -2130,11 +2118,13 @@ namespace fioio {
                 namesbyname.modify(fioname_iter, _self, [&](struct fioname &a) {
                     a.bundleeligiblecountdown = (fioname_iter->bundleeligiblecountdown - step);
                 });
-            }
-            else check(false, "Failed to decrement eligible bundle counter"); // required to fail the parent transaction
+            } else
+                check(false, "Failed to decrement eligible bundle counter"); // required to fail the parent transaction
         }
     };
 
-    EOSIO_DISPATCH(FioNameLookup, (regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(renewaddress)(setdomainpub)(burnexpired)(decrcounter)
-    (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(addnft)(remnft)(remallnfts)(burnnfts))
+    EOSIO_DISPATCH(FioNameLookup, (regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(
+            setdomainpub)(burnexpired)(decrcounter)
+            (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(addnft)(remnft)(remallnfts)
+    (burnnfts))
 }
