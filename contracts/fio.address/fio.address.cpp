@@ -1288,6 +1288,10 @@ namespace fioio {
          fio_400_assert(now() <=  get_time_plus_seconds(domains_iter->expiration,SECONDS30DAYS),
                         "domain", fa.fiodomain, "FIO Domain expired", ErrorDomainExpired);
 
+          auto burnqbyname = nftburnqueue.get_index<"byaddress"_n>();
+          fio_400_assert(burnqbyname.find(nameHash) == burnqbyname.end(), "fio_address", fio_address,
+                         "Cannot add NFT, FIO Address is currently in burn queue", ErrorFioNameExpired);
+
           auto nftbyid = nftstable.get_index<"bytokenid"_n>();
 
           for (auto nftobj = nfts.begin(); nftobj != nfts.end(); ++nftobj) {
