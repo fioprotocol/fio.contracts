@@ -125,7 +125,7 @@ namespace fioio {
           auto nftburnq_iter = burnqbyname.find(fioaddhash);
 
           fio_400_assert(nftburnq_iter ==  burnqbyname.end(), "fio_address", fio_address,
-                         "FIO Address NFTs already being burned", ErrorFioNameExpired);
+                         "FIO Address NFTs are being burned", ErrorFioNameExpired);
 
           if (nftburnq_iter == burnqbyname.end() ) {
             nftburnqueue.emplace(get_self(), [&](auto &n) {
@@ -1290,7 +1290,7 @@ namespace fioio {
 
           auto burnqbyname = nftburnqueue.get_index<"byaddress"_n>();
           fio_400_assert(burnqbyname.find(nameHash) == burnqbyname.end(), "fio_address", fio_address,
-                         "Cannot add NFT, FIO Address is currently in burn queue", ErrorFioNameExpired);
+                         "FIO Address NFTs are being burned", ErrorFioNameExpired);
 
           auto nftbyid = nftstable.get_index<"bytokenid"_n>();
 
