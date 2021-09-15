@@ -379,6 +379,28 @@
       ]
     },
     {
+      "name": "renewaddress",
+      "base": "",
+      "fields": [
+        {
+          "name": "fio_address",
+          "type": "string"
+        },
+        {
+          "name": "max_fee",
+          "type": "int64"
+        },
+        {
+          "name": "tpid",
+          "type": "string"
+        },
+        {
+          "name": "actor",
+          "type": "name"
+        }
+      ]
+    },
+    {
       "name": "setdomainpub",
       "base": "",
       "fields": [
