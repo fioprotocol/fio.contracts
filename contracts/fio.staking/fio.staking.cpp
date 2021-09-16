@@ -251,7 +251,8 @@ public:
             }
             roesufspersrp = (long double)(gstaking.combined_token_pool) / (long double)(gstaking.global_srp_count);
             //round it after the 9th decimal place
-            roesufspersrp = roundl(roesufspersrp * 1000000000.0) / 1000000000.0;
+            //commented out do not round, preserve the precision of this value
+           // roesufspersrp = roundl(roesufspersrp * 1000000000.0) / 1000000000.0;
             if (debugout) {
                 print(" rate of exchange set to ", roesufspersrp,"\n");
             }
@@ -444,7 +445,8 @@ public:
             }
             roesufspersrp = (long double)(gstaking.combined_token_pool) / (long double)(gstaking.global_srp_count);
             //round it after the 9th decimal place
-            roesufspersrp = roundl(roesufspersrp * 1000000000.0) / 1000000000.0;
+            // commented out do not round, preserve the precision of this value
+           // roesufspersrp = roundl(roesufspersrp * 1000000000.0) / 1000000000.0;
             if (debugout) {
                 print(" rate of exchange set to ", roesufspersrp,"\n");
             }
