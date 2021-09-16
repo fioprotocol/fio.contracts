@@ -250,6 +250,9 @@ public:
                 print(" staked_token_pool ", gstaking.staked_token_pool,"\n");
             }
             roesufspersrp = (long double)(gstaking.combined_token_pool) / (long double)(gstaking.global_srp_count);
+            //round it after the 9th decimal place
+            //commented out do not round, preserve the precision of this value
+           // roesufspersrp = roundl(roesufspersrp * 1000000000.0) / 1000000000.0;
             if (debugout) {
                 print(" rate of exchange set to ", roesufspersrp,"\n");
             }
@@ -267,7 +270,7 @@ public:
             print("the value of combined_token_pool before state inc in stake: ",gstaking.combined_token_pool,"\n" );
         }
 
-        uint64_t srpstoaward = (uint64_t) truncl(t1);
+        uint64_t srpstoaward = (uint64_t) roundl(t1);
 
         //update global staking state
         gstaking.combined_token_pool += amount;
@@ -425,7 +428,7 @@ public:
          //  this needs to be a floating point (double) operation
        //round this to avoid issues with decimal representations
        double t1 = (((double)astakeiter->total_srp * (double)( (double)amount / (double)astakeiter->total_staked_fio)));
-        uint64_t srpstoclaim = (uint64_t)trunc(t1);
+        uint64_t srpstoclaim = (uint64_t)round(t1);
 
         if (debugout) {
             print(" the long double result of the srpstoclaim is : ",t1,"\n");
@@ -441,6 +444,9 @@ public:
                 print(" staked_token_pool ", gstaking.staked_token_pool,"\n");
             }
             roesufspersrp = (long double)(gstaking.combined_token_pool) / (long double)(gstaking.global_srp_count);
+            //round it after the 9th decimal place
+            // commented out do not round, preserve the precision of this value
+           // roesufspersrp = roundl(roesufspersrp * 1000000000.0) / 1000000000.0;
             if (debugout) {
                 print(" rate of exchange set to ", roesufspersrp,"\n");
             }
@@ -454,14 +460,15 @@ public:
 
         long double t2 = ((long double)(srpstoclaim) * roesufspersrp);
 
-        uint64_t sufclaimed = (uint64_t)truncl(t2);
+
+        uint64_t sufclaimed = (uint64_t)roundl(t2);
         if (debugout){
             print("the long double of sufclaimed is : ",t2,"\n");
             print("the value of sufclaimed is : ",sufclaimed,"\n");
         }
 
         //revise
-        const string message = "unstakefio, srps to claim "+ to_string(srpstoclaim) + " rate of exchange "+ to_string(roesufspersrp) +
+        const string message = "unstakefio, srps to claim "+ to_string(srpstoclaim) +
                                " srpsclaimed " + to_string(sufclaimed) + " amount "+ to_string(amount) + " srpsclaimed must be >= amount. "
                                                                                                           " must be greater than or equal srpstoclaim " + to_string(srpstoclaim) ;
         if (debugout) {
