@@ -68,8 +68,8 @@
 #define BURN_FIO_ADDRESS_ENDPOINT "burn_fio_address"
 #define ADD_BUNDLED_TRANSACTION_ENDPOINT "add_bundled_transactions"
 #define ADD_NFT_ENDPOINT "add_nft"
-#define REM_NFT_ENDPOINT "rem_nft"
-#define REM_ALL_NFTS_ENDPOINT "rem_all_nfts"
+#define REM_NFT_ENDPOINT "remove_nft"
+#define REM_ALL_NFTS_ENDPOINT "remove_all_nfts"
 
 namespace fioio {
 
@@ -422,7 +422,7 @@ namespace fioio {
     static const uint64_t SETFEEVOTERAM = 4000; //integrated. //note this bump allows consecutive calls to voting with
                                                               //different fees to avoid ram limits for non top 21 producers.
     static const uint64_t BUNDLEVOTERAM = 0; //integrated.
-    static const uint64_t ADDNFTRAM = 4098; 
+    static const uint64_t ADDNFTRAM = 4098;
 
 
 
