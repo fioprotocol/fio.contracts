@@ -121,7 +121,7 @@ namespace fioio {
         }
 
         inline void addburnq(const string &fio_address, const uint128_t &fioaddhash) {
-          
+
           auto contractsbyname = nftstable.get_index<"byaddress"_n>();
           if(contractsbyname.find(fioaddhash) != contractsbyname.end()) {
 
@@ -129,7 +129,7 @@ namespace fioio {
             auto nftburnq_iter = burnqbyname.find(fioaddhash);
 
             fio_400_assert(nftburnq_iter ==  burnqbyname.end(), "fio_address", fio_address,
-                           "FIO Address NFTs are being burned", ErrorFioNameExpired);
+                           "FIO Address NFTs are being burned", ErrorInvalidValue);
 
             if (nftburnq_iter == burnqbyname.end() ) {
               nftburnqueue.emplace(get_self(), [&](auto &n) {
@@ -1235,7 +1235,7 @@ namespace fioio {
 
           auto burnqbyname = nftburnqueue.get_index<"byaddress"_n>();
           fio_400_assert(burnqbyname.find(nameHash) == burnqbyname.end(), "fio_address", fio_address,
-                         "FIO Address NFTs are being burned", ErrorFioNameExpired);
+                         "FIO Address NFTs are being burned", ErrorInvalidValue);
 
           auto nftbyid = nftstable.get_index<"bytokenid"_n>();
 
