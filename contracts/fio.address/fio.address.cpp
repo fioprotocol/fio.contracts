@@ -1554,7 +1554,7 @@ namespace fioio {
             auto nft_iter = contractsbyname.find(nameHash);
 
 
-            fio_404_assert(nft_iter != contractsbyname.end(), "FIO Address invalid, does not exist.",
+            fio_404_assert(nft_iter != contractsbyname.end(), "No NFTs.",
                            ErrorDomainNotFound);
 
             //// NEW inline function call ////
