@@ -122,18 +122,22 @@ namespace fioio {
 
         inline void addburnq(const string &fio_address, const uint128_t &fioaddhash) {
 
+          auto contractsbyname = nftstable.get_index<"byaddress"_n>();
+          if(contractsbyname.find(fioaddhash) != contractsbyname.end()) {
+
             auto burnqbyname = nftburnqueue.get_index<"byaddress"_n>();
             auto nftburnq_iter = burnqbyname.find(fioaddhash);
 
-            fio_400_assert(nftburnq_iter == burnqbyname.end(), "fio_address", fio_address,
-                           "FIO Address NFTs already being burned", ErrorDomainExpired);
+            fio_400_assert(nftburnq_iter ==  burnqbyname.end(), "fio_address", fio_address,
+                           "FIO Address NFTs are being burned", ErrorInvalidValue);
 
-            if (nftburnq_iter == burnqbyname.end()) {
-                nftburnqueue.emplace(get_self(), [&](auto &n) {
-                    n.id = nftburnqueue.available_primary_key();
-                    n.fio_address_hash = fioaddhash;
-                });
+            if (nftburnq_iter == burnqbyname.end() ) {
+              nftburnqueue.emplace(get_self(), [&](auto &n) {
+                n.id = nftburnqueue.available_primary_key();
+                n.fio_address_hash = fioaddhash;
+              });
             }
+          }
 
         }
 
@@ -1229,7 +1233,12 @@ namespace fioio {
             fio_400_assert(now() <= get_time_plus_seconds(domains_iter->expiration, SECONDS30DAYS),
                            "domain", fa.fiodomain, "FIO Domain expired", ErrorDomainExpired);
 
-            auto nftbyid = nftstable.get_index<"bytokenid"_n>();
+          auto burnqbyname = nftburnqueue.get_index<"byaddress"_n>();
+          fio_400_assert(burnqbyname.find(nameHash) == burnqbyname.end(), "fio_address", fio_address,
+                         "FIO Address NFTs are being burned", ErrorInvalidValue);
+
+          auto nftbyid = nftstable.get_index<"bytokenid"_n>();
+
 
             for (auto nftobj = nfts.begin(); nftobj != nfts.end(); ++nftobj) {
 
@@ -1544,7 +1553,8 @@ namespace fioio {
             auto contractsbyname = nftstable.get_index<"byaddress"_n>();
             auto nft_iter = contractsbyname.find(nameHash);
 
-            fio_404_assert(nft_iter != contractsbyname.end(), "FIO Address invalid, does not exist.",
+
+            fio_404_assert(nft_iter != contractsbyname.end(), "No NFTs.",
                            ErrorDomainNotFound);
 
             //// NEW inline function call ////
