@@ -121,17 +121,21 @@ namespace fioio {
 
         inline void addburnq(const string &fio_address, const uint128_t &fioaddhash) {
 
-          auto burnqbyname = nftburnqueue.get_index<"byaddress"_n>();
-          auto nftburnq_iter = burnqbyname.find(fioaddhash);
+          auto contractsbyname = nftstable.get_index<"byaddress"_n>();
+          if(contractsbyname.find(fioaddhash) != contractsbyname.end()) {
 
-          fio_400_assert(nftburnq_iter ==  burnqbyname.end(), "fio_address", fio_address,
-                         "FIO Address NFTs are being burned", ErrorFioNameExpired);
+            auto burnqbyname = nftburnqueue.get_index<"byaddress"_n>();
+            auto nftburnq_iter = burnqbyname.find(fioaddhash);
 
-          if (nftburnq_iter == burnqbyname.end() ) {
-            nftburnqueue.emplace(get_self(), [&](auto &n) {
-              n.id = nftburnqueue.available_primary_key();
-              n.fio_address_hash = fioaddhash;
-            });
+            fio_400_assert(nftburnq_iter ==  burnqbyname.end(), "fio_address", fio_address,
+                           "FIO Address NFTs are being burned", ErrorFioNameExpired);
+
+            if (nftburnq_iter == burnqbyname.end() ) {
+              nftburnqueue.emplace(get_self(), [&](auto &n) {
+                n.id = nftburnqueue.available_primary_key();
+                n.fio_address_hash = fioaddhash;
+              });
+            }
           }
 
         }
@@ -1604,7 +1608,7 @@ namespace fioio {
           auto contractsbyname = nftstable.get_index<"byaddress"_n>();
           auto nft_iter = contractsbyname.find(nameHash);
 
-          fio_404_assert(nft_iter != contractsbyname.end(), "FIO Address invalid, does not exist.",
+          fio_404_assert(nft_iter != contractsbyname.end(), "No NFTs to erase.",
                          ErrorDomainNotFound);
 
           //// NEW inline function call ////
