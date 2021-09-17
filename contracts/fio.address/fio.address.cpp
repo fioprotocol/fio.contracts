@@ -2133,7 +2133,7 @@ namespace fioio {
         }
     };
 
-    EOSIO_DISPATCH(FioNameLookup, (regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(
+    EOSIO_DISPATCH(FioNameLookup, (regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(renewaddress)(
             setdomainpub)(burnexpired)(decrcounter)
             (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(addnft)(remnft)(remallnfts)
     (burnnfts))
