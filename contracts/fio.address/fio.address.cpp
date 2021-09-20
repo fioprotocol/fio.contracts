@@ -2116,7 +2116,7 @@ namespace fioio {
         void modexpire(const string &fio_address, const int64_t &expire) {
             FioAddress fa;
             getFioAddressStruct(fio_address, fa);
-            name actor = name{"fio.system"};
+            name actor = name{"eosio"};
             const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
             auto namesbyname = domains.get_index<"byname"_n>();
             auto fioname_iter = namesbyname.find(nameHash);
