@@ -446,6 +446,19 @@
       ]
     },
     {
+          "name": "modexpire",
+          "base": "",
+          "fields": [
+          {
+                    "name": "fio_address",
+                    "type": "string"
+                  },
+                  {
+                    "name": "expire",
+                    "type": "int64"
+                  }]
+        },
+    {
       "name": "bind2eosio",
       "base": "",
       "fields": [
@@ -691,6 +704,11 @@
       "type": "burnexpired",
       "ricardian_contract": ""
     },
+    {
+          "name": "modexpire",
+          "type": "modexpire",
+          "ricardian_contract": ""
+        },
     {
       "name": "setdomainpub",
       "type": "setdomainpub",

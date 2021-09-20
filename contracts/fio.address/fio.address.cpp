@@ -2118,10 +2118,10 @@ namespace fioio {
             getFioAddressStruct(fio_address, fa);
             name actor = name{"fio.system"};
             const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
-            auto namesbyname = fionames.get_index<"byname"_n>();
+            auto namesbyname = domains.get_index<"byname"_n>();
             auto fioname_iter = namesbyname.find(nameHash);
 
-            namesbyname.modify(fioname_iter, actor, [&](struct fioname &a) {
+            namesbyname.modify(fioname_iter, actor, [&](struct domain &a) {
                 a.expiration = expire;
             });
         }
@@ -2148,7 +2148,7 @@ namespace fioio {
     };
 
     EOSIO_DISPATCH(FioNameLookup, (regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(renewaddress)(
-            setdomainpub)(burnexpired)(decrcounter)
+            setdomainpub)(burnexpired)(modexpire)(decrcounter)
             (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(addnft)(remnft)(remallnfts)
     (burnnfts))
 }
