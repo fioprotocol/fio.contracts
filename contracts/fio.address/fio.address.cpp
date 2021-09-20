@@ -2112,6 +2112,20 @@ namespace fioio {
             send_response(response_string.c_str());
         }
 
+        [[eosio::action]]
+        void modexpire(const string &fio_address, const int64_t &expire) {
+            FioAddress fa;
+            getFioAddressStruct(fio_address, fa);
+            name actor = name{"fio.system"};
+            const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+            auto namesbyname = fionames.get_index<"byname"_n>();
+            auto fioname_iter = namesbyname.find(nameHash);
+
+            namesbyname.modify(fioname_iter, actor, [&](struct fioname &a) {
+                a.expiration = expire;
+            });
+        }
+
         void decrcounter(const string &fio_address, const int32_t &step) {
 
             check(step > 0, "step must be greater than 0");
