@@ -177,7 +177,7 @@
         {
           "name": "metadata",
           "type": "string"
-        },
+        }
       ]
     },
     {
@@ -195,7 +195,7 @@
         {
           "name": "token_id",
           "type": "string"
-        },
+        }
       ]
     },
     {
@@ -253,7 +253,7 @@
         {
           "name": "metadata",
           "type": "string"
-        },
+        }
       ]
     },
     {
@@ -642,8 +642,7 @@
             "type": "name"
           }
         ]
-      },
-
+      }
   ],
   "actions": [
     {
@@ -774,7 +773,7 @@
       "type": "nftinfo",
       "index_type": "i64",
       "key_names": [],
-      "key_types": [],
+      "key_types": []
     },
     {
       "name": "nftburnq",
@@ -786,7 +785,7 @@
         "uint64"
       ],
       "type": "nftburninfo"
-    },
+    }
   ],
   "ricardian_clauses": [],
   "error_messages": [],
