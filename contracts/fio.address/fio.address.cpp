@@ -1450,7 +1450,7 @@ namespace fioio {
                                                                     string(nftobj->token_id.c_str()) +
                                                                     string(nftobj->chain_code.c_str())));
 
-                fio_400_assert(nft_iter != nftbyid.end(), "fio_address", fio_address, "NFT not currently mapped",
+                fio_400_assert(nft_iter != nftbyid.end(), "fio_address", fio_address, "NFT not found",
                             ErrorInvalidValue);
 
                 if (nft_iter != nftbyid.end()) {
@@ -1461,7 +1461,7 @@ namespace fioio {
 
             } // for auto nftobj
 
-            fio_400_assert(count_erase > 0, "fio_address", fio_address, "NFT not currently mapped",
+            fio_400_assert(count_erase > 0, "fio_address", fio_address, "No NFTs",
                            ErrorInvalidFioNameFormat);
 
             uint64_t fee_amount = 0;
