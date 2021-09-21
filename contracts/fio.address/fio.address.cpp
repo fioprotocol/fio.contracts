@@ -1450,7 +1450,7 @@ namespace fioio {
                                                                     string(nftobj->token_id.c_str()) +
                                                                     string(nftobj->chain_code.c_str())));
 
-                fio_400_assert(nft_iter == nftbyid.end(), "fio_address", fio_address, "NFT not currently mapped",
+                fio_400_assert(nft_iter != nftbyid.end(), "fio_address", fio_address, "NFT not currently mapped",
                             ErrorInvalidValue);
 
                 if (nft_iter != nftbyid.end()) {
