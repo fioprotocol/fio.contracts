@@ -1333,7 +1333,7 @@ namespace fioio {
                         permission_level{_self, "active"_n},
                         AddressContract,
                         "decrcounter"_n,
-                        make_tuple(fio_address, 1)
+                        make_tuple(fio_address, 2)
                 }.send();
 
             } else {
@@ -1349,8 +1349,8 @@ namespace fioio {
 
 
                 const uint64_t fee_type = fee_iter->type;
-                fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
-                               "unexpected fee type for endpoint add_nft, expected 0", ErrorNoEndpoint);
+                fio_400_assert(fee_type == 1, "fee_type", to_string(fee_type),
+                               "unexpected fee type for endpoint add_nft, expected 1", ErrorNoEndpoint);
 
 
                 fee_amount = fee_iter->suf_amount;
@@ -1450,6 +1450,9 @@ namespace fioio {
                                                                     string(nftobj->token_id.c_str()) +
                                                                     string(nftobj->chain_code.c_str())));
 
+                fio_400_assert(nft_iter != nftbyid.end(), "fio_address", fio_address, "NFT not found",
+                            ErrorInvalidValue);
+
                 if (nft_iter != nftbyid.end()) {
                     fio_403_assert(nft_iter->fio_address == fio_address, ErrorSignature);
                     nft_iter = nftbyid.erase(nft_iter);
@@ -1458,7 +1461,7 @@ namespace fioio {
 
             } // for auto nftobj
 
-            fio_400_assert(count_erase > 0, "fio_address", fio_address, "NFT not currently mapped",
+            fio_400_assert(count_erase > 0, "fio_address", fio_address, "No NFTs",
                            ErrorInvalidFioNameFormat);
 
             uint64_t fee_amount = 0;
@@ -1484,8 +1487,8 @@ namespace fioio {
 
 
                 const uint64_t fee_type = fee_iter->type;
-                fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
-                               "unexpected fee type for endpoint rem_nft, expected 0", ErrorNoEndpoint);
+                fio_400_assert(fee_type == 1, "fee_type", to_string(fee_type),
+                               "unexpected fee type for endpoint rem_nft, expected 1", ErrorNoEndpoint);
 
 
                 fee_amount = fee_iter->suf_amount;
@@ -1583,8 +1586,8 @@ namespace fioio {
 
 
                 const uint64_t fee_type = fee_iter->type;
-                fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
-                               "unexpected fee type for endpoint rem_all_nfts, expected 0", ErrorNoEndpoint);
+                fio_400_assert(fee_type == 1, "fee_type", to_string(fee_type),
+                               "unexpected fee type for endpoint rem_all_nfts, expected 1", ErrorNoEndpoint);
 
 
                 fee_amount = fee_iter->suf_amount;
