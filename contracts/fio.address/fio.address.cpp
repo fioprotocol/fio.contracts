@@ -1008,7 +1008,7 @@ namespace fioio {
             uint32_t minexpiration = nowtime - DOMAINWAITFORBURNDAYS;
             //print(minexpiration);
             auto domainexpidx = domains.get_index<"byexpiration"_n>();
-            auto domainiter = domainexpidx.begin();
+            auto domainiter = domainexpidx.upper_bound(minexpiration);
             //print(" here 0: ");
             while (domainiter != domainexpidx.end()) {
                 //print("here 1: ");
