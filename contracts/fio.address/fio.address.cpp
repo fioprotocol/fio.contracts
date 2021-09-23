@@ -1001,23 +1001,34 @@ namespace fioio {
          */
         [[eosio::action]]
         void burnexpired() {
+            //print("begin  ");
             int numbertoburn = 25;
             unsigned int recordProcessed = 0;
             const uint64_t nowtime = now();
             uint32_t minexpiration = nowtime - DOMAINWAITFORBURNDAYS;
-
+            //print(minexpiration);
             auto domainexpidx = domains.get_index<"byexpiration"_n>();
-            auto domainiter = domainexpidx.upper_bound(minexpiration);
-
-            while (domainiter != domainexpidx.end() && recordProcessed != numbertoburn) {
+            auto domainiter = domainexpidx.begin();
+            //print(" here 0: ");
+            while (domainiter != domainexpidx.end()) {
+                //print("here 1: ");
+                //print(domainiter->name);
+                //print(" ");
+                //print(domainiter->expiration);
                 const uint64_t expire = domainiter->expiration;
+                auto nextdomain = domainiter;
+                nextdomain++;
 
                 if ((expire + DOMAINWAITFORBURNDAYS) < nowtime) {
+                    //print(" here 2: ");
                     const auto domainhash = domainiter->domainhash;
                     auto nameexpidx = fionames.get_index<"bydomain"_n>();
                     auto nameiter = nameexpidx.find(domainhash);
 
                     while (nameiter != nameexpidx.end()) {
+                        //print("We found addresses!!  ");
+                        auto nextname = nameiter;
+                        nextname++;
                         if (nameiter->domainhash == domainhash) {
                             const uint64_t burner = nameiter->namehash;
                             auto tpidbyname = tpids.get_index<"byname"_n>();
@@ -1026,42 +1037,56 @@ namespace fioio {
                             auto nftburnq_iter = burnqbyname.find(burner);
 
                             if (nftburnq_iter == burnqbyname.end()) {
-                                nftburnqueue.emplace(get_self(), [&](auto &n) {
+                                nftburnqueue.emplace(SYSTEMACCOUNT, [&](auto &n) {
                                     n.id = nftburnqueue.available_primary_key();
                                     n.fio_address_hash = burner;
                                 });
                             }
 
-                            nameexpidx.erase(nameiter);
+                            //print("address:");
+                            //print(nameiter->name);
                             if (tpiditer != tpidbyname.end()) { tpidbyname.erase(tpiditer); }
 
-                            action(
-                                    permission_level{SYSTEMACCOUNT, "active"_n},
-                                    "eosio"_n,
-                                    "burnaction"_n,
-                                    std::make_tuple(burner)
-                            ).send();
+                            auto producersbyaddress = producers.get_index<"byaddress"_n>();
+                            auto prod_iter = producersbyaddress.find(burner);
+                            auto proxybyaddress = voters.get_index<"byaddress"_n>();
+                            auto proxy_iter = proxybyaddress.find(burner);
 
+                            if (proxy_iter != proxybyaddress.end() || prod_iter != producersbyaddress.end()) {
+                                //print(" PROXY / PRODUCER REMOVE ");
+                                action(
+                                        permission_level{AddressContract, "active"_n},
+                                        "eosio"_n,
+                                        "burnaction"_n,
+                                        std::make_tuple(burner)
+                                        ).send();
+                            }
+
+                            nameexpidx.erase(nameiter);
+                            //print(" record processed ");
                             recordProcessed++;
                         }
-
                         if (recordProcessed == numbertoburn) { break; }
-                        nameiter++;
+                        nameiter = nextname;
+                        //print("address burned ");
                     }
 
                     if (nameiter == nameexpidx.end()) {
+                        //print("domain delete  ");
                         domainexpidx.erase(domainiter);
+                        //print("record processed");
                         recordProcessed++;
                     }
 
                     if (recordProcessed == numbertoburn) { break; }
                 }
-                domainiter++;
+                //print(" domain increase. ");
+                domainiter = nextdomain;
             }
 
             fio_400_assert(recordProcessed != 0, "burnexpired", "burnexpired",
                            "No work.", ErrorNoWork);
-
+            //print("past work error.");
             const string response_string = string("{\"status\": \"OK\",\"items_burned\":") +
                                            to_string(recordProcessed) + string("}");
 
