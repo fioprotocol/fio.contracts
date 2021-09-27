@@ -1079,6 +1079,7 @@ namespace fioio {
                     }
                     index++;
                     domainiter2 = domains.find(index);
+                    recordProcessed++;
                 }
             } else {
                 while (domainiter != domainexpidx.end()) {
