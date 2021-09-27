@@ -1000,88 +1000,160 @@ namespace fioio {
          * and addresses.
          */
         [[eosio::action]]
-        void burnexpired() {
+        void burnexpired(const int64_t &offset = 0, const int64_t &limit = 25) {
             //print("begin  ");
-            int numbertoburn = 25;
+            uint64_t numbertoburn = limit;
+            if (numbertoburn > 25) { numbertoburn = 25; }
             unsigned int recordProcessed = 0;
             const uint64_t nowtime = now();
             uint32_t minexpiration = nowtime - DOMAINWAITFORBURNDAYS;
             //print(minexpiration);
             auto domainexpidx = domains.get_index<"byexpiration"_n>();
             auto domainiter = domainexpidx.upper_bound(minexpiration);
-            //print(" here 0: ");
-            while (domainiter != domainexpidx.end()) {
-                //print("here 1: ");
-                //print(domainiter->name);
-                //print(" ");
-                //print(domainiter->expiration);
-                const uint64_t expire = domainiter->expiration;
-                auto nextdomain = domainiter;
-                nextdomain++;
 
-                if ((expire + DOMAINWAITFORBURNDAYS) < nowtime) {
-                    //print(" here 2: ");
-                    const auto domainhash = domainiter->domainhash;
-                    auto nameexpidx = fionames.get_index<"bydomain"_n>();
-                    auto nameiter = nameexpidx.find(domainhash);
+            if( offset > 0 ){
+                int64_t index = offset;
+                auto domainiter2 = domains.find(index);
 
-                    while (nameiter != nameexpidx.end()) {
-                        //print("We found addresses!!  ");
-                        auto nextname = nameiter;
-                        nextname++;
-                        if (nameiter->domainhash == domainhash) {
-                            const uint64_t burner = nameiter->namehash;
-                            auto tpidbyname = tpids.get_index<"byname"_n>();
-                            auto tpiditer = tpidbyname.find(burner);
-                            auto burnqbyname = nftburnqueue.get_index<"byaddress"_n>();
-                            auto nftburnq_iter = burnqbyname.find(burner);
+                while (domainiter2 != domains.end()) {
+                    const uint64_t expire = domainiter->expiration;
+                    if ((expire + DOMAINWAITFORBURNDAYS) < nowtime) {
+                        const auto domainhash = domainiter->domainhash;
+                        auto nameexpidx = fionames.get_index<"bydomain"_n>();
+                        auto nameiter = nameexpidx.find(domainhash);
 
-                            if (nftburnq_iter == burnqbyname.end()) {
-                                nftburnqueue.emplace(SYSTEMACCOUNT, [&](auto &n) {
-                                    n.id = nftburnqueue.available_primary_key();
-                                    n.fio_address_hash = burner;
-                                });
+                        while (nameiter != nameexpidx.end()) {
+                            //print("We found addresses!!  ");
+                            auto nextname = nameiter;
+                            nextname++;
+                            if (nameiter->domainhash == domainhash) {
+                                const uint64_t burner = nameiter->namehash;
+                                auto tpidbyname = tpids.get_index<"byname"_n>();
+                                auto tpiditer = tpidbyname.find(burner);
+                                auto burnqbyname = nftburnqueue.get_index<"byaddress"_n>();
+                                auto nftburnq_iter = burnqbyname.find(burner);
+
+                                if (nftburnq_iter == burnqbyname.end()) {
+                                    nftburnqueue.emplace(SYSTEMACCOUNT, [&](auto &n) {
+                                        n.id = nftburnqueue.available_primary_key();
+                                        n.fio_address_hash = burner;
+                                    });
+                                }
+
+                                //print("address:");
+                                //print(nameiter->name);
+                                if (tpiditer != tpidbyname.end()) { tpidbyname.erase(tpiditer); }
+
+                                auto producersbyaddress = producers.get_index<"byaddress"_n>();
+                                auto prod_iter = producersbyaddress.find(burner);
+                                auto proxybyaddress = voters.get_index<"byaddress"_n>();
+                                auto proxy_iter = proxybyaddress.find(burner);
+
+                                if (proxy_iter != proxybyaddress.end() || prod_iter != producersbyaddress.end()) {
+                                    //print(" PROXY / PRODUCER REMOVE ");
+                                    action(
+                                            permission_level{AddressContract, "active"_n},
+                                            "eosio"_n,
+                                            "burnaction"_n,
+                                            std::make_tuple(burner)
+                                            ).send();
+                                }
+
+                                nameexpidx.erase(nameiter);
+                                //print(" record processed ");
+                                recordProcessed++;
                             }
+                            if (recordProcessed == numbertoburn) { break; }
+                            nameiter = nextname;
+                            //print("address burned ");
+                        }
 
-                            //print("address:");
-                            //print(nameiter->name);
-                            if (tpiditer != tpidbyname.end()) { tpidbyname.erase(tpiditer); }
-
-                            auto producersbyaddress = producers.get_index<"byaddress"_n>();
-                            auto prod_iter = producersbyaddress.find(burner);
-                            auto proxybyaddress = voters.get_index<"byaddress"_n>();
-                            auto proxy_iter = proxybyaddress.find(burner);
-
-                            if (proxy_iter != proxybyaddress.end() || prod_iter != producersbyaddress.end()) {
-                                //print(" PROXY / PRODUCER REMOVE ");
-                                action(
-                                        permission_level{AddressContract, "active"_n},
-                                        "eosio"_n,
-                                        "burnaction"_n,
-                                        std::make_tuple(burner)
-                                        ).send();
-                            }
-
-                            nameexpidx.erase(nameiter);
-                            //print(" record processed ");
+                        if (nameiter == nameexpidx.end()) {
+                            //print("domain delete  ");
+                            domains.erase(domainiter2);
+                            //print("record processed");
                             recordProcessed++;
                         }
+
                         if (recordProcessed == numbertoburn) { break; }
-                        nameiter = nextname;
-                        //print("address burned ");
                     }
-
-                    if (nameiter == nameexpidx.end()) {
-                        //print("domain delete  ");
-                        domainexpidx.erase(domainiter);
-                        //print("record processed");
-                        recordProcessed++;
-                    }
-
-                    if (recordProcessed == numbertoburn) { break; }
+                    index++;
+                    domainiter2 = domains.find(index);
                 }
-                //print(" domain increase. ");
-                domainiter = nextdomain;
+            } else {
+                while (domainiter != domainexpidx.end()) {
+                    //print("here 1: ");
+                    //print(domainiter->name);
+                    //print(" ");
+                    //print(domainiter->expiration);
+                    const uint64_t expire = domainiter->expiration;
+                    auto nextdomain = domainiter;
+                    nextdomain++;
+
+                    if ((expire + DOMAINWAITFORBURNDAYS) < nowtime) {
+                        //print(" here 2: ");
+                        const auto domainhash = domainiter->domainhash;
+                        auto nameexpidx = fionames.get_index<"bydomain"_n>();
+                        auto nameiter = nameexpidx.find(domainhash);
+
+                        while (nameiter != nameexpidx.end()) {
+                            //print("We found addresses!!  ");
+                            auto nextname = nameiter;
+                            nextname++;
+                            if (nameiter->domainhash == domainhash) {
+                                const uint64_t burner = nameiter->namehash;
+                                auto tpidbyname = tpids.get_index<"byname"_n>();
+                                auto tpiditer = tpidbyname.find(burner);
+                                auto burnqbyname = nftburnqueue.get_index<"byaddress"_n>();
+                                auto nftburnq_iter = burnqbyname.find(burner);
+
+                                if (nftburnq_iter == burnqbyname.end()) {
+                                    nftburnqueue.emplace(SYSTEMACCOUNT, [&](auto &n) {
+                                        n.id = nftburnqueue.available_primary_key();
+                                        n.fio_address_hash = burner;
+                                    });
+                                }
+
+                                //print("address:");
+                                //print(nameiter->name);
+                                if (tpiditer != tpidbyname.end()) { tpidbyname.erase(tpiditer); }
+
+                                auto producersbyaddress = producers.get_index<"byaddress"_n>();
+                                auto prod_iter = producersbyaddress.find(burner);
+                                auto proxybyaddress = voters.get_index<"byaddress"_n>();
+                                auto proxy_iter = proxybyaddress.find(burner);
+
+                                if (proxy_iter != proxybyaddress.end() || prod_iter != producersbyaddress.end()) {
+                                    //print(" PROXY / PRODUCER REMOVE ");
+                                    action(
+                                            permission_level{AddressContract, "active"_n},
+                                            "eosio"_n,
+                                            "burnaction"_n,
+                                            std::make_tuple(burner)
+                                            ).send();
+                                }
+
+                                nameexpidx.erase(nameiter);
+                                //print(" record processed ");
+                                recordProcessed++;
+                            }
+                            if (recordProcessed == numbertoburn) { break; }
+                            nameiter = nextname;
+                            //print("address burned ");
+                        }
+
+                        if (nameiter == nameexpidx.end()) {
+                            //print("domain delete  ");
+                            domainexpidx.erase(domainiter);
+                            //print("record processed");
+                            recordProcessed++;
+                        }
+
+                        if (recordProcessed == numbertoburn) { break; }
+                    }
+                    //print(" domain increase. ");
+                    domainiter = nextdomain;
+                }
             }
 
             fio_400_assert(recordProcessed != 0, "burnexpired", "burnexpired",

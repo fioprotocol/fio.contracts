@@ -429,7 +429,15 @@
     {
       "name": "burnexpired",
       "base": "",
-      "fields": []
+      "fields": [
+      {
+                "name": "offset",
+                "type": "int64"
+              },
+              {
+                "name": "limit",
+                "type": "int32"
+              }]
     },
     {
       "name": "decrcounter",
