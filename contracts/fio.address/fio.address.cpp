@@ -1000,30 +1000,35 @@ namespace fioio {
          * and addresses.
          */
         [[eosio::action]]
-        void burnexpired(const int64_t &offset = 0, const int64_t &limit = 25) {
-            //print("begin  ");
-            uint64_t numbertoburn = limit;
+        void burnexpired(const int64_t &offset = 0, const int32_t &limit = 25) {
+            print("begin  ");
+            uint32_t numbertoburn = limit;
             if (numbertoburn > 25) { numbertoburn = 25; }
             unsigned int recordProcessed = 0;
             const uint64_t nowtime = now();
             uint32_t minexpiration = nowtime - DOMAINWAITFORBURNDAYS;
-            //print(minexpiration);
+            print(minexpiration);
             auto domainexpidx = domains.get_index<"byexpiration"_n>();
             auto domainiter = domainexpidx.upper_bound(minexpiration);
 
             if( offset > 0 ){
                 int64_t index = offset;
+                print("iter ");
                 auto domainiter2 = domains.find(index);
 
                 while (domainiter2 != domains.end()) {
-                    const uint64_t expire = domainiter->expiration;
+                    print("1 ");
+                    const uint64_t expire = domainiter2->expiration;
+                    print(domainiter2->name);
+                    print(" ");
                     if ((expire + DOMAINWAITFORBURNDAYS) < nowtime) {
-                        const auto domainhash = domainiter->domainhash;
+                        print("2 ");
+                        const auto domainhash = domainiter2->domainhash;
                         auto nameexpidx = fionames.get_index<"bydomain"_n>();
                         auto nameiter = nameexpidx.find(domainhash);
 
                         while (nameiter != nameexpidx.end()) {
-                            //print("We found addresses!!  ");
+                            print("We found addresses!!  ");
                             auto nextname = nameiter;
                             nextname++;
                             if (nameiter->domainhash == domainhash) {
@@ -1040,8 +1045,8 @@ namespace fioio {
                                     });
                                 }
 
-                                //print("address:");
-                                //print(nameiter->name);
+                                print("address:");
+                                print(nameiter->name);
                                 if (tpiditer != tpidbyname.end()) { tpidbyname.erase(tpiditer); }
 
                                 auto producersbyaddress = producers.get_index<"byaddress"_n>();
@@ -1050,7 +1055,7 @@ namespace fioio {
                                 auto proxy_iter = proxybyaddress.find(burner);
 
                                 if (proxy_iter != proxybyaddress.end() || prod_iter != producersbyaddress.end()) {
-                                    //print(" PROXY / PRODUCER REMOVE ");
+                                    print(" PROXY / PRODUCER REMOVE ");
                                     action(
                                             permission_level{AddressContract, "active"_n},
                                             "eosio"_n,
@@ -1060,18 +1065,18 @@ namespace fioio {
                                 }
 
                                 nameexpidx.erase(nameiter);
-                                //print(" record processed ");
+                                print(" record processed ");
                                 recordProcessed++;
                             }
                             if (recordProcessed == numbertoburn) { break; }
                             nameiter = nextname;
-                            //print("address burned ");
+                            print("address burned ");
                         }
 
                         if (nameiter == nameexpidx.end()) {
-                            //print("domain delete  ");
+                            print("domain delete  ");
                             domains.erase(domainiter2);
-                            //print("record processed");
+                            print("record processed");
                             recordProcessed++;
                         }
 
@@ -1080,12 +1085,13 @@ namespace fioio {
                     index++;
                     domainiter2 = domains.find(index);
                     recordProcessed++;
+                    print("done.");
                 }
             } else {
                 while (domainiter != domainexpidx.end()) {
                     //print("here 1: ");
-                    //print(domainiter->name);
-                    //print(" ");
+                    print(domainiter->name);
+                    print(" ");
                     //print(domainiter->expiration);
                     const uint64_t expire = domainiter->expiration;
                     auto nextdomain = domainiter;
