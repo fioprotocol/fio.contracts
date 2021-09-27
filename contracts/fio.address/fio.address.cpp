@@ -1008,22 +1008,22 @@ namespace fioio {
             const uint64_t nowtime = now();
             uint32_t minexpiration = nowtime - DOMAINWAITFORBURNDAYS;
             print(minexpiration);
-            auto domainexpidx = domains.get_index<"byexpiration"_n>();
-            auto domainiter = domainexpidx.upper_bound(minexpiration);
+            auto domainiter = domains.begin();
+            uint32_t currentWork = 0;
 
             if( offset > 0 ){
                 int64_t index = offset;
                 print("iter ");
-                auto domainiter2 = domains.find(index);
+                domainiter = domains.find(index);
 
-                while (domainiter2 != domains.end()) {
+                while (domainiter != domains.end()) {
                     print("1 ");
-                    const uint64_t expire = domainiter2->expiration;
-                    print(domainiter2->name);
+                    const uint64_t expire = domainiter->expiration;
+                    print(domainiter->name);
                     print(" ");
                     if ((expire + DOMAINWAITFORBURNDAYS) < nowtime) {
                         print("2 ");
-                        const auto domainhash = domainiter2->domainhash;
+                        const auto domainhash = domainiter->domainhash;
                         auto nameexpidx = fionames.get_index<"bydomain"_n>();
                         auto nameiter = nameexpidx.find(domainhash);
 
@@ -1075,7 +1075,7 @@ namespace fioio {
 
                         if (nameiter == nameexpidx.end()) {
                             print("domain delete  ");
-                            domains.erase(domainiter2);
+                            domains.erase(domainiter);
                             print("record processed");
                             recordProcessed++;
                         }
@@ -1083,12 +1083,13 @@ namespace fioio {
                         if (recordProcessed == numbertoburn) { break; }
                     }
                     index++;
-                    domainiter2 = domains.find(index);
+                    domainiter = domains.find(index);
                     recordProcessed++;
+                    currentWork++;
                     print("done.");
                 }
             } else {
-                while (domainiter != domainexpidx.end()) {
+                while (domainiter != domains.end()) {
                     //print("here 1: ");
                     print(domainiter->name);
                     print(" ");
@@ -1151,7 +1152,7 @@ namespace fioio {
 
                         if (nameiter == nameexpidx.end()) {
                             //print("domain delete  ");
-                            domainexpidx.erase(domainiter);
+                            domains.erase(domainiter);
                             //print("record processed");
                             recordProcessed++;
                         }
@@ -1163,9 +1164,11 @@ namespace fioio {
                 }
             }
 
+            if(currentWork > 0){ recordProcessed -= currentWork; }
+
             fio_400_assert(recordProcessed != 0, "burnexpired", "burnexpired",
                            "No work.", ErrorNoWork);
-            //print("past work error.");
+            print("past work error.");
             const string response_string = string("{\"status\": \"OK\",\"items_burned\":") +
                                            to_string(recordProcessed) + string("}");
 
