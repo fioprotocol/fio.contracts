@@ -2187,20 +2187,6 @@ namespace fioio {
             send_response(response_string.c_str());
         }
 
-        [[eosio::action]]
-        void modexpire(const string &fio_address, const int64_t &expire) {
-            FioAddress fa;
-            getFioAddressStruct(fio_address, fa);
-            name actor = name{"eosio"};
-            const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
-            auto namesbyname = domains.get_index<"byname"_n>();
-            auto fioname_iter = namesbyname.find(nameHash);
-
-            namesbyname.modify(fioname_iter, actor, [&](struct domain &a) {
-                a.expiration = expire;
-            });
-        }
-
         void decrcounter(const string &fio_address, const int32_t &step) {
 
             check(step > 0, "step must be greater than 0");
@@ -2223,7 +2209,7 @@ namespace fioio {
     };
 
     EOSIO_DISPATCH(FioNameLookup, (regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(renewaddress)(
-            setdomainpub)(burnexpired)(modexpire)(decrcounter)
+            setdomainpub)(burnexpired)(decrcounter)
             (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(addnft)(remnft)(remallnfts)
     (burnnfts))
 }
