@@ -1629,8 +1629,9 @@ namespace fioio {
             auto nftburnq_iter = burnqbyname.begin();
             auto contractsbyname = nftstable.get_index<"byaddress"_n>();
             uint16_t counter = 0;
+            auto nft_iter = contractsbyname.begin();
             while (nftburnq_iter != burnqbyname.end()) {
-                auto nft_iter = contractsbyname.find(nftburnq_iter->fio_address_hash);
+                nft_iter = contractsbyname.find(nftburnq_iter->fio_address_hash);
                 counter++;
                 if (nft_iter != contractsbyname.end()) { // if row, delete an nft
                     nft_iter = contractsbyname.erase(nft_iter);
