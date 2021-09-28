@@ -1388,6 +1388,8 @@ namespace fioio {
 
             send_response(response_string.c_str());
 
+              print("TRX SIZE", std::to_string(transaction_size()), "\n");
+
         }
 
         [[eosio::action]]
@@ -1515,6 +1517,8 @@ namespace fioio {
 
             send_response(response_string.c_str());
 
+                          print("TRX SIZE", std::to_string(transaction_size()), "\n");
+
         }
 
 
@@ -1615,6 +1619,7 @@ namespace fioio {
 
             send_response(response_string.c_str());
 
+            print("TRX SIZE", std::to_string(transaction_size()), "\n");
 
         }
 
@@ -1635,9 +1640,12 @@ namespace fioio {
                 counter++;
                 if (nft_iter != contractsbyname.end()) { // if row, delete an nft
                     nft_iter = contractsbyname.erase(nft_iter);
-                } else {
-                    nftburnq_iter = burnqbyname.erase(nftburnq_iter); // if no more rows, delete from nftburnqueue
                 }
+
+                if (nft_iter == contractsbyname.end()) {
+                  nftburnq_iter = burnqbyname.erase(nftburnq_iter); // if no more rows, delete from nftburnqueue
+                }
+
                 if (counter == 50) break;
             }
 
