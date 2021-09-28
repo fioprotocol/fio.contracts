@@ -1000,9 +1000,9 @@ namespace fioio {
          * and addresses.
          */
         [[eosio::action]]
-        void burnexpired(const int64_t &offset = 0, const int32_t &limit = 25) {
+        void burnexpired(const int64_t &offset = 0, const int32_t &limit = 15) {
             uint32_t numbertoburn = limit;
-            if (numbertoburn > 25) { numbertoburn = 25; }
+            if (numbertoburn > 15) { numbertoburn = 15; }
             unsigned int recordProcessed = 0;
             const uint64_t nowtime = now();
             uint32_t minexpiration = nowtime - DOMAINWAITFORBURNDAYS;
@@ -1045,7 +1045,6 @@ namespace fioio {
                                 auto proxy_iter = proxybyaddress.find(burner);
 
                                 if (proxy_iter != proxybyaddress.end() || prod_iter != producersbyaddress.end()) {
-                                    print(" PROXY / PRODUCER REMOVE ");
                                     action(
                                             permission_level{AddressContract, "active"_n},
                                             "eosio"_n,
