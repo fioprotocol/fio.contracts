@@ -1001,34 +1001,26 @@ namespace fioio {
          */
         [[eosio::action]]
         void burnexpired(const int64_t &offset = 0, const int32_t &limit = 25) {
-            print("begin  ");
             uint32_t numbertoburn = limit;
             if (numbertoburn > 25) { numbertoburn = 25; }
             unsigned int recordProcessed = 0;
             const uint64_t nowtime = now();
             uint32_t minexpiration = nowtime - DOMAINWAITFORBURNDAYS;
-            print(minexpiration);
             auto domainiter = domains.begin();
             uint32_t currentWork = 0;
 
             if( offset > 0 ){
                 int64_t index = offset;
-                print("iter ");
                 domainiter = domains.find(index);
 
                 while (domainiter != domains.end()) {
-                    print("1 ");
                     const uint64_t expire = domainiter->expiration;
-                    print(domainiter->name);
-                    print(" ");
                     if ((expire + DOMAINWAITFORBURNDAYS) < nowtime) {
-                        print("2 ");
                         const auto domainhash = domainiter->domainhash;
                         auto nameexpidx = fionames.get_index<"bydomain"_n>();
                         auto nameiter = nameexpidx.find(domainhash);
 
                         while (nameiter != nameexpidx.end()) {
-                            print("We found addresses!!  ");
                             auto nextname = nameiter;
                             nextname++;
                             if (nameiter->domainhash == domainhash) {
@@ -1045,8 +1037,6 @@ namespace fioio {
                                     });
                                 }
 
-                                print("address:");
-                                print(nameiter->name);
                                 if (tpiditer != tpidbyname.end()) { tpidbyname.erase(tpiditer); }
 
                                 auto producersbyaddress = producers.get_index<"byaddress"_n>();
@@ -1065,18 +1055,14 @@ namespace fioio {
                                 }
 
                                 nameexpidx.erase(nameiter);
-                                print(" record processed ");
                                 recordProcessed++;
                             }
                             if (recordProcessed == numbertoburn) { break; }
                             nameiter = nextname;
-                            print("address burned ");
                         }
 
                         if (nameiter == nameexpidx.end()) {
-                            print("domain delete  ");
                             domains.erase(domainiter);
-                            print("record processed");
                             recordProcessed++;
                         }
 
@@ -1086,26 +1072,19 @@ namespace fioio {
                     domainiter = domains.find(index);
                     recordProcessed++;
                     currentWork++;
-                    print("done.");
                 }
             } else {
                 while (domainiter != domains.end()) {
-                    //print("here 1: ");
-                    print(domainiter->name);
-                    print(" ");
-                    //print(domainiter->expiration);
                     const uint64_t expire = domainiter->expiration;
                     auto nextdomain = domainiter;
                     nextdomain++;
 
                     if ((expire + DOMAINWAITFORBURNDAYS) < nowtime) {
-                        //print(" here 2: ");
                         const auto domainhash = domainiter->domainhash;
                         auto nameexpidx = fionames.get_index<"bydomain"_n>();
                         auto nameiter = nameexpidx.find(domainhash);
 
                         while (nameiter != nameexpidx.end()) {
-                            //print("We found addresses!!  ");
                             auto nextname = nameiter;
                             nextname++;
                             if (nameiter->domainhash == domainhash) {
@@ -1122,8 +1101,6 @@ namespace fioio {
                                     });
                                 }
 
-                                //print("address:");
-                                //print(nameiter->name);
                                 if (tpiditer != tpidbyname.end()) { tpidbyname.erase(tpiditer); }
 
                                 auto producersbyaddress = producers.get_index<"byaddress"_n>();
@@ -1132,7 +1109,6 @@ namespace fioio {
                                 auto proxy_iter = proxybyaddress.find(burner);
 
                                 if (proxy_iter != proxybyaddress.end() || prod_iter != producersbyaddress.end()) {
-                                    //print(" PROXY / PRODUCER REMOVE ");
                                     action(
                                             permission_level{AddressContract, "active"_n},
                                             "eosio"_n,
@@ -1142,33 +1118,26 @@ namespace fioio {
                                 }
 
                                 nameexpidx.erase(nameiter);
-                                //print(" record processed ");
                                 recordProcessed++;
                             }
                             if (recordProcessed == numbertoburn) { break; }
                             nameiter = nextname;
-                            //print("address burned ");
                         }
 
                         if (nameiter == nameexpidx.end()) {
-                            //print("domain delete  ");
                             domains.erase(domainiter);
-                            //print("record processed");
                             recordProcessed++;
                         }
 
                         if (recordProcessed == numbertoburn) { break; }
                     }
-                    //print(" domain increase. ");
                     domainiter = nextdomain;
                 }
             }
 
             if(currentWork > 0){ recordProcessed -= currentWork; }
-
             fio_400_assert(recordProcessed != 0, "burnexpired", "burnexpired",
                            "No work.", ErrorNoWork);
-            print("past work error.");
             const string response_string = string("{\"status\": \"OK\",\"items_burned\":") +
                                            to_string(recordProcessed) + string("}");
 
