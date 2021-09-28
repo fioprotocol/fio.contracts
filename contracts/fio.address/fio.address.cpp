@@ -1000,68 +1000,143 @@ namespace fioio {
          * and addresses.
          */
         [[eosio::action]]
-        void burnexpired() {
-            int numbertoburn = 25;
+        void burnexpired(const int64_t &offset = 0, const int32_t &limit = 15) {
+            uint32_t numbertoburn = limit;
+            if (numbertoburn > 15) { numbertoburn = 15; }
             unsigned int recordProcessed = 0;
             const uint64_t nowtime = now();
             uint32_t minexpiration = nowtime - DOMAINWAITFORBURNDAYS;
+            auto domainiter = domains.begin();
+            uint32_t currentWork = 0;
 
-            auto domainexpidx = domains.get_index<"byexpiration"_n>();
-            auto domainiter = domainexpidx.upper_bound(minexpiration);
+            if( offset > 0 ){
+                int64_t index = offset;
+                domainiter = domains.find(index);
 
-            while (domainiter != domainexpidx.end() && recordProcessed != numbertoburn) {
-                const uint64_t expire = domainiter->expiration;
+                while (domainiter != domains.end()) {
+                    const uint64_t expire = domainiter->expiration;
+                    if ((expire + DOMAINWAITFORBURNDAYS) < nowtime) {
+                        const auto domainhash = domainiter->domainhash;
+                        auto nameexpidx = fionames.get_index<"bydomain"_n>();
+                        auto nameiter = nameexpidx.find(domainhash);
 
-                if ((expire + DOMAINWAITFORBURNDAYS) < nowtime) {
-                    const auto domainhash = domainiter->domainhash;
-                    auto nameexpidx = fionames.get_index<"bydomain"_n>();
-                    auto nameiter = nameexpidx.find(domainhash);
+                        while (nameiter != nameexpidx.end()) {
+                            auto nextname = nameiter;
+                            nextname++;
+                            if (nameiter->domainhash == domainhash) {
+                                const uint64_t burner = nameiter->namehash;
+                                auto tpidbyname = tpids.get_index<"byname"_n>();
+                                auto tpiditer = tpidbyname.find(burner);
+                                auto burnqbyname = nftburnqueue.get_index<"byaddress"_n>();
+                                auto nftburnq_iter = burnqbyname.find(burner);
 
-                    while (nameiter != nameexpidx.end()) {
-                        if (nameiter->domainhash == domainhash) {
-                            const uint64_t burner = nameiter->namehash;
-                            auto tpidbyname = tpids.get_index<"byname"_n>();
-                            auto tpiditer = tpidbyname.find(burner);
-                            auto burnqbyname = nftburnqueue.get_index<"byaddress"_n>();
-                            auto nftburnq_iter = burnqbyname.find(burner);
+                                if (nftburnq_iter == burnqbyname.end()) {
+                                    nftburnqueue.emplace(SYSTEMACCOUNT, [&](auto &n) {
+                                        n.id = nftburnqueue.available_primary_key();
+                                        n.fio_address_hash = burner;
+                                    });
+                                }
 
-                            if (nftburnq_iter == burnqbyname.end()) {
-                                nftburnqueue.emplace(get_self(), [&](auto &n) {
-                                    n.id = nftburnqueue.available_primary_key();
-                                    n.fio_address_hash = burner;
-                                });
+                                if (tpiditer != tpidbyname.end()) { tpidbyname.erase(tpiditer); }
+
+                                auto producersbyaddress = producers.get_index<"byaddress"_n>();
+                                auto prod_iter = producersbyaddress.find(burner);
+                                auto proxybyaddress = voters.get_index<"byaddress"_n>();
+                                auto proxy_iter = proxybyaddress.find(burner);
+
+                                if (proxy_iter != proxybyaddress.end() || prod_iter != producersbyaddress.end()) {
+                                    action(
+                                            permission_level{AddressContract, "active"_n},
+                                            "eosio"_n,
+                                            "burnaction"_n,
+                                            std::make_tuple(burner)
+                                            ).send();
+                                }
+
+                                nameexpidx.erase(nameiter);
+                                recordProcessed++;
                             }
+                            if (recordProcessed == numbertoburn) { break; }
+                            nameiter = nextname;
+                        }
 
-                            nameexpidx.erase(nameiter);
-                            if (tpiditer != tpidbyname.end()) { tpidbyname.erase(tpiditer); }
-
-                            action(
-                                    permission_level{SYSTEMACCOUNT, "active"_n},
-                                    "eosio"_n,
-                                    "burnaction"_n,
-                                    std::make_tuple(burner)
-                            ).send();
-
+                        if (nameiter == nameexpidx.end()) {
+                            domains.erase(domainiter);
                             recordProcessed++;
                         }
 
                         if (recordProcessed == numbertoburn) { break; }
-                        nameiter++;
                     }
-
-                    if (nameiter == nameexpidx.end()) {
-                        domainexpidx.erase(domainiter);
-                        recordProcessed++;
-                    }
-
-                    if (recordProcessed == numbertoburn) { break; }
+                    index++;
+                    domainiter = domains.find(index);
+                    recordProcessed++;
+                    currentWork++;
                 }
-                domainiter++;
+            } else {
+                while (domainiter != domains.end()) {
+                    const uint64_t expire = domainiter->expiration;
+                    auto nextdomain = domainiter;
+                    nextdomain++;
+
+                    if ((expire + DOMAINWAITFORBURNDAYS) < nowtime) {
+                        const auto domainhash = domainiter->domainhash;
+                        auto nameexpidx = fionames.get_index<"bydomain"_n>();
+                        auto nameiter = nameexpidx.find(domainhash);
+
+                        while (nameiter != nameexpidx.end()) {
+                            auto nextname = nameiter;
+                            nextname++;
+                            if (nameiter->domainhash == domainhash) {
+                                const uint64_t burner = nameiter->namehash;
+                                auto tpidbyname = tpids.get_index<"byname"_n>();
+                                auto tpiditer = tpidbyname.find(burner);
+                                auto burnqbyname = nftburnqueue.get_index<"byaddress"_n>();
+                                auto nftburnq_iter = burnqbyname.find(burner);
+
+                                if (nftburnq_iter == burnqbyname.end()) {
+                                    nftburnqueue.emplace(SYSTEMACCOUNT, [&](auto &n) {
+                                        n.id = nftburnqueue.available_primary_key();
+                                        n.fio_address_hash = burner;
+                                    });
+                                }
+
+                                if (tpiditer != tpidbyname.end()) { tpidbyname.erase(tpiditer); }
+
+                                auto producersbyaddress = producers.get_index<"byaddress"_n>();
+                                auto prod_iter = producersbyaddress.find(burner);
+                                auto proxybyaddress = voters.get_index<"byaddress"_n>();
+                                auto proxy_iter = proxybyaddress.find(burner);
+
+                                if (proxy_iter != proxybyaddress.end() || prod_iter != producersbyaddress.end()) {
+                                    action(
+                                            permission_level{AddressContract, "active"_n},
+                                            "eosio"_n,
+                                            "burnaction"_n,
+                                            std::make_tuple(burner)
+                                            ).send();
+                                }
+
+                                nameexpidx.erase(nameiter);
+                                recordProcessed++;
+                            }
+                            if (recordProcessed == numbertoburn) { break; }
+                            nameiter = nextname;
+                        }
+
+                        if (nameiter == nameexpidx.end()) {
+                            domains.erase(domainiter);
+                            recordProcessed++;
+                        }
+
+                        if (recordProcessed == numbertoburn) { break; }
+                    }
+                    domainiter = nextdomain;
+                }
             }
 
+            if(currentWork > 0){ recordProcessed -= currentWork; }
             fio_400_assert(recordProcessed != 0, "burnexpired", "burnexpired",
                            "No work.", ErrorNoWork);
-
             const string response_string = string("{\"status\": \"OK\",\"items_burned\":") +
                                            to_string(recordProcessed) + string("}");
 
@@ -2124,6 +2199,20 @@ namespace fioio {
             send_response(response_string.c_str());
         }
 
+        [[eosio::action]]
+        void modexpire(const string &fio_address, const int64_t &expire) {
+            FioAddress fa;
+            getFioAddressStruct(fio_address, fa);
+            name actor = name{"eosio"};
+            const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+            auto namesbyname = domains.get_index<"byname"_n>();
+            auto fioname_iter = namesbyname.find(nameHash);
+
+            namesbyname.modify(fioname_iter, actor, [&](struct domain &a) {
+                a.expiration = expire;
+            });
+        }
+
         void decrcounter(const string &fio_address, const int32_t &step) {
 
             check(step > 0, "step must be greater than 0");
@@ -2146,7 +2235,7 @@ namespace fioio {
     };
 
     EOSIO_DISPATCH(FioNameLookup, (regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(renewaddress)(
-            setdomainpub)(burnexpired)(decrcounter)
+            setdomainpub)(burnexpired)(modexpire)(decrcounter)
             (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(addnft)(remnft)(remallnfts)
     (burnnfts))
 }

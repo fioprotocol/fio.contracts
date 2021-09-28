@@ -38,7 +38,7 @@ namespace eosiosystem {
     */
     void
     system_contract::burnaction(const uint128_t &fioaddrhash) {
-       require_auth(_self);
+        require_auth(AddressContract);
             auto prodbyaddress = _producers.get_index<"byaddress"_n>();
             auto prod = prodbyaddress.find(fioaddrhash);
             if (prod != prodbyaddress.end()) {

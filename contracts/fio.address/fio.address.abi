@@ -429,7 +429,15 @@
     {
       "name": "burnexpired",
       "base": "",
-      "fields": []
+      "fields": [
+      {
+                "name": "offset",
+                "type": "int64"
+              },
+              {
+                "name": "limit",
+                "type": "int32"
+              }]
     },
     {
       "name": "decrcounter",
@@ -445,6 +453,19 @@
         }
       ]
     },
+    {
+          "name": "modexpire",
+          "base": "",
+          "fields": [
+          {
+                    "name": "fio_address",
+                    "type": "string"
+                  },
+                  {
+                    "name": "expire",
+                    "type": "int64"
+                  }]
+        },
     {
       "name": "bind2eosio",
       "base": "",
@@ -690,6 +711,11 @@
       "type": "burnexpired",
       "ricardian_contract": ""
     },
+    {
+          "name": "modexpire",
+          "type": "modexpire",
+          "ricardian_contract": ""
+        },
     {
       "name": "setdomainpub",
       "type": "setdomainpub",
