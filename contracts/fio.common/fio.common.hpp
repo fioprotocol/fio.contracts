@@ -422,7 +422,7 @@ namespace fioio {
     static const uint64_t SETFEEVOTERAM = 4000; //integrated. //note this bump allows consecutive calls to voting with
                                                               //different fees to avoid ram limits for non top 21 producers.
     static const uint64_t BUNDLEVOTERAM = 0; //integrated.
-    static const uint64_t ADDNFTRAM = 4098;
+    static const uint64_t ADDNFTRAM = 3584;
 
 
 
