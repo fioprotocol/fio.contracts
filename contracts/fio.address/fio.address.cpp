@@ -1408,7 +1408,7 @@ namespace fioio {
                         permission_level{_self, "active"_n},
                         AddressContract,
                         "decrcounter"_n,
-                        make_tuple(fio_address, 1)
+                        make_tuple(fio_address, 2)
                 }.send();
 
             } else {
@@ -1424,8 +1424,8 @@ namespace fioio {
 
 
                 const uint64_t fee_type = fee_iter->type;
-                fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
-                               "unexpected fee type for endpoint add_nft, expected 0", ErrorNoEndpoint);
+                fio_400_assert(fee_type == 1, "fee_type", to_string(fee_type),
+                               "unexpected fee type for endpoint add_nft, expected 1", ErrorNoEndpoint);
 
 
                 fee_amount = fee_iter->suf_amount;
@@ -1462,6 +1462,8 @@ namespace fioio {
                            "Transaction is too large", ErrorTransactionTooLarge);
 
             send_response(response_string.c_str());
+
+              print("TRX SIZE", std::to_string(transaction_size()), "\n");
 
         }
 
@@ -1525,6 +1527,9 @@ namespace fioio {
                                                                     string(nftobj->token_id.c_str()) +
                                                                     string(nftobj->chain_code.c_str())));
 
+                fio_400_assert(nft_iter != nftbyid.end(), "fio_address", fio_address, "NFT not found",
+                            ErrorInvalidValue);
+
                 if (nft_iter != nftbyid.end()) {
                     fio_403_assert(nft_iter->fio_address == fio_address, ErrorSignature);
                     nft_iter = nftbyid.erase(nft_iter);
@@ -1533,7 +1538,7 @@ namespace fioio {
 
             } // for auto nftobj
 
-            fio_400_assert(count_erase > 0, "fio_address", fio_address, "NFT not currently mapped",
+            fio_400_assert(count_erase > 0, "fio_address", fio_address, "No NFTs",
                            ErrorInvalidFioNameFormat);
 
             uint64_t fee_amount = 0;
@@ -1559,8 +1564,8 @@ namespace fioio {
 
 
                 const uint64_t fee_type = fee_iter->type;
-                fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
-                               "unexpected fee type for endpoint rem_nft, expected 0", ErrorNoEndpoint);
+                fio_400_assert(fee_type == 1, "fee_type", to_string(fee_type),
+                               "unexpected fee type for endpoint rem_nft, expected 1", ErrorNoEndpoint);
 
 
                 fee_amount = fee_iter->suf_amount;
@@ -1586,6 +1591,8 @@ namespace fioio {
                            "Transaction is too large", ErrorTransactionTooLarge);
 
             send_response(response_string.c_str());
+
+                          print("TRX SIZE", std::to_string(transaction_size()), "\n");
 
         }
 
@@ -1658,8 +1665,8 @@ namespace fioio {
 
 
                 const uint64_t fee_type = fee_iter->type;
-                fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
-                               "unexpected fee type for endpoint rem_all_nfts, expected 0", ErrorNoEndpoint);
+                fio_400_assert(fee_type == 1, "fee_type", to_string(fee_type),
+                               "unexpected fee type for endpoint rem_all_nfts, expected 1", ErrorNoEndpoint);
 
 
                 fee_amount = fee_iter->suf_amount;
@@ -1687,6 +1694,7 @@ namespace fioio {
 
             send_response(response_string.c_str());
 
+            print("TRX SIZE", std::to_string(transaction_size()), "\n");
 
         }
 
@@ -1701,14 +1709,18 @@ namespace fioio {
             auto nftburnq_iter = burnqbyname.begin();
             auto contractsbyname = nftstable.get_index<"byaddress"_n>();
             uint16_t counter = 0;
+            auto nft_iter = contractsbyname.begin();
             while (nftburnq_iter != burnqbyname.end()) {
-                auto nft_iter = contractsbyname.find(nftburnq_iter->fio_address_hash);
+                nft_iter = contractsbyname.find(nftburnq_iter->fio_address_hash);
                 counter++;
                 if (nft_iter != contractsbyname.end()) { // if row, delete an nft
                     nft_iter = contractsbyname.erase(nft_iter);
-                } else {
-                    nftburnq_iter = burnqbyname.erase(nftburnq_iter); // if no more rows, delete from nftburnqueue
                 }
+
+                if (nft_iter == contractsbyname.end()) {
+                  nftburnq_iter = burnqbyname.erase(nftburnq_iter); // if no more rows, delete from nftburnqueue
+                }
+
                 if (counter == 50) break;
             }
 
