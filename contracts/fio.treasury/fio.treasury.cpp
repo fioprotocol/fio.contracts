@@ -168,8 +168,6 @@ public:
 
                 fio_400_assert(now() < expiration, "domain", domiter->name,
                                "FIO Domain expired", ErrorDomainExpired);
-                fio_400_assert(now() < fioiter->expiration, "fio_address", fio_address,
-                               "FIO Address expired", ErrorFioNameExpired);
 
                 /***************  Pay schedule expiration *******************/
                 //if it has been 24 hours, transfer remaining producer vote_shares to the foundation and record the rewards back into bprewards,
