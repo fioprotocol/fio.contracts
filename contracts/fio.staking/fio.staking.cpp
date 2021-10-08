@@ -497,19 +497,10 @@ public:
         //avoid overflows due to negative results.
         uint64_t totalamount_unstaking = (amount+stakingrewardamount);
 
-        if (totalamount_unstaking > gstaking.combined_token_pool ) {
-            totalamount_unstaking = gstaking.combined_token_pool;
-        }
-
-        if (srps_this_unstake > gstaking.global_srp_count) {
-            srps_this_unstake = gstaking.global_srp_count;
-        }
-
-        //ED QUESTION!! -- pawel added the two above checks and this
-        //eliminated 2 asserts placed here, leaving only this one remaining.
-        //ASK pawel about this remaining assert and see what he has to say.
+        eosio_assert(gstaking.combined_token_pool >= totalamount_unstaking,"unstakefio, combined token pool must be greater or equal to amount plus stakingrewardamount. " );
         eosio_assert(gstaking.staked_token_pool >= amount,"unstakefio, staked token pool must be greater or equal to staked amount. " );
-       
+        eosio_assert(gstaking.global_srp_count >= srps_this_unstake,"unstakefio, global srp count must be greater or equal to srps_this_unstake. " );
+
         //     decrement the combined_token_pool by fiostaked+fiorewarded.
         gstaking.combined_token_pool -= totalamount_unstaking;
         //     decrement the staked_token_pool by fiostaked.
