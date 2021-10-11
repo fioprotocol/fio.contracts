@@ -148,7 +148,7 @@
         },
         {
           "name": "max_fee",
-          "type": "uint64"
+          "type": "int64"
         },
         {
           "name": "tpid",
@@ -178,7 +178,7 @@
         },
         {
           "name":"max_fee",
-          "type": "uint64"
+          "type": "int64"
         }
       ]
     }

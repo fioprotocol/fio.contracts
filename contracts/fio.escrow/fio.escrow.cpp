@@ -66,7 +66,7 @@ namespace fioio {
         */
         [[eosio::action]]
         void listdomain(const name &actor, const string &fio_domain,
-                        const uint64_t &sale_price, const uint64_t &max_fee,
+                        const uint64_t &sale_price, const int64_t &max_fee,
                         const string &tpid) {
             require_auth(actor);
 
@@ -77,7 +77,7 @@ namespace fioio {
             fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
                            "TPID must be empty or valid FIO address",
                            ErrorPubKeyValid);
-            fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+            fio_400_assert(max_fee <= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
 
             auto marketplace_iter = mrkplconfigs.begin();
@@ -99,7 +99,7 @@ namespace fioio {
             fio_400_assert(acctmap_itr != accountmap.end(), "acctmap_itr", marketplaceAccount.to_string(),
                            "Account not found", ErrorNoWork);
 
-            action(permission_level{EscrowContract, "active"_n},
+            action(permission_level{get_self(), "active"_n},
                    TokenContract, "transfer"_n,
                    make_tuple(actor, marketplaceAccount, listingfee, string("Listing fee"))
             ).send();
@@ -162,7 +162,7 @@ namespace fioio {
             }
 
             const string response_string = string("{\"status\": \"OK\","
-                                                  "\"domainsale_id\":\"") + to_string(domainsale_id) +
+                                                  "\"domainsale_id\":") + to_string(domainsale_id) +
                                            string(",\"fee_collected\":") + to_string(fee_amount) + string("}");
 
             // if tx is too large, throw an error.
@@ -183,7 +183,7 @@ namespace fioio {
         */
         [[eosio::action]]
         void cxlistdomain(const name &actor, const string &fio_domain,
-                          const uint64_t &max_fee, const string &tpid) {
+                          const int64_t &max_fee, const string &tpid) {
             check(has_auth(actor) || has_auth(EscrowContract), "Permission Denied");
 
             auto marketplace_iter = mrkplconfigs.begin();
@@ -194,6 +194,8 @@ namespace fioio {
             fio_400_assert(marketplace_iter->e_break == 0, "marketplace_iter->e_break",
                            to_string(marketplace_iter->e_break),
                            "E-Break Enabled, action disabled", ErrorNoWork);
+            fio_400_assert(max_fee <= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                           ErrorMaxFeeInvalid);
 
             const uint128_t domainHash = string_to_uint128_hash(fio_domain.c_str());
 
@@ -300,6 +302,9 @@ namespace fioio {
                            to_string(marketplace_iter->e_break),
                            "E-Break Enabled, action disabled", ErrorNoWork);
 
+            fio_400_assert(max_fee <= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                           ErrorMaxFeeInvalid);
+
             const uint128_t domainHash = string_to_uint128_hash(fio_domain.c_str());
 
             auto domainsalesbydomain = domainsales.get_index<"bydomain"_n>();
@@ -379,7 +384,7 @@ namespace fioio {
                            ErrorNoEndpoint);
 
             fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
-                           "Fee exceeds supplied maximum.",
+                           "Fee exceeds supplied maximum. " + to_string(fee_amount),
                            ErrorMaxFeeExceeded);
 
             fio_fees(actor, asset(fee_amount, FIOSYMBOL), BUY_DOMAIN_ENDPOINT);
@@ -440,6 +445,9 @@ namespace fioio {
             fio_400_assert(e_break >= 0,
                            "e_break", to_string(e_break),
                            "E-break setting must be present", ErrorNoWork);
+
+            fio_400_assert(max_fee <= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                           ErrorMaxFeeInvalid);
 
             const bool accountExists = is_account(actor);
             auto       acctmap_itr   = accountmap.find(actor.value);
