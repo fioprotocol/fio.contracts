@@ -1692,12 +1692,9 @@ namespace fioio {
         }
 
         [[eosio::action]]
-        void xferescrow(const string &fio_domain, const string &public_key, const bool isEscrow){
-
-            eosio_assert(has_auth(EscrowContract) || has_auth(FIOORACLEContract),
-                         "missing required authority of fio.escrow or fio.orcale");
-            name nm;
-            has_auth(EscrowContract) ? nm = name("fio.escrow") : nm = name("fio.oracle"); // used for setting multiple domain owners
+        void xferescrow(const string &fio_domain, const string &public_key, const bool isEscrow, const name &actor){
+            print("ESCROW CONTRACT HERE:::::");
+            require_auth(FIOORACLEContract);
 
             FioAddress fa;
             getFioAddressStruct(fio_domain, fa);
@@ -1719,12 +1716,13 @@ namespace fioio {
                            ErrorDomainExpired);
 
             //Transfer the domain
+            name nm = name("fio.oracle");
             if(!isEscrow){
                 string owner_account;
                 key_to_account(public_key, owner_account);
                 nm = name(owner_account);
             }
-            print("do we even get here?");
+
             domainsbyname.modify(domains_iter, _self, [&](struct domain &a) {
                 a.account = nm.value;
             });

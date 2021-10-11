@@ -437,11 +437,12 @@ namespace fioio {
             });
 
             //Transfer Domain to escrow
+            bool isTransferToEscrow = true;
             action(
                     permission_level{FIOORACLEContract, "active"_n},
                     AddressContract,
                     "xferescrow"_n,
-                    std::make_tuple(fio_domain, nullptr, true)
+                    std::make_tuple(fio_domain, nullptr, isTransferToEscrow, actor)
             ).send();
 
             //Chain wrap_fio_token fee is collected.
@@ -563,11 +564,13 @@ namespace fioio {
 
                 //transfer ownership to new owner
                 auto owner = accountmap.find(recAcct);
+                bool isTransferToEscrow = false;
+
                 action(
                         permission_level{FIOORACLEContract, "active"_n},
                         AddressContract,
                         "xfercontract"_n,
-                        std::make_tuple(fio_domain, owner->clientkey, false)
+                        std::make_tuple(fio_domain, owner->clientkey, isTransferToEscrow, actor)
                 ).send();
             }
 

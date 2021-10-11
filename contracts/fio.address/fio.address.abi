@@ -448,7 +448,7 @@
          ]
       },
       {
-         "name":"xfercontract",
+         "name":"xferescrow",
          "base":"",
          "fields":[
             {
@@ -462,6 +462,10 @@
             {
                "name":"isEscrow",
                "type":"bool"
+            },
+            {
+               "name":"actor",
+               "type":"name"
             }
          ]
       }
@@ -547,7 +551,6 @@
          "type": "xferescrow",
          "ricardian_contract": ""
        }
-        ],
    ],
    "tables":[
       {
