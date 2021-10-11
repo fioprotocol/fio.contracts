@@ -118,7 +118,8 @@ namespace fioio {
              actor == fioio::TokenContract ||
              actor == fioio::TREASURYACCOUNT ||
              actor == fioio::FIOSYSTEMACCOUNT ||
-             actor == fioio::FIOACCOUNT);
+             actor == fioio::FIOACCOUNT ||
+             actor == FIOORACLEContract);
     }
 
     static constexpr uint64_t string_to_uint64_hash(const char *str) {
