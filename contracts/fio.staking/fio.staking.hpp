@@ -32,7 +32,7 @@ namespace fioio {
         // its used only to determine if the protocol should mint FIO whe rewards are under the DAILYSTAKINGMINTTHRESHOLD
         uint64_t staking_rewards_reserves_minted = 0; //the total amount of FIO used in minting rewards tokens, will not exceed STAKINGREWARDSRESERVEMAXIMUM
 
-        EOSLIB_SERIALIZE( global_staking_state,(staked_token_pool)
+        EOSLIB_SERIALIZE(global_staking_state,(staked_token_pool)
                 (combined_token_pool)(last_combined_token_pool)(rewards_token_pool)(global_srp_count)(last_global_srp_count)
                 (daily_staking_rewards)(staking_rewards_reserves_minted)
         )
@@ -58,4 +58,19 @@ namespace fioio {
 
 
     typedef eosio::singleton<"staking"_n, global_staking_state> global_staking_singleton;
+
+
+
+    //this method will perform integer division with rounding.
+    //returns
+    // the rounded result of numerator / denominator
+    static uint128_t fiointdivwithrounding(const uint128_t numerator, const uint128_t denominator) {
+
+        uint128_t res = numerator / denominator;
+        uint128_t rem_res = numerator %  denominator;
+        if(rem_res > (denominator / (uint128_t)2)){
+            res++;
+        }
+        return res;
+    }
 }

@@ -16,11 +16,19 @@
                                     "type": "uint64"
                                 },
                                 {
+                                    "name": "last_combined_token_pool",
+                                    "type": "uint64"
+                                },
+                                {
                                     "name": "rewards_token_pool",
                                     "type": "uint64"
                                 },
                                 {
                                     "name": "global_srp_count",
+                                    "type": "uint64"
+                                },
+                                {
+                                    "name": "last_global_srp_count",
                                     "type": "uint64"
                                 },
                                 {
@@ -30,10 +38,6 @@
                                 {
                                     "name": "staking_rewards_reserves_minted",
                                     "type": "uint64"
-                                },
-                                {
-                                    "name": "staking_rewards_activated",
-                                    "type": "int64"
                                 }
                             ]
                },{

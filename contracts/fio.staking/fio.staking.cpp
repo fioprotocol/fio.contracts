@@ -5,7 +5,6 @@
  *  @file fio.staking.cpp
  *  @license FIO Foundation ( https://github.com/fioprotocol/fio/blob/master/LICENSE )
  */
-
 #include <eosiolib/eosio.hpp>
 #include "fio.staking.hpp"
 #include <fio.token/fio.token.hpp>
@@ -258,9 +257,10 @@ public:
         const uint128_t multiplier = 1000000000000000000;
 
         uint128_t scaled_last_ctp = (uint128_t) gstaking.last_combined_token_pool * multiplier;
-        uint128_t scaled_roe = scaled_last_ctp / (uint128_t) gstaking.last_global_srp_count;
+        uint128_t scaled_roe = fiointdivwithrounding(scaled_last_ctp,(uint128_t)gstaking.last_global_srp_count);
+
         uint128_t scaled_stake_amount = (uint128_t) amount * multiplier;
-        uint128_t srp_128 = scaled_stake_amount / scaled_roe;
+        uint128_t srp_128 = fiointdivwithrounding(scaled_stake_amount,scaled_roe);
         uint64_t srpstoaward = (uint64_t) srp_128;
 
         //update global staking state
@@ -425,6 +425,12 @@ public:
 
         //new new staking state integration
 
+        if(debugout) {
+            print("account total staked fio is ",  astakeiter->total_staked_fio,"\n");
+            print("account total srp is ",  astakeiter->total_staked_fio,"\n");
+        }
+
+
         uint64_t srps_this_unstake;
         const uint128_t multiplier = 1000000000000000000;
 
@@ -433,9 +439,9 @@ public:
         } else {
             uint128_t scaled_unstake = (uint128_t) amount * multiplier; // unstake sufs are multiplied by mult and stored as interim variable
             //what percentage of the SRPs held by this user is associated with this unstake.
-            uint128_t scaled_user_share_srps = (uint128_t) scaled_unstake / (uint128_t) astakeiter->total_staked_fio; // the interim variable is divided by staked sufs to get upscaled share of srp
+            uint128_t scaled_user_share_srps = fiointdivwithrounding( (uint128_t) scaled_unstake, (uint128_t) astakeiter->total_staked_fio );// the interim variable is divided by staked sufs to get upscaled share of srp
             uint128_t scaled_srps_unstake = scaled_user_share_srps * (uint128_t) astakeiter->total_srp; // user's SRPs are multiplied by upscaled share of SUFs being unstaked to produce upscaled SRPs to unstake
-            uint128_t srps_this_unstake_128 = scaled_srps_unstake / multiplier; // SRPs are downscaled by dividing by multiplier
+            uint128_t srps_this_unstake_128 = fiointdivwithrounding(scaled_srps_unstake,multiplier);// SRPs are downscaled by dividing by multiplie
             srps_this_unstake = (uint64_t) srps_this_unstake_128; // This just converts from uint128 to uint64. Not sure if this is needed
         }
 
@@ -450,11 +456,20 @@ public:
             print(message, "\n");
         }
 
-        uint64_t totalrewardamount = 0;
+        //add code to compute sufs!!!!!
+        uint64_t totalsufsthisunstake;
 
-        if (srps_this_unstake >= amount) {
-                totalrewardamount = (srps_this_unstake - amount);
+        if(debugout) {
+            print("last gsrp is ",  gstaking.last_global_srp_count,"\n");
+            print("last combined token pool is ",  gstaking.last_combined_token_pool,"\n");
         }
+
+        uint128_t interim_usrplctp = (uint128_t) srps_this_unstake * (uint128_t) gstaking.last_combined_token_pool; // SRPs being unstaked are multiplied by LCTP first
+        uint128_t got_suf_big = fiointdivwithrounding(interim_usrplctp, (uint128_t) gstaking.last_global_srp_count); // Then are divided by LGSRP
+        totalsufsthisunstake = (uint64_t) got_suf_big; // This just converts from uint128 to uint64. Not sure if this is needed
+
+        uint64_t totalrewardamount = totalsufsthisunstake - amount;
+
         const char* mptr = &message[0];
         eosio_assert(srps_this_unstake >= amount, mptr);
         //revise
@@ -554,7 +569,9 @@ public:
         //7 days unstaking lock duration.
         int64_t UNSTAKELOCKDURATIONSECONDS = 604800;
        //TEST CODE DO NOT DELIVER, unstake to 7 minutes
+       //DO NOT DELIVER DO NOT DELIVER
         //int64_t UNSTAKELOCKDURATIONSECONDS = 70;
+        //DO NOT DELIVER DO NOT DELIVER
 
 
         //look and see if they have any general locks.
@@ -574,9 +591,12 @@ public:
                 print (" newremaininglockamount ",newremaininglockamount,"\n");
             }
             //the days since launch.
+            //DO NOT DELIVER
             uint32_t insertday = (lockiter->timestamp + insertperiod) / SECONDSPERDAY;
+            //DO NOT DELIVER
            //TEST ONLY DO NOT DELIVER
-            //uint32_t insertday = (lockiter->timestamp + insertperiod) / 10;
+           // uint32_t insertday = (lockiter->timestamp + insertperiod) / 10;
+            //DO NOT DELIVER
             //if your duration is less than this the period is in the past.
             uint32_t expirednowduration = present_time - lockiter->timestamp;
             uint32_t payouts = lockiter->payouts_performed;
@@ -594,9 +614,12 @@ public:
             bool foundinsix = false;
 
             for (int i = 0; i < lockiter->periods.size(); i++) {
+                //DO NOT DELIVER
                 daysforperiod = (lockiter->timestamp + lockiter->periods[i].duration)/SECONDSPERDAY;
+                //DO NOT DELIVER
                //TEST ONLY DO NOT DELIVER
-               // daysforperiod = (lockiter->timestamp + lockiter->periods[i].duration)/10;
+               //daysforperiod = (lockiter->timestamp + lockiter->periods[i].duration)/10;
+                //DO NOT DELIVER
                 uint64_t amountthisperiod = lockiter->periods[i].amount;
                 //only set the insertindex on the first one greater than or equal that HAS NOT been paid out.
                 if ((daysforperiod >= insertday) && !foundinsix && (i > (int)lockiter->payouts_performed-1)) {
