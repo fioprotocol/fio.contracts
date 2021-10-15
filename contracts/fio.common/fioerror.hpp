@@ -40,7 +40,6 @@ namespace fioio {
     constexpr auto ErrorFioNameNotRegistered = ident | httpLocationError | 108;
     constexpr auto ErrorFioNameNotReg = ident | httpDataError | 127;   // Fioname not yet registered
     constexpr auto ErrorDomainExpired = ident | httpDataError | 109;   // Fioname not yet registered
-    constexpr auto ErrorFioNameExpired = ident | httpDataError | 110;   // Fioname not yet registered
     constexpr auto ErrorPubAddressEmpty = ident | httpDataError | 111;   // Public address is empty
     constexpr auto ErrorPubKeyEmpty = ident | httpDataError | 112;   // Public key is empty
     constexpr auto ErrorPubAddressExist = ident | httpDataError | 113;   // Public address exists

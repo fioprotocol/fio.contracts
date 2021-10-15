@@ -168,8 +168,6 @@ public:
 
                 fio_400_assert(now() < expiration, "domain", domiter->name,
                                "FIO Domain expired", ErrorDomainExpired);
-                fio_400_assert(now() < fioiter->expiration, "fio_address", fio_address,
-                               "FIO Address expired", ErrorFioNameExpired);
 
                 /***************  Pay schedule expiration *******************/
                 //if it has been 24 hours, transfer remaining producer vote_shares to the foundation and record the rewards back into bprewards,
@@ -303,8 +301,8 @@ public:
 
                         if (bpcount <= MAXACTIVEBPS) abpcount = bpcount;
                         auto bprewardstat = bprewards.get();
-                        uint64_t tostandbybps = static_cast<uint64_t>(bprewardstat.rewards * .60);
-                        uint64_t toactivebps = static_cast<uint64_t>(bprewardstat.rewards * .40);
+                        uint64_t tostandbybps = static_cast<uint64_t>((bprewardstat.rewards / 10) * 6);
+                        uint64_t toactivebps = static_cast<uint64_t>((bprewardstat.rewards / 10) * 4);
 
                         bpcounter = 0;
                         auto votesharesiter = voteshares.get_index<"byvotes"_n>();
@@ -361,7 +359,7 @@ public:
                                    make_tuple(producer)
                                 ).send();
                         }
-                        
+
                         // PAY FOUNDATION //
                         auto fdtnstate = fdtnrewards.get();
                         if(fdtnstate.rewards > 0) {

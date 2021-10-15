@@ -5,7 +5,6 @@
  *  @file fio.staking.cpp
  *  @license FIO Foundation ( https://github.com/fioprotocol/fio/blob/master/LICENSE )
  */
-
 #include <eosiolib/eosio.hpp>
 #include "fio.staking.hpp"
 #include <fio.token/fio.token.hpp>
@@ -65,15 +64,21 @@ public:
                       has_auth(STAKINGACCOUNT) ||  has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) || has_auth(FeeContract)),
                      "missing required authority of fio.address, fio.treasury, fio.fee, fio.token, fio.stakng, eosio or fio.reqobt");
 
+        const uint32_t present_time = now();
 
         gstaking.rewards_token_pool += fioamountsufs;
         gstaking.daily_staking_rewards += fioamountsufs;
         gstaking.combined_token_pool += fioamountsufs;
 
+        if ((gstaking.staked_token_pool >= STAKEDTOKENPOOLMINIMUM) && (present_time > ENABLESTAKINGREWARDSEPOCHSEC)) {
+            //update the last values in state for ctp and gsrp.
+            gstaking.last_combined_token_pool = gstaking.combined_token_pool;
+        }
+
         if (debugout) {
-            print(" rewards token pool incremented to ", gstaking.rewards_token_pool);
-            print(" daily staking rewards incremented to ", gstaking.daily_staking_rewards);
-            print(" combined_token_pool incremented to ", gstaking.combined_token_pool);
+            print(" rewards token pool incremented to ", gstaking.rewards_token_pool,"\n");
+            print(" daily staking rewards incremented to ", gstaking.daily_staking_rewards,"\n");
+            print(" combined_token_pool incremented to ", gstaking.combined_token_pool,"\n");
         }
      }
 
@@ -83,13 +88,17 @@ public:
         eosio_assert( has_auth(TREASURYACCOUNT),
                      "missing required authority of fio.treasury");
         if (amounttomint > 0) {
+            const uint32_t present_time = now();
             gstaking.staking_rewards_reserves_minted += amounttomint;
-            gstaking.daily_staking_rewards += amounttomint;
+            gstaking.combined_token_pool += amounttomint;
+            if ((gstaking.staked_token_pool >= STAKEDTOKENPOOLMINIMUM) && (present_time > ENABLESTAKINGREWARDSEPOCHSEC)) {
+                //update the last values in state for ctp and gsrp.
+                gstaking.last_combined_token_pool = gstaking.combined_token_pool;
+            }
         }
-        gstaking.combined_token_pool += gstaking.daily_staking_rewards;
         gstaking.daily_staking_rewards = 0;
         if(debugout){
-            print("recorddaily completed successfully.");
+            print("recorddaily completed successfully.","\n");
         }
     }
 
@@ -102,7 +111,7 @@ public:
         const uint32_t present_time = now();
 
         if(debugout) {
-            print(" calling stakefio fio address ", fio_address);
+            print(" calling stakefio fio address ", fio_address,"\n");
         }
 
         uint64_t bundleeligiblecountdown = 0;
@@ -160,7 +169,7 @@ public:
 
             if (!tpid.empty()) {
                 if (debugout) {
-                    print(" calling process auto proxy with ", tpid);
+                    print(" calling process auto proxy with ", tpid,"\n");
                 }
                 set_auto_proxy(tpid, 0,get_self(), actor);
 
@@ -241,32 +250,38 @@ public:
             ).send();
         }
 
-        //compute rate of exchange
-        uint64_t rateofexchange =  1000000000;
 
-        if ((gstaking.combined_token_pool >= COMBINEDTOKENPOOLMINIMUM) && (present_time > ENABLESTAKINGREWARDSEPOCHSEC)) {
-            if(debugout) {
-                print(" global srp count ", gstaking.global_srp_count);
-                print(" combined_token_pool ", gstaking.combined_token_pool);
-            }
-            rateofexchange = (uint64_t)((double)((double)(gstaking.combined_token_pool) / (double)(gstaking.global_srp_count)) * 1000000000.0);
-            if (debugout) {
-                print(" rate of exchange set to ", rateofexchange);
-            }
-            if(rateofexchange < 1000000000) {
-                if(debugout) {
-                    print(" RATE OF EXCHANGE LESS THAN 1 ", rateofexchange);
-                }
-                rateofexchange = 1000000000;
-            }
-        }
+        //begin new logic for state management.
 
-        uint64_t srptoaward = (uint64_t)((double)amount / (double) ((double)rateofexchange / 1000000000.0));
+        //what is this mult used for.
+        const uint128_t multiplier = 1000000000000000000;
+
+        uint128_t scaled_last_ctp = (uint128_t) gstaking.last_combined_token_pool * multiplier;
+        uint128_t scaled_roe = fiointdivwithrounding(scaled_last_ctp,(uint128_t)gstaking.last_global_srp_count);
+
+        uint128_t scaled_stake_amount = (uint128_t) amount * multiplier;
+        uint128_t srp_128 = fiointdivwithrounding(scaled_stake_amount,scaled_roe);
+        uint64_t srpstoaward = (uint64_t) srp_128;
 
         //update global staking state
         gstaking.combined_token_pool += amount;
-        gstaking.global_srp_count += srptoaward;
+        gstaking.global_srp_count += srpstoaward;
         gstaking.staked_token_pool += amount;
+
+        if ((gstaking.staked_token_pool >= STAKEDTOKENPOOLMINIMUM) && (present_time > ENABLESTAKINGREWARDSEPOCHSEC)) {
+            //update the last values in state for ctp and gsrp.
+            gstaking.last_combined_token_pool = gstaking.combined_token_pool;
+            gstaking.last_global_srp_count = gstaking.global_srp_count;
+        }
+
+        //end new logic for state management.
+
+
+        if(debugout){
+            print("the value of combined_token_pool after state inc in stake: ",gstaking.combined_token_pool,"\n" );
+        }
+
+
 
         //update account staking info
         auto astakebyaccount = accountstaking.get_index<"byaccount"_n>();
@@ -276,7 +291,7 @@ public:
             //update the existing record
             astakebyaccount.modify(astakeiter, _self, [&](struct account_staking_info &a) {
                 a.total_staked_fio += amount;
-                a.total_srp += srptoaward;
+                a.total_srp += srpstoaward;
             });
         } else {
             const uint64_t id = accountstaking.available_primary_key();
@@ -284,7 +299,7 @@ public:
                 p.id = id;
                 p.account = actor;
                 p.total_staked_fio = amount;
-                p.total_srp = srptoaward;
+                p.total_srp = srpstoaward;
             });
         }
         //end increment account staking info
@@ -405,51 +420,68 @@ public:
                     std::make_tuple(actor, UNSTAKEFIOTOKENSRAM)
             ).send();
         }
-        //SRPs to Claim are computed: Staker's Account SRPs * (Unstaked amount / Total Tokens Staked in Staker's Account)
-         //  this needs to be a floating point (double) operation
-       //round this to avoid issues with decimal representations
-        uint64_t srpstoclaim = (uint64_t)(((double)astakeiter->total_srp * (double)( (double)amount / (double)astakeiter->total_staked_fio))+0.5);
 
+
+
+        //new new staking state integration
+
+        if(debugout) {
+            print("account total staked fio is ",  astakeiter->total_staked_fio,"\n");
+            print("account total srp is ",  astakeiter->total_staked_fio,"\n");
+        }
+
+
+        uint64_t srps_this_unstake;
+        const uint128_t multiplier = 1000000000000000000;
+
+        if (amount == astakeiter->total_staked_fio) {
+            srps_this_unstake = astakeiter->total_srp; // If all SUFs then all SRPs
+        } else {
+            uint128_t scaled_unstake = (uint128_t) amount * multiplier; // unstake sufs are multiplied by mult and stored as interim variable
+            //what percentage of the SRPs held by this user is associated with this unstake.
+            uint128_t scaled_user_share_srps = fiointdivwithrounding( (uint128_t) scaled_unstake, (uint128_t) astakeiter->total_staked_fio );// the interim variable is divided by staked sufs to get upscaled share of srp
+            uint128_t scaled_srps_unstake = scaled_user_share_srps * (uint128_t) astakeiter->total_srp; // user's SRPs are multiplied by upscaled share of SUFs being unstaked to produce upscaled SRPs to unstake
+            uint128_t srps_this_unstake_128 = fiointdivwithrounding(scaled_srps_unstake,multiplier);// SRPs are downscaled by dividing by multiplie
+            srps_this_unstake = (uint64_t) srps_this_unstake_128; // This just converts from uint128 to uint64. Not sure if this is needed
+        }
+
+        //end new new staking integration
+
+
+        //revise
+        const string message = "unstakefio, srps to claim "+ to_string(srps_this_unstake)  +
+                               " srps_this_unstake " + to_string(srps_this_unstake) + " amount "+ to_string(amount) +
+                               " srps_this_unstake must be >= amount. must be greater than or equal srps_this_unstake ";
         if (debugout) {
-            print("srps to claim is ", to_string(srpstoclaim), "\n");
-        }
-        //compute rate of exchange
-        uint64_t rateofexchange =  1000000000;
-        if ((gstaking.combined_token_pool >= COMBINEDTOKENPOOLMINIMUM) && (present_time > ENABLESTAKINGREWARDSEPOCHSEC)) {
-            if(debugout) {
-                print(" global srp count ", gstaking.global_srp_count);
-                print(" combined_token_pool ", gstaking.combined_token_pool);
-            }
-           rateofexchange = (uint64_t)((double)((double)(gstaking.combined_token_pool) / (double)(gstaking.global_srp_count)) * 1000000000.0);
-            if (debugout) {
-                print(" rate of exchange set to ", rateofexchange);
-            }
-            if(rateofexchange < 1000000000) {
-                if(debugout) {
-                    print(" RATE OF EXCHANGE LESS THAN 1 ", rateofexchange);
-                }
-                rateofexchange = 1000000000;
-            }
-        }
-
-        uint64_t srpsclaimed = (uint64_t)((double)srpstoclaim * ((double)rateofexchange/1000000000.0));
-        const string message = "unstakefio, srps to claim "+ to_string(srpstoclaim) + " rate of exchange "+ to_string(rateofexchange) +
-                " srpsclaimed " + to_string(srpsclaimed) + " amount "+ to_string(amount) + " srpsclaimed must be >= amount. "
-                         " must be greater than or equal srpstoclaim " + to_string(srpstoclaim) ;
-        if (debugout){
             print(message, "\n");
         }
-        const char* mptr = &message[0];
-        eosio_assert(srpsclaimed >= amount, mptr);
-        uint64_t totalrewardamount = (srpsclaimed  - amount);
+
+        //add code to compute sufs!!!!!
+        uint64_t totalsufsthisunstake;
+
         if(debugout) {
-            print("total reward amount is ", totalrewardamount);
+            print("last gsrp is ",  gstaking.last_global_srp_count,"\n");
+            print("last combined token pool is ",  gstaking.last_combined_token_pool,"\n");
+        }
+
+        uint128_t interim_usrplctp = (uint128_t) srps_this_unstake * (uint128_t) gstaking.last_combined_token_pool; // SRPs being unstaked are multiplied by LCTP first
+        uint128_t got_suf_big = fiointdivwithrounding(interim_usrplctp, (uint128_t) gstaking.last_global_srp_count); // Then are divided by LGSRP
+        totalsufsthisunstake = (uint64_t) got_suf_big; // This just converts from uint128 to uint64. Not sure if this is needed
+
+        uint64_t totalrewardamount = totalsufsthisunstake - amount;
+
+        const char* mptr = &message[0];
+        eosio_assert(srps_this_unstake >= amount, mptr);
+        //revise
+
+        if(debugout) {
+            print("total reward amount is ", totalrewardamount,"\n");
         }
         uint64_t tenpercent = totalrewardamount / 10;
         //Staking Reward Amount is computed: ((SRPs to Claim * Rate of Exchnage) - Unstake amount) * 0.9
         uint64_t stakingrewardamount = tenpercent * 9;
         if(debugout) {
-            print(" staking reward amount is ", stakingrewardamount);
+            print(" staking reward amount is ", stakingrewardamount,"\n");
         }
         // TPID Reward Amount is computed: ((SRPs to Claim * Rate of Exchnage) - Unstake amount) * 0.1
         uint64_t tpidrewardamount = tenpercent;
@@ -457,13 +489,13 @@ public:
 
 
         //decrement staking by account.
-        eosio_assert(astakeiter->total_srp >= srpstoclaim,"unstakefio, total srp for account must be greater than or equal srpstoclaim." );
+        eosio_assert(astakeiter->total_srp >= srps_this_unstake,"unstakefio, total srp for account must be greater than or equal srps_this_unstake." );
         eosio_assert(astakeiter->total_staked_fio >= amount,"unstakefio, total staked fio for account must be greater than or equal fiostakedsufs." );
 
         //update the existing record
         astakebyaccount.modify(astakeiter, _self, [&](struct account_staking_info &a) {
             a.total_staked_fio -= amount;
-            a.total_srp -= srpstoclaim;
+            a.total_srp -= srps_this_unstake;
         });
 
         //transfer the staking reward amount.
@@ -478,18 +510,32 @@ public:
 
         //decrement the global state
         //avoid overflows due to negative results.
-        eosio_assert(gstaking.combined_token_pool >= (amount+stakingrewardamount),"unstakefio, combined token pool must be greater or equal to amount plus stakingrewardamount. " );
+        uint64_t totalamount_unstaking = (amount+stakingrewardamount);
+
+        eosio_assert(gstaking.combined_token_pool >= totalamount_unstaking,"unstakefio, combined token pool must be greater or equal to amount plus stakingrewardamount. " );
         eosio_assert(gstaking.staked_token_pool >= amount,"unstakefio, staked token pool must be greater or equal to staked amount. " );
-        eosio_assert(gstaking.global_srp_count >= srpstoclaim,"unstakefio, global srp count must be greater or equal to srpstoclaim. " );
+        eosio_assert(gstaking.global_srp_count >= srps_this_unstake,"unstakefio, global srp count must be greater or equal to srps_this_unstake. " );
 
         //     decrement the combined_token_pool by fiostaked+fiorewarded.
-        gstaking.combined_token_pool -= (amount+stakingrewardamount);
+        gstaking.combined_token_pool -= totalamount_unstaking;
         //     decrement the staked_token_pool by fiostaked.
         gstaking.staked_token_pool -= amount;
         //     decrement the global_srp_count by srpcount.
-        gstaking.global_srp_count -= srpstoclaim;
+        gstaking.global_srp_count -= srps_this_unstake;
+
+        //new staking state integration
+        if ((gstaking.staked_token_pool >= STAKEDTOKENPOOLMINIMUM) && (present_time > ENABLESTAKINGREWARDSEPOCHSEC)) {
+            //update the last values in state for ctp and gsrp.
+            gstaking.last_combined_token_pool = gstaking.combined_token_pool;
+            gstaking.last_global_srp_count = gstaking.global_srp_count;
+        }
+        //new staking state integration
+
 
         //pay the tpid.
+
+
+
         if ((tpid.length() > 0)&&(tpidrewardamount>0)){
             //get the owner of the tpid and pay them.
             const uint128_t tnameHash = string_to_uint128_hash(tpid.c_str());
@@ -513,11 +559,20 @@ public:
             //decrement the amount paid from combined token pool.
             if(tpidrewardamount<= gstaking.combined_token_pool) {
                 gstaking.combined_token_pool -= tpidrewardamount;
+                if ((gstaking.staked_token_pool >= STAKEDTOKENPOOLMINIMUM) && (present_time > ENABLESTAKINGREWARDSEPOCHSEC)) {
+                    //update the last values in state for ctp and gsrp.
+                    gstaking.last_combined_token_pool = gstaking.combined_token_pool;
+                }
             }
         }
 
         //7 days unstaking lock duration.
         int64_t UNSTAKELOCKDURATIONSECONDS = 604800;
+       //TEST CODE DO NOT DELIVER, unstake to 7 minutes
+       //DO NOT DELIVER DO NOT DELIVER
+        //int64_t UNSTAKELOCKDURATIONSECONDS = 70;
+        //DO NOT DELIVER DO NOT DELIVER
+
 
         //look and see if they have any general locks.
         auto locks_by_owner = generallocks.get_index<"byowner"_n>();
@@ -536,7 +591,12 @@ public:
                 print (" newremaininglockamount ",newremaininglockamount,"\n");
             }
             //the days since launch.
+            //DO NOT DELIVER
             uint32_t insertday = (lockiter->timestamp + insertperiod) / SECONDSPERDAY;
+            //DO NOT DELIVER
+           //TEST ONLY DO NOT DELIVER
+           // uint32_t insertday = (lockiter->timestamp + insertperiod) / 10;
+            //DO NOT DELIVER
             //if your duration is less than this the period is in the past.
             uint32_t expirednowduration = present_time - lockiter->timestamp;
             uint32_t payouts = lockiter->payouts_performed;
@@ -554,10 +614,15 @@ public:
             bool foundinsix = false;
 
             for (int i = 0; i < lockiter->periods.size(); i++) {
+                //DO NOT DELIVER
                 daysforperiod = (lockiter->timestamp + lockiter->periods[i].duration)/SECONDSPERDAY;
+                //DO NOT DELIVER
+               //TEST ONLY DO NOT DELIVER
+               //daysforperiod = (lockiter->timestamp + lockiter->periods[i].duration)/10;
+                //DO NOT DELIVER
                 uint64_t amountthisperiod = lockiter->periods[i].amount;
-                //only set the insertindex on the first one greater than or equal.
-                if ((daysforperiod >= insertday) && !foundinsix) {
+                //only set the insertindex on the first one greater than or equal that HAS NOT been paid out.
+                if ((daysforperiod >= insertday) && !foundinsix && (i > (int)lockiter->payouts_performed-1)) {
                     insertindex = newperiods.size();
                     //always insert into the same day.
                    if (daysforperiod == insertday) {
@@ -583,25 +648,24 @@ public:
                          //if we are removing a lock period that has not been paid out yet adapt the remaining lock amount.
                          newremaininglockamount = newlockamount;
                     }
-                     else{
+                    else{
+                         string msg = "unstakefio, inconsistent general lock state lock amount "+ to_string(newlockamount) +" less than remaining lock amount. "+ to_string(newremaininglockamount);
                          //this check is here for code safety. if there were payouts left we should never see newlockamount < newremaininglockamount
-                         eosio_assert(newlockamount >= newremaininglockamount,"unstakefio, inconsistent general lock state lock amount less than remaining lock amount. " );
-                     }
+                         eosio_assert(newlockamount >= newremaininglockamount,msg.c_str() );
+                    }
                     if(payouts >0) {
                         payouts--;
                     }
                 }
             }
 
-
             //add the period to the list.
             if (!insertintoexisting) {
-               // print(" totalnewpercent ",totalnewpercent,"\n");
                 eosiosystem::lockperiodv2 iperiod;
                 iperiod.duration = insertperiod;
-                iperiod.amount = amount;
+                iperiod.amount = amount + stakingrewardamount;
                 if (debugout){
-                    print (" adding element at index ",insertindex);
+                    print (" adding element at index ",insertindex,"\n");
                 }
                 if (insertindex == -1) {
                     //insert at the end of the list, my duration is greater than all in the list.
@@ -611,8 +675,7 @@ public:
                 }
             }
 
-
-           //update the locks table..   modgenlocked
+            //update the locks table..   modgenlocked
             action(
                     permission_level{get_self(), "active"_n},
                     SYSTEMACCOUNT,

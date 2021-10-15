@@ -39,7 +39,7 @@
 #define MAXACTIVEBPS 21
 #define DEFAULTBUNDLEAMT 100
 //staking
-#define COMBINEDTOKENPOOLMINIMUM 1000000000000000 // 1M FIO SUFS
+#define STAKEDTOKENPOOLMINIMUM 1000000000000000 // 1M FIO SUFS
 #define STAKINGREWARDSRESERVEMAXIMUM 25000000000000000 // 25M FIO SUFS.
 #define DAILYSTAKINGMINTTHRESHOLD 25000000000000 //25k FIO threshold for MINTING staking rewards.
 
@@ -72,7 +72,9 @@
 #define SUBMIT_FEE_MULTIPLER_ENDPOINT "submit_fee_multiplier"
 #define BURN_FIO_ADDRESS_ENDPOINT "burn_fio_address"
 #define ADD_BUNDLED_TRANSACTION_ENDPOINT "add_bundled_transactions"
-
+#define ADD_NFT_ENDPOINT "add_nft"
+#define REM_NFT_ENDPOINT "remove_nft"
+#define REM_ALL_NFTS_ENDPOINT "remove_all_nfts"
 
 namespace fioio {
 
@@ -459,8 +461,8 @@ namespace fioio {
     static const uint64_t INITIALACCOUNTRAM  = 25600;
     static const uint64_t ADDITIONALRAMBPDESCHEDULING = 25600;
 
-    static const uint64_t STAKEFIOTOKENSRAM = 1024; //integrated.
-    static const uint64_t UNSTAKEFIOTOKENSRAM = 1024; //integrated.
+    static const uint64_t STAKEFIOTOKENSRAM = 256; //integrated.
+    static const uint64_t UNSTAKEFIOTOKENSRAM = 256; //integrated.
     static const uint64_t REGDOMAINRAM  = 2560;  //integrated.
     static const uint64_t REGADDRESSRAM = 2560; //integrated.
     static const uint64_t ADDADDRESSRAM = 512; //integrated.
@@ -476,6 +478,7 @@ namespace fioio {
     static const uint64_t SETFEEVOTERAM = 4000; //integrated. //note this bump allows consecutive calls to voting with
                                                               //different fees to avoid ram limits for non top 21 producers.
     static const uint64_t BUNDLEVOTERAM = 0; //integrated.
+    static const uint64_t ADDNFTRAM = 3584;
 
 
 
