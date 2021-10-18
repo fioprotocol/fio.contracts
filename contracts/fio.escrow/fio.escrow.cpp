@@ -558,10 +558,12 @@ namespace fioio {
 //            fio_400_assert(domainsale_iter != domainsalesbydomain.end(), "domainsale", domainhash,
 //                           "Domain not found", ErrorDomainSaleNotFound);
 
-            domainsalesbydomain.modify(domainsale_iter, EscrowContract, [&](auto &row) {
-                row.status       = 3; // status = 1: on sale, status = 2: Sold, status = 3; Cancelled
-                row.date_updated = now();
-            });
+            if(domainsale_iter->status == 1) {
+                domainsalesbydomain.modify(domainsale_iter, EscrowContract, [&](auto &row) {
+                    row.status       = 3; // status = 1: on sale, status = 2: Sold, status = 3; Cancelled
+                    row.date_updated = now();
+                });
+            }
         }
     }; // class FioEscrow
 

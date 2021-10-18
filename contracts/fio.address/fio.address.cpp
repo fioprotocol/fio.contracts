@@ -1070,10 +1070,12 @@ namespace fioio {
                         auto domainsaleiter = domainsalesbydomain.find(burner);
                         // if found, call cxburned on fio.escrow
                         if(domainsaleiter != domainsalesbydomain.end()){
-                            action(permission_level{get_self(), "active"_n},
-                                   EscrowContract, "cxburned"_n,
-                                   make_tuple(domainsaleiter->domainhash)
-                            ).send();
+                            if(domainsaleiter->status == 1) {
+                                action(permission_level{get_self(), "active"_n},
+                                       EscrowContract, "cxburned"_n,
+                                       make_tuple(domainsaleiter->domainhash)
+                                ).send();
+                            }
                         }
                     }
 
