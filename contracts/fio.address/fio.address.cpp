@@ -1101,9 +1101,12 @@ namespace fioio {
                 // Find any domains listed for sale on the fio.escrow contract table
                 auto domainsalesbydomain = domainsales.get_index<"bydomain"_n>();
                 auto domainsaleiter = domainsalesbydomain.find(burner);
-                // if found, erase the entry
+                // if found, call cxburned on fio.escrow
                 if(domainsaleiter != domainsalesbydomain.end()){
-                    domainsalesbydomain.erase(domainsaleiter);
+                    action(permission_level{get_self(), "active"_n},
+                           EscrowContract, "cxburned"_n,
+                           make_tuple(domainsaleiter->domainhash)
+                    ).send();
                 }
             }
 

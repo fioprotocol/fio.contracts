@@ -181,6 +181,16 @@
           "type": "int64"
         }
       ]
+    },
+    {
+      "name": "cxburned",
+      "base": "",
+      "fields": [
+        {
+          "name": "domainhash",
+          "type": "uint128"
+        }
+      ]
     }
   ],
   "types": [],
@@ -203,6 +213,11 @@
     {
       "name": "setmrkplcfg",
       "type": "setmrkplcfg",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "cxburned",
+      "type": "cxburned",
       "ricardian_contract": ""
     }
   ],
