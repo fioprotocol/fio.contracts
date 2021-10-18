@@ -93,6 +93,20 @@
       ]
     },
     {
+      "name": "nftburninfo",
+      "base": "",
+      "fields": [
+        {
+          "name": "id",
+          "type": "uint64"
+        },
+        {
+          "name": "fio_address_hash",
+          "type": "uint128"
+        }
+      ]
+    },
+    {
       "name": "regaddress",
       "base": "",
       "fields": [
@@ -132,6 +146,112 @@
         },
         {
           "name": "public_address",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "nftparam",
+      "base": "",
+      "fields": [
+        {
+          "name": "chain_code",
+          "type": "string"
+        },
+        {
+          "name": "contract_address",
+          "type": "string"
+        },
+        {
+          "name": "token_id",
+          "type": "string"
+        },
+        {
+          "name": "url",
+          "type": "string"
+        },
+        {
+          "name": "hash",
+          "type": "string"
+        },
+        {
+          "name": "metadata",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "remnftparam",
+      "base": "",
+      "fields": [
+        {
+          "name": "chain_code",
+          "type": "string"
+        },
+        {
+          "name": "contract_address",
+          "type": "string"
+        },
+        {
+          "name": "token_id",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "nftinfo",
+      "base": "",
+      "fields": [
+        {
+          "name": "id",
+          "type": "uint64"
+        },
+        {
+          "name": "fio_address",
+          "type": "string"
+        },
+        {
+          "name": "chain_code",
+          "type": "string"
+        },
+        {
+          "name": "chain_code_hash",
+          "type": "uint64"
+        },
+        {
+          "name": "token_id",
+          "type": "string"
+        },
+        {
+          "name": "token_id_hash",
+          "type": "uint128"
+        },
+        {
+          "name": "url",
+          "type": "string"
+        },
+        {
+          "name": "fio_address_hash",
+          "type": "uint128"
+        },
+        {
+          "name": "contract_address",
+          "type": "string"
+        },
+        {
+          "name": "contract_address_hash",
+          "type": "uint128"
+        },
+        {
+          "name": "hash",
+          "type": "string"
+        },
+        {
+          "name": "hash_index",
+          "type": "uint128"
+        },
+        {
+          "name": "metadata",
           "type": "string"
         }
       ]
@@ -309,7 +429,15 @@
     {
       "name": "burnexpired",
       "base": "",
-      "fields": []
+      "fields": [
+      {
+                "name": "offset",
+                "type": "int64"
+              },
+              {
+                "name": "limit",
+                "type": "int32"
+              }]
     },
     {
       "name": "decrcounter",
@@ -342,129 +470,187 @@
           "type": "bool"
         }
       ]
-    },
-    {
-      "name": "burnaddress",
-      "base": "",
-      "fields": [
-        {
-          "name": "fio_address",
-          "type": "string"
-        },
-        {
-          "name": "max_fee",
-          "type": "int64"
-        },
-        {
-          "name": "tpid",
-          "type": "string"
-        },
-        {
-          "name": "actor",
-          "type": "name"
-        }
-      ]
-    },
-    {
-      "name": "xferdomain",
-      "base": "",
-      "fields": [
-        {
-          "name": "fio_domain",
-          "type": "string"
-        },
-        {
-          "name": "new_owner_fio_public_key",
-          "type": "string"
-        },
-        {
-          "name": "max_fee",
-          "type": "int64"
-        },
-        {
-          "name": "actor",
-          "type": "name"
-        },
-        {
-          "name": "tpid",
-          "type": "string"
-        }
-      ]
-    },
-    {
-      "name": "xferaddress",
-      "base": "",
-      "fields": [
-        {
-          "name": "fio_address",
-          "type": "string"
-        },
-        {
-          "name": "new_owner_fio_public_key",
-          "type": "string"
-        },
-        {
-          "name": "max_fee",
-          "type": "int64"
-        },
-        {
-          "name": "actor",
-          "type": "name"
-        },
-        {
-          "name": "tpid",
-          "type": "string"
-        }
-      ]
-    },
-    {
-      "name": "addbundles",
-      "base": "",
-      "fields": [
-        {
-          "name": "fio_address",
-          "type": "string"
-        },
-        {
-          "name": "bundle_sets",
-          "type": "int64"
-        },
-        {
-          "name": "max_fee",
-          "type": "int64"
-        },
-        {
-          "name": "tpid",
-          "type": "string"
-        },
-        {
-          "name": "actor",
-          "type": "name"
-        }
-      ]
-    },
-    {
-      "name": "xferescrow",
-      "base": "",
-      "fields": [
-        {
-          "name": "fio_domain",
-          "type": "string"
-        },
-        {
-          "name": "public_key",
-          "type": "string"
-        },
-        {
-          "name": "isEscrow",
-          "type": "bool"
-        },
-        {
-          "name": "actor",
-          "type": "name"
-        }
-      ]
-    }
+    },{
+            "name": "burnaddress",
+            "base": "",
+            "fields": [
+              {
+                "name": "fio_address",
+                "type": "string"
+              },
+              {
+                "name": "max_fee",
+                "type": "int64"
+              },
+              {
+                "name": "tpid",
+                "type": "string"
+              },
+              {
+                "name": "actor",
+                "type": "name"
+              }
+            ]
+          },{
+       "name": "xferdomain",
+       "base": "",
+       "fields": [
+         {
+           "name": "fio_domain",
+           "type": "string"
+         },
+         {
+           "name": "new_owner_fio_public_key",
+           "type": "string"
+         },
+         {
+           "name": "max_fee",
+           "type": "int64"
+         },
+         {
+           "name": "actor",
+           "type": "name"
+         },
+         {
+           "name": "tpid",
+           "type": "string"
+         }
+       ]
+     },{
+       "name": "xferaddress",
+       "base": "",
+       "fields": [
+         {
+           "name": "fio_address",
+           "type": "string"
+         },
+         {
+           "name": "new_owner_fio_public_key",
+           "type": "string"
+         },
+         {
+           "name": "max_fee",
+           "type": "int64"
+         },
+         {
+           "name": "actor",
+           "type": "name"
+         },
+         {
+           "name": "tpid",
+           "type": "string"
+         }
+       ]
+     },{
+        "name": "addbundles",
+        "base": "",
+        "fields": [
+          {
+            "name": "fio_address",
+            "type": "string"
+          },
+          {
+            "name": "bundle_sets",
+            "type": "int64"
+          },
+          {
+            "name": "max_fee",
+            "type": "int64"
+          },
+          {
+            "name": "tpid",
+            "type": "string"
+          },
+          {
+            "name": "actor",
+            "type": "name"
+          }
+        ]
+      },
+      {
+        "name": "addnft",
+        "base": "",
+        "fields": [
+          {
+            "name": "fio_address",
+            "type": "string"
+          },
+          {
+            "name": "nfts",
+            "type": "nftparam[]"
+          },
+          {
+            "name": "max_fee",
+            "type": "int64"
+          },
+          {
+            "name": "actor",
+            "type": "name"
+          },
+          {
+            "name": "tpid",
+            "type": "string"
+          }
+        ]
+      },
+      {
+        "name": "remnft",
+        "base": "",
+        "fields": [
+          {
+            "name": "fio_address",
+            "type": "string"
+          },
+          {
+            "name": "nfts",
+            "type": "remnftparam[]"
+          },
+          {
+            "name": "max_fee",
+            "type": "int64"
+          },
+          {
+            "name": "actor",
+            "type": "name"
+          },
+          {
+            "name": "tpid",
+            "type": "string"
+          }
+        ]
+      },
+      {
+        "name": "remallnfts",
+        "base": "",
+        "fields": [
+          {
+            "name": "fio_address",
+            "type": "string"
+          },
+          {
+            "name": "max_fee",
+            "type": "int64"
+          },
+          {
+            "name": "actor",
+            "type": "name"
+          },
+          {
+            "name": "tpid",
+            "type": "string"
+          }
+        ]
+      },
+      {
+        "name": "burnnfts",
+        "base": "",
+        "fields": [
+          {
+            "name": "actor",
+            "type": "name"
+          }
+        ]
+      }
   ],
   "actions": [
     {
@@ -521,13 +707,11 @@
       "name": "bind2eosio",
       "type": "bind2eosio",
       "ricardian_contract": ""
-    },
-    {
+    },{
       "name": "burnaddress",
       "type": "burnaddress",
       "ricardian_contract": ""
-    },
-    {
+    },{
       "name": "xferdomain",
       "type": "xferdomain",
       "ricardian_contract": ""
@@ -545,6 +729,22 @@
     {
       "name": "xferescrow",
       "type": "xferescrow",
+      "ricardian_contract": ""
+    },{
+      "name": "addnft",
+      "type": "addnft",
+      "ricardian_contract": ""
+    },{
+      "name": "remnft",
+      "type": "remnft",
+      "ricardian_contract": ""
+    },{
+      "name": "remallnfts",
+      "type": "remallnfts",
+      "ricardian_contract": ""
+    },{
+      "name": "burnnfts",
+      "type": "burnnfts",
       "ricardian_contract": ""
     }
   ],
@@ -581,6 +781,24 @@
         "uint64"
       ],
       "type": "eosio_name"
+    },
+    {
+      "name": "nfts",
+      "type": "nftinfo",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
+      "name": "nftburnq",
+      "index_type": "i64",
+      "key_names": [
+        "id"
+      ],
+      "key_types": [
+        "uint64"
+      ],
+      "type": "nftburninfo"
     }
   ],
   "ricardian_clauses": [],

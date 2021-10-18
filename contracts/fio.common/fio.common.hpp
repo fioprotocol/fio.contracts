@@ -72,6 +72,9 @@
 #define SUBMIT_FEE_MULTIPLER_ENDPOINT "submit_fee_multiplier"
 #define BURN_FIO_ADDRESS_ENDPOINT "burn_fio_address"
 #define ADD_BUNDLED_TRANSACTION_ENDPOINT "add_bundled_transactions"
+#define ADD_NFT_ENDPOINT "add_nft"
+#define REM_NFT_ENDPOINT "remove_nft"
+#define REM_ALL_NFTS_ENDPOINT "remove_all_nfts"
 
 #define LIST_DOMAIN_ENDPOINT "list_domain"
 #define CANCEL_LIST_DOMAIN_ENDPOINT "cancel_list_domain"
@@ -480,6 +483,7 @@ namespace fioio {
     static const uint64_t SETFEEVOTERAM = 4000; //integrated. //note this bump allows consecutive calls to voting with
                                                               //different fees to avoid ram limits for non top 21 producers.
     static const uint64_t BUNDLEVOTERAM = 0; //integrated.
+    static const uint64_t ADDNFTRAM = 3584;
 
     static const uint64_t FIOESCROWRAM = 512; // FIOESCROW
 } // namespace fioio
