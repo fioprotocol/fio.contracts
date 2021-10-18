@@ -21,7 +21,7 @@ namespace fioio {
     private:
         const int MIN_VOTES_FOR_AVERAGING = 15;
         domains_table domains;
-        domainsales_table  domainsales;
+        domainsales_table domainsales;
         fionames_table fionames;
         fiofee_table fiofees;
         eosio_names_table accountmap;
@@ -1067,13 +1067,13 @@ namespace fioio {
 
                         // Find any domains listed for sale on the fio.escrow contract table
                         auto domainsalesbydomain = domainsales.get_index<"bydomain"_n>();
-                        auto domainsaleiter = domainsalesbydomain.find(burner);
+                        auto domainsaleiter = domainsalesbydomain.find(domainiter);
                         // if found, call cxburned on fio.escrow
                         if(domainsaleiter != domainsalesbydomain.end()){
                             if(domainsaleiter->status == 1) {
                                 action(permission_level{get_self(), "active"_n},
                                        EscrowContract, "cxburned"_n,
-                                       make_tuple(domainsaleiter->domainhash)
+                                       make_tuple(domainhash)
                                 ).send();
                             }
                         }
