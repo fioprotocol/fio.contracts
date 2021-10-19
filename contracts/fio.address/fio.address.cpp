@@ -1067,7 +1067,7 @@ namespace fioio {
 
                         // Find any domains listed for sale on the fio.escrow contract table
                         auto domainsalesbydomain = domainsales.get_index<"bydomain"_n>();
-                        auto domainsaleiter = domainsalesbydomain.find(domainiter);
+                        auto domainsaleiter = domainsalesbydomain.find(domainhash);
                         // if found, call cxburned on fio.escrow
                         if(domainsaleiter != domainsalesbydomain.end()){
                             if(domainsaleiter->status == 1) {
