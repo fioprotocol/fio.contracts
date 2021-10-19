@@ -78,7 +78,7 @@ namespace fioio {
     //this method will perform integer division with rounding.
     //returns
     // the rounded result of numerator / denominator
-    static uint128_t fiointdivwithrounding(const uint64_t numerator, const uint64_t denominator) {
+    static uint64_t fiointdivwithrounding(const uint64_t numerator, const uint64_t denominator) {
 
         uint64_t res = numerator / denominator;
         uint64_t rem_res = numerator %  denominator;
