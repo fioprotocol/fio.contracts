@@ -60,6 +60,7 @@ namespace fioio {
     typedef eosio::singleton<"staking"_n, global_staking_state> global_staking_singleton;
 
 
+    static const uint128_t STAKING_MULT = 1000000000000000000;
 
     //this method will perform integer division with rounding.
     //returns
@@ -68,7 +69,20 @@ namespace fioio {
 
         uint128_t res = numerator / denominator;
         uint128_t rem_res = numerator %  denominator;
-        if(rem_res > (denominator / (uint128_t)2)){
+        if(rem_res >= (denominator / (uint128_t)2)){
+            res++;
+        }
+        return res;
+    }
+
+    //this method will perform integer division with rounding.
+    //returns
+    // the rounded result of numerator / denominator
+    static uint128_t fiointdivwithrounding(const uint64_t numerator, const uint64_t denominator) {
+
+        uint64_t res = numerator / denominator;
+        uint64_t rem_res = numerator %  denominator;
+        if(rem_res >= (denominator / (uint64_t)2)){
             res++;
         }
         return res;

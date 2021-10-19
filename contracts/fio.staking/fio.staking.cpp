@@ -253,13 +253,10 @@ public:
 
         //begin new logic for state management.
 
-        //what is this mult used for.
-        const uint128_t multiplier = 1000000000000000000;
-
-        uint128_t scaled_last_ctp = (uint128_t) gstaking.last_combined_token_pool * multiplier;
+        uint128_t scaled_last_ctp = (uint128_t) gstaking.last_combined_token_pool * STAKING_MULT;
         uint128_t scaled_roe = fiointdivwithrounding(scaled_last_ctp,(uint128_t)gstaking.last_global_srp_count);
 
-        uint128_t scaled_stake_amount = (uint128_t) amount * multiplier;
+        uint128_t scaled_stake_amount = (uint128_t) amount * STAKING_MULT;
         uint128_t srp_128 = fiointdivwithrounding(scaled_stake_amount,scaled_roe);
         uint64_t srpstoaward = (uint64_t) srp_128;
 
@@ -432,16 +429,15 @@ public:
 
 
         uint64_t srps_this_unstake;
-        const uint128_t multiplier = 1000000000000000000;
 
         if (amount == astakeiter->total_staked_fio) {
             srps_this_unstake = astakeiter->total_srp; // If all SUFs then all SRPs
         } else {
-            uint128_t scaled_unstake = (uint128_t) amount * multiplier; // unstake sufs are multiplied by mult and stored as interim variable
+            uint128_t scaled_unstake = (uint128_t) amount * STAKING_MULT; // unstake sufs are multiplied by mult and stored as interim variable
             //what percentage of the SRPs held by this user is associated with this unstake.
             uint128_t scaled_user_share_srps = fiointdivwithrounding( (uint128_t) scaled_unstake, (uint128_t) astakeiter->total_staked_fio );// the interim variable is divided by staked sufs to get upscaled share of srp
             uint128_t scaled_srps_unstake = scaled_user_share_srps * (uint128_t) astakeiter->total_srp; // user's SRPs are multiplied by upscaled share of SUFs being unstaked to produce upscaled SRPs to unstake
-            uint128_t srps_this_unstake_128 = fiointdivwithrounding(scaled_srps_unstake,multiplier);// SRPs are downscaled by dividing by multiplie
+            uint128_t srps_this_unstake_128 = fiointdivwithrounding(scaled_srps_unstake,STAKING_MULT);// SRPs are downscaled by dividing by multiplie
             srps_this_unstake = (uint64_t) srps_this_unstake_128; // This just converts from uint128 to uint64. Not sure if this is needed
         }
 
@@ -477,9 +473,9 @@ public:
         if(debugout) {
             print("total reward amount is ", totalrewardamount,"\n");
         }
-        uint64_t tenpercent = totalrewardamount / 10;
-        //Staking Reward Amount is computed: ((SRPs to Claim * Rate of Exchnage) - Unstake amount) * 0.9
-        uint64_t stakingrewardamount = tenpercent * 9;
+        //integrate a new method called fio64intdivwithrounding.
+        uint64_t tenpercent = fiointdivwithrounding(totalrewardamount,(uint64_t) 10);
+        uint64_t stakingrewardamount = totalrewardamount - tenpercent;
         if(debugout) {
             print(" staking reward amount is ", stakingrewardamount,"\n");
         }
@@ -556,13 +552,12 @@ public:
                     std::make_tuple(tpid, actor, tpidrewardamount)
             ).send();
 
+            eosio_assert(tpidrewardamount<= gstaking.combined_token_pool,"unstakefio, tpidrewardamount must be less or equal to state combined token pool." );
             //decrement the amount paid from combined token pool.
-            if(tpidrewardamount<= gstaking.combined_token_pool) {
-                gstaking.combined_token_pool -= tpidrewardamount;
-                if ((gstaking.staked_token_pool >= STAKEDTOKENPOOLMINIMUM) && (present_time > ENABLESTAKINGREWARDSEPOCHSEC)) {
-                    //update the last values in state for ctp and gsrp.
-                    gstaking.last_combined_token_pool = gstaking.combined_token_pool;
-                }
+            gstaking.combined_token_pool -= tpidrewardamount;
+            if ((gstaking.staked_token_pool >= STAKEDTOKENPOOLMINIMUM) && (present_time > ENABLESTAKINGREWARDSEPOCHSEC)) {
+                //update the last values in state for ctp and gsrp.
+                gstaking.last_combined_token_pool = gstaking.combined_token_pool;
             }
         }
 
