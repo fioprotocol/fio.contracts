@@ -77,7 +77,7 @@ namespace fioio {
             fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
                            "TPID must be empty or valid FIO address",
                            ErrorPubKeyValid);
-            fio_400_assert(max_fee <= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+            fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
 
             auto marketplace_iter = mrkplconfigs.begin();
@@ -194,7 +194,7 @@ namespace fioio {
             fio_400_assert(marketplace_iter->e_break == 0, "marketplace_iter->e_break",
                            to_string(marketplace_iter->e_break),
                            "E-Break Enabled, action disabled", ErrorNoWork);
-            fio_400_assert(max_fee <= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+            fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
 
             const uint128_t domainHash = string_to_uint128_hash(fio_domain.c_str());
@@ -302,7 +302,7 @@ namespace fioio {
                            to_string(marketplace_iter->e_break),
                            "E-Break Enabled, action disabled", ErrorNoWork);
 
-            fio_400_assert(max_fee <= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+            fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
 
             const uint128_t domainHash = string_to_uint128_hash(fio_domain.c_str());
@@ -446,7 +446,7 @@ namespace fioio {
                            "e_break", to_string(e_break),
                            "E-break setting must be present", ErrorNoWork);
 
-            fio_400_assert(max_fee <= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+            fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
 
             const bool accountExists = is_account(actor);
