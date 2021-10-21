@@ -2210,10 +2210,23 @@ namespace fioio {
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
                            "Transaction is too large", ErrorTransaction);
         }
+
+        [[eosio::action]]
+        void modexpire(const string &fio_address, const int64_t &expire) {
+            FioAddress fa;
+            getFioAddressStruct(fio_address, fa);
+            name actor = name{"eosio"};
+            const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+            auto namesbyname = domains.get_index<"byname"_n>();
+            auto fioname_iter = namesbyname.find(nameHash);
+            namesbyname.modify(fioname_iter, actor, [&](struct domain &a) {
+                a.expiration = expire;
+            });
+        }
     };
 
     EOSIO_DISPATCH(FioNameLookup, (regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(renewaddress)(
             setdomainpub)(burnexpired)(decrcounter)
             (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(xferescrow)(addnft)(remnft)(remallnfts)
-    (burnnfts))
+    (burnnfts)(modexpire))
 }
