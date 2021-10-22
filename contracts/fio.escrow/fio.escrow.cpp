@@ -439,12 +439,12 @@ namespace fioio {
                            "Commission fee should be between 0 and 25", ErrorNoWork);
 
             fio_400_assert(listing_fee <= 25000000000,
-                           "fee", to_string(listing_fee),
+                           "listing_fee", to_string(listing_fee),
                            "Listing fee should be between 0 and 25,000,000,000 (25 FIO in SUF)", ErrorNoWork);
 
-            fio_400_assert(e_break >= 0,
+            fio_400_assert(e_break >= 0 && e_break <= 1,
                            "e_break", to_string(e_break),
-                           "E-break setting must be present", ErrorNoWork);
+                           "E-break setting must be either 0 for disabled or 1 for enabled", ErrorNoWork);
 
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
