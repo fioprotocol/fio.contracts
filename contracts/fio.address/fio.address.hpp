@@ -10,6 +10,8 @@
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/singleton.hpp>
 #include <eosiolib/asset.hpp>
+#include <eosiolib/binary_extension.hpp>
+
 #include <string>
 
 using std::string;
@@ -111,4 +113,79 @@ namespace fioio {
             indexed_by<"bykey"_n, const_mem_fun < eosio_name, uint128_t, &eosio_name::by_keyhash>>
     >
     eosio_names_table;
+
+    // Maps NFT information to FIO Address
+    struct [[eosio::action]] nftinfo {
+      uint64_t id;
+      string fio_address; //fio_address
+      string chain_code;
+      uint64_t chain_code_hash;
+      string token_id;
+      uint128_t token_id_hash;
+      string url;
+      uint128_t fio_address_hash;
+      string contract_address;
+      uint128_t contract_address_hash;
+      string hash;
+      uint128_t hash_index;
+      string metadata;
+      eosio::binary_extension<uint64_t> property1;
+      eosio::binary_extension<uint128_t> property2;
+
+      uint64_t primary_key() const { return id; }
+      uint128_t by_address() const { return fio_address_hash; }
+      uint128_t by_contract_address() const { return contract_address_hash; }
+      uint128_t by_hash() const { return hash_index; }
+      uint64_t  by_chain() const { return chain_code_hash; }
+      uint128_t by_tokenid() const { return token_id_hash; }
+      EOSLIB_SERIALIZE(nftinfo, (id)(fio_address)(chain_code)(chain_code_hash)(token_id)(token_id_hash)(url)(fio_address_hash)(contract_address)(contract_address_hash)
+        (hash)(hash_index)(metadata))
+
+    };
+
+    typedef multi_index<"nfts"_n, nftinfo,
+    indexed_by<"byaddress"_n, const_mem_fun<nftinfo, uint128_t, &nftinfo::by_address>>,
+    indexed_by<"bycontract"_n, const_mem_fun<nftinfo, uint128_t, &nftinfo::by_contract_address>>,
+    indexed_by<"byhash"_n, const_mem_fun<nftinfo, uint128_t, &nftinfo::by_hash>>,
+    indexed_by<"bychain"_n, const_mem_fun<nftinfo, uint64_t, &nftinfo::by_chain>>,
+    indexed_by<"bytokenid"_n, const_mem_fun<nftinfo, uint128_t, &nftinfo::by_tokenid>>
+
+    >
+    nfts_table;
+
+    struct nftparam {
+      string chain_code;
+      string contract_address;
+      string token_id;
+      string url;
+      string hash;
+      string metadata;
+
+      EOSLIB_SERIALIZE( nftparam, (chain_code)(contract_address)(token_id)(url)(hash)(metadata))
+    };
+
+    struct remnftparam {
+      string chain_code;
+      string contract_address;
+      string token_id;
+
+      EOSLIB_SERIALIZE( remnftparam, (chain_code)(contract_address)(token_id))
+    };
+
+
+    struct [[eosio::action]] nftburninfo {
+      uint64_t id;
+      uint128_t fio_address_hash;
+      uint128_t primary_key() const { return id; }
+      uint128_t by_address() const { return fio_address_hash; }
+      EOSLIB_SERIALIZE( nftburninfo, (id)(fio_address_hash))
+    };
+
+
+    typedef multi_index<"nftburnq"_n, nftburninfo,
+            indexed_by<"byaddress"_n, const_mem_fun < nftburninfo, uint128_t, &nftburninfo::by_address>>
+    >
+    nftburnq_table;
+
+
 }
