@@ -351,7 +351,18 @@ public:
         uint128_t got_suf_big = fiointdivwithrounding(interim_usrplctp, (uint128_t) gstaking.last_global_srp_count); // Then are divided by LGSRP
         totalsufsthisunstake = (uint64_t) got_suf_big;
         uint64_t totalrewardamount = totalsufsthisunstake - amount;
-        eosio_assert(totalsufsthisunstake >= amount, " unstake error -- total sufs this unstake must be >= amount.");
+
+        //Replace the current assertion with:
+        //If the number of sufs rewarded is less than the number of sufs unstaked
+        //And the difference is less than 1000 sufs
+        //Give the user the number of sufs they unstaked.
+
+        if( totalrewardamount < amount ){
+            if((amount - totalrewardamount) < 1000){
+                totalrewardamount = amount;
+            }
+        }
+                                                                                                          
         uint64_t tenpercent = fiointdivwithrounding(totalrewardamount,(uint64_t) 10);
         uint64_t stakingrewardamount = totalrewardamount - tenpercent;
         uint64_t tpidrewardamount = tenpercent;
