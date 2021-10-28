@@ -1270,7 +1270,7 @@ namespace fioio {
                 }
 
                 if (!nftobj->metadata.empty()) {
-                    fio_400_assert(nftobj->metadata.length() <= 64, "metadata", nftobj->metadata, "Invalid metadata",
+                    fio_400_assert(nftobj->metadata.length() <= 128, "metadata", nftobj->metadata, "Invalid metadata",
                                    ErrorInvalidFioNameFormat);
                 }
 
