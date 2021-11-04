@@ -1386,7 +1386,7 @@ namespace fioio {
                         permission_level{SYSTEMACCOUNT, "active"_n},
                         "eosio"_n,
                         "incram"_n,
-                        std::make_tuple(actor, ADDNFTRAM)
+                        std::make_tuple(actor, ADDNFTRAMBASE + (ADDNFTRAM * nfts.size()))
                 ).send();
             }
 
