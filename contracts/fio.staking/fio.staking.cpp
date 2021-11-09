@@ -186,7 +186,7 @@ public:
         fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,"TPID must be empty or valid FIO address",ErrorPubKeyValid);
 
         auto stakeablebalance = eosio::token::computeusablebalance(actor,false);
-        fio_400_assert(stakeablebalance >= (paid_fee_amount + (uint64_t)amount), "max_fee", to_string(max_fee), "Insufficient balance.",
+        fio_400_assert(stakeablebalance >= (paid_fee_amount + (uint64_t)amount), "amount", to_string(stakeablebalance), "Insufficient balance.",
                        ErrorMaxFeeExceeded);
 
         if (STAKEFIOTOKENSRAM > 0) {
