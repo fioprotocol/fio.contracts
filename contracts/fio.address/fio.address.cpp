@@ -1693,7 +1693,6 @@ namespace fioio {
 
         [[eosio::action]]
         void xferescrow(const string &fio_domain, const string &public_key, const bool isEscrow, const name &actor){
-            print("ESCROW CONTRACT HERE:::::");
             require_auth(FIOORACLEContract);
 
             FioAddress fa;
