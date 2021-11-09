@@ -569,7 +569,7 @@ namespace fioio {
                 action(
                         permission_level{FIOORACLEContract, "active"_n},
                         AddressContract,
-                        "xfercontract"_n,
+                        "xferescrow"_n,
                         std::make_tuple(fio_domain, owner->clientkey, isTransferToEscrow, actor)
                 ).send();
             }
