@@ -94,56 +94,16 @@ namespace eosio {
 
         fio_403_assert(accountstaking.find(actor.value) == accountstaking.end(), ErrorSignature); //signature error if user is in staking table
 
-        eosiosystem::locked_tokens_table lockedTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value);
-        eosiosystem::general_locks_table_v2 generalLocksTable(SYSTEMACCOUNT,SYSTEMACCOUNT.value);
+        uint64_t uamount = computeusablebalance(actor,false);
+        fio_400_assert(uamount >= qty.amount, "actor", to_string(actor.value),
+                       "Insufficient Funds.",
+                       ErrorInsufficientUnlockedFunds);
 
-        uint64_t amount = qty.amount;
+        sub_balance(actor, qty);
 
-        // Remove remaining tokens from supply and subtract from actor balance
-          statstable.modify(st, actor, [&](auto &s) {
-              s.supply -= asset(amount, FIOSYMBOL);
-          });
-
-          sub_balance(actor, asset(amount, FIOSYMBOL)); //has fio_400_assert if insufficient balance
-
-        uint64_t extra = 0;
-        auto lockediter = lockedTokensTable.find(actor.value);
-
-        // Burn locked tokens first
-        if (lockediter != lockedTokensTable.end()) {
-
-          if (lockediter->remaining_locked_amount < amount) {
-            extra = amount - lockediter->remaining_locked_amount;
-            amount = lockediter->remaining_locked_amount;
-          }
-          if (lockediter->remaining_locked_amount >= amount) {
-           action(permission_level{get_self(), "active"_n},
-                  "eosio"_n, "updlocked"_n,
-                  make_tuple(actor, lockediter->remaining_locked_amount - amount)
-           ).send();
-          }
-           if (extra > 0) amount = extra;
-
-        }
-
-        auto lock_by_owner = generalLocksTable.get_index<"byowner"_n>();
-        auto geniter = lock_by_owner.find(actor.value);
-        if (geniter != lock_by_owner.end()) {
-
-          if (geniter->remaining_lock_amount < amount) {
-            extra = amount - geniter->remaining_lock_amount;
-            amount = geniter->remaining_lock_amount;
-          }
-          if (amount <= geniter->remaining_lock_amount) {
-            action(permission_level{get_self(), "active"_n},
-                   "eosio"_n, "updlocks"_n,
-                   make_tuple(actor, geniter->remaining_lock_amount - amount)
-            ).send();
-          }
-          if (extra > 0) amount = extra;
-
-        }
-
+        statstable.modify(st, same_payer, [&](auto &s) {
+          s.supply.amount -= quantity;
+        });
 
       fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
         "Transaction is too large", ErrorTransactionTooLarge);
@@ -613,5 +573,4 @@ namespace eosio {
     }
 } /// namespace eosio
 
-EOSIO_DISPATCH( eosio::token, (create)(issue)(mintfio)(transfer)(trnsfiopubky)(trnsloctoks)
-(retire))
+EOSIO_DISPATCH( eosio::token, (create)(issue)(mintfio)(transfer)(trnsfiopubky)(trnsloctoks)(retire))
