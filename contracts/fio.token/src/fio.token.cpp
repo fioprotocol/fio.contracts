@@ -96,7 +96,7 @@ namespace eosio {
 
         int64_t uamount = computeusablebalance(actor,false);
         fio_400_assert(uamount > 0 || uamount - qty.amount >= qty.amount, "actor", to_string(actor.value),
-                       "Insufficient balance.",
+                       "Insufficient balance",
                        ErrorInsufficientUnlockedFunds);
 
         sub_balance(actor, qty);
