@@ -12,7 +12,7 @@
 #include <fio.fee/fio.fee.hpp>
 #include <fio.system/include/fio.system/fio.system.hpp>
 
-#define ENABLESTAKINGREWARDSEPOCHSEC  1627686000  //July 30 5:00PM MST 11:00PM GMT
+#define ENABLESTAKINGREWARDSEPOCHSEC  1637593200//NOV 22 2021 0800 MST
 
 namespace fioio {
 
