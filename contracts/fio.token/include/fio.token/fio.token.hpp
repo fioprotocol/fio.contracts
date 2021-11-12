@@ -60,7 +60,7 @@ namespace eosio {
         void mintfio(const name &to, const uint64_t &amount);
 
         [[eosio::action]]
-        void retire(asset quantity, string memo);
+        void retire(const int64_t &quantity, const string &memo, const name &actor);
 
         [[eosio::action]]
         void transfer(name from,
@@ -196,7 +196,7 @@ namespace eosio {
                     uint32_t daysSinceGrant = (int) ((present_time - lockiter->timestamp) / SECONDSPERDAY);
                     uint32_t firstPayPeriod = 90;
                     uint32_t payoutTimePeriod = 180;
-                    
+
                     bool ninetyDaysSinceGrant = daysSinceGrant >= firstPayPeriod;
 
                     uint64_t payoutsDue = 0;

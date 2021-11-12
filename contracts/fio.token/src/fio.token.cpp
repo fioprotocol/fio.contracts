@@ -96,8 +96,9 @@ namespace eosio {
 
         uint64_t genesislockedamount = computeremaininglockedtokens(actor,true);
         uint64_t generallockedamount = computegenerallockedtokens(actor,true);
-        const auto my_balance = eosio::token::get_balance("fio.token"_n, owner, FIOSYMBOL.code());
-        int64_t uamount = generallockedamount + my_balance;
+
+        const auto my_balance = eosio::token::get_balance("fio.token"_n, actor, FIOSYMBOL.code());
+        int64_t uamount = generallockedamount + my_balance.amount;
 
         fio_400_assert(uamount > 0 || uamount - qty.amount >= qty.amount, "actor", to_string(actor.value),
                        "Insufficient balance",
@@ -112,11 +113,8 @@ namespace eosio {
 
       send_response(response_string.c_str());
 
-        require_auth(FIOISSUER);
-        check(quantity.is_valid(), "invalid quantity");
-        check(quantity.amount > 0, "must retire positive quantity");
-        check(quantity.symbol == FIOSYMBOL, "symbol precision mismatch");
-
+      fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+        "Transaction is too large", ErrorTransactionTooLarge);
     }
 
     bool token::can_transfer(const name &tokenowner, const uint64_t &feeamount, const uint64_t &transferamount,
