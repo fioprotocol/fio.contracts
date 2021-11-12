@@ -98,11 +98,12 @@ namespace eosio {
         fio_400_assert(uamount >= qty.amount, "actor", to_string(actor.value),
                        "Insufficient Funds.",
                        ErrorInsufficientUnlockedFunds);
-
+        int64_t burnable = uamount - qty.amount;
+        fio_400_assert(burnable > 0, "quantity", std::to_string(quantity), "Insufficient balance", ErrorRetireQuantity);
+        qty.amount = static_cast<uint64_t>(burnable);
         sub_balance(actor, qty);
-
         statstable.modify(st, same_payer, [&](auto &s) {
-          s.supply.amount -= quantity;
+          s.supply.amount -= qty.amount;
         });
 
       fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
