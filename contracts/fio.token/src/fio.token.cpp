@@ -82,25 +82,23 @@ namespace eosio {
     }
 
     void token::retire(const int64_t &quantity, const string &memo, const name &actor) {
+        require_auth(actor);
         asset qty;
         qty.amount = quantity;
         qty.symbol = FIOSYMBOL;
         fio_400_assert(memo.size() <= 256, "memo", memo, "memo has more than 256 bytes", ErrorInvalidMemo);
-        fio_400_assert(qty.amount >= 1000000000000LL,"quantity", std::to_string(quantity), "Minimum 1000 FIO has to be retired", ErrorRetireQuantity);
-        require_auth(actor);
+        fio_400_assert(qty.amount >= 1000000000000ULL,"quantity", std::to_string(quantity), "Minimum 1000 FIO has to be retired", ErrorRetireQuantity);
         stats statstable(_self, FIOSYMBOL.code().raw());
         auto existing = statstable.find(FIOSYMBOL.code().raw());
         const auto &st = *existing;
 
         fio_403_assert(accountstaking.find(actor.value) == accountstaking.end(), ErrorSignature); //signature error if user is in staking table
 
-        uint64_t uamount = computeusablebalance(actor,false);
-        fio_400_assert(uamount >= qty.amount, "actor", to_string(actor.value),
-                       "Insufficient Funds.",
+        int64_t uamount = computeusablebalance(actor,false);
+        fio_400_assert(uamount > 0 || uamount - qty.amount >= qty.amount, "actor", to_string(actor.value),
+                       "Insufficient balance.",
                        ErrorInsufficientUnlockedFunds);
-        int64_t burnable = uamount - qty.amount;
-        fio_400_assert(burnable > 0, "quantity", std::to_string(quantity), "Insufficient balance", ErrorRetireQuantity);
-        qty.amount = static_cast<uint64_t>(burnable);
+
         sub_balance(actor, qty);
         statstable.modify(st, same_payer, [&](auto &s) {
           s.supply.amount -= qty.amount;
