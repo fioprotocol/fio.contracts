@@ -96,9 +96,9 @@ namespace eosio {
         const uint64_t generallockedamount = computegenerallockedtokens(actor,true);
 
         const asset my_balance = eosio::token::get_balance("fio.token"_n, actor, FIOSYMBOL.code());
-        const int64_t uamount = generallockedamount + my_balance.amount;
+        const int64_t uamount = genesislockedamount + generallockedamount + my_balance.amount;
 
-        fio_400_assert(uamount > 0 || uamount - genesislockedamount - qty.amount >= qty.amount, "actor", to_string(actor.value),
+        fio_400_assert(uamount > 0 || uamount - genesislockedamount >= qty.amount, "actor", to_string(actor.value),
                        "Insufficient balance",
                        ErrorInsufficientUnlockedFunds);
 
