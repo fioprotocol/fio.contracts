@@ -99,21 +99,24 @@ namespace eosio {
         }
         const asset my_balance = eosio::token::get_balance("fio.token"_n, actor, FIOSYMBOL.code());
 
-        uint64_t genesislockedamount = computeremaininglockedtokens(actor,true); // process lock inhibitor and get what is locked
         fio_400_assert(quantity <= my_balance.amount && can_transfer(actor, 0, quantity, false), "actor", to_string(actor.value),
                        "Insufficient balance",
                        ErrorInsufficientUnlockedFunds);
 
-        if (genesislockedamount > 0) {
+        auto lockiter = lockedTokensTable.find(actor.value);
+        if (lockiter != lockedTokensTable.end()) {
+          uint64_t genesislockedamount = lockiter->remaining_locked_amount;
+          if (genesislockedamount > 0) {
 
-          if (genesislockedamount > quantity) {
-            genesislockedamount = quantity;
+            if (genesislockedamount >= quantity) {
+              genesislockedamount = quantity;
+            }
+
+            INLINE_ACTION_SENDER(eosiosystem::system_contract, updlocked)
+                      ("eosio"_n, {{_self, "active"_n}},
+                       {actor, genesislockedamount}
+                      );
           }
-
-          INLINE_ACTION_SENDER(eosiosystem::system_contract, updlocked)
-                    ("eosio"_n, {{_self, "active"_n}},
-                     {actor, genesislockedamount}
-                    );
         }
 
         sub_balance(actor, asset(quantity, FIOSYMBOL));
