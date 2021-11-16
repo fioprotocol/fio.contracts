@@ -100,7 +100,7 @@ namespace eosio {
         const asset my_balance = eosio::token::get_balance("fio.token"_n, actor, FIOSYMBOL.code());
 
         uint64_t genesislockedamount = computeremaininglockedtokens(actor,true); // process lock inhibitor and get what is locked
-        fio_400_assert(quantity <= my_balance.amount, "actor", to_string(actor.value),
+        fio_400_assert(quantity <= my_balance.amount && can_transfer(actor, 0, quantity, false), "actor", to_string(actor.value),
                        "Insufficient balance",
                        ErrorInsufficientUnlockedFunds);
 
