@@ -144,8 +144,8 @@ namespace fioio {
             fio_400_assert(payee_fio_address.length() > 0, "payee_fio_address", payee_fio_address,
                            "to fio address not found", ErrorInvalidFioNameFormat);
 
-            fio_400_assert(content.size() >= 64 && content.size() <= 432, "content", content,
-                           "Requires min 64 max 432 size", ErrorContentLimit);
+            fio_400_assert(content.size() >= 64 && content.size() <= MAXOBTCONTENT, "content", content,
+                           "Requires min 64 max 436 size", ErrorContentLimit);
 
             FioAddress payerfa;
             getFioAddressStruct(payer_fio_address, payerfa);
@@ -332,8 +332,8 @@ namespace fioio {
                            "to fio address not specified",
                            ErrorInvalidJsonInput);
 
-            fio_400_assert(content.size() >= 64 && content.size() <= 296, "content", content,
-                           "Requires min 64 max 296 size",
+            fio_400_assert(content.size() >= 64 && content.size() <= MAXFUNDSCONTENT, "content", content,
+                           "Requires min 64 max 300 size",
                            ErrorContentLimit);
 
             const uint32_t present_time = now();

@@ -480,6 +480,8 @@ namespace fioio {
     static const uint64_t BUNDLEVOTERAM = 0; //integrated.
     static const uint64_t ADDNFTRAM = 3584;
 
+    static const uint64_t MAXOBTCONTENT = 436;
+    static const uint64_t MAXFUNDSCONTENT = 300;
 
 
 
