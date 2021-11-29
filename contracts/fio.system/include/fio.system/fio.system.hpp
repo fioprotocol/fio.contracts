@@ -379,9 +379,6 @@ public:
     void updlocked(const name &owner,const uint64_t &amountremaining);
 
     [[eosio::action]]
-    void updlocks(const name &owner, const uint64_t &amount);
-
-    [[eosio::action]]
     void inhibitunlck(const name &owner,const uint32_t &value);
 
     [[eosio::action]]

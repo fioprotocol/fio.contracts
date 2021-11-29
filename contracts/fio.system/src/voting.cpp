@@ -752,7 +752,7 @@ namespace eosiosystem {
                     }else{
                         amount = damount;
                     }
-                   
+
                 }else{
                     //amount is balance - remaining locked.
                     if (amount >= lockiter->remaining_locked_amount){
@@ -923,21 +923,6 @@ namespace eosiosystem {
         _lockedtokens.modify(iterlocked, _self, [&](auto &av) {
             av.remaining_locked_amount = amountremaining;
         });
-    }
-
-    void system_contract::updlocks(const name &owner, const uint64_t &amount) {
-
-      require_auth(TokenContract);
-      auto lock_by_owner = _generallockedtokens.get_index<"byowner"_n>();
-      auto lockiter = lock_by_owner.find(owner.value);
-
-      check(lockiter != lock_by_owner.end(), "account not found in general locks.");
-      check(lockiter->remaining_lock_amount >= amount, "locked funds remaining amount cannot increase.");
-
-      lock_by_owner.modify(lockiter, _self, [&](auto &av) {
-          av.remaining_lock_amount = lockiter->remaining_lock_amount - amount;
-      });
-
     }
 
     void system_contract::setautoproxy(const name &proxy,const name &owner)
