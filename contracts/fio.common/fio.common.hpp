@@ -461,8 +461,8 @@ namespace fioio {
     static const uint64_t INITIALACCOUNTRAM  = 25600;
     static const uint64_t ADDITIONALRAMBPDESCHEDULING = 25600;
 
-    static const uint64_t STAKEFIOTOKENSRAM = 256; //integrated.
-    static const uint64_t UNSTAKEFIOTOKENSRAM = 256; //integrated.
+    static const uint64_t STAKEFIOTOKENSRAM = 512; //integrated.
+    static const uint64_t UNSTAKEFIOTOKENSRAM = 512; //integrated.
     static const uint64_t REGDOMAINRAM  = 2560;  //integrated.
     static const uint64_t REGADDRESSRAM = 2560; //integrated.
     static const uint64_t ADDADDRESSRAM = 512; //integrated.
@@ -478,8 +478,11 @@ namespace fioio {
     static const uint64_t SETFEEVOTERAM = 4000; //integrated. //note this bump allows consecutive calls to voting with
                                                               //different fees to avoid ram limits for non top 21 producers.
     static const uint64_t BUNDLEVOTERAM = 0; //integrated.
-    static const uint64_t ADDNFTRAM = 3584;
+    static const uint64_t ADDNFTRAMBASE = 512;
+    static const uint64_t ADDNFTRAM = 2048;
 
+    static const uint64_t MAXOBTCONTENT = 436;
+    static const uint64_t MAXFUNDSCONTENT = 300;
 
 
 

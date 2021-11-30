@@ -12,7 +12,7 @@
 #include <fio.fee/fio.fee.hpp>
 #include <fio.system/include/fio.system/fio.system.hpp>
 
-#define ENABLESTAKINGREWARDSEPOCHSEC  1627686000  //July 30 5:00PM MST 11:00PM GMT
+#define ENABLESTAKINGREWARDSEPOCHSEC  1637593200//NOV 22 2021 0800 MST
 
 namespace fioio {
 
@@ -186,7 +186,7 @@ public:
         fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,"TPID must be empty or valid FIO address",ErrorPubKeyValid);
 
         auto stakeablebalance = eosio::token::computeusablebalance(actor,false);
-        fio_400_assert(stakeablebalance >= (paid_fee_amount + (uint64_t)amount), "max_fee", to_string(max_fee), "Insufficient balance.",
+        fio_400_assert(stakeablebalance >= (paid_fee_amount + (uint64_t)amount), "amount", to_string(stakeablebalance), "Insufficient balance.",
                        ErrorMaxFeeExceeded);
 
         if (STAKEFIOTOKENSRAM > 0) {

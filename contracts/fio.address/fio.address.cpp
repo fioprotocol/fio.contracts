@@ -1386,7 +1386,7 @@ namespace fioio {
                         permission_level{SYSTEMACCOUNT, "active"_n},
                         "eosio"_n,
                         "incram"_n,
-                        std::make_tuple(actor, ADDNFTRAM)
+                        std::make_tuple(actor, ADDNFTRAMBASE + (ADDNFTRAM * nfts.size()))
                 ).send();
             }
 
@@ -2007,12 +2007,6 @@ namespace fioio {
             auto domains_iter = domainsbyname.find(string_to_uint128_hash(fio_domain));
             fio_400_assert(domains_iter != domainsbyname.end(), "fio_domain", fio_domain,
                            "FIO Domain not registered", ErrorDomainNotRegistered);
-
-            const uint32_t domain_expiration = domains_iter->expiration;
-            const uint32_t present_time = now();
-            fio_400_assert(present_time <= domain_expiration, "fio_domain", fio_domain,
-                           "FIO Domain expired. Renew first.",
-                           ErrorDomainExpired);
 
             fio_403_assert(domains_iter->account == actor.value, ErrorSignature);
             const uint128_t endpoint_hash = string_to_uint128_hash(TRANSFER_DOMAIN_ENDPOINT);
