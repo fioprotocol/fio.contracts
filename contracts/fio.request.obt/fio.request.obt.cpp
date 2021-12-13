@@ -399,8 +399,8 @@ namespace fioio {
                            "unexpected fee type for endpoint new_funds_request, expected 1",
                            ErrorNoEndpoint);
 
-	        uint16_t feeMultiplier = content.size() / MAXFUNDSCONTENT;
-	        uint16_t bundleAmount = 2 * feeMultiplier;
+            uint16_t feeMultiplier = content.size() / MAXFUNDSCONTENT;
+            uint16_t bundleAmount = 2 * feeMultiplier;
             uint64_t fee_amount = fee_iter->suf_amount * feeMultiplier;
 
             if (fioname_iter->bundleeligiblecountdown >= bundleAmount) {
@@ -453,14 +453,14 @@ namespace fioio {
 
             if (NEWFUNDSREQUESTRAM > 0) {
                 uint64_t newFundsFee = 0;
-		if( feeMultiplier > 1 ){
-		    newFundsFee = (NEWFUNDSREQUESTRAM * feeMultiplier) / 3;
-		}
+                if (feeMultiplier > 1) {
+                    newFundsFee = (NEWFUNDSREQUESTRAM * feeMultiplier) / 3;
+                }
                 action(
                         permission_level{SYSTEMACCOUNT, "active"_n},
                         "eosio"_n,
                         "incram"_n,
-                        std::make_tuple(aActor, NEWFUNDSREQUESTRAM + newFundsFee)
+                        std::make_tuple(aActor, (NEWFUNDSREQUESTRAM + newFundsFee))
                 ).send();
             }
 
