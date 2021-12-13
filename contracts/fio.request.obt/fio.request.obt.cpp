@@ -398,10 +398,11 @@ namespace fioio {
                            "unexpected fee type for endpoint new_funds_request, expected 1",
                            ErrorNoEndpoint);
 
-            uint16_t feeMultiplier = 1;
+            uint64_t feeMultiplier = 1;
             if(content.size() >= MAXFUNDSCONTENT){ feeMultiplier = content.size() / MAXFUNDSCONTENT; }
-            uint16_t bundleAmount = 2 * feeMultiplier;
+            uint64_t bundleAmount = 2 * feeMultiplier;
             uint64_t fee_amount = 0;
+
             if (fioname_iter->bundleeligiblecountdown >= bundleAmount) {
                 action{
                         permission_level{_self, "active"_n},
