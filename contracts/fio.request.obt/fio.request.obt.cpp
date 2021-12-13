@@ -399,8 +399,8 @@ namespace fioio {
                            "unexpected fee type for endpoint new_funds_request, expected 1",
                            ErrorNoEndpoint);
 
-	    uint16 feeMultiplier = content.size() / MAXFUNDSCONTENT;
-	    uint16 bundleAmount = 2 * feeMultiplier;
+	        uint16_t feeMultiplier = content.size() / MAXFUNDSCONTENT;
+	        uint16_t bundleAmount = 2 * feeMultiplier;
             uint64_t fee_amount = fee_iter->suf_amount * feeMultiplier;
 
             if (fioname_iter->bundleeligiblecountdown >= bundleAmount) {
