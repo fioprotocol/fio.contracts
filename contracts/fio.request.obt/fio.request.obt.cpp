@@ -394,15 +394,14 @@ namespace fioio {
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             const uint64_t fee_type = fee_iter->type;
-
             fio_400_assert(fee_type == 1, "fee_type", to_string(fee_type),
                            "unexpected fee type for endpoint new_funds_request, expected 1",
                            ErrorNoEndpoint);
 
-            uint16_t feeMultiplier = content.size() / MAXFUNDSCONTENT;
+            uint16_t feeMultiplier = 1;
+            if(content.size() >= MAXFUNDSCONTENT){ feeMultiplier = content.size() / MAXFUNDSCONTENT; }
             uint16_t bundleAmount = 2 * feeMultiplier;
-            uint64_t fee_amount = fee_iter->suf_amount * feeMultiplier;
-
+            uint64_t fee_amount = 0;
             if (fioname_iter->bundleeligiblecountdown >= bundleAmount) {
                 action{
                         permission_level{_self, "active"_n},
@@ -411,6 +410,7 @@ namespace fioio {
                         make_tuple(payee_fio_address, bundleAmount)
                 }.send();
             } else {
+                fee_amount = fee_iter->suf_amount * feeMultiplier;
                 fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
                                "Fee exceeds supplied maximum.",
                                ErrorMaxFeeExceeded);
@@ -426,7 +426,6 @@ namespace fioio {
                 }
             }
             //end fees, bundle eligible fee logic
-
             const uint64_t id = fioTransactionsTable.available_primary_key();
             const uint128_t toHash = string_to_uint128_hash(payee_fio_address.c_str());
             const uint128_t fromHash = string_to_uint128_hash(payer_fio_address.c_str());
@@ -452,18 +451,17 @@ namespace fioio {
                     string(",\"fee_collected\":") + to_string(fee_amount) + string("}");
 
             if (NEWFUNDSREQUESTRAM > 0) {
-                uint64_t newFundsFee = 0;
+                uint64_t newFundsFee = NEWFUNDSREQUESTRAM;
                 if (feeMultiplier > 1) {
-                    newFundsFee = (NEWFUNDSREQUESTRAM * feeMultiplier) / 3;
+                    newFundsFee = NEWFUNDSREQUESTRAM + ((NEWFUNDSREQUESTRAM * feeMultiplier) / 3);
                 }
                 action(
                         permission_level{SYSTEMACCOUNT, "active"_n},
                         "eosio"_n,
                         "incram"_n,
-                        std::make_tuple(aActor, (NEWFUNDSREQUESTRAM + newFundsFee))
+                        std::make_tuple(aActor, newFundsFee)
                 ).send();
             }
-
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
                            "Transaction is too large", ErrorTransactionTooLarge);
 
