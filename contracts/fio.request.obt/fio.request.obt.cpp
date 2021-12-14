@@ -399,7 +399,7 @@ namespace fioio {
                            ErrorNoEndpoint);
 
             uint64_t feeMultiplier = 1;
-            if(content.size() >= NEWFUNDSCONTNET){ feeMultiplier = content.size() / NEWFUNDSCONTNET; }
+            if(content.size() >= NEWFUNDSCONTENT){ feeMultiplier = ( content.size() / NEWFUNDSCONTENT) + 1; }
             uint64_t bundleAmount = 2 * feeMultiplier;
             uint64_t fee_amount = 0;
 
