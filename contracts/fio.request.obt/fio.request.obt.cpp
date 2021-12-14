@@ -399,7 +399,7 @@ namespace fioio {
                            ErrorNoEndpoint);
 
             uint64_t feeMultiplier = 1;
-            if(content.size() >= MAXFUNDSCONTENT){ feeMultiplier = content.size() / MAXFUNDSCONTENT; }
+            if(content.size() >= NEWFUNDSCONTNET){ feeMultiplier = content.size() / NEWFUNDSCONTNET; }
             uint64_t bundleAmount = 2 * feeMultiplier;
             uint64_t fee_amount = 0;
 
@@ -454,7 +454,7 @@ namespace fioio {
             if (NEWFUNDSREQUESTRAM > 0) {
                 uint64_t newFundsFee = NEWFUNDSREQUESTRAM;
                 if (feeMultiplier > 1) {
-                    newFundsFee = NEWFUNDSREQUESTRAM + ((NEWFUNDSREQUESTRAM * feeMultiplier) / 3);
+                    newFundsFee = NEWFUNDSREQUESTRAM + ((NEWFUNDSREQUESTRAM * feeMultiplier) / 2);
                 }
                 action(
                         permission_level{SYSTEMACCOUNT, "active"_n},

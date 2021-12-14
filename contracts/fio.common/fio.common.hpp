@@ -482,7 +482,7 @@ namespace fioio {
     static const uint64_t ADDNFTRAM = 2048;
 
     static const uint64_t MAXOBTCONTENT = 436;
-    static const uint64_t MAXFUNDSCONTENT = 300;
+    static const uint64_t NEWFUNDSCONTNET = 500;
 
 
 
