@@ -102,11 +102,6 @@ public:
                            "FIO Address not registered", ErrorFioNameAlreadyRegistered);
 
             fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature);
-
-            const uint32_t expiration = fioname_iter->expiration;
-
-            fio_400_assert(present_time <= expiration, "fio_address", fio_address, "FIO Address expired. Renew first.",
-                           ErrorDomainExpired);
             bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
         }
 
@@ -268,11 +263,6 @@ public:
                            "FIO Address not registered", ErrorFioNameAlreadyRegistered);
 
             fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature);
-
-            const uint32_t expiration = fioname_iter->expiration;
-
-            fio_400_assert(present_time <= expiration, "fio_address", fio_address, "FIO Address expired. Renew first.",
-                           ErrorDomainExpired);
             bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
         }
 
@@ -403,9 +393,6 @@ public:
             auto tfioname_iter = tnamesbyname.find(tnameHash);
             fio_400_assert(tfioname_iter != tnamesbyname.end(), "fio_address", tpid,
                            "FIO Address not registered", ErrorFioNameAlreadyRegistered);
-            const uint32_t expiration = tfioname_iter->expiration;
-            fio_400_assert(present_time <= expiration, "fio_address", fio_address, "FIO Address expired. Renew first.",
-                           ErrorDomainExpired);
             action(
                     permission_level{get_self(), "active"_n},
                     TPIDContract,
