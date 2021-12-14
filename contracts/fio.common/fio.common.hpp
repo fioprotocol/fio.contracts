@@ -481,8 +481,7 @@ namespace fioio {
     static const uint64_t ADDNFTRAMBASE = 512;
     static const uint64_t ADDNFTRAM = 2048;
 
-    static const uint64_t MAXOBTCONTENT = 436;
-    static const uint64_t NEWFUNDSCONTENT = 1000;
+    static const uint64_t BASECONTENTAMOUNT = 1000; // base amount for content on newfundsreq and obt transactions
 
 
 
