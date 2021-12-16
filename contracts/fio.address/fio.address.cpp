@@ -1296,6 +1296,8 @@ namespace fioio {
                         n.chain_code = nftobj->chain_code;
                         n.chain_code_hash = string_to_uint64_hash(nftobj->chain_code.c_str());
                         if (!nftobj->token_id.empty()) {
+                          fio_400_assert(nftobj->token_id.length() <= 128, "token_id", nftobj->token_id.c_str(), "Invalid Token ID",
+                                        ErrorInvalidFioNameFormat);
                             n.token_id = nftobj->token_id.c_str();
                             n.token_id_hash = string_to_uint128_hash(string(fio_address.c_str()) +
                                                                      string(nftobj->contract_address.c_str()) +
