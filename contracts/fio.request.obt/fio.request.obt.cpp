@@ -340,7 +340,7 @@ namespace fioio {
                            ErrorInvalidJsonInput);
 
             fio_400_assert(content.size() >= 64, "content", content,
-                           "Requires min 64 max 300 size",
+                           "Requires min 64",
                            ErrorContentLimit);
 
             const uint32_t present_time = now();
