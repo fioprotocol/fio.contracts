@@ -144,8 +144,8 @@ namespace fioio {
             fio_400_assert(payee_fio_address.length() > 0, "payee_fio_address", payee_fio_address,
                            "to fio address not found", ErrorInvalidFioNameFormat);
 
-            fio_400_assert(content.size() >= 64 && content.size() <= MAXOBTCONTENT, "content", content,
-                           "Requires min 64 max 436 size", ErrorContentLimit);
+            fio_400_assert(content.size() >= 64, "content", content,
+                           "Requires min 64", ErrorContentLimit);
 
             FioAddress payerfa;
             getFioAddressStruct(payer_fio_address, payerfa);
@@ -210,17 +210,20 @@ namespace fioio {
             fio_400_assert(fee_type == 1, "fee_type", to_string(fee_type),
                            "unexpected fee type for endpoint record_obt_data, expected 1", ErrorNoEndpoint);
 
+            uint64_t feeMultiplier = 1;
+            if(content.size() >= BASECONTENTAMOUNT){ feeMultiplier = ( content.size() / BASECONTENTAMOUNT) + 1; }
+            uint64_t bundleAmount = 2 * feeMultiplier;
             uint64_t fee_amount = 0;
 
-            if (fioname_iter->bundleeligiblecountdown > 1) {
+            if (fioname_iter->bundleeligiblecountdown >= bundleAmount) {
                 action{
                         permission_level{_self, "active"_n},
                         AddressContract,
                         "decrcounter"_n,
-                        make_tuple(payer_fio_address, 2)
+                        make_tuple(payer_fio_address, bundleAmount)
                 }.send();
             } else {
-                fee_amount = fee_iter->suf_amount;
+                fee_amount = fee_iter->suf_amount * feeMultiplier;
                 fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
                                "Fee exceeds supplied maximum.",
                                ErrorMaxFeeExceeded);
@@ -284,11 +287,15 @@ namespace fioio {
                                            to_string(fee_amount) + string("}");
 
             if (RECORDOBTRAM > 0) {
+                uint64_t newFundsFee = RECORDOBTRAM;
+                if (feeMultiplier > 1) {
+                    newFundsFee = RECORDOBTRAM + ((RECORDOBTRAM * feeMultiplier) / 2);
+                }
                 action(
                         permission_level{SYSTEMACCOUNT, "active"_n},
                         "eosio"_n,
                         "incram"_n,
-                        std::make_tuple(aactor, RECORDOBTRAM)
+                        std::make_tuple(aactor, newFundsFee)
                 ).send();
             }
 
@@ -332,8 +339,8 @@ namespace fioio {
                            "to fio address not specified",
                            ErrorInvalidJsonInput);
 
-            fio_400_assert(content.size() >= 64 && content.size() <= MAXFUNDSCONTENT, "content", content,
-                           "Requires min 64 max 300 size",
+            fio_400_assert(content.size() >= 64, "content", content,
+                           "Requires min 64",
                            ErrorContentLimit);
 
             const uint32_t present_time = now();
@@ -394,22 +401,24 @@ namespace fioio {
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             const uint64_t fee_type = fee_iter->type;
-
             fio_400_assert(fee_type == 1, "fee_type", to_string(fee_type),
                            "unexpected fee type for endpoint new_funds_request, expected 1",
                            ErrorNoEndpoint);
 
+            uint64_t feeMultiplier = 1;
+            if(content.size() >= BASECONTENTAMOUNT){ feeMultiplier = ( content.size() / BASECONTENTAMOUNT) + 1; }
+            uint64_t bundleAmount = 2 * feeMultiplier;
             uint64_t fee_amount = 0;
 
-            if (fioname_iter->bundleeligiblecountdown > 1) {
+            if (fioname_iter->bundleeligiblecountdown >= bundleAmount) {
                 action{
                         permission_level{_self, "active"_n},
                         AddressContract,
                         "decrcounter"_n,
-                        make_tuple(payee_fio_address, 2)
+                        make_tuple(payee_fio_address, bundleAmount)
                 }.send();
             } else {
-                fee_amount = fee_iter->suf_amount;
+                fee_amount = fee_iter->suf_amount * feeMultiplier;
                 fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
                                "Fee exceeds supplied maximum.",
                                ErrorMaxFeeExceeded);
@@ -425,7 +434,6 @@ namespace fioio {
                 }
             }
             //end fees, bundle eligible fee logic
-
             const uint64_t id = fioTransactionsTable.available_primary_key();
             const uint128_t toHash = string_to_uint128_hash(payee_fio_address.c_str());
             const uint128_t fromHash = string_to_uint128_hash(payer_fio_address.c_str());
@@ -451,14 +459,17 @@ namespace fioio {
                     string(",\"fee_collected\":") + to_string(fee_amount) + string("}");
 
             if (NEWFUNDSREQUESTRAM > 0) {
+                uint64_t newFundsFee = NEWFUNDSREQUESTRAM;
+                if (feeMultiplier > 1) {
+                    newFundsFee = NEWFUNDSREQUESTRAM + ((NEWFUNDSREQUESTRAM * feeMultiplier) / 2);
+                }
                 action(
                         permission_level{SYSTEMACCOUNT, "active"_n},
                         "eosio"_n,
                         "incram"_n,
-                        std::make_tuple(aActor, NEWFUNDSREQUESTRAM)
+                        std::make_tuple(aActor, newFundsFee)
                 ).send();
             }
-
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
                            "Transaction is too large", ErrorTransactionTooLarge);
 

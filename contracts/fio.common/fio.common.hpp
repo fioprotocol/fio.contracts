@@ -467,7 +467,7 @@ namespace fioio {
     static const uint64_t REGADDRESSRAM = 2560; //integrated.
     static const uint64_t ADDADDRESSRAM = 512; //integrated.
     static const uint64_t SETDOMAINPUBRAM = 256; //integrated.
-    static const uint64_t NEWFUNDSREQUESTRAM = 4098; //integrated.
+    static const uint64_t NEWFUNDSREQUESTRAM = 3120; //integrated.
     static const uint64_t RECORDOBTRAM = 4098; //integrated.
     static const uint64_t RENEWADDRESSRAM = 1024; //integrated.
     static const uint64_t RENEWDOMAINRAM = 1024; //integrated.
@@ -481,8 +481,7 @@ namespace fioio {
     static const uint64_t ADDNFTRAMBASE = 512;
     static const uint64_t ADDNFTRAM = 2048;
 
-    static const uint64_t MAXOBTCONTENT = 436;
-    static const uint64_t MAXFUNDSCONTENT = 300;
+    static const uint64_t BASECONTENTAMOUNT = 1000; // base amount for content on newfundsreq and obt transactions
 
 
 
