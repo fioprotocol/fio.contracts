@@ -494,11 +494,11 @@ namespace fioio {
             if (!isMsig) {
 
                 //fees
-                const uint128_t endpoint_hash = string_to_uint128_hash(LIST_DOMAIN_ENDPOINT);
+                const uint128_t endpoint_hash = string_to_uint128_hash(SET_MARKETPLACE_CONFIG_ENDPOINT);
 
                 auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
                 auto fee_iter         = fees_by_endpoint.find(endpoint_hash);
-                fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", LIST_DOMAIN_ENDPOINT,
+                fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", SET_MARKETPLACE_CONFIG_ENDPOINT,
                                "FIO fee not found for endpoint", ErrorNoEndpoint);
 
                 const uint64_t fee_amount = fee_iter->suf_amount;
@@ -542,21 +542,11 @@ namespace fioio {
          */
         [[eosio::action]]
         void cxburned(const uint128_t &domainhash){
-            // do I need to do some assertions when the only thing that can call this has done those
-            // assertions and will send valid data?
-
             // make sure it's from the address contract
             has_auth(AddressContract);
 
             auto domainsalesbydomain = domainsales.get_index<"bydomain"_n>();
             auto domainsale_iter     = domainsalesbydomain.find(domainhash);
-
-            // this is an exact assertion used twice in this file but i am getting a
-            // `no matching constructor for initialization of 'fioio::code_400_result'`
-            // granted, this action is only called from fio.address::burnexpired if it's already in
-            // the domainsales table so I am not sure if this assertion is necessary?
-//            fio_400_assert(domainsale_iter != domainsalesbydomain.end(), "domainsale", domainhash,
-//                           "Domain not found", ErrorDomainSaleNotFound);
 
             if(domainsale_iter->status == 1) {
                 domainsalesbydomain.modify(domainsale_iter, EscrowContract, [&](auto &row) {
