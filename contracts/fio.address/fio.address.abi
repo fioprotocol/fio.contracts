@@ -792,11 +792,6 @@
       "name": "burnnfts",
       "type": "burnnfts",
       "ricardian_contract": ""
-    },
-    {
-      "name": "modexpire",
-      "type": "modexpire",
-      "ricardian_contract": ""
     }
   ],
   "tables": [
