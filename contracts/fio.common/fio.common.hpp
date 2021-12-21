@@ -76,6 +76,11 @@
 #define REM_NFT_ENDPOINT "remove_nft"
 #define REM_ALL_NFTS_ENDPOINT "remove_all_nfts"
 
+#define LIST_DOMAIN_ENDPOINT "list_domain"
+#define CANCEL_LIST_DOMAIN_ENDPOINT "cancel_list_domain"
+#define BUY_DOMAIN_ENDPOINT "buy_domain"
+#define SET_MARKETPLACE_CONFIG_ENDPOINT "set_marketplace_config"
+
 namespace fioio {
 
     using namespace eosio;
@@ -124,7 +129,8 @@ namespace fioio {
              actor == fioio::TokenContract ||
              actor == fioio::TREASURYACCOUNT ||
              actor == fioio::FIOSYSTEMACCOUNT ||
-             actor == fioio::FIOACCOUNT);
+             actor == fioio::FIOACCOUNT ||
+             actor == fioio::EscrowContract);
     }
 
     static constexpr uint64_t string_to_uint64_hash(const char *str) {
@@ -337,7 +343,6 @@ namespace fioio {
 
     void processbucketrewards(const string &tpid, const uint64_t &amount, const name &auth, const name &actor) {
 
-
         action(
                 permission_level{auth, "active"_n},
                 TREASURYACCOUNT,
@@ -480,9 +485,10 @@ namespace fioio {
     static const uint64_t BUNDLEVOTERAM = 0; //integrated.
     static const uint64_t ADDNFTRAMBASE = 512;
     static const uint64_t ADDNFTRAM = 2048;
+    static const uint64_t FIOESCROWRAM = 512; // FIOESCROW
 
     static const uint64_t BASECONTENTAMOUNT = 1000; // base amount for content on newfundsreq and obt transactions
-
-
-
+    
+  
+  
 } // namespace fioio
