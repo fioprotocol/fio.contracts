@@ -1286,7 +1286,7 @@ namespace fioio {
                 }
 
                 if (!nftobj->metadata.empty()) {
-                    fio_400_assert(nftobj->metadata.length() <= 64, "metadata", nftobj->metadata, "Invalid metadata",
+                    fio_400_assert(nftobj->metadata.length() <= 128, "metadata", nftobj->metadata, "Invalid metadata",
                                    ErrorInvalidFioNameFormat);
                 }
 
@@ -1312,6 +1312,8 @@ namespace fioio {
                         n.chain_code = nftobj->chain_code;
                         n.chain_code_hash = string_to_uint64_hash(nftobj->chain_code.c_str());
                         if (!nftobj->token_id.empty()) {
+                          fio_400_assert(nftobj->token_id.length() <= 128, "token_id", nftobj->token_id.c_str(), "Invalid Token ID",
+                                        ErrorInvalidFioNameFormat);
                             n.token_id = nftobj->token_id.c_str();
                             n.token_id_hash = string_to_uint128_hash(string(fio_address.c_str()) +
                                                                      string(nftobj->contract_address.c_str()) +
@@ -1402,7 +1404,7 @@ namespace fioio {
                         permission_level{SYSTEMACCOUNT, "active"_n},
                         "eosio"_n,
                         "incram"_n,
-                        std::make_tuple(actor, ADDNFTRAM)
+                        std::make_tuple(actor, ADDNFTRAMBASE + (ADDNFTRAM * nfts.size()))
                 ).send();
             }
 
@@ -2023,12 +2025,6 @@ namespace fioio {
             auto domains_iter = domainsbyname.find(string_to_uint128_hash(fio_domain));
             fio_400_assert(domains_iter != domainsbyname.end(), "fio_domain", fio_domain,
                            "FIO Domain not registered", ErrorDomainNotRegistered);
-
-            const uint32_t domain_expiration = domains_iter->expiration;
-            const uint32_t present_time = now();
-            fio_400_assert(present_time <= domain_expiration, "fio_domain", fio_domain,
-                           "FIO Domain expired. Renew first.",
-                           ErrorDomainExpired);
 
             fio_403_assert(domains_iter->account == actor.value, ErrorSignature);
             const uint128_t endpoint_hash = string_to_uint128_hash(TRANSFER_DOMAIN_ENDPOINT);

@@ -81,29 +81,58 @@ namespace eosio {
         }
     }
 
-    void token::retire(asset quantity, string memo) {
-        const symbol sym = quantity.symbol;
-        check(sym.is_valid(), "invalid symbol name");
-        check(memo.size() <= 256, "memo has more than 256 bytes");
-
-        stats statstable(_self, sym.code().raw());
-        auto existing = statstable.find(sym.code().raw());
-        check(existing != statstable.end(), "token with symbol does not exist");
+    void token::retire(const int64_t &quantity, const string &memo, const name &actor) {
+        require_auth(actor);
+        fio_400_assert(memo.size() <= 256, "memo", memo, "memo has more than 256 bytes", ErrorInvalidMemo);
+        fio_400_assert(quantity >= 1000000000000ULL,"quantity", std::to_string(quantity), "Minimum 1000 FIO has to be retired", ErrorRetireQuantity);
+        stats statstable(_self, FIOSYMBOL.code().raw());
+        auto existing = statstable.find(FIOSYMBOL.code().raw());
         const auto &st = *existing;
 
-        require_auth(FIOISSUER);
-        check(quantity.is_valid(), "invalid quantity");
-        check(quantity.amount > 0, "must retire positive quantity");
-        check(quantity.symbol == FIOSYMBOL, "symbol precision mismatch");
+        auto stakeiter = accountstaking.find(actor.value);
+        if (stakeiter != accountstaking.end()) {
+          fio_400_assert(!(stakeiter->total_staked_fio > 0), "actor", to_string(actor.value), "Account staking cannot retire", ErrorRetireQuantity); //signature error if user has stake
+        }
+        auto genlockiter = generalLockTokensTable.find(actor.value);
+        if (genlockiter != generalLockTokensTable.end()) {
+          fio_400_assert(!(genlockiter->remaining_lock_amount > 0), "actor", to_string(actor.value), "Account with partially locked balance cannot retire", ErrorRetireQuantity);  //signature error if user has general lock
+        }
+        const asset my_balance = eosio::token::get_balance("fio.token"_n, actor, FIOSYMBOL.code());
 
-        check(quantity.symbol == st.supply.symbol, "symbol precision mismatch");
+        fio_400_assert(quantity <= my_balance.amount && can_transfer(actor, 0, quantity, false), "actor", to_string(actor.value),
+                       "Insufficient balance",
+                       ErrorInsufficientUnlockedFunds);
 
+        auto lockiter = lockedTokensTable.find(actor.value);
+        if (lockiter != lockedTokensTable.end()) {
+          uint64_t genesislockedamount = lockiter->remaining_locked_amount;
+          if (genesislockedamount > 0) {
+
+            if (genesislockedamount >= quantity) {
+              genesislockedamount = quantity;
+            }
+
+            INLINE_ACTION_SENDER(eosiosystem::system_contract, updlocked)
+                      ("eosio"_n, {{_self, "active"_n}},
+                       {actor, genesislockedamount}
+                      );
+          }
+        }
+
+        sub_balance(actor, asset(quantity, FIOSYMBOL));
         statstable.modify(st, same_payer, [&](auto &s) {
-            s.supply -= quantity;
+          s.supply.amount -= quantity;
         });
 
-        sub_balance(FIOISSUER, quantity);
+        const string response_string = string("{\"status\": \"OK\"}");
+
+        send_response(response_string.c_str());
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+          "Transaction is too large", ErrorTransactionTooLarge);
+
     }
+
 
     bool token::can_transfer(const name &tokenowner, const uint64_t &feeamount, const uint64_t &transferamount,
                              const bool &isfee) {
@@ -566,5 +595,4 @@ namespace eosio {
     }
 } /// namespace eosio
 
-EOSIO_DISPATCH( eosio::token, (create)(issue)(mintfio)(transfer)(trnsfiopubky)(trnsloctoks)
-(retire))
+EOSIO_DISPATCH( eosio::token, (create)(issue)(mintfio)(transfer)(trnsfiopubky)(trnsloctoks)(retire))

@@ -361,6 +361,9 @@ public:
                       const uint32_t &payouts);
 
     [[eosio::action]]
+    void setnolimits(const name &account);
+
+    [[eosio::action]]
     void onblock(ignore <block_header> header);
 
     // functions defined in delegate_bandwidth.cp

@@ -199,6 +199,14 @@ namespace eosiosystem {
         check(version.value == 0, "unsupported version for init action");
     }
 
+    void eosiosystem::system_contract::setnolimits(const name &account) {
+        eosio_assert((has_auth(SYSTEMACCOUNT) || has_auth(FIOSYSTEMACCOUNT)),
+                     "missing required authority of fio.system or eosio");
+        check(is_account(account),"account must pre exist");
+        set_resource_limits(account.value, -1, -1, -1);
+    }
+
+
     //use this action to initialize the locked token holders table for the FIO protocol.
     void eosiosystem::system_contract::addlocked(const name &owner, const int64_t &amount,
             const int16_t &locktype) {
@@ -292,7 +300,7 @@ EOSIO_DISPATCH( eosiosystem::system_contract,
 // native.hpp (newaccount definition is actually in fio.system.cpp)
 (newaccount)(addaction)(remaction)(updateauth)(deleteauth)(linkauth)(unlinkauth)(canceldelay)(onerror)(setabi)
 // fio.system.cpp
-(init)(addlocked)(addgenlocked)(modgenlocked)(setparams)(setpriv)
+(init)(setnolimits)(addlocked)(addgenlocked)(modgenlocked)(setparams)(setpriv)
         (rmvproducer)(updtrevision)
 // delegate_bandwidth.cpp
         (updatepower)

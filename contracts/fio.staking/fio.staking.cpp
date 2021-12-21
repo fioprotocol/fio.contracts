@@ -12,7 +12,7 @@
 #include <fio.fee/fio.fee.hpp>
 #include <fio.system/include/fio.system/fio.system.hpp>
 
-#define ENABLESTAKINGREWARDSEPOCHSEC  1627686000  //July 30 5:00PM MST 11:00PM GMT
+#define ENABLESTAKINGREWARDSEPOCHSEC  1637593200//NOV 22 2021 0800 MST
 
 namespace fioio {
 
@@ -104,11 +104,6 @@ public:
                            "FIO Address not registered", ErrorFioNameAlreadyRegistered);
 
             fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature);
-
-            const uint32_t expiration = fioname_iter->expiration;
-
-            fio_400_assert(present_time <= expiration, "fio_address", fio_address, "FIO Address expired. Renew first.",
-                           ErrorDomainExpired);
             bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
         }
 
@@ -188,7 +183,7 @@ public:
         fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,"TPID must be empty or valid FIO address",ErrorPubKeyValid);
 
         auto stakeablebalance = eosio::token::computeusablebalance(actor,false);
-        fio_400_assert(stakeablebalance >= (paid_fee_amount + (uint64_t)amount), "max_fee", to_string(max_fee), "Insufficient balance.",
+        fio_400_assert(stakeablebalance >= (paid_fee_amount + (uint64_t)amount), "amount", to_string(stakeablebalance), "Insufficient balance.",
                        ErrorMaxFeeExceeded);
 
         if (STAKEFIOTOKENSRAM > 0) {
@@ -270,11 +265,6 @@ public:
                            "FIO Address not registered", ErrorFioNameAlreadyRegistered);
 
             fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature);
-
-            const uint32_t expiration = fioname_iter->expiration;
-
-            fio_400_assert(present_time <= expiration, "fio_address", fio_address, "FIO Address expired. Renew first.",
-                           ErrorDomainExpired);
             bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
         }
 
@@ -352,8 +342,16 @@ public:
         uint128_t interim_usrplctp = (uint128_t) srps_this_unstake * (uint128_t) gstaking.last_combined_token_pool; // SRPs being unstaked are multiplied by LCTP first
         uint128_t got_suf_big = fiointdivwithrounding(interim_usrplctp, (uint128_t) gstaking.last_global_srp_count); // Then are divided by LGSRP
         totalsufsthisunstake = (uint64_t) got_suf_big;
+        //Replace the current assertion with:
+        //If the number of sufs rewarded is less than the number of sufs unstaked
+        //And the difference is less than 1000 sufs
+        //Give the user the number of sufs they unstaked.
+        if( totalsufsthisunstake < amount ){
+            eosio_assert((amount - totalsufsthisunstake) < 1000,
+                         "unstakefio, total sufs this unstake is 1000 or more sufs less than amount unstaked.");
+            totalsufsthisunstake = amount;
+        }
         uint64_t totalrewardamount = totalsufsthisunstake - amount;
-        eosio_assert(srps_this_unstake >= amount, " unstake error -- srps this unstake must be >= amount.");
         uint64_t tenpercent = fiointdivwithrounding(totalrewardamount,(uint64_t) 10);
         uint64_t stakingrewardamount = totalrewardamount - tenpercent;
         uint64_t tpidrewardamount = tenpercent;
@@ -397,9 +395,6 @@ public:
             auto tfioname_iter = tnamesbyname.find(tnameHash);
             fio_400_assert(tfioname_iter != tnamesbyname.end(), "fio_address", tpid,
                            "FIO Address not registered", ErrorFioNameAlreadyRegistered);
-            const uint32_t expiration = tfioname_iter->expiration;
-            fio_400_assert(present_time <= expiration, "fio_address", fio_address, "FIO Address expired. Renew first.",
-                           ErrorDomainExpired);
             action(
                     permission_level{get_self(), "active"_n},
                     TPIDContract,
