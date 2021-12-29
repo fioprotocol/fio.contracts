@@ -52,30 +52,28 @@ namespace abieos {
         r1 = 1,
     };
 
-
     template<typename Key, int suffix_size>
     Key string_to_key(std::string_view s, key_type type, const char (&suffix)[suffix_size]) {
         static const auto size = std::tuple_size<decltype(Key::data)>::value;
         auto whole = base58_to_binary<size + 4>(s);
         Key result{(uint8_t) type};
-        memcpy(result.data.data(), whole.data(), result.data.size());
+        memcpy(result.data(), whole.data(), result.size());
         return result;
     }
 
-
-    eosio::public_key string_to_public_key(std::string_view s) {
+    ecc_public_key string_to_public_key(std::string_view s) {
         if (s.size() >= 3 && s.substr(0, 3) == "FIO") {
             auto whole = base58_to_binary<37>(s.substr(3));
-            eosio::public_key key{(uint8_t) key_type::k1};
-            static_assert(whole.size() == key.data.size() + 4, "Error: whole.size() != key.data.size() + 4");
-            memcpy(key.data.data(), whole.data(), key.data.size());
+            ecc_public_key key;
+            static_assert(whole.size() == key.size() + 4, "Error: whole.size() != key.data.size() + 4");
+            memcpy(key.data(), whole.data(), key.size());
             return key;
         } else if (s.size() >= 7 && s.substr(0, 7) == "PUB_R1_") {
-            return string_to_key<eosio::public_key>(s.substr(7), key_type::r1, "R1"); //
+            return string_to_key<ecc_public_key>(s.substr(7), key_type::r1, "R1"); //
         } else {
             internal_use_do_not_use::eosio_assert(0, "unrecognized public key format");
         }
-        eosio::public_key nullkey{(uint8_t) key_type::k1};
+        ecc_public_key nullkey;
         return nullkey;
     }
 

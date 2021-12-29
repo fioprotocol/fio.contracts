@@ -166,7 +166,7 @@ struct [[eosio::table, eosio::contract("fio.system")]] producer_info {
     uint128_t addresshash;
 
     double total_votes = 0;
-    eosio::public_key producer_public_key; /// a packed public key object
+    ecc_public_key producer_public_key; /// a packed public key object
     bool is_active = true;
     std::string url;
     uint32_t unpaid_blocks = 0;
@@ -183,7 +183,7 @@ struct [[eosio::table, eosio::contract("fio.system")]] producer_info {
     bool active() const { return is_active; }
 
     void deactivate() {
-        producer_public_key = public_key();
+        producer_public_key = ecc_public_key();
         is_active = false;
     }
 

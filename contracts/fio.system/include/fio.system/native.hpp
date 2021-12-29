@@ -18,7 +18,6 @@ using namespace fioio;
 namespace eosiosystem {
     using eosio::name;
     using eosio::permission_level;
-    using eosio::public_key;
     using eosio::ignore;
     using eosio::check;
 
@@ -32,7 +31,7 @@ namespace eosiosystem {
     };
 
     struct key_weight {
-        eosio::public_key key;
+        ecc_public_key key;
         uint16_t weight;
 
         // explicit serialization macro is not necessary, used here only to improve compilation time

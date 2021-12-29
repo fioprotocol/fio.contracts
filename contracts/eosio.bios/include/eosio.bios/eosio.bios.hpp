@@ -5,12 +5,10 @@
 #include <eosio/eosio.hpp>
 #include <eosio/privileged.hpp>
 #include <eosio/producer_schedule.hpp>
-
 #include "fio.common/fio.accounts.hpp"
 
 namespace eosio {
     using eosio::permission_level;
-    using eosio::public_key;
     using eosio::ignore;
     using eosio::name;
 
@@ -22,13 +20,6 @@ namespace eosio {
         EOSLIB_SERIALIZE( permission_level_weight, (permission)(weight))
     };
 
-    struct key_weight {
-        eosio::public_key key;
-        uint16_t weight;
-
-        // explicit serialization macro is not necessary, used here only to improve compilation time
-        EOSLIB_SERIALIZE( key_weight, (key)(weight))
-    };
 
     struct wait_weight {
         uint32_t wait_sec;

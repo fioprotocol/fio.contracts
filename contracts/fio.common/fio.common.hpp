@@ -22,6 +22,7 @@
 #include "fio_common_validator.hpp"
 #include "chain_control.hpp"
 #include "account_operations.hpp"
+#include "abieos_numeric.hpp"
 
 #define YEARTOSECONDS 31536000
 #define SECONDS30DAYS 2592000
