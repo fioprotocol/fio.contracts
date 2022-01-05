@@ -317,7 +317,7 @@ namespace eosio {
                        ErrorInsufficientUnlockedFunds);
 
 
-        uint64_t uamount = computeusablebalance(actor,false);
+        uint64_t uamount = computeusablebalance(actor,false,false);
         fio_400_assert(uamount >= qty.amount, "actor", to_string(actor.value),
                        "Insufficient Funds.",
                        ErrorInsufficientUnlockedFunds);
@@ -392,7 +392,7 @@ namespace eosio {
                        ErrorInsufficientUnlockedFunds);
 
 
-        int64_t amount = computeusablebalance(from,false);
+        int64_t amount = computeusablebalance(from,false,true);
         fio_400_assert(amount >= quantity.amount, "actor", to_string(from.value),
                        "Insufficient Funds.",
                        ErrorInsufficientUnlockedFunds);
