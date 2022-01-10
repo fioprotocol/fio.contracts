@@ -180,7 +180,7 @@ public:
         fio_400_assert(max_fee >= 0, "amount", to_string(max_fee), "Invalid fee value",ErrorInvalidValue);
         fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,"TPID must be empty or valid FIO address",ErrorPubKeyValid);
 
-        auto stakeablebalance = eosio::token::computeusablebalance(actor,false);
+        auto stakeablebalance = eosio::token::computeusablebalance(actor,false,false);
         fio_400_assert(stakeablebalance >= (paid_fee_amount + (uint64_t)amount), "amount", to_string(stakeablebalance), "Insufficient balance.",
                        ErrorMaxFeeExceeded);
 
@@ -272,7 +272,7 @@ public:
         eosio_assert(astakeiter->account == actor,"incacctstake, actor accountstake lookup error." );
         fio_400_assert(astakeiter->total_staked_fio >= amount, "amount", to_string(amount), "Cannot unstake more than staked.",
                        ErrorInvalidValue);
-        auto stakeablebalance = eosio::token::computeusablebalance(actor,false);
+        auto stakeablebalance = eosio::token::computeusablebalance(actor,false,false);
 
         uint64_t paid_fee_amount = 0;
         //begin, bundle eligible fee logic for unstaking
