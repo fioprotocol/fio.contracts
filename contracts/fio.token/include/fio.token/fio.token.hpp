@@ -156,7 +156,7 @@ namespace eosio {
 
         //This action will compute the number of unlocked tokens contained within an account.
         // This considers
-        static uint64_t computeusablebalance(const name &owner,bool updatelocks){
+        static uint64_t computeusablebalance(const name &owner,bool updatelocks, bool isfee){
             uint64_t genesislockedamount = computeremaininglockedtokens(owner,updatelocks);
             uint64_t generallockedamount = computegenerallockedtokens(owner,updatelocks);
             uint64_t stakedfio = 0;
@@ -168,11 +168,16 @@ namespace eosio {
                 check(astakeiter->account == owner,"incacctstake owner lookup error." );
                 stakedfio = astakeiter->total_staked_fio;
             }
+
+            uint64_t bamount = generallockedamount + stakedfio;
+            if (!isfee){
+                bamount += genesislockedamount;
+            }
             //apply a little QC.
             const auto my_balance = eosio::token::get_balance("fio.token"_n, owner, FIOSYMBOL.code());
-            check(my_balance.amount >= (generallockedamount + genesislockedamount + stakedfio),
+            check(my_balance.amount >= bamount,
                          "computeusablebalance, amount of locked fio plus staked is greater than balance!! for " + owner.to_string() );
-            uint64_t amount = my_balance.amount - (generallockedamount + genesislockedamount + stakedfio);
+            uint64_t amount = my_balance.amount - bamount;
             return amount;
 
         }
