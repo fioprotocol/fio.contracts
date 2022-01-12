@@ -89,12 +89,16 @@ namespace eosio {
         auto existing = statstable.find(FIOSYMBOL.code().raw());
         const auto &st = *existing;
 
-        auto stakeiter = accountstaking.find(actor.value);
-        if (stakeiter != accountstaking.end()) {
+
+        auto astakebyaccount = accountstaking.get_index<"byaccount"_n>();
+        auto stakeiter = astakebyaccount.find(actor.value);
+        if (stakeiter != astakebyaccount.end()) {
           fio_400_assert(stakeiter->total_staked_fio == 0, "actor", to_string(actor.value), "Account staking cannot retire", ErrorRetireQuantity); //signature error if user has stake
         }
-        auto genlockiter = generalLockTokensTable.find(actor.value);
-        if (genlockiter != generalLockTokensTable.end()) {
+
+        auto genlocks = generalLockTokensTable.get_index<"byowner"_n>();
+        auto genlockiter = genlocks.find(actor.value);
+        if (genlockiter != genlocks.end()) {
           fio_400_assert(genlockiter->remaining_lock_amount == 0, "actor", to_string(actor.value), "Account with partially locked balance cannot retire", ErrorRetireQuantity);  //signature error if user has general lock
         }
         const asset my_balance = eosio::token::get_balance("fio.token"_n, actor, FIOSYMBOL.code());
