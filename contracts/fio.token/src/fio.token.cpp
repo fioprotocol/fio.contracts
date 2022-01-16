@@ -107,22 +107,6 @@ namespace eosio {
                        "Insufficient balance",
                        ErrorInsufficientUnlockedFunds);
 
-        auto lockiter = lockedTokensTable.find(actor.value);
-        if (lockiter != lockedTokensTable.end()) {
-          uint64_t genesislockedamount = lockiter->remaining_locked_amount;
-          if (genesislockedamount > 0) {
-
-            if (genesislockedamount >= quantity) {
-              genesislockedamount = quantity;
-            }
-
-            INLINE_ACTION_SENDER(eosiosystem::system_contract, updlocked)
-                      ("eosio"_n, {{_self, "active"_n}},
-                       {actor, genesislockedamount}
-                      );
-          }
-        }
-
         sub_balance(actor, asset(quantity, FIOSYMBOL));
         statstable.modify(st, same_payer, [&](auto &s) {
           s.supply.amount -= quantity;
@@ -134,6 +118,11 @@ namespace eosio {
 
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
+
+        INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
+            ("eosio"_n, {{_self, "active"_n}},
+              {actor, true}
+            );
 
     }
 
