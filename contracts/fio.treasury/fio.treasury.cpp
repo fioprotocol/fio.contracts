@@ -11,7 +11,7 @@
 #define BPMAXTOMINT     50000000000000          // 50,000  FIO
 #define FDTNMAXRESERVE  181253654000000000      // 181,253,654 FIO
 #define BPMAXRESERVE    20000000000000000       // increase BP reserves FIP-23 to 20,000,000 FIO
-#define PAYSCHEDTIME    86401                   //seconds per day + 1
+#define PAYSCHEDTIME    10  //test change 86401                   //seconds per day + 1
 #define PAYABLETPIDS    100
 
 #include "fio.treasury.hpp"
