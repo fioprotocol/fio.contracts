@@ -346,7 +346,7 @@ namespace eosio {
                        ErrorInsufficientUnlockedFunds);
 
 
-        uint64_t uamount = computeusablebalance(actor,false);
+        uint64_t uamount = computeusablebalance(actor,false,false);
         fio_400_assert(uamount >= qty.amount, "actor", to_string(actor.value),
                        "Insufficient Funds.",
                        ErrorInsufficientUnlockedFunds);
@@ -379,10 +379,12 @@ namespace eosio {
          * we permit the use of transfer from the treasury account to any other accounts.
          * we permit the use of transfer from any other accounts to the treasury account for fees.
          */
-        if (from != SYSTEMACCOUNT && from != TREASURYACCOUNT) {
-            check(to == TREASURYACCOUNT, "transfer not allowed");
+        if (from != SYSTEMACCOUNT && from != TREASURYACCOUNT && from != EscrowContract) {
+            if(!has_auth(EscrowContract)){
+                check(to == TREASURYACCOUNT, "transfer not allowed");
+            }
         }
-        eosio_assert((has_auth(SYSTEMACCOUNT) || has_auth(TREASURYACCOUNT)),
+        eosio_assert((has_auth(SYSTEMACCOUNT) || has_auth(TREASURYACCOUNT) || has_auth(EscrowContract)),
                      "missing required authority of treasury or eosio");
 
 
@@ -421,7 +423,7 @@ namespace eosio {
                        ErrorInsufficientUnlockedFunds);
 
 
-        int64_t amount = computeusablebalance(from,false);
+        int64_t amount = computeusablebalance(from,false,true);
         fio_400_assert(amount >= quantity.amount, "actor", to_string(from.value),
                        "Insufficient Funds.",
                        ErrorInsufficientUnlockedFunds);

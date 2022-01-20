@@ -12,7 +12,7 @@
 #include <fio.fee/fio.fee.hpp>
 #include <fio.system/include/fio.system/fio.system.hpp>
 
-#define ENABLESTAKINGREWARDSEPOCHSEC  1637593200//NOV 22 2021 0800 MST
+#define ENABLESTAKINGREWARDSEPOCHSEC  1645552800//feb 22 2022 18:00:00 GMT  10-11AM MST
 
 namespace fioio {
 
@@ -56,8 +56,10 @@ public:
     [[eosio::action]]
     void incgrewards(const int64_t &fioamountsufs ) {
         eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
-                      has_auth(STAKINGACCOUNT) ||  has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) || has_auth(FeeContract)),
-                     "missing required authority of fio.address, fio.treasury, fio.fee, fio.token, fio.stakng, eosio or fio.reqobt");
+                      has_auth(STAKINGACCOUNT) ||  has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) ||
+                      has_auth(FeeContract) || has_auth(EscrowContract)),
+                     "missing required authority of fio.address, fio.treasury, fio.fee, fio.token, fio.staking, fio.escrow, eosio or fio.reqobt");
+
         const uint32_t present_time = now();
         gstaking.rewards_token_pool += fioamountsufs;
         gstaking.daily_staking_rewards += fioamountsufs;
@@ -102,11 +104,6 @@ public:
                            "FIO Address not registered", ErrorFioNameAlreadyRegistered);
 
             fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature);
-
-            const uint32_t expiration = fioname_iter->expiration;
-
-            fio_400_assert(present_time <= expiration, "fio_address", fio_address, "FIO Address expired. Renew first.",
-                           ErrorDomainExpired);
             bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
         }
 
@@ -185,7 +182,7 @@ public:
         fio_400_assert(max_fee >= 0, "amount", to_string(max_fee), "Invalid fee value",ErrorInvalidValue);
         fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,"TPID must be empty or valid FIO address",ErrorPubKeyValid);
 
-        auto stakeablebalance = eosio::token::computeusablebalance(actor,false);
+        auto stakeablebalance = eosio::token::computeusablebalance(actor,false,false);
         fio_400_assert(stakeablebalance >= (paid_fee_amount + (uint64_t)amount), "amount", to_string(stakeablebalance), "Insufficient balance.",
                        ErrorMaxFeeExceeded);
 
@@ -268,11 +265,6 @@ public:
                            "FIO Address not registered", ErrorFioNameAlreadyRegistered);
 
             fio_403_assert(fioname_iter->owner_account == actor.value, ErrorSignature);
-
-            const uint32_t expiration = fioname_iter->expiration;
-
-            fio_400_assert(present_time <= expiration, "fio_address", fio_address, "FIO Address expired. Renew first.",
-                           ErrorDomainExpired);
             bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
         }
 
@@ -282,7 +274,7 @@ public:
         eosio_assert(astakeiter->account == actor,"incacctstake, actor accountstake lookup error." );
         fio_400_assert(astakeiter->total_staked_fio >= amount, "amount", to_string(amount), "Cannot unstake more than staked.",
                        ErrorInvalidValue);
-        auto stakeablebalance = eosio::token::computeusablebalance(actor,false);
+        auto stakeablebalance = eosio::token::computeusablebalance(actor,false,false);
 
         uint64_t paid_fee_amount = 0;
         //begin, bundle eligible fee logic for unstaking
@@ -403,9 +395,6 @@ public:
             auto tfioname_iter = tnamesbyname.find(tnameHash);
             fio_400_assert(tfioname_iter != tnamesbyname.end(), "fio_address", tpid,
                            "FIO Address not registered", ErrorFioNameAlreadyRegistered);
-            const uint32_t expiration = tfioname_iter->expiration;
-            fio_400_assert(present_time <= expiration, "fio_address", fio_address, "FIO Address expired. Renew first.",
-                           ErrorDomainExpired);
             action(
                     permission_level{get_self(), "active"_n},
                     TPIDContract,
