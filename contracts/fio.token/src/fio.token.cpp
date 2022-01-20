@@ -89,35 +89,23 @@ namespace eosio {
         auto existing = statstable.find(FIOSYMBOL.code().raw());
         const auto &st = *existing;
 
-        auto stakeiter = accountstaking.find(actor.value);
-        if (stakeiter != accountstaking.end()) {
-          fio_400_assert(!(stakeiter->total_staked_fio > 0), "actor", to_string(actor.value), "Account staking cannot retire", ErrorRetireQuantity); //signature error if user has stake
+
+        auto astakebyaccount = accountstaking.get_index<"byaccount"_n>();
+        auto stakeiter = astakebyaccount.find(actor.value);
+        if (stakeiter != astakebyaccount.end()) {
+          fio_400_assert(stakeiter->total_staked_fio == 0, "actor", to_string(actor.value), "Account staking cannot retire", ErrorRetireQuantity); //signature error if user has stake
         }
-        auto genlockiter = generalLockTokensTable.find(actor.value);
-        if (genlockiter != generalLockTokensTable.end()) {
-          fio_400_assert(!(genlockiter->remaining_lock_amount > 0), "actor", to_string(actor.value), "Account with partially locked balance cannot retire", ErrorRetireQuantity);  //signature error if user has general lock
+
+        auto genlocks = generalLockTokensTable.get_index<"byowner"_n>();
+        auto genlockiter = genlocks.find(actor.value);
+        if (genlockiter != genlocks.end()) {
+          fio_400_assert(genlockiter->remaining_lock_amount == 0, "actor", to_string(actor.value), "Account with partially locked balance cannot retire", ErrorRetireQuantity);  //signature error if user has general lock
         }
         const asset my_balance = eosio::token::get_balance("fio.token"_n, actor, FIOSYMBOL.code());
 
         fio_400_assert(quantity <= my_balance.amount && can_transfer(actor, 0, quantity, false), "actor", to_string(actor.value),
                        "Insufficient balance",
                        ErrorInsufficientUnlockedFunds);
-
-        auto lockiter = lockedTokensTable.find(actor.value);
-        if (lockiter != lockedTokensTable.end()) {
-          uint64_t genesislockedamount = lockiter->remaining_locked_amount;
-          if (genesislockedamount > 0) {
-
-            if (genesislockedamount >= quantity) {
-              genesislockedamount = quantity;
-            }
-
-            INLINE_ACTION_SENDER(eosiosystem::system_contract, updlocked)
-                      ("eosio"_n, {{_self, "active"_n}},
-                       {actor, genesislockedamount}
-                      );
-          }
-        }
 
         sub_balance(actor, asset(quantity, FIOSYMBOL));
         statstable.modify(st, same_payer, [&](auto &s) {
@@ -130,6 +118,11 @@ namespace eosio {
 
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
+
+        INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
+            ("eosio"_n, {{_self, "active"_n}},
+              {actor, true}
+            );
 
     }
 
