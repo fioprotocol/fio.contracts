@@ -84,7 +84,7 @@ namespace eosio {
     void token::retire(const int64_t &quantity, const string &memo, const name &actor) {
         require_auth(actor);
         fio_400_assert(memo.size() <= 256, "memo", memo, "memo has more than 256 bytes", ErrorInvalidMemo);
-        fio_400_assert(quantity >= 1000000000000ULL,"quantity", std::to_string(quantity), "Minimum 1000 FIO has to be retired", ErrorRetireQuantity);
+        fio_400_assert(quantity >= MINIMUMRETIRE,"quantity", std::to_string(quantity), "Minimum 1000 FIO has to be retired", ErrorRetireQuantity);
         stats statstable(_self, FIOSYMBOL.code().raw());
         auto existing = statstable.find(FIOSYMBOL.code().raw());
         const auto &st = *existing;
@@ -112,17 +112,17 @@ namespace eosio {
           s.supply.amount -= quantity;
         });
 
+        INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
+            ("eosio"_n, {{_self, "active"_n}},
+              {actor, true}
+            );
+
         const string response_string = string("{\"status\": \"OK\"}");
 
         send_response(response_string.c_str());
 
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
-
-        INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
-            ("eosio"_n, {{_self, "active"_n}},
-              {actor, true}
-            );
 
     }
 
