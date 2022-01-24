@@ -98,16 +98,14 @@ namespace eosio {
         auto astakebyaccount = accountstaking.get_index<"byaccount"_n>();
         auto stakeiter = astakebyaccount.find(actor.value);
         if (stakeiter != astakebyaccount.end()) {
-          fio_400_assert(stakeiter->total_staked_fio == 0, "actor", to_string(actor.value), "Account staking cannot retire", ErrorRetireQuantity); //signature error if user has stake
+          fio_400_assert(stakeiter->total_staked_fio == 0, "actor", actor.to_string(), "Account staking cannot retire", ErrorRetireQuantity); //signature error if user has stake
         }
 
         auto genlocks = generalLockTokensTable.get_index<"byowner"_n>();
         auto genlockiter = genlocks.find(actor.value);
         if (genlockiter != genlocks.end()) {
-          fio_400_assert(genlockiter->remaining_lock_amount == 0, "actor", to_string(actor.value), "Account with partially locked balance cannot retire", ErrorRetireQuantity);  //signature error if user has general lock
+          fio_400_assert(genlockiter->remaining_lock_amount == 0, "actor", actor.to_string(), "Account with partially locked balance cannot retire", ErrorRetireQuantity);  //signature error if user has general lock
         }
-
-        //logic borrowed directly from can_transfer is_fee implementation
 
         auto lockiter = lockedTokensTable.find(actor.value);
         if (lockiter != lockedTokensTable.end()) {
@@ -116,8 +114,7 @@ namespace eosio {
           if (my_balance.amount > lockiter->remaining_locked_amount) {
               unlockedbalance = my_balance.amount - lockiter->remaining_locked_amount;
           }
-          if (unlockedbalance >= quantity) {
-          } else {
+          if (unlockedbalance > 0 && unlockedbalance < quantity) {
               uint64_t new_remaining_unlocked_amount =
                       lockiter->remaining_locked_amount - (quantity - unlockedbalance);
               INLINE_ACTION_SENDER(eosiosystem::system_contract, updlocked)
@@ -126,8 +123,6 @@ namespace eosio {
                       );
           }
         }
-        //
-
 
         sub_balance(actor, asset(quantity, FIOSYMBOL));
         statstable.modify(st, same_payer, [&](auto &s) {
