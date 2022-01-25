@@ -106,7 +106,6 @@ namespace eosio {
         if (genlockiter != genlocks.end()) {
           fio_400_assert(genlockiter->remaining_lock_amount == 0, "actor", actor.to_string(), "Account with partially locked balance cannot retire", ErrorRetireQuantity);  //signature error if user has general lock
         }
-
         auto lockiter = lockedTokensTable.find(actor.value);
         if (lockiter != lockedTokensTable.end()) {
 
@@ -114,7 +113,8 @@ namespace eosio {
           if (my_balance.amount > lockiter->remaining_locked_amount) {
               unlockedbalance = my_balance.amount - lockiter->remaining_locked_amount;
           }
-          if (quantity <= unlockedbalance) {
+          
+          if (unlockedbalance < (uint64_t)quantity) {
               uint64_t new_remaining_unlocked_amount =
                       lockiter->remaining_locked_amount - (quantity - unlockedbalance);
               INLINE_ACTION_SENDER(eosiosystem::system_contract, updlocked)
