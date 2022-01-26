@@ -84,37 +84,42 @@ namespace eosio {
     void token::retire(const int64_t &quantity, const string &memo, const name &actor) {
         require_auth(actor);
         fio_400_assert(memo.size() <= 256, "memo", memo, "memo has more than 256 bytes", ErrorInvalidMemo);
-        fio_400_assert(quantity >= 1000000000000ULL,"quantity", std::to_string(quantity), "Minimum 1000 FIO has to be retired", ErrorRetireQuantity);
+        fio_400_assert(quantity >= MINIMUMRETIRE,"quantity", std::to_string(quantity), "Minimum 1000 FIO has to be retired", ErrorRetireQuantity);
         stats statstable(_self, FIOSYMBOL.code().raw());
         auto existing = statstable.find(FIOSYMBOL.code().raw());
         const auto &st = *existing;
 
-        auto stakeiter = accountstaking.find(actor.value);
-        if (stakeiter != accountstaking.end()) {
-          fio_400_assert(!(stakeiter->total_staked_fio > 0), "actor", to_string(actor.value), "Account staking cannot retire", ErrorRetireQuantity); //signature error if user has stake
-        }
-        auto genlockiter = generalLockTokensTable.find(actor.value);
-        if (genlockiter != generalLockTokensTable.end()) {
-          fio_400_assert(!(genlockiter->remaining_lock_amount > 0), "actor", to_string(actor.value), "Account with partially locked balance cannot retire", ErrorRetireQuantity);  //signature error if user has general lock
-        }
         const asset my_balance = eosio::token::get_balance("fio.token"_n, actor, FIOSYMBOL.code());
 
-        fio_400_assert(quantity <= my_balance.amount && can_transfer(actor, 0, quantity, false), "actor", to_string(actor.value),
+        fio_400_assert(quantity <= my_balance.amount, "quantity", to_string(quantity),
                        "Insufficient balance",
                        ErrorInsufficientUnlockedFunds);
 
+        auto astakebyaccount = accountstaking.get_index<"byaccount"_n>();
+        auto stakeiter = astakebyaccount.find(actor.value);
+        if (stakeiter != astakebyaccount.end()) {
+          fio_400_assert(stakeiter->total_staked_fio == 0, "actor", actor.to_string(), "Account staking cannot retire", ErrorRetireQuantity); //signature error if user has stake
+        }
+
+        auto genlocks = generalLockTokensTable.get_index<"byowner"_n>();
+        auto genlockiter = genlocks.find(actor.value);
+        if (genlockiter != genlocks.end()) {
+          fio_400_assert(genlockiter->remaining_lock_amount == 0, "actor", actor.to_string(), "Account with partially locked balance cannot retire", ErrorRetireQuantity);  //signature error if user has general lock
+        }
         auto lockiter = lockedTokensTable.find(actor.value);
         if (lockiter != lockedTokensTable.end()) {
-          uint64_t genesislockedamount = lockiter->remaining_locked_amount;
-          if (genesislockedamount > 0) {
 
-            if (genesislockedamount >= quantity) {
-              genesislockedamount = quantity;
-            }
-
-            INLINE_ACTION_SENDER(eosiosystem::system_contract, updlocked)
+          uint64_t unlockedbalance = 0;
+          if (my_balance.amount > lockiter->remaining_locked_amount) {
+              unlockedbalance = my_balance.amount - lockiter->remaining_locked_amount;
+          }
+          
+          if (unlockedbalance < (uint64_t)quantity) {
+              uint64_t new_remaining_unlocked_amount =
+                      lockiter->remaining_locked_amount - (quantity - unlockedbalance);
+              INLINE_ACTION_SENDER(eosiosystem::system_contract, updlocked)
                       ("eosio"_n, {{_self, "active"_n}},
-                       {actor, genesislockedamount}
+                       {actor, new_remaining_unlocked_amount}
                       );
           }
         }
@@ -123,6 +128,11 @@ namespace eosio {
         statstable.modify(st, same_payer, [&](auto &s) {
           s.supply.amount -= quantity;
         });
+
+        INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
+            ("eosio"_n, {{_self, "active"_n}},
+              {actor, true}
+            );
 
         const string response_string = string("{\"status\": \"OK\"}");
 
