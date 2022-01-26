@@ -38,6 +38,7 @@ namespace fioio {
     static const name TREASURYACCOUNT =   name("fio.treasury");
     static const name STAKINGACCOUNT =   name("fio.staking");
     static const name GAMECONTRACT =      name("fio.game");
+    static const name GAMEACCOUNT =      name("fio.game");
     static const name FIOSYSTEMACCOUNT=   name("fio.system");
     static const name EscrowContract    = name("fio.escrow");
     static const name FIOACCOUNT =   name("fio");
