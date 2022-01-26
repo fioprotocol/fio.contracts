@@ -1,0 +1,12 @@
+{
+        "____comment": "testing",
+    "version": "eosio::abi/1.1",
+    "structs": [],
+    "types": [],
+    "actions": [],
+    "tables": [],
+    "ricardian_clauses": [],
+    "variants": [],
+    "abi_extensions": []
+    
+}
