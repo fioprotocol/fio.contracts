@@ -113,8 +113,8 @@ namespace eosio {
           if (my_balance.amount > lockiter->remaining_locked_amount) {
               unlockedbalance = my_balance.amount - lockiter->remaining_locked_amount;
           }
-          
-          if (unlockedbalance < (uint64_t)quantity) {
+
+          if (unlockedbalance <= (uint64_t)quantity) {
               uint64_t new_remaining_unlocked_amount =
                       lockiter->remaining_locked_amount - (quantity - unlockedbalance);
               INLINE_ACTION_SENDER(eosiosystem::system_contract, updlocked)
