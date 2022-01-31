@@ -103,24 +103,26 @@ namespace eosio {
 
         auto genlocks = generalLockTokensTable.get_index<"byowner"_n>();
         auto genlockiter = genlocks.find(actor.value);
+
         if (genlockiter != genlocks.end()) {
           fio_400_assert(genlockiter->remaining_lock_amount == 0, "actor", actor.to_string(), "Account with partially locked balance cannot retire", ErrorRetireQuantity);  //signature error if user has general lock
         }
+
         auto lockiter = lockedTokensTable.find(actor.value);
         if (lockiter != lockedTokensTable.end()) {
+          if (lockiter->remaining_locked_amount > 0) {
 
-          uint64_t unlockedbalance = 0;
-          if (my_balance.amount > lockiter->remaining_locked_amount) {
-              unlockedbalance = my_balance.amount - lockiter->remaining_locked_amount;
-          }
-          
-          if (unlockedbalance < (uint64_t)quantity) {
-              uint64_t new_remaining_unlocked_amount =
-                      lockiter->remaining_locked_amount - (quantity - unlockedbalance);
-              INLINE_ACTION_SENDER(eosiosystem::system_contract, updlocked)
-                      ("eosio"_n, {{_self, "active"_n}},
-                       {actor, new_remaining_unlocked_amount}
-                      );
+            uint64_t unlocked = quantity;
+            if(quantity > lockiter->remaining_locked_amount) {
+              unlocked  = lockiter->remaining_locked_amount;
+            }
+            uint64_t new_remaining_unlocked_amount = lockiter->remaining_locked_amount - unlocked;
+
+            INLINE_ACTION_SENDER(eosiosystem::system_contract, updlocked)
+                    ("eosio"_n, {{_self, "active"_n}},
+                     {actor, new_remaining_unlocked_amount}
+                    );
+
           }
         }
 
