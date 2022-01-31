@@ -96,6 +96,7 @@ namespace fioio {
     constexpr auto ErrorDomainOwner = ident | httpInvalidError | 158;
     constexpr auto ErrorRetireQuantity = ident | httpDataError | 159;
     constexpr auto ErrorInvalidMemo = ident | httpDataError | 160;
+    constexpr auto ErrorDomainSaleNotFound = ident | httpInvalidError | 161; // domain not found in domainsales table
 
     /**
     * Helper funtions for detecting rich error messages and extracting bitfielded values

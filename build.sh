@@ -18,3 +18,5 @@ cp contracts/fio.fee/fio.fee.abi build/contracts/fio.fee/
 cp contracts/fio.request.obt/fio.request.obt.abi build/contracts/fio.request.obt/
 cp contracts/fio.tpid/fio.tpid.abi build/contracts/fio.tpid/
 cp contracts/fio.treasury/fio.treasury.abi build/contracts/fio.treasury/
+cp contracts/fio.escrow/fio.escrow.abi build/contracts/fio.escrow/
+cp contracts/fio.staking/fio.staking.abi build/contracts/fio.staking/
