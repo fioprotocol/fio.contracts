@@ -148,10 +148,10 @@ public:
                 auto proditer = prodbyowner.find(producer);
 
                 fio_400_assert(proditer != prodbyowner.end(), "fio_address", fio_address,
-                               "FIO Address not producer or nothing payable", ErrorNoFioAddressProducer);
+                               "FIO Address is not a producer", ErrorNoFioAddressProducer);
 
                 fio_400_assert((now() - proditer->last_bpclaim) > SECONDSBETWEENBPCLAIM, "fio_address", fio_address,
-                               "FIO Address not producer or nothing payable", ErrorNoFioAddressProducer);
+                               "Minimum time between BPCLAIM calls has not yet passed", ErrorNoFioAddressProducer);
 
                 //Invoke system contract to update producer last_bpclaim time
                 action(permission_level{get_self(), "active"_n},
