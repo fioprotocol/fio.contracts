@@ -485,7 +485,7 @@ namespace fioio {
     static const uint64_t BUNDLEVOTERAM = 0; //integrated.
     static const uint64_t ADDNFTRAMBASE = 512;
     static const uint64_t ADDNFTRAM = 2048;
-    static const uint64_t FIOESCROWRAM = 512; // FIOESCROW
+    static const uint64_t LISTDOMAINRAM = 1536; // FIOESCROW - List Domain 1140 bytes round to 512 x 3
 
     static const uint64_t BASECONTENTAMOUNT = 1000; // base amount for content on newfundsreq and obt transactions
     
