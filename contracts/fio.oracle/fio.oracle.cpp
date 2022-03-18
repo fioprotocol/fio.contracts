@@ -495,6 +495,10 @@ namespace fioio {
             auto domains_iter  = domainsbyname.find(domainHash);
             name nm = name("fio.oracle");
 
+            fio_400_assert(obt_id.size() > 0 && obt_id.size() <= 128, "obt_it", obt_id,
+                           "Invalid obt_id",
+                           ErrorContentLimit);
+
             fio_400_assert(domains_iter != domainsbyname.end(), "fio_domain", fio_domain,
                            "FIO domain not found", ErrorDomainNotRegistered);
 
