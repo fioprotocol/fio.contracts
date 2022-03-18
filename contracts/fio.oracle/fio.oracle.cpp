@@ -172,6 +172,10 @@ namespace fioio {
             fio_400_assert(amount >= 0, "amount", to_string(amount), "Invalid amount",
                            ErrorMaxFeeInvalid);
 
+            fio_400_assert(obt_id.size() > 0 && obt_id.size() <= 128, "obt_it", obt_id,
+                           "Invalid obt_id",
+                           ErrorContentLimit);
+
             FioAddress fa;
             getFioAddressStruct(fio_address, fa);
             fio_400_assert(validateFioNameFormat(fa), "fio_address", fa.fioaddress, "Invalid FIO Address",
