@@ -46,8 +46,8 @@ namespace fioio {
         }
 
         [[eosio::action]]
-        void wraptokens(uint64_t &amount, string &chain_code, string &public_address, uint64_t &max_oracle_fee,
-                        uint64_t &max_fee, string &tpid, name &actor) {
+        void wraptokens(int64_t &amount, string &chain_code, string &public_address, int64_t &max_oracle_fee,
+                        int64_t &max_fee, string &tpid, name &actor) {
             require_auth(actor);
             fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
                            "TPID must be empty or valid FIO address",
@@ -166,7 +166,7 @@ namespace fioio {
         }
 
         [[eosio::action]]
-        void unwraptokens(uint64_t &amount, string &obt_id, string &fio_address, name &actor) {
+        void unwraptokens(int64_t &amount, string &obt_id, string &fio_address, name &actor) {
             require_auth(actor);
             //max amount would go here
             fio_400_assert(amount >= 0, "amount", to_string(amount), "Invalid amount",
@@ -305,7 +305,7 @@ namespace fioio {
         }
 
         [[eosio::action]]
-        void setoraclefee(uint64_t &wrap_fio_domain, uint64_t &wrap_fio_tokens, name &actor) {
+        void setoraclefee(int64_t &wrap_fio_domain, int64_t &wrap_fio_tokens, name &actor) {
             require_auth(actor);
 
             //add check for < 0 on both fees
@@ -326,8 +326,8 @@ namespace fioio {
             }
 
             if (fees.size() == 0) {
-                oraclefees domain = {"wrap_fio_domain", wrap_fio_domain};
-                oraclefees tokens = {"wrap_fio_tokens", wrap_fio_tokens};
+                oraclefees domain = {"wrap_fio_domain", static_cast<uint64_t>(wrap_fio_domain)};
+                oraclefees tokens = {"wrap_fio_tokens", static_cast<uint64_t>(wrap_fio_tokens)};
                 fees.push_back(domain);
                 fees.push_back(tokens);
             }
@@ -345,8 +345,8 @@ namespace fioio {
         }
 
         [[eosio::action]]
-        void wrapdomain(string &fio_domain, string &chain_code, string &public_address, uint64_t &max_oracle_fee,
-                        uint64_t &max_fee, string &tpid, name &actor) {
+        void wrapdomain(string &fio_domain, string &chain_code, string &public_address, int64_t &max_oracle_fee,
+                        int64_t &max_fee, string &tpid, name &actor) {
             require_auth(actor);
             fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
                            "TPID must be empty or valid FIO address",
