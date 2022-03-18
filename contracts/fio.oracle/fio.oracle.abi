@@ -187,10 +187,6 @@
             {
                "name":"oracle_actor",
                "type":"name"
-            },
-            {
-               "name":"actor",
-               "type":"name"
             }
          ]
       },

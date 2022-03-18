@@ -287,7 +287,7 @@ namespace fioio {
         }
 
         [[eosio::action]]
-        void unregoracle(name oracle_actor, name &actor) {
+        void unregoracle(name oracle_actor) {
             require_auth(SYSTEMACCOUNT);
 
             auto oraclesearch = oracles.find(oracle_actor.value);
