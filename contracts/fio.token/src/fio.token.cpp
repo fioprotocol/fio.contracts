@@ -502,23 +502,8 @@ namespace eosio {
 
         fio_400_assert(((periods.size()) >= 1 && (periods.size() <= 50)), "unlock_periods", "Invalid unlock periods",
                        "Invalid number of unlock periods", ErrorTransactionTooLarge);
-        uint64_t tota = 0;
-        double tv = 0.0;
 
-        for(int i=0;i<periods.size();i++){
-            fio_400_assert(periods[i].amount > 0, "unlock_periods", "Invalid unlock periods",
-                           "Invalid amount value in unlock periods", ErrorInvalidUnlockPeriods);
-            fio_400_assert(periods[i].duration > 0, "unlock_periods", "Invalid unlock periods",
-                           "Invalid duration value in unlock periods", ErrorInvalidUnlockPeriods);
-            tota += periods[i].amount;
-            if (i>0){
-                fio_400_assert(periods[i].duration > periods[i-1].duration, "unlock_periods", "Invalid unlock periods",
-                               "Invalid duration value in unlock periods, must be sorted", ErrorInvalidUnlockPeriods);
-            }
-        }
-
-        fio_400_assert(tota == amount, "unlock_periods", "Invalid unlock periods",
-                       "Invalid total amount for unlock periods", ErrorInvalidUnlockPeriods);
+        uint32_t present_time = now();
 
         fio_400_assert(((can_vote == 0)||(can_vote == 1)), "can_vote", to_string(can_vote),
                        "Invalid can_vote value", ErrorInvalidValue);
@@ -550,14 +535,55 @@ namespace eosio {
         reg_amount = ninetydayperiods * reg_amount;
 
         //check for pre existing account is done here.
-        name owner = transfer_public_key(payee_public_key,amount,max_fee,actor,tpid,reg_amount,true);
+        name owner = transfer_public_key(payee_public_key,amount,max_fee,actor,tpid,reg_amount,false);
 
-        //if no locked tokens in the account do this.
-        bool canvote = (can_vote == 1);
-        INLINE_ACTION_SENDER(eosiosystem::system_contract, addgenlocked)
-                ("eosio"_n, {{_self, "active"_n}},
-                 {owner,periods,canvote,amount}
-                );
+        //FIP-41 new logic for send lock tokens to existing account
+        auto locks_by_owner = generalLockTokensTable.get_index<"byowner"_n>();
+        auto lockiter = locks_by_owner.find(owner.value);
+        if (lockiter != locks_by_owner.end()) {
+            int64_t newlockamount = lockiter->lock_amount + amount;
+            int64_t newremaininglockamount = lockiter->remaining_lock_amount + amount;
+            uint32_t payouts = lockiter->payouts_performed;
+            bool err1 = (can_vote == 0) && can_vote == lockiter->can_vote;
+            bool err2 = (can_vote == 1) && can_vote == lockiter->can_vote;
+            string errmsg = "Locked tokens with restricted voting can only be transferred to a new account.";
+            if(err2)
+            {
+                errmsg = "This account has voting restriction on locked tokens, sending locked tokens without voting restriction is not allowed.";
+            }
+            fio_400_assert(err1 || err2, "can_vote", to_string(can_vote),
+                           errmsg, ErrorInvalidValue);
+            vector<eosiosystem::lockperiodv2> periods_t1 = recalcdurations(periods,lockiter->timestamp, present_time, amount);
+            vector <eosiosystem::lockperiodv2> newperiods = mergeperiods(periods_t1,lockiter->periods);
+            action(
+                    permission_level{get_self(), "active"_n},
+                    SYSTEMACCOUNT,
+                    "modgenlocked"_n,
+                    std::make_tuple(owner, newperiods, newlockamount, newremaininglockamount, payouts)
+            ).send();
+        }else {
+            uint64_t tota = 0;
+            double tv = 0.0;
+
+            for(int i=0;i<periods.size();i++){
+                fio_400_assert(periods[i].amount > 0, "unlock_periods", "Invalid unlock periods",
+                               "Invalid amount value in unlock periods", ErrorInvalidUnlockPeriods);
+                fio_400_assert(periods[i].duration > 0, "unlock_periods", "Invalid unlock periods",
+                               "Invalid duration value in unlock periods", ErrorInvalidUnlockPeriods);
+                tota += periods[i].amount;
+                if (i>0){
+                    fio_400_assert(periods[i].duration > periods[i-1].duration, "unlock_periods", "Invalid unlock periods",
+                                   "Invalid duration value in unlock periods, must be sorted", ErrorInvalidUnlockPeriods);
+                }
+            }
+            fio_400_assert(tota == amount, "unlock_periods", "Invalid unlock periods",
+                           "Invalid total amount for unlock periods", ErrorInvalidUnlockPeriods);
+            INLINE_ACTION_SENDER(eosiosystem::system_contract, addgenlocked)
+                    ("eosio"_n, {{_self, "active"_n}},
+                     {owner, periods, can_vote, amount}
+                    );
+        }
+        // end FIP-41 logic for send lock tokens to existing account
 
         int64_t raminc = 1024 + (64 * periods.size());
 

@@ -276,6 +276,15 @@ namespace fioio {
                 "fdtnrwdupdat"_n,
                 std::make_tuple((uint64_t)(static_cast<double>(amount) * .05))
         ).send();
+
+        //call action to check general locks for clearing.
+        action(
+                permission_level{auth, "active"_n},
+                SYSTEMACCOUNT, "clrgenlocked"_n,
+                make_tuple(actor)
+        ).send();
+
+
         fionames_table fionames(AddressContract, AddressContract.value);
         uint128_t fioaddhash = string_to_uint128_hash(tpid.c_str());
 

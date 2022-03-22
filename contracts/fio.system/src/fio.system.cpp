@@ -255,8 +255,8 @@ namespace eosiosystem {
                                                     const int64_t &amount, const int64_t &rem_lock_amount,
                                                     const uint32_t &payouts) {
 
-        eosio_assert( has_auth(StakingContract),
-                     "missing required authority of fio.staking");
+        eosio_assert( has_auth(StakingContract) || has_auth(TokenContract),
+                     "missing required authority of fio.staking or fio.token");
 
         check(is_account(owner),"account must pre exist");
         check(amount > 0,"cannot add locked token amount less or equal 0.");
@@ -293,6 +293,26 @@ namespace eosiosystem {
         });
     }
 
+
+    //this action will check if all periods are in the past and clear the general locks if all of them are in the past.
+    void eosiosystem::system_contract::clrgenlocked(const name &owner) {
+
+        eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
+                      has_auth(STAKINGACCOUNT) ||has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) || has_auth(FeeContract) || has_auth(EscrowContract)),
+                     "missing required authority of fio.address, fio.token, fio.fee, fio.treasury, fio.escrow, fio.staking, or fio.reqobt");
+        check(is_account(owner),"account must pre exist");
+        auto locks_by_owner = _generallockedtokens.get_index<"byowner"_n>();
+        auto lockiter = locks_by_owner.find(owner.value);
+        if (lockiter != locks_by_owner.end()) {
+            uint32_t present_time = now();
+            //never clear another accounts stuff.
+            if ((lockiter->owner_account == owner) &&
+                    ( ((lockiter->periods[lockiter->periods.size()-1].duration + lockiter->timestamp) < present_time) ||
+                            lockiter->periods.size() == 0)) {
+                locks_by_owner.erase(lockiter);
+            }
+        }
+    }
 } /// fio.system
 
 
@@ -300,7 +320,7 @@ EOSIO_DISPATCH( eosiosystem::system_contract,
 // native.hpp (newaccount definition is actually in fio.system.cpp)
 (newaccount)(addaction)(remaction)(updateauth)(deleteauth)(linkauth)(unlinkauth)(canceldelay)(onerror)(setabi)
 // fio.system.cpp
-(init)(setnolimits)(addlocked)(addgenlocked)(modgenlocked)(setparams)(setpriv)
+(init)(setnolimits)(addlocked)(addgenlocked)(modgenlocked)(clrgenlocked)(setparams)(setpriv)
         (rmvproducer)(updtrevision)
 // delegate_bandwidth.cpp
         (updatepower)
