@@ -578,9 +578,10 @@ namespace eosio {
             }
             fio_400_assert(tota == amount, "unlock_periods", "Invalid unlock periods",
                            "Invalid total amount for unlock periods", ErrorInvalidUnlockPeriods);
+            const bool canvote = (canvote != 0);
             INLINE_ACTION_SENDER(eosiosystem::system_contract, addgenlocked)
                     ("eosio"_n, {{_self, "active"_n}},
-                     {owner, periods, can_vote, amount}
+                     {owner, periods, canvote, amount}
                     );
         }
         // end FIP-41 logic for send lock tokens to existing account
