@@ -578,7 +578,8 @@ namespace eosio {
             }
             fio_400_assert(tota == amount, "unlock_periods", "Invalid unlock periods",
                            "Invalid total amount for unlock periods", ErrorInvalidUnlockPeriods);
-            const bool canvote = (canvote != 0);
+            const bool canvote = (can_vote == 1);
+
             INLINE_ACTION_SENDER(eosiosystem::system_contract, addgenlocked)
                     ("eosio"_n, {{_self, "active"_n}},
                      {owner, periods, canvote, amount}
