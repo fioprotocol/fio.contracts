@@ -2171,8 +2171,8 @@ namespace fioio {
         [[eosio::action]]
         void xferescrow(const string &fio_domain, const string &public_key, const bool isEscrow, const name &actor){
             name nm;
+            // This inline permissioned action is used during wrapping and marketplace operations.
             if(has_auth(EscrowContract)){
-                require_auth(EscrowContract); // required?
                 nm = name("fio.escrow");
             } else{
                 require_auth(FIOORACLEContract);
