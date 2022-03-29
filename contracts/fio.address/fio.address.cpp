@@ -2026,6 +2026,10 @@ namespace fioio {
             fio_400_assert(domains_iter != domainsbyname.end(), "fio_domain", fio_domain,
                            "FIO Domain not registered", ErrorDomainNotRegistered);
 
+            const uint32_t present_time = now();
+            fio_400_assert(present_time <= domains_iter->expiration, "fio_domain", fio_domain, "FIO Domain expired. Renew first.",
+                           ErrorMaxFeeInvalid);
+
             fio_403_assert(domains_iter->account == actor.value, ErrorSignature);
             const uint128_t endpoint_hash = string_to_uint128_hash(TRANSFER_DOMAIN_ENDPOINT);
 
