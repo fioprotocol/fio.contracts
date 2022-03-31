@@ -126,32 +126,6 @@ public:
                     "decrcounter"_n,
                     make_tuple(fio_address, 1)
             }.send();
-
-            if (!tpid.empty()) {
-                set_auto_proxy(tpid, 0,get_self(), actor);
-                //when a tpid is used, if this is the first call ever for this account to use a tpid,
-                //then the auto proxy will be set in an inline action which executes outside of this
-                //execution stack. We check if the tpid is a proxy, and if it is then we know that
-                //the owner will be auto proxied in this transaction, but in an action outside of this one.
-                //so we set a local flag to skip the checks for the "has voted" requirement since we
-                //know the owner is auto proxied, this handles the edge condition if the staking is called
-                //very early by a new account integrated using tpid.
-                FioAddress fa1;
-                getFioAddressStruct(tpid, fa1);
-                const uint128_t nameHash = string_to_uint128_hash(fa1.fioaddress.c_str());
-                auto namesbyname = fionames.get_index<"byname"_n>();
-                auto fioname_iter = namesbyname.find(nameHash);
-                fio_400_assert(fioname_iter != namesbyname.end(), "tpid", fa1.fioaddress,
-                               "FIO Address not registered", ErrorFioNameAlreadyRegistered);
-                auto votersbyowner = voters.get_index<"byowner"_n>();
-                const auto viter = votersbyowner.find(fioname_iter->owner_account);
-                if (viter != votersbyowner.end()) {
-                    if (viter->is_proxy) {
-                        skipvotecheck = true;
-                    }
-                }
-            }
-
         } else {
             paid_fee_amount = fee_iter->suf_amount;
             fio_400_assert(max_fee >= (int64_t)paid_fee_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
@@ -168,6 +142,34 @@ public:
             }
         }
         //End, bundle eligible fee logic for staking
+
+
+        if (!tpid.empty()) {
+            set_auto_proxy(tpid, 0,get_self(), actor);
+            //when a tpid is used, if this is the first call ever for this account to use a tpid,
+            //then the auto proxy will be set in an inline action which executes outside of this
+            //execution stack. We check if the tpid is a proxy, and if it is then we know that
+            //the owner will be auto proxied in this transaction, but in an action outside of this one.
+            //so we set a local flag to skip the checks for the "has voted" requirement since we
+            //know the owner is auto proxied, this handles the edge condition if the staking is called
+            //very early by a new account integrated using tpid.
+            FioAddress fa1;
+            getFioAddressStruct(tpid, fa1);
+            const uint128_t nameHash = string_to_uint128_hash(fa1.fioaddress.c_str());
+            auto namesbyname = fionames.get_index<"byname"_n>();
+            auto fioname_iter = namesbyname.find(nameHash);
+            fio_400_assert(fioname_iter != namesbyname.end(), "tpid", fa1.fioaddress,
+                           "FIO Address not registered", ErrorFioNameAlreadyRegistered);
+            auto votersbyowner = voters.get_index<"byowner"_n>();
+            const auto viter = votersbyowner.find(fioname_iter->owner_account);
+            if (viter != votersbyowner.end()) {
+                if (viter->is_proxy) {
+                    skipvotecheck = true;
+                }
+            }
+        }
+
+
 
         if (!skipvotecheck) {
           auto votersbyowner = voters.get_index<"byowner"_n>();
