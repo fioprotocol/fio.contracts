@@ -176,7 +176,7 @@ namespace eosiosystem {
         fio_403_assert(account == actor.value, ErrorSignature);
 
 	auto accountmap = _accountmap.find(account);
-	fio_400_assert(accountmap->clientkey != fio_pub_key, "fio_pub_key", fio_pub_key,
+	fio_400_assert(accountmap->clientkey == fio_pub_key, "fio_pub_key", fio_pub_key,
                        "Invalid Public Key", ErrorFioNameNotReg);
 
 
