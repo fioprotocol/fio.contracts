@@ -12,6 +12,7 @@
 #include <fio.token/include/fio.token/fio.token.hpp>
 #include <eosiolib/asset.hpp>
 #include <fio.request.obt/fio.request.obt.hpp> //TEMP FOR XFERADDRESS
+#include <fio.escrow/fio.escrow.hpp>
 
 namespace fioio {
 
@@ -20,6 +21,7 @@ namespace fioio {
     private:
         const int MIN_VOTES_FOR_AVERAGING = 15;
         domains_table domains;
+        domainsales_table domainsales;
         fionames_table fionames;
         fiofee_table fiofees;
         eosio_names_table accountmap;
@@ -38,6 +40,7 @@ namespace fioio {
 
         FioNameLookup(name s, name code, datastream<const char *> ds) : contract(s, code, ds),
                                                                         domains(_self, _self.value),
+                                                                        domainsales(EscrowContract, EscrowContract.value),
                                                                         fionames(_self, _self.value),
                                                                         fiofees(FeeContract, FeeContract.value),
                                                                         bundlevoters(FeeContract, FeeContract.value),
@@ -1061,6 +1064,19 @@ namespace fioio {
                     if (nameiter == nameexpidx.end()) {
                         domains.erase(domainiter);
                         recordProcessed++;
+
+                        // Find any domains listed for sale on the fio.escrow contract table
+                        auto domainsalesbydomain = domainsales.get_index<"bydomain"_n>();
+                        auto domainsaleiter = domainsalesbydomain.find(domainhash);
+                        // if found, call cxburned on fio.escrow
+                        if(domainsaleiter != domainsalesbydomain.end()){
+                            if(domainsaleiter->status == 1) {
+                                action(permission_level{get_self(), "active"_n},
+                                       EscrowContract, "cxburned"_n,
+                                       make_tuple(domainhash)
+                                ).send();
+                            }
+                        }
                     }
 
                     if (recordProcessed == numbertoburn) { break; }
@@ -1296,6 +1312,8 @@ namespace fioio {
                         n.chain_code = nftobj->chain_code;
                         n.chain_code_hash = string_to_uint64_hash(nftobj->chain_code.c_str());
                         if (!nftobj->token_id.empty()) {
+                          fio_400_assert(nftobj->token_id.length() <= 128, "token_id", nftobj->token_id.c_str(), "Invalid Token ID",
+                                        ErrorInvalidFioNameFormat);
                             n.token_id = nftobj->token_id.c_str();
                             n.token_id_hash = string_to_uint128_hash(string(fio_address.c_str()) +
                                                                      string(nftobj->contract_address.c_str()) +
@@ -1386,7 +1404,7 @@ namespace fioio {
                         permission_level{SYSTEMACCOUNT, "active"_n},
                         "eosio"_n,
                         "incram"_n,
-                        std::make_tuple(actor, ADDNFTRAM)
+                        std::make_tuple(actor, ADDNFTRAMBASE + (ADDNFTRAM * nfts.size()))
                 ).send();
             }
 
@@ -1772,7 +1790,7 @@ namespace fioio {
          * and domains. bind2eosio, the space restricted variant of "Bind to EOSIO"
          * takes a platform-specific account name and a wallet generated public key.
          *
-         * First it verifie that either tsi is a new account and none othe exists, or this
+         * First it verify that either its is a new account and none other exists, or this
          * is an existing eosio account and it is indeed bound to this key. If it is a new,
          * unbound account name, then bind name to the key and add it to the list.
          *
@@ -2008,12 +2026,6 @@ namespace fioio {
             fio_400_assert(domains_iter != domainsbyname.end(), "fio_domain", fio_domain,
                            "FIO Domain not registered", ErrorDomainNotRegistered);
 
-            const uint32_t domain_expiration = domains_iter->expiration;
-            const uint32_t present_time = now();
-            fio_400_assert(present_time <= domain_expiration, "fio_domain", fio_domain,
-                           "FIO Domain expired. Renew first.",
-                           ErrorDomainExpired);
-
             fio_403_assert(domains_iter->account == actor.value, ErrorSignature);
             const uint128_t endpoint_hash = string_to_uint128_hash(TRANSFER_DOMAIN_ENDPOINT);
 
@@ -2155,10 +2167,50 @@ namespace fioio {
             } else
                 check(false, "Failed to decrement eligible bundle counter"); // required to fail the parent transaction
         }
+
+        [[eosio::action]]
+        void xferescrow(const string &fio_domain, const string &public_key, const bool isEscrow, const name &actor){
+            require_auth(EscrowContract);
+
+            FioAddress fa;
+            getFioAddressStruct(fio_domain, fa);
+
+            register_errors(fa, true);
+            if(!isEscrow) {
+                fio_400_assert(isPubKeyValid(public_key), "public_key", public_key,
+                               "Invalid FIO Public Key", ErrorChainAddressEmpty);
+            }
+
+            auto domainsbyname = domains.get_index<"byname"_n>();
+            auto domains_iter = domainsbyname.find(string_to_uint128_hash(fio_domain));
+            fio_400_assert(domains_iter != domainsbyname.end(), "fio_domain", fio_domain,
+                           "FIO Domain not registered", ErrorDomainNotRegistered);
+
+            const uint32_t domain_expiration = domains_iter->expiration;
+            const uint32_t present_time = now();
+            fio_400_assert(present_time <= domain_expiration, "fio_domain", fio_domain, "FIO Domain expired. Renew first.",
+                           ErrorDomainExpired);
+
+            //Transfer the domain
+            name nm = name("fio.escrow");
+            if(!isEscrow){
+                string owner_account;
+                key_to_account(public_key, owner_account);
+                nm = name(owner_account);
+            }
+
+            domainsbyname.modify(domains_iter, _self, [&](struct domain &a) {
+                a.account = nm.value;
+            });
+
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransaction);
+        }
+
     };
 
     EOSIO_DISPATCH(FioNameLookup, (regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(renewaddress)(
             setdomainpub)(burnexpired)(decrcounter)
-            (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(addnft)(remnft)(remallnfts)
+            (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(xferescrow)(addnft)(remnft)(remallnfts)
     (burnnfts))
 }

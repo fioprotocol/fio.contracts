@@ -42,7 +42,7 @@
 #define STAKEDTOKENPOOLMINIMUM 1000000000000000 // 1M FIO SUFS
 #define STAKINGREWARDSRESERVEMAXIMUM 25000000000000000 // 25M FIO SUFS.
 #define DAILYSTAKINGMINTTHRESHOLD 25000000000000 //25k FIO threshold for MINTING staking rewards.
-
+#define MINIMUMRETIRE 1000000000000
 #define STAKE_FIO_TOKENS_ENDPOINT "stake_fio_tokens"
 #define UNSTAKE_FIO_TOKENS_ENDPOINT "unstake_fio_tokens"
 #define REGISTER_ADDRESS_ENDPOINT "register_fio_address"
@@ -75,6 +75,11 @@
 #define ADD_NFT_ENDPOINT "add_nft"
 #define REM_NFT_ENDPOINT "remove_nft"
 #define REM_ALL_NFTS_ENDPOINT "remove_all_nfts"
+
+#define LIST_DOMAIN_ENDPOINT "list_domain"
+#define CANCEL_LIST_DOMAIN_ENDPOINT "cancel_list_domain"
+#define BUY_DOMAIN_ENDPOINT "buy_domain"
+#define SET_MARKETPLACE_CONFIG_ENDPOINT "set_marketplace_config"
 
 namespace fioio {
 
@@ -124,7 +129,8 @@ namespace fioio {
              actor == fioio::TokenContract ||
              actor == fioio::TREASURYACCOUNT ||
              actor == fioio::FIOSYSTEMACCOUNT ||
-             actor == fioio::FIOACCOUNT);
+             actor == fioio::FIOACCOUNT ||
+             actor == fioio::EscrowContract);
     }
 
     static constexpr uint64_t string_to_uint64_hash(const char *str) {
@@ -337,7 +343,6 @@ namespace fioio {
 
     void processbucketrewards(const string &tpid, const uint64_t &amount, const name &auth, const name &actor) {
 
-
         action(
                 permission_level{auth, "active"_n},
                 TREASURYACCOUNT,
@@ -467,7 +472,7 @@ namespace fioio {
     static const uint64_t REGADDRESSRAM = 2560; //integrated.
     static const uint64_t ADDADDRESSRAM = 512; //integrated.
     static const uint64_t SETDOMAINPUBRAM = 256; //integrated.
-    static const uint64_t NEWFUNDSREQUESTRAM = 4098; //integrated.
+    static const uint64_t NEWFUNDSREQUESTRAM = 3120; //integrated.
     static const uint64_t RECORDOBTRAM = 4098; //integrated.
     static const uint64_t RENEWADDRESSRAM = 1024; //integrated.
     static const uint64_t RENEWDOMAINRAM = 1024; //integrated.
@@ -478,9 +483,12 @@ namespace fioio {
     static const uint64_t SETFEEVOTERAM = 4000; //integrated. //note this bump allows consecutive calls to voting with
                                                               //different fees to avoid ram limits for non top 21 producers.
     static const uint64_t BUNDLEVOTERAM = 0; //integrated.
-    static const uint64_t ADDNFTRAM = 3584;
+    static const uint64_t ADDNFTRAMBASE = 512;
+    static const uint64_t ADDNFTRAM = 2048;
+    static const uint64_t LISTDOMAINRAM = 1536; // FIOESCROW - List Domain 1140 bytes round to 512 x 3
 
-
-
-
+    static const uint64_t BASECONTENTAMOUNT = 1000; // base amount for content on newfundsreq and obt transactions
+    
+  
+  
 } // namespace fioio

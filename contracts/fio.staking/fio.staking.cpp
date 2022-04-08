@@ -56,8 +56,10 @@ public:
     [[eosio::action]]
     void incgrewards(const int64_t &fioamountsufs ) {
         eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
-                      has_auth(STAKINGACCOUNT) ||  has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) || has_auth(FeeContract)),
-                     "missing required authority of fio.address, fio.treasury, fio.fee, fio.token, fio.stakng, eosio or fio.reqobt");
+                      has_auth(STAKINGACCOUNT) ||  has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) ||
+                      has_auth(FeeContract) || has_auth(EscrowContract)),
+                     "missing required authority of fio.address, fio.treasury, fio.fee, fio.token, fio.staking, fio.escrow, eosio or fio.reqobt");
+
         const uint32_t present_time = now();
         gstaking.rewards_token_pool += fioamountsufs;
         gstaking.daily_staking_rewards += fioamountsufs;
