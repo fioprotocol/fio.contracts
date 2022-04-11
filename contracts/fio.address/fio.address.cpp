@@ -2170,7 +2170,14 @@ namespace fioio {
 
         [[eosio::action]]
         void xferescrow(const string &fio_domain, const string &public_key, const bool isEscrow, const name &actor){
-            require_auth(EscrowContract);
+            name nm;
+            // This inline permissioned action is used during wrapping and marketplace operations.
+            if(has_auth(EscrowContract)){
+                nm = name("fio.escrow");
+            } else{
+                require_auth(FIOORACLEContract);
+                nm = name("fio.oracle");
+            }
 
             FioAddress fa;
             getFioAddressStruct(fio_domain, fa);
@@ -2192,7 +2199,6 @@ namespace fioio {
                            ErrorDomainExpired);
 
             //Transfer the domain
-            name nm = name("fio.escrow");
             if(!isEscrow){
                 string owner_account;
                 key_to_account(public_key, owner_account);

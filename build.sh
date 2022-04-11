@@ -20,3 +20,4 @@ cp contracts/fio.tpid/fio.tpid.abi build/contracts/fio.tpid/
 cp contracts/fio.treasury/fio.treasury.abi build/contracts/fio.treasury/
 cp contracts/fio.escrow/fio.escrow.abi build/contracts/fio.escrow/
 cp contracts/fio.staking/fio.staking.abi build/contracts/fio.staking/
+cp contracts/fio.oracle/fio.oracle.abi build/contracts/fio.oracle/
