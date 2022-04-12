@@ -145,7 +145,6 @@ namespace eosio {
 
     }
 
-
     bool token::can_transfer(const name &tokenowner, const uint64_t &feeamount, const uint64_t &transferamount,
                              const bool &isfee) {
 
