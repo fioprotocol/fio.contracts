@@ -152,12 +152,12 @@ namespace fioio {
             fio_fees(actor, asset(fee_amount, FIOSYMBOL), LIST_DOMAIN_ENDPOINT);
             processbucketrewards(tpid, fee_amount, get_self(), actor);
 
-            if (FIOESCROWRAM > 0) {
+            if (LISTDOMAINRAM > 0) {
                 action(
                         permission_level{SYSTEMACCOUNT, "active"_n},
                         "eosio"_n,
                         "incram"_n,
-                        std::make_tuple(actor, FIOESCROWRAM)
+                        std::make_tuple(actor, LISTDOMAINRAM)
                 ).send();
             }
 
@@ -256,15 +256,6 @@ namespace fioio {
 
             fio_fees(actor, asset(fee_amount, FIOSYMBOL), CANCEL_LIST_DOMAIN_ENDPOINT);
             processbucketrewards(tpid, fee_amount, get_self(), actor);
-
-            if (FIOESCROWRAM > 0) {
-                action(
-                        permission_level{SYSTEMACCOUNT, "active"_n},
-                        "eosio"_n,
-                        "incram"_n,
-                        std::make_tuple(actor, FIOESCROWRAM)
-                ).send();
-            }
 
             const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
                                            to_string(fee_amount) + string("}");
@@ -390,15 +381,6 @@ namespace fioio {
             fio_fees(actor, asset(fee_amount, FIOSYMBOL), BUY_DOMAIN_ENDPOINT);
             processbucketrewards(tpid, fee_amount, get_self(), actor);
 
-            if (FIOESCROWRAM > 0) {
-                action(
-                        permission_level{SYSTEMACCOUNT, "active"_n},
-                        "eosio"_n,
-                        "incram"_n,
-                        std::make_tuple(actor, FIOESCROWRAM)
-                ).send();
-            }
-
             // if tx is too large, throw an error.
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size",
                            std::to_string(transaction_size()),
@@ -514,15 +496,6 @@ namespace fioio {
 
                 fio_fees(actor, asset(fee_amount, FIOSYMBOL), SET_MARKETPLACE_CONFIG_ENDPOINT);
                 processbucketrewards("", fee_amount, get_self(), actor);
-
-                if (FIOESCROWRAM > 0) {
-                    action(
-                            permission_level{SYSTEMACCOUNT, "active"_n},
-                            "eosio"_n,
-                            "incram"_n,
-                            std::make_tuple(actor, FIOESCROWRAM)
-                    ).send();
-                }
             }
 
             // if tx is too large, throw an error.
