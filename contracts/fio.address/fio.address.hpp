@@ -25,6 +25,14 @@ namespace fioio {
         EOSLIB_SERIALIZE( tokenpubaddr, (token_code)(chain_code)(public_address))
     };
 
+    struct find_token {
+        string token_code;
+        find_token(string token_code) : token_code(token_code) {}
+        bool operator () ( const tokenpubaddr& m ) const
+        {
+            return m.token_code == token_code;
+        }
+    };
 
     struct [[eosio::action]] fioname {
 

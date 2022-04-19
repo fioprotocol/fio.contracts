@@ -27,7 +27,7 @@
 #define SECONDS30DAYS 2592000
 #define SECONDSPERDAY  86400
 #define DOMAINWAITFORBURNDAYS  90 * SECONDSPERDAY
-#define ADDRESSWAITFORBURNDAYS  90 * SECONDSPERDAY
+#define ADDRESSWAITFORBURNDAYS  365 * SECONDSPERDAY
 #define MAXBOUNTYTOKENSTOMINT 125000000000000000
 //#define MINVOTEDFIO 10'000'000'000000000 //TESTNET ONLY
 #define MINVOTEDFIO 65'000'000'000000000
@@ -65,6 +65,7 @@
 #define SUBMIT_FEE_RATIOS_ENDPOINT "submit_fee_ratios"
 #define SUBMIT_FEE_MULTIPLER_ENDPOINT "submit_fee_multiplier"
 #define BURN_FIO_ADDRESS_ENDPOINT "burn_fio_address"
+#define ADD_BUNDLED_TRANSACTION_ENDPOINT "add_bundled_transactions"
 
 
 namespace fioio {
@@ -407,8 +408,8 @@ namespace fioio {
     static const uint64_t REGADDRESSRAM = 2560; //integrated.
     static const uint64_t ADDADDRESSRAM = 512; //integrated.
     static const uint64_t SETDOMAINPUBRAM = 256; //integrated.
-    static const uint64_t NEWFUNDSREQUESTRAM = 2048; //integrated.
-    static const uint64_t RECORDOBTRAM = 2048; //integrated.
+    static const uint64_t NEWFUNDSREQUESTRAM = 4098; //integrated.
+    static const uint64_t RECORDOBTRAM = 4098; //integrated.
     static const uint64_t RENEWADDRESSRAM = 1024; //integrated.
     static const uint64_t RENEWDOMAINRAM = 1024; //integrated.
     static const uint64_t XFERRAM = 512; //integrated.

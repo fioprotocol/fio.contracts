@@ -164,63 +164,31 @@ namespace eosio {
 
     }
 
-    void token::transfer(name from,
-                         name to,
-                         asset quantity,
-                         string memo) {
+    bool token::can_transfer_general(const name &tokenowner, const uint64_t &transferamount) {
+        //get fio balance for this account,
+        uint32_t present_time = now();
+        const auto my_balance = eosio::token::get_balance("fio.token"_n, tokenowner, FIOSYMBOL.code());
 
-        /* we permit the use of transfer from the system account to any other accounts,
-         * we permit the use of transfer from the treasury account to any other accounts.
-         * we permit the use of transfer from any other accounts to the treasury account for fees.
-         */
-        if (from != SYSTEMACCOUNT && from != TREASURYACCOUNT) {
-            check(to == TREASURYACCOUNT, "transfer not allowed");
+        uint64_t amount = my_balance.amount;
+
+        //recompute the remaining locked amount based on vesting.
+        uint64_t lockedTokenAmount = computegenerallockedtokens(tokenowner, false);
+        //subtract the lock amount from the balance
+        if (lockedTokenAmount < amount) {
+            amount -= lockedTokenAmount;
+            return (amount >= transferamount);
+        } else {
+            return false;
         }
-        eosio_assert((has_auth(SYSTEMACCOUNT) || has_auth(TREASURYACCOUNT)),
-                     "missing required authority of treasury or eosio");
-
-
-        check(from != to, "cannot transfer to self");
-        check(is_account(to), "to account does not exist");
-        auto sym = quantity.symbol.code();
-        stats statstable(_self, sym.raw());
-        const auto &st = statstable.get(sym.raw());
-
-        require_recipient(from);
-        require_recipient(to);
-
-        check(quantity.is_valid(), "invalid quantity");
-        check(quantity.amount > 0, "must transfer positive quantity");
-        check(quantity.symbol == st.supply.symbol, "symbol precision mismatch");
-        check(quantity.symbol == FIOSYMBOL, "symbol precision mismatch");
-        check(memo.size() <= 256, "memo has more than 256 bytes");
-
-        accounts from_acnts(_self, from.value);
-        const auto acnts_iter = from_acnts.find(FIOSYMBOL.code().raw());
-
-        fio_400_assert(acnts_iter != from_acnts.end(), "max_fee", to_string(quantity.amount),
-                       "Insufficient funds to cover fee",
-                       ErrorLowFunds);
-        fio_400_assert(acnts_iter->balance.amount >= quantity.amount, "max_fee", to_string(quantity.amount),
-                       "Insufficient funds to cover fee",
-                       ErrorLowFunds);
-
-        //we need to check the from, check for locked amount remaining
-        fio_400_assert(can_transfer(from, 0, quantity.amount, true), "actor", to_string(from.value),
-                       "Funds locked",
-                       ErrorInsufficientUnlockedFunds);
-
-        auto payer = has_auth(to) ? to : from;
-
-        sub_balance(from, quantity);
-        add_balance(to, quantity, payer);
     }
 
-    void token::trnsfiopubky(const string &payee_public_key,
+    name token::transfer_public_key(const string &payee_public_key,
                              const int64_t &amount,
                              const int64_t &max_fee,
                              const name &actor,
-                             const string &tpid) {
+                             const string &tpid,
+                             const int64_t &feeamount,
+                             const bool &errorifaccountexists) {
 
         require_auth(actor);
         asset qty;
@@ -267,6 +235,11 @@ namespace eosio {
         name new_account_name = name(payee_account.c_str());
         bool accountExists = is_account(new_account_name);
 
+        if (errorifaccountexists){
+            fio_400_assert(!(accountExists), "payee_public_key", payee_public_key,
+                           "Locked tokens can only be transferred to new account",
+                           ErrorPubKeyValid);
+        }
         auto other = eosionames.find(new_account_name.value);
 
         if (other == eosionames.end()) { //the name is not in the table.
@@ -331,8 +304,12 @@ namespace eosio {
                        "Insufficient balance",
                        ErrorLowFunds);
 
-        fio_400_assert(can_transfer(actor, reg_amount, qty.amount, false), "amount", to_string(qty.amount),
+        fio_400_assert(can_transfer(actor, feeamount, qty.amount, false), "amount", to_string(qty.amount),
                        "Insufficient balance tokens locked",
+                       ErrorInsufficientUnlockedFunds);
+
+        fio_400_assert(can_transfer_general(actor, qty.amount), "actor", to_string(actor.value),
+                       "Funds locked",
                        ErrorInsufficientUnlockedFunds);
 
         sub_balance(actor, qty);
@@ -350,8 +327,91 @@ namespace eosio {
                     );
         }
 
-        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
-                                       to_string(reg_amount) + string("}");
+        return new_account_name;
+    }
+
+    void token::transfer(name from,
+                         name to,
+                         asset quantity,
+                         string memo) {
+
+        /* we permit the use of transfer from the system account to any other accounts,
+         * we permit the use of transfer from the treasury account to any other accounts.
+         * we permit the use of transfer from any other accounts to the treasury account for fees.
+         */
+        if (from != SYSTEMACCOUNT && from != TREASURYACCOUNT) {
+            check(to == TREASURYACCOUNT, "transfer not allowed");
+        }
+        eosio_assert((has_auth(SYSTEMACCOUNT) || has_auth(TREASURYACCOUNT)),
+                     "missing required authority of treasury or eosio");
+
+
+        check(from != to, "cannot transfer to self");
+        check(is_account(to), "to account does not exist");
+        auto sym = quantity.symbol.code();
+        stats statstable(_self, sym.raw());
+        const auto &st = statstable.get(sym.raw());
+
+        require_recipient(from);
+        require_recipient(to);
+
+        check(quantity.is_valid(), "invalid quantity");
+        check(quantity.amount > 0, "must transfer positive quantity");
+        check(quantity.symbol == st.supply.symbol, "symbol precision mismatch");
+        check(quantity.symbol == FIOSYMBOL, "symbol precision mismatch");
+        check(memo.size() <= 256, "memo has more than 256 bytes");
+
+        accounts from_acnts(_self, from.value);
+        const auto acnts_iter = from_acnts.find(FIOSYMBOL.code().raw());
+
+        fio_400_assert(acnts_iter != from_acnts.end(), "max_fee", to_string(quantity.amount),
+                       "Insufficient funds to cover fee",
+                       ErrorLowFunds);
+        fio_400_assert(acnts_iter->balance.amount >= quantity.amount, "max_fee", to_string(quantity.amount),
+                       "Insufficient funds to cover fee",
+                       ErrorLowFunds);
+
+        //we need to check the from, check for locked amount remaining
+        fio_400_assert(can_transfer(from, 0, quantity.amount, true), "actor", to_string(from.value),
+                       "Funds locked",
+                       ErrorInsufficientUnlockedFunds);
+
+        fio_400_assert(can_transfer_general(from, quantity.amount), "actor", to_string(from.value),
+                       "Funds locked",
+                       ErrorInsufficientUnlockedFunds);
+
+        auto payer = has_auth(to) ? to : from;
+
+        sub_balance(from, quantity);
+        add_balance(to, quantity, payer);
+    }
+
+    void token::trnsfiopubky(const string &payee_public_key,
+                             const int64_t &amount,
+                             const int64_t &max_fee,
+                             const name &actor,
+                             const string &tpid) {
+
+       uint128_t endpoint_hash = fioio::string_to_uint128_hash("transfer_tokens_pub_key");
+
+       auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
+       auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+
+       fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "transfer_tokens_pub_key",
+                      "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+       uint64_t reg_amount = fee_iter->suf_amount;
+       uint64_t fee_type = fee_iter->type;
+
+       fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                      "transfer_tokens_pub_key unexpected fee type for endpoint transfer_tokens_pub_key, expected 0",
+                      ErrorNoEndpoint);
+
+       fio_400_assert(max_fee >= reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                      ErrorMaxFeeExceeded);
+
+        //do the transfer
+        transfer_public_key(payee_public_key,amount,max_fee,actor,tpid,reg_amount,false);
 
         if (TRANSFERPUBKEYRAM > 0) {
             action(
@@ -362,12 +422,102 @@ namespace eosio {
             ).send();
         }
 
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
 
         send_response(response_string.c_str());
 
     }
+
+    void token::trnsloctoks(const string &payee_public_key,
+                             const int32_t &can_vote,
+                             const vector<eosiosystem::lockperiods> periods,
+                             const int64_t &amount,
+                             const int64_t &max_fee,
+                             const name &actor,
+                             const string &tpid) {
+
+        fio_400_assert(((periods.size()) >= 1 && (periods.size() <= 365)), "unlock_periods", "Invalid unlock periods",
+                       "Invalid number of unlock periods", ErrorTransactionTooLarge);
+        double totp = 0.0;
+        double tv = 0.0;
+        int64_t longestperiod = 0;
+        for(int i=0;i<periods.size();i++){
+            fio_400_assert(periods[i].percent > 0.0, "unlock_periods", "Invalid unlock periods",
+                           "Invalid percentage value in unlock periods", ErrorInvalidUnlockPeriods);
+            tv = periods[i].percent - (double(int(periods[i].percent * 1000.0)))/1000.0;
+            fio_400_assert(tv == 0.0, "unlock_periods", "Invalid unlock periods",
+                           "Invalid precision for percentage in unlock periods", ErrorInvalidUnlockPeriods);
+            fio_400_assert(periods[i].duration > 0, "unlock_periods", "Invalid unlock periods",
+                           "Invalid duration value in unlock periods", ErrorInvalidUnlockPeriods);
+            totp += periods[i].percent;
+            if (periods[i].duration > longestperiod){
+                longestperiod = periods[i].duration;
+            }
+        }
+        fio_400_assert(totp == 100.0, "unlock_periods", "Invalid unlock periods",
+                       "Invalid total percentage for unlock periods", ErrorInvalidUnlockPeriods);
+
+        fio_400_assert(((can_vote == 0)||(can_vote == 1)), "can_vote", to_string(can_vote),
+                       "Invalid can_vote value", ErrorInvalidValue);
+
+        uint128_t endpoint_hash = fioio::string_to_uint128_hash("transfer_locked_tokens");
+
+        auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", "transfer_locked_tokens",
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        uint64_t reg_amount = fee_iter->suf_amount;
+        uint64_t fee_type = fee_iter->type;
+
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "transfer_tokens_pub_key unexpected fee type for endpoint transfer_tokens_pub_key, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= reg_amount, "max_fee", to_string(max_fee), "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+        int64_t ninetydayperiods = longestperiod / (SECONDSPERDAY * 90);
+        int64_t rem = longestperiod % (SECONDSPERDAY * 90);
+        if (rem > 0){
+            ninetydayperiods++;
+        }
+        reg_amount = ninetydayperiods * reg_amount;
+
+        //check for pre existing account is done here.
+        name owner = transfer_public_key(payee_public_key,amount,max_fee,actor,tpid,reg_amount,true);
+
+        bool canvote = (can_vote == 1);
+        INLINE_ACTION_SENDER(eosiosystem::system_contract, addgenlocked)
+                ("eosio"_n, {{_self, "active"_n}},
+                 {owner,periods,canvote,amount}
+                );
+
+        int64_t raminc = 1024 + (64 * periods.size());
+
+        action(
+                permission_level{SYSTEMACCOUNT, "active"_n},
+                "eosio"_n,
+                "incram"_n,
+                std::make_tuple(actor, raminc)
+                ).send();
+
+
+        const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+
+        send_response(response_string.c_str());
+
+    }
+
 
     void token::sub_balance(name owner, asset value) {
         accounts from_acnts(_self, owner.value);
@@ -396,5 +546,5 @@ namespace eosio {
     }
 } /// namespace eosio
 
-EOSIO_DISPATCH( eosio::token, (create)(issue)(mintfio)(transfer)(trnsfiopubky)
+EOSIO_DISPATCH( eosio::token, (create)(issue)(mintfio)(transfer)(trnsfiopubky)(trnsloctoks)
 (retire))
