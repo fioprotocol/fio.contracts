@@ -38,16 +38,7 @@ namespace eosiosystem {
     */
     void
     system_contract::burnaction(const uint128_t &fioaddrhash) {
-       require_auth(_self);
-        //verify that this address is expired.
-        //this helps to ensure bad actors cant use this action unintentionally.
-        uint64_t nowtime = now();
-        auto namesbyname = _fionames.get_index<"byname"_n>();
-        auto nameiter = namesbyname.find(fioaddrhash);
-        //check(nameiter != namesbyname.end(),"unexpected error verifying expired address");
-        uint64_t expire = nameiter->expiration;
-
-        if ((expire + ADDRESSWAITFORBURNDAYS) <= nowtime) {
+        require_auth(AddressContract);
             auto prodbyaddress = _producers.get_index<"byaddress"_n>();
             auto prod = prodbyaddress.find(fioaddrhash);
             if (prod != prodbyaddress.end()) {
@@ -56,7 +47,7 @@ namespace eosiosystem {
                     info.addresshash = 0;
                     info.is_active = false;
                 });
-            }
+
             auto votersbyaddress = _voters.get_index<"byaddress"_n>();
             auto voters = votersbyaddress.find(fioaddrhash);
             if (voters != votersbyaddress.end()) {
@@ -181,14 +172,8 @@ namespace eosiosystem {
         fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
                        "FIO Address not registered", ErrorFioNameNotReg);
 
-        //check that the name is not expired
-        uint32_t name_expiration = fioname_iter->expiration;
-        uint32_t present_time = now();
-
         uint64_t account = fioname_iter->owner_account;
         fio_403_assert(account == actor.value, ErrorSignature);
-        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
-                       "FIO Address expired", ErrorFioNameExpired);
 
         auto domainsbyname = _domains.get_index<"byname"_n>();
         auto domains_iter = domainsbyname.find(domainHash);
@@ -201,7 +186,7 @@ namespace eosiosystem {
         //add 30 days to the domain expiration, this call will work until 30 days past expire.
         expiration = get_time_plus_seconds(expiration,SECONDS30DAYS);
 
-        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+        fio_400_assert(now() <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
                        ErrorDomainExpired);
 
         regiproducer(actor, fio_pub_key, url, location, fio_address);
@@ -269,14 +254,8 @@ namespace eosiosystem {
         fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
                        "FIO Address not registered", ErrorFioNameNotReg);
 
-        //check that the name is not expired
-        uint32_t name_expiration = fioname_iter->expiration;
-        uint32_t present_time = now();
-
         uint64_t account = fioname_iter->owner_account;
         fio_403_assert(account == actor.value, ErrorSignature);
-        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
-                       "FIO Address expired", ErrorFioNameExpired);
 
         auto domainsbyname = _domains.get_index<"byname"_n>();
         auto domains_iter = domainsbyname.find(domainHash);
@@ -285,7 +264,7 @@ namespace eosiosystem {
                        "FIO Address not registered", ErrorFioNameNotReg);
 
         uint32_t expiration = domains_iter->expiration;
-        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+        fio_400_assert(now() <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
                        ErrorDomainExpired);
 
         auto prodbyowner = _producers.get_index<"byowner"_n>();
@@ -485,9 +464,6 @@ namespace eosiosystem {
           fio_400_assert(voter_iter != namesbyname.end(), "fio_address", fio_address,
                          "FIO address not registered", ErrorFioNameNotRegistered);
 
-          fio_400_assert(now() <= voter_iter->expiration, "fio_address", fio_address, "FIO Address expired",
-                      ErrorDomainExpired);
-
           auto voterdomain_iter = domainsbyname.find(voterDomainHash);
 
           fio_400_assert(voterdomain_iter != domainsbyname.end(), "fio_address", fio_address,
@@ -510,12 +486,7 @@ namespace eosiosystem {
           fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
                          "FIO Address not registered", ErrorFioNameNotReg);
 
-          uint32_t name_expiration = fioname_iter->expiration;
-
           uint64_t account = fioname_iter->owner_account;
-          fio_400_assert(now() <= name_expiration, "fio_address", producers[i],
-                         "FIO Address expired", ErrorFioNameExpired);
-
           auto domains_iter = domainsbyname.find(domainHash);
 
           fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fio_address,
@@ -634,17 +605,12 @@ namespace eosiosystem {
         fio_400_assert(voter_proxy_iter->is_proxy, "fio_address", proxy,
                        "This address is not a proxy", AddressNotProxy);
 
-        //check that the proxy name is not expired
-        uint32_t present_time = now();
-        fio_400_assert(present_time <= proxy_iter->expiration, "proxy", proxy,
-                      "FIO Address expired", ErrorFioNameExpired);
-
         auto domains_iter = domainsbyname.find(proxyDomainHash);
 
         fio_400_assert(domains_iter != domainsbyname.end(), "proxy", proxy,
                       "FIO Address not registered", ErrorFioNameNotReg);
 
-        fio_400_assert(present_time <= get_time_plus_seconds( domains_iter->expiration, SECONDS30DAYS),
+        fio_400_assert(now() <= get_time_plus_seconds( domains_iter->expiration, SECONDS30DAYS),
                      "proxy", proxy, "FIO Domain expired", ErrorDomainExpired);
 
 
@@ -661,14 +627,11 @@ namespace eosiosystem {
           fio_400_assert(voter_iter != namesbyname.end(), "fio_address", fio_address,
                          "FIO address not registered", ErrorFioNameNotRegistered);
 
-          fio_400_assert(present_time <= voter_iter->expiration, "fio_address", fio_address, "FIO Address expired",
-                         ErrorDomainExpired);
-
           auto voterdomain_iter = domainsbyname.find(voterDomainHash);
           fio_400_assert(voterdomain_iter != domainsbyname.end(), "fio_address", fio_address,
                          "FIO Address not registered", ErrorFioNameNotReg);
 
-          fio_400_assert(present_time <= voterdomain_iter->expiration, "fio_address", fio_address, "FIO Domain expired",
+          fio_400_assert(now() <= voterdomain_iter->expiration, "fio_address", fio_address, "FIO Domain expired",
                          ErrorDomainExpired);
 
           bundleeligiblecountdown = voter_iter->bundleeligiblecountdown;
@@ -801,9 +764,7 @@ namespace eosiosystem {
                     return amount;
                 }
             }
-           //TEST TEST TEST LOCKED TOKENS
-           //TEST TEST TEST LOCKED TOKENS  uint32_t issueplus210 = lockiter->timestamp+(25*60);
-           //TEST TEST TEST LOCKED TOKENS
+
            uint32_t issueplus210 = lockiter->timestamp+(210*SECONDSPERDAY);
 
             //if lock type 2 only subtract remaining locked amount if 210 days since launch, and inhibit locking true.
@@ -818,36 +779,23 @@ namespace eosiosystem {
                 }
             }
         }
-        return amount;
-    }
 
-    glockresult system_contract::get_general_votable_balance(const name &tokenowner){
-
-        glockresult res;
-        //get fio balance for this account,
-        uint32_t present_time = now();
-        const auto my_balance = eosio::token::get_balance("fio.token"_n,tokenowner, FIOSYMBOL.code() );
-        uint64_t amount = my_balance.amount;
-
+        //STAKING
+        //now add in the logic for the general locks.
         auto locks_by_owner = _generallockedtokens.get_index<"byowner"_n>();
-        auto lockiter = locks_by_owner.find(tokenowner.value);
-        if(lockiter != locks_by_owner.end()){
-            res.lockfound = true;
+        auto glockiter = locks_by_owner.find(tokenowner.value);
+        if(glockiter != locks_by_owner.end()){
             //if can vote --
-            if (lockiter->can_vote == 1){
-                res.amount = amount;
-            }else{
-                if (amount > lockiter->remaining_lock_amount) {
-                    res.amount =  amount - lockiter->remaining_lock_amount;
+            if (glockiter->can_vote == 0){
+                if (amount > glockiter->remaining_lock_amount) {
+                    amount =  amount - glockiter->remaining_lock_amount;
                 }else{
-                    res.amount = 0;
+                    amount = 0;
                 }
             }
         }
-        if (!res.lockfound){
-         res.amount = amount;
-        }
-        return res;
+
+        return amount;
     }
 
 
@@ -871,18 +819,8 @@ namespace eosiosystem {
         check(voter != votersbyowner.end(), "user must vote before votes can be updated");
         check(!proxy || !voter->is_proxy, "account registered as a proxy is not allowed to use a proxy");
 
-
-        //change to get_unlocked_balance() Ed 11/25/2019
         uint64_t amount = 0;
-        glockresult res = get_general_votable_balance(voter->owner);
-        if(res.lockfound){
-            amount = res.amount;
-        }else {
-           amount = get_votable_balance(voter->owner);
-        }
-
-        //on the first vote we update the total voted fio.
-
+        amount = get_votable_balance(voter->owner);
 
         auto new_vote_weight = (double)amount;
         if (voter->is_proxy) {
@@ -958,7 +896,6 @@ namespace eosiosystem {
                         p.total_votes = 0;
                     }
                     _gstate.total_producer_vote_weight += pd.second.first;
-                    //check( p.total_votes >= 0, "something bad happened" );
                 });
             } else {
                 check(!pd.second.second , "Invalid or duplicated producers2"); //data corruption
@@ -1065,14 +1002,8 @@ namespace eosiosystem {
         fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
                        "FIO Address not registered", ErrorFioNameNotReg);
 
-        //check that the name is not expired
-        uint32_t name_expiration = fioname_iter->expiration;
-        uint32_t present_time = now();
-
         uint64_t account = fioname_iter->owner_account;
         fio_403_assert(account == actor.value, ErrorSignature);
-        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
-                       "FIO Address expired", ErrorFioNameExpired);
 
         auto domainsbyname = _domains.get_index<"byname"_n>();
         auto domains_iter = domainsbyname.find(domainHash);
@@ -1081,7 +1012,7 @@ namespace eosiosystem {
                        "FIO Address not registered", ErrorFioNameNotReg);
 
         uint32_t expiration = domains_iter->expiration;
-        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+        fio_400_assert(now() <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
                        ErrorDomainExpired);
 
         regiproxy(actor,fio_address,false);
@@ -1139,14 +1070,8 @@ namespace eosiosystem {
         fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fio_address,
                        "FIO Address not registered", ErrorFioNameNotReg);
 
-        //check that the name is not expired
-        uint32_t name_expiration = fioname_iter->expiration;
-        uint32_t present_time = now();
-
         uint64_t account = fioname_iter->owner_account;
         fio_403_assert(account == actor.value, ErrorSignature);
-        fio_400_assert(present_time <= name_expiration, "fio_address", fio_address,
-                       "FIO Address expired", ErrorFioNameExpired);
 
         auto domainsbyname = _domains.get_index<"byname"_n>();
         auto domains_iter = domainsbyname.find(domainHash);
@@ -1159,7 +1084,7 @@ namespace eosiosystem {
         //add 30 days to the domain expiration, this call will work until 30 days past expire.
         expiration = get_time_plus_seconds(expiration,SECONDS30DAYS);
 
-        fio_400_assert(present_time <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
+        fio_400_assert(now() <= expiration, "domain", fa.fiodomain, "FIO Domain expired",
                        ErrorDomainExpired);
 
         regiproxy(actor,fio_address,true);
@@ -1280,12 +1205,8 @@ namespace eosiosystem {
         check(!voter.proxy || !voter.is_proxy, "account registered as a proxy is not allowed to use a proxy");
 
         uint64_t amount = 0;
-        glockresult res = get_general_votable_balance(voter.owner);
-        if(res.lockfound){
-            amount = res.amount;
-        }else {
-            amount = get_votable_balance(voter.owner);
-        }
+        amount = get_votable_balance(voter.owner);
+
         //instead of staked we use the voters current FIO balance MAS-522 eliminate stake from voting.
         auto new_weight = (double)amount;
         if (voter.is_proxy) {

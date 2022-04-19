@@ -40,7 +40,6 @@ namespace fioio {
     constexpr auto ErrorFioNameNotRegistered = ident | httpLocationError | 108;
     constexpr auto ErrorFioNameNotReg = ident | httpDataError | 127;   // Fioname not yet registered
     constexpr auto ErrorDomainExpired = ident | httpDataError | 109;   // Fioname not yet registered
-    constexpr auto ErrorFioNameExpired = ident | httpDataError | 110;   // Fioname not yet registered
     constexpr auto ErrorPubAddressEmpty = ident | httpDataError | 111;   // Public address is empty
     constexpr auto ErrorPubKeyEmpty = ident | httpDataError | 112;   // Public key is empty
     constexpr auto ErrorPubAddressExist = ident | httpDataError | 113;   // Public address exists
@@ -95,6 +94,9 @@ namespace fioio {
     constexpr auto ErrorUnexpectedNumberResults = ident | httpLocationError | 156;   // unexpected number of results
     constexpr auto ErrorNoFioActionsFound = ident | httpLocationError | 157;   // no actions found
     constexpr auto ErrorDomainOwner = ident | httpInvalidError | 158;
+    constexpr auto ErrorRetireQuantity = ident | httpDataError | 159;
+    constexpr auto ErrorInvalidMemo = ident | httpDataError | 160;
+    constexpr auto ErrorDomainSaleNotFound = ident | httpInvalidError | 161; // domain not found in domainsales table
 
     /**
     * Helper funtions for detecting rich error messages and extracting bitfielded values

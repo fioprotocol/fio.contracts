@@ -86,7 +86,7 @@ namespace fioio {
 
     inline bool validateChainNameFormat(const string &chain) {
         if (chain.length() >= 1 && chain.length() <= 10) {
-            if (chain.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789") !=
+            if (chain.find_first_not_of("$ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789") !=
                 std::string::npos) {
                 return false;
             }
@@ -128,6 +128,23 @@ namespace fioio {
             return false;
         }
         return true;
+    }
+
+    inline bool validateRFC3986Chars(const std::string &url) {
+      if (url.length() >= 10 && url.length() <= 128) {
+        if(makeLowerCase(url).find_first_not_of("abcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=") != std::string::npos) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+
+    inline bool validateHexChars(const std:: string &hex) {
+      if (makeLowerCase(hex).find_first_not_of("1234567890abcdef") != std::string::npos) {
+        return false;
+      }
+      return true;
     }
 
     inline bool validateLocationFormat(const uint16_t &location) {

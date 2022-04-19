@@ -15,6 +15,7 @@
 #define PAYABLETPIDS    100
 
 #include "fio.treasury.hpp"
+#include <fio.staking/fio.staking.hpp>
 
 namespace fioio {
 
@@ -31,6 +32,8 @@ private:
         voteshares_table voteshares;
         eosiosystem::eosio_global_state gstate;
         eosiosystem::global_state_singleton global;
+        fioio::global_staking_singleton         staking;
+        fioio::global_staking_state             gstaking;
         eosiosystem::producers_table producers;
         bool rewardspaid;
         uint64_t lasttpidpayout;
@@ -47,7 +50,8 @@ public:
                 producers(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                 global(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                 fdtnrewards(get_self(), get_self().value),
-                bucketrewards(get_self(), get_self().value) {
+                bucketrewards(get_self(), get_self().value),
+                staking(STAKINGACCOUNT, STAKINGACCOUNT.value){
                   state = clockstate.get_or_default();
         }
 
@@ -108,6 +112,22 @@ public:
                 send_response(response_string.c_str());
         } //tpid_claim
 
+
+        // @abi action
+        [[eosio::action]]
+        void paystake( const name &actor, const uint64_t &amount) {
+            require_auth(STAKINGACCOUNT);
+
+            action(permission_level{get_self(), "active"_n},
+                TokenContract, "transfer"_n,
+                make_tuple(TREASURYACCOUNT, name(actor),
+                asset(amount, FIOSYMBOL),
+                string("Paying Staking Rewards"))
+            ).send();
+
+        }
+
+
         // @abi action
         [[eosio::action]]
         void bpclaim(const string &fio_address, const name &actor) {
@@ -148,8 +168,6 @@ public:
 
                 fio_400_assert(now() < expiration, "domain", domiter->name,
                                "FIO Domain expired", ErrorDomainExpired);
-                fio_400_assert(now() < fioiter->expiration, "fio_address", fio_address,
-                               "FIO Address expired", ErrorFioNameExpired);
 
                 /***************  Pay schedule expiration *******************/
                 //if it has been 24 hours, transfer remaining producer vote_shares to the foundation and record the rewards back into bprewards,
@@ -166,6 +184,44 @@ public:
                 //*********** CREATE PAYSCHEDULE **************
                 // If there is no pay schedule then create a new one
                 if (std::distance(voteshares.begin(), voteshares.end()) == 0) { //if new payschedule
+
+                    //process the staking rewards, once per day.
+                    /*
+                    If Daily Staking Rewards is less than 25,000 FIO Tokens and Staking Rewards Reserves Minted is less than Staking Rewards Reserves Maximum:
+                    The difference between 25,000 FIO Tokens and Daily Staking Rewards
+                     (or difference between Staking Rewards Reserves Minted and Staking Rewards Reserves Maximum, whichever is smaller)
+                     is minted, transferred to treasury account and added to Staking Rewards Reserves Minted.
+                            Daily Staking Rewards is incremented by the tokens minted.
+                            Daily Staking Rewards amount is:
+                    Added to Combined Token Pool, which modifies ROE
+                    Set to 0
+                     */
+                    gstaking = staking.get();
+                    uint64_t amounttomint = 0;
+                    if ((gstaking.daily_staking_rewards < DAILYSTAKINGMINTTHRESHOLD)&&
+                            (gstaking.staking_rewards_reserves_minted < STAKINGREWARDSRESERVEMAXIMUM)){
+                        uint64_t twentyfivekminusdaily = DAILYSTAKINGMINTTHRESHOLD - gstaking.daily_staking_rewards;
+                        uint64_t reservemaxminusminted = STAKINGREWARDSRESERVEMAXIMUM - gstaking.staking_rewards_reserves_minted;
+                        amounttomint = reservemaxminusminted;
+                        if (amounttomint > twentyfivekminusdaily){
+                            amounttomint = twentyfivekminusdaily;
+                        }
+                        //mint and update accounting.
+                        action(permission_level{get_self(), "active"_n},
+                               TokenContract, "mintfio"_n,
+                               make_tuple(TREASURYACCOUNT,amounttomint)
+                        ).send();
+
+                    }
+
+                    //update daily accounting, and zero daily staking
+                    action(permission_level{get_self(), "active"_n},
+                           STAKINGACCOUNT, "recorddaily"_n,
+                           make_tuple(amounttomint)
+                    ).send();
+
+                    //end process staking rewards.
+
                     //Create the payment schedule
                     int64_t bpcounter = 0;
                     uint64_t activecount = 0;
@@ -221,7 +277,6 @@ public:
                           print("Block producers reserve minting exhausted");
                         }
                         //!!!rewards is now 0 in the bprewards table and can no longer be referred to. If needed use projectedpay
-
                         uint64_t fdtntomint = FDTNMAXTOMINT;
                         const uint64_t fdtnremainingreserve = FDTNMAXRESERVE - state.fdtnreservetokensminted;
 
@@ -246,8 +301,8 @@ public:
 
                         if (bpcount <= MAXACTIVEBPS) abpcount = bpcount;
                         auto bprewardstat = bprewards.get();
-                        uint64_t tostandbybps = static_cast<uint64_t>(bprewardstat.rewards * .60);
-                        uint64_t toactivebps = static_cast<uint64_t>(bprewardstat.rewards * .40);
+                        uint64_t tostandbybps = static_cast<uint64_t>((bprewardstat.rewards / 10) * 6);
+                        uint64_t toactivebps = static_cast<uint64_t>((bprewardstat.rewards / 10) * 4);
 
                         bpcounter = 0;
                         auto votesharesiter = voteshares.get_index<"byvotes"_n>();
@@ -305,7 +360,6 @@ public:
                                 ).send();
                         }
 
-
                         // PAY FOUNDATION //
                         auto fdtnstate = fdtnrewards.get();
                         if(fdtnstate.rewards > 0) {
@@ -345,8 +399,8 @@ public:
         void bprewdupdate(const uint64_t &amount) {
 
                 eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
-                             has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) || has_auth(FeeContract)),
-                             "missing required authority of fio.address, fio.treasury, fio.fee, fio.token, eosio or fio.reqobt");
+                             has_auth(STAKINGACCOUNT) ||  has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) || has_auth(FeeContract)),
+                             "missing required authority of fio.address, fio.treasury, fio.fee, fio.token, fio.staking, eosio or fio.reqobt");
 
                 bprewards.set(bprewards.exists() ? bpreward{bprewards.get().rewards + amount} : bpreward{amount}, get_self());
         }
@@ -356,25 +410,23 @@ public:
         void bppoolupdate(const uint64_t &amount) {
 
                 eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
-                             has_auth(REQOBTACCOUNT)),
-                             "missing required authority of fio.address, fio.treasury, fio.token, or fio.reqobt");
+                             has_auth(REQOBTACCOUNT) || has_auth(EscrowContract)),
+                             "missing required authority of fio.address, fio.treasury, fio.token, fio.escrow or fio.reqobt");
                 bucketrewards.set(bucketrewards.exists() ? bucketpool{bucketrewards.get().rewards + amount} : bucketpool{amount}, get_self());
         }
 
         // @abi action
         [[eosio::action]]
         void fdtnrwdupdat(const uint64_t &amount) {
-
                 eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
-                             has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) || has_auth(FeeContract)),
-                             "missing required authority of fio.address, fio.token, fio.fee, fio.treasury or fio.reqobt");
+                                     has_auth(STAKINGACCOUNT) ||has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) || has_auth(FeeContract) || has_auth(EscrowContract)),
+                             "missing required authority of fio.address, fio.token, fio.fee, fio.treasury, fio.escrow, fio.staking, or fio.reqobt");
 
                 fdtnrewards.set(fdtnrewards.exists() ? fdtnreward{fdtnrewards.get().rewards + amount} : fdtnreward{amount}, get_self());
-
         }
 
 };     //class FIOTreasury
 
 EOSIO_DISPATCH(FIOTreasury, (tpidclaim)(startclock)(bprewdupdate)(fdtnrwdupdat)(bppoolupdate)
-               (bpclaim))
+               (bpclaim)(paystake))
 }

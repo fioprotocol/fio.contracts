@@ -15,8 +15,5 @@ add_subdirectory(fio.fee)
 add_subdirectory(fio.request.obt)
 add_subdirectory(fio.tpid)
 add_subdirectory(fio.treasury)
-
-add_subdirectory(fio.templete)
-
 add_subdirectory(fio.escrow)
-
+add_subdirectory(fio.staking)

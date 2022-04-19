@@ -144,8 +144,8 @@ namespace fioio {
             fio_400_assert(payee_fio_address.length() > 0, "payee_fio_address", payee_fio_address,
                            "to fio address not found", ErrorInvalidFioNameFormat);
 
-            fio_400_assert(content.size() >= 64 && content.size() <= 432, "content", content,
-                           "Requires min 64 max 432 size", ErrorContentLimit);
+            fio_400_assert(content.size() >= 64, "content", content,
+                           "Requires min 64", ErrorContentLimit);
 
             FioAddress payerfa;
             getFioAddressStruct(payer_fio_address, payerfa);
@@ -159,11 +159,6 @@ namespace fioio {
                            "No such FIO Address",
                            ErrorFioNameNotReg);
             uint64_t payer_acct = fioname_iter->owner_account;
-            uint64_t payernameexp = fioname_iter->expiration;
-
-            fio_400_assert(present_time <= payernameexp, "payer_fio_address", payer_fio_address,
-                           "FIO Address expired", ErrorFioNameExpired);
-
             uint128_t domHash = string_to_uint128_hash(payerfa.fiodomain.c_str());
 
             auto domainsbyname = domains.get_index<"byname"_n>();
@@ -177,7 +172,7 @@ namespace fioio {
             domexp = get_time_plus_seconds(domexp, SECONDS30DAYS);
 
             fio_400_assert(present_time <= domexp, "payer_fio_address", payer_fio_address,
-                           "FIO Domain expired", ErrorFioNameExpired);
+                           "FIO Domain expired", ErrorDomainExpired);
 
             auto account_iter = clientkeys.find(payer_acct);
             fio_400_assert(account_iter != clientkeys.end(), "payer_fio_address", payer_fio_address,
@@ -215,17 +210,20 @@ namespace fioio {
             fio_400_assert(fee_type == 1, "fee_type", to_string(fee_type),
                            "unexpected fee type for endpoint record_obt_data, expected 1", ErrorNoEndpoint);
 
+            uint64_t feeMultiplier = 1;
+            if(content.size() >= BASECONTENTAMOUNT){ feeMultiplier = ( content.size() / BASECONTENTAMOUNT) + 1; }
+            uint64_t bundleAmount = 2 * feeMultiplier;
             uint64_t fee_amount = 0;
 
-            if (fioname_iter->bundleeligiblecountdown > 1) {
+            if (fioname_iter->bundleeligiblecountdown >= bundleAmount) {
                 action{
                         permission_level{_self, "active"_n},
                         AddressContract,
                         "decrcounter"_n,
-                        make_tuple(payer_fio_address, 2)
+                        make_tuple(payer_fio_address, bundleAmount)
                 }.send();
             } else {
-                fee_amount = fee_iter->suf_amount;
+                fee_amount = fee_iter->suf_amount * feeMultiplier;
                 fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
                                "Fee exceeds supplied maximum.",
                                ErrorMaxFeeExceeded);
@@ -289,11 +287,15 @@ namespace fioio {
                                            to_string(fee_amount) + string("}");
 
             if (RECORDOBTRAM > 0) {
+                uint64_t newFundsFee = RECORDOBTRAM;
+                if (feeMultiplier > 1) {
+                    newFundsFee = RECORDOBTRAM + ((RECORDOBTRAM * feeMultiplier) / 2);
+                }
                 action(
                         permission_level{SYSTEMACCOUNT, "active"_n},
                         "eosio"_n,
                         "incram"_n,
-                        std::make_tuple(aactor, RECORDOBTRAM)
+                        std::make_tuple(aactor, newFundsFee)
                 ).send();
             }
 
@@ -337,8 +339,8 @@ namespace fioio {
                            "to fio address not specified",
                            ErrorInvalidJsonInput);
 
-            fio_400_assert(content.size() >= 64 && content.size() <= 296, "content", content,
-                           "Requires min 64 max 296 size",
+            fio_400_assert(content.size() >= 64, "content", content,
+                           "Requires min 64",
                            ErrorContentLimit);
 
             const uint32_t present_time = now();
@@ -375,10 +377,6 @@ namespace fioio {
                            ErrorClientKeyNotFound);
             string payee_key = account_iter->clientkey;
 
-            const uint64_t payeenameexp = fioname_iter->expiration;
-            fio_400_assert(present_time <= payeenameexp, "payee_fio_address", payee_fio_address,
-                           "FIO Address expired", ErrorFioNameExpired);
-
             const uint128_t domHash = string_to_uint128_hash(payeefa.fiodomain.c_str());
             auto domainsbyname = domains.get_index<"byname"_n>();
             auto iterdom = domainsbyname.find(domHash);
@@ -390,7 +388,7 @@ namespace fioio {
             //add 30 days to the domain expiration, this call will work until 30 days past expire.
             const uint64_t domexp = get_time_plus_seconds(iterdom->expiration, SECONDS30DAYS);
             fio_400_assert(present_time <= domexp, "payee_fio_address", payee_fio_address,
-                           "FIO Domain expired", ErrorFioNameExpired);
+                           "FIO Domain expired", ErrorDomainExpired);
 
             fio_403_assert(payee_acct == aActor.value, ErrorSignature);
 
@@ -403,22 +401,24 @@ namespace fioio {
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             const uint64_t fee_type = fee_iter->type;
-
             fio_400_assert(fee_type == 1, "fee_type", to_string(fee_type),
                            "unexpected fee type for endpoint new_funds_request, expected 1",
                            ErrorNoEndpoint);
 
+            uint64_t feeMultiplier = 1;
+            if(content.size() >= BASECONTENTAMOUNT){ feeMultiplier = ( content.size() / BASECONTENTAMOUNT) + 1; }
+            uint64_t bundleAmount = 2 * feeMultiplier;
             uint64_t fee_amount = 0;
 
-            if (fioname_iter->bundleeligiblecountdown > 1) {
+            if (fioname_iter->bundleeligiblecountdown >= bundleAmount) {
                 action{
                         permission_level{_self, "active"_n},
                         AddressContract,
                         "decrcounter"_n,
-                        make_tuple(payee_fio_address, 2)
+                        make_tuple(payee_fio_address, bundleAmount)
                 }.send();
             } else {
-                fee_amount = fee_iter->suf_amount;
+                fee_amount = fee_iter->suf_amount * feeMultiplier;
                 fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
                                "Fee exceeds supplied maximum.",
                                ErrorMaxFeeExceeded);
@@ -434,7 +434,6 @@ namespace fioio {
                 }
             }
             //end fees, bundle eligible fee logic
-
             const uint64_t id = fioTransactionsTable.available_primary_key();
             const uint128_t toHash = string_to_uint128_hash(payee_fio_address.c_str());
             const uint128_t fromHash = string_to_uint128_hash(payer_fio_address.c_str());
@@ -460,14 +459,17 @@ namespace fioio {
                     string(",\"fee_collected\":") + to_string(fee_amount) + string("}");
 
             if (NEWFUNDSREQUESTRAM > 0) {
+                uint64_t newFundsFee = NEWFUNDSREQUESTRAM;
+                if (feeMultiplier > 1) {
+                    newFundsFee = NEWFUNDSREQUESTRAM + ((NEWFUNDSREQUESTRAM * feeMultiplier) / 2);
+                }
                 action(
                         permission_level{SYSTEMACCOUNT, "active"_n},
                         "eosio"_n,
                         "incram"_n,
-                        std::make_tuple(aActor, NEWFUNDSREQUESTRAM)
+                        std::make_tuple(aActor, newFundsFee)
                 ).send();
             }
-
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
                            "Transaction is too large", ErrorTransactionTooLarge);
 
@@ -524,13 +526,9 @@ namespace fioio {
             fio_403_assert(fioname_iter != namesbyname.end(), ErrorSignature);
 
             const uint64_t account = fioname_iter->owner_account;
-            const uint64_t payernameexp = fioname_iter->expiration;
             const string payerFioAddress = fioname_iter->name;
             FioAddress payerfa;
             getFioAddressStruct(payerFioAddress, payerfa);
-
-            fio_400_assert(present_time <= payernameexp, "payer_fio_address", payerFioAddress,
-                           "FIO Address expired", ErrorFioNameExpired);
 
             const uint128_t domHash = string_to_uint128_hash(payerfa.fiodomain.c_str());
             auto domainsbyname = domains.get_index<"byname"_n>();
@@ -544,7 +542,7 @@ namespace fioio {
             const uint64_t domexp = get_time_plus_seconds(iterdom->expiration, SECONDS30DAYS);
 
             fio_400_assert(present_time <= domexp, "payer_fio_address", payerFioAddress,
-                           "FIO Domain expired", ErrorFioNameExpired);
+                           "FIO Domain expired", ErrorDomainExpired);
 
             const string payer_fio_address = fioname_iter->name;
 
@@ -666,13 +664,9 @@ namespace fioio {
 
         fio_403_assert(fioname_iter != namesbyname.end(), ErrorSignature);
         const uint64_t account = fioname_iter->owner_account;
-        const uint64_t payeenameexp = fioname_iter->expiration;
         const string payeeFioAddress = fioname_iter->name;
         FioAddress payeefa;
         getFioAddressStruct(payeeFioAddress, payeefa);
-
-        fio_400_assert(present_time <= payeenameexp, "payee_fio_address", payeeFioAddress,
-                       "FIO Address expired", ErrorFioNameExpired);
 
         const uint128_t domHash = string_to_uint128_hash(payeefa.fiodomain.c_str());
         auto domainsbyname = domains.get_index<"byname"_n>();
@@ -686,7 +680,7 @@ namespace fioio {
         const uint64_t domexp = get_time_plus_seconds(iterdom->expiration, SECONDS30DAYS);
 
         fio_400_assert(present_time <= domexp, "payee_fio_address", payeeFioAddress,
-                       "FIO Domain expired", ErrorFioNameExpired);
+                       "FIO Domain expired", ErrorDomainExpired);
 
         const string payee_fio_address = fioname_iter->name;
 

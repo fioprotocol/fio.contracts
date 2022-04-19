@@ -1,14 +1,250 @@
 {
   "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Thu Dec 31 03:35:08 2020",
   "version": "eosio::abi/1.1",
-  "structs": [],
+  "structs": [
+    {
+      "name": "domainsale",
+      "base": "",
+      "fields": [
+        {
+          "name": "id",
+          "type": "uint64"
+        },
+        {
+          "name": "owner",
+          "type": "name"
+        },
+        {
+          "name": "ownerhash",
+          "type": "uint128"
+        },
+        {
+          "name": "domain",
+          "type": "string"
+        },
+        {
+          "name": "domainhash",
+          "type": "uint128"
+        },
+        {
+          "name": "sale_price",
+          "type": "uint64"
+        },
+        {
+          "name": "commission_fee",
+          "type": "float64"
+        },
+        {
+          "name": "date_listed",
+          "type": "uint64"
+        },
+        {
+          "name": "status",
+          "type": "uint64"
+        },
+        {
+          "name": "date_updated",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "mrkplconfig",
+      "base": "",
+      "fields": [
+        {
+          "name": "id",
+          "type": "uint64"
+        },
+        {
+          "name": "owner",
+          "type": "name"
+        },
+        {
+          "name": "ownerhash",
+          "type": "uint128"
+        },
+        {
+          "name": "commission_fee",
+          "type": "float64"
+        },
+        {
+          "name": "listing_fee",
+          "type": "uint64"
+        },
+        {
+          "name": "e_break",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "buydomain",
+      "base": "",
+      "fields": [
+        {
+          "name": "actor",
+          "type": "name"
+        },
+        {
+          "name": "sale_id",
+          "type": "int64"
+        },
+        {
+          "name": "fio_domain",
+          "type": "string"
+        },
+        {
+          "name": "max_buy_price",
+          "type": "int64"
+        },
+        {
+          "name": "max_fee",
+          "type": "int64"
+        },
+        {
+          "name": "tpid",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "listdomain",
+      "base": "",
+      "fields": [
+        {
+          "name": "actor",
+          "type": "name"
+        },
+        {
+          "name": "fio_domain",
+          "type": "string"
+        },
+        {
+          "name": "sale_price",
+          "type": "int64"
+        },
+        {
+          "name": "max_fee",
+          "type": "int64"
+        },
+        {
+          "name": "tpid",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "cxlistdomain",
+      "base": "",
+      "fields": [
+        {
+          "name": "actor",
+          "type": "name"
+        },
+        {
+          "name": "fio_domain",
+          "type": "string"
+        },
+        {
+          "name": "max_fee",
+          "type": "int64"
+        },
+        {
+          "name": "tpid",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "setmrkplcfg",
+      "base": "",
+      "fields": [
+        {
+          "name": "actor",
+          "type": "name"
+        },
+        {
+          "name":"commission_fee",
+          "type": "float64"
+        },
+        {
+          "name":"listing_fee",
+          "type": "uint64"
+        },
+        {
+          "name":"e_break",
+          "type": "uint64"
+        },
+        {
+          "name":"max_fee",
+          "type": "int64"
+        }
+      ]
+    },
+    {
+      "name": "cxburned",
+      "base": "",
+      "fields": [
+        {
+          "name": "domainhash",
+          "type": "uint128"
+        }
+      ]
+    }
+  ],
   "types": [],
-  "actions": [{
-    "name": "hi",
-    "type": "hi",
-    "ricardian_contract": ""
-  }],
-  "tables": [],
+  "actions": [
+    {
+      "name": "listdomain",
+      "type": "listdomain",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "cxlistdomain",
+      "type": "cxlistdomain",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "buydomain",
+      "type": "buydomain",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "setmrkplcfg",
+      "type": "setmrkplcfg",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "cxburned",
+      "type": "cxburned",
+      "ricardian_contract": ""
+    }
+  ],
+  "tables": [
+    {
+      "name": "domainsales",
+      "index_type": "i64",
+      "key_names": [
+        "id"
+      ],
+      "key_types": [
+        "string"
+      ],
+      "type": "domainsale"
+    },
+    {
+      "name": "mrkplconfigs",
+      "index_type": "i64",
+      "key_names": [
+        "id"
+      ],
+      "key_types": [
+        "string"
+      ],
+      "type": "mrkplconfig"
+    }
+  ],
   "ricardian_clauses": [],
   "variants": [],
   "abi_extensions": []

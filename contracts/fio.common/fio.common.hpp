@@ -38,7 +38,13 @@
 #define MAXBPS 42
 #define MAXACTIVEBPS 21
 #define DEFAULTBUNDLEAMT 100
-
+//staking
+#define STAKEDTOKENPOOLMINIMUM 1000000000000000 // 1M FIO SUFS
+#define STAKINGREWARDSRESERVEMAXIMUM 25000000000000000 // 25M FIO SUFS.
+#define DAILYSTAKINGMINTTHRESHOLD 25000000000000 //25k FIO threshold for MINTING staking rewards.
+#define MINIMUMRETIRE 1000000000000
+#define STAKE_FIO_TOKENS_ENDPOINT "stake_fio_tokens"
+#define UNSTAKE_FIO_TOKENS_ENDPOINT "unstake_fio_tokens"
 #define REGISTER_ADDRESS_ENDPOINT "register_fio_address"
 #define REGISTER_DOMAIN_ENDPOINT "register_fio_domain"
 #define RENEW_ADDRESS_ENDPOINT "renew_fio_address"
@@ -66,7 +72,14 @@
 #define SUBMIT_FEE_MULTIPLER_ENDPOINT "submit_fee_multiplier"
 #define BURN_FIO_ADDRESS_ENDPOINT "burn_fio_address"
 #define ADD_BUNDLED_TRANSACTION_ENDPOINT "add_bundled_transactions"
+#define ADD_NFT_ENDPOINT "add_nft"
+#define REM_NFT_ENDPOINT "remove_nft"
+#define REM_ALL_NFTS_ENDPOINT "remove_all_nfts"
 
+#define LIST_DOMAIN_ENDPOINT "list_domain"
+#define CANCEL_LIST_DOMAIN_ENDPOINT "cancel_list_domain"
+#define BUY_DOMAIN_ENDPOINT "buy_domain"
+#define SET_MARKETPLACE_CONFIG_ENDPOINT "set_marketplace_config"
 
 namespace fioio {
 
@@ -116,7 +129,8 @@ namespace fioio {
              actor == fioio::TokenContract ||
              actor == fioio::TREASURYACCOUNT ||
              actor == fioio::FIOSYSTEMACCOUNT ||
-             actor == fioio::FIOACCOUNT);
+             actor == fioio::FIOACCOUNT ||
+             actor == fioio::EscrowContract);
     }
 
     static constexpr uint64_t string_to_uint64_hash(const char *str) {
@@ -235,6 +249,25 @@ namespace fioio {
 
     typedef singleton<"bounties"_n, bounty> bounties_table;
 
+    //this will call update tpid in the tpid contract,
+    //add the info to the tpid table for this TPID and also set up the auto proxy if needed.
+    void set_auto_proxy(const string &tpid, const uint64_t &amount, const name &auth, const name &actor){
+        fionames_table fionames(AddressContract, AddressContract.value);
+        uint128_t fioaddhash = string_to_uint128_hash(tpid.c_str());
+
+        auto namesbyname = fionames.get_index<"byname"_n>();
+        auto fionamefound = namesbyname.find(fioaddhash);
+
+        if (fionamefound != namesbyname.end()) {
+            action(
+                    permission_level{auth, "active"_n},
+                    TPIDContract,
+                    "updatetpid"_n,
+                    std::make_tuple(tpid, actor, amount)
+            ).send();
+        }
+    }
+
     void process_rewards(const string &tpid, const uint64_t &amount, const name &auth, const name &actor) {
 
         action(
@@ -282,7 +315,13 @@ namespace fioio {
                     permission_level{auth, "active"_n},
                     TREASURYACCOUNT,
                     "bprewdupdate"_n,
-                    std::make_tuple((uint64_t)(static_cast<double>(amount) * .85))
+                    std::make_tuple((uint64_t)(static_cast<double>(amount) * .60))
+            ).send();
+            action(
+                    permission_level{auth, "active"_n},
+                    STAKINGACCOUNT,
+                    "incgrewards"_n,
+                    std::make_tuple((uint64_t)(static_cast<double>(amount) * .25))
             ).send();
 
         } else {
@@ -290,14 +329,19 @@ namespace fioio {
                     permission_level{auth, "active"_n},
                     TREASURYACCOUNT,
                     "bprewdupdate"_n,
-                    std::make_tuple((uint64_t)(static_cast<double>(amount) * .95))
+                    std::make_tuple((uint64_t)(static_cast<double>(amount) * .70))
+            ).send();
+            action(
+                    permission_level{auth, "active"_n},
+                    STAKINGACCOUNT,
+                    "incgrewards"_n,
+                    std::make_tuple((uint64_t)(static_cast<double>(amount) * .25))
             ).send();
         }
     }
 
 
     void processbucketrewards(const string &tpid, const uint64_t &amount, const name &auth, const name &actor) {
-
 
         action(
                 permission_level{auth, "active"_n},
@@ -344,7 +388,13 @@ namespace fioio {
                     permission_level{auth, "active"_n},
                     TREASURYACCOUNT,
                     "bppoolupdate"_n,
-                    std::make_tuple((uint64_t)(static_cast<double>(amount) * .85))
+                    std::make_tuple((uint64_t)(static_cast<double>(amount) * .60))
+            ).send();
+            action(
+                    permission_level{auth, "active"_n},
+                    STAKINGACCOUNT,
+                    "incgrewards"_n,
+                    std::make_tuple((uint64_t)(static_cast<double>(amount) * .25))
             ).send();
         } else {
 
@@ -352,7 +402,13 @@ namespace fioio {
                     permission_level{auth, "active"_n},
                     TREASURYACCOUNT,
                     "bppoolupdate"_n,
-                    std::make_tuple((uint64_t)(static_cast<double>(amount) * .95))
+                    std::make_tuple((uint64_t)(static_cast<double>(amount) * .70))
+            ).send();
+            action(
+                    permission_level{auth, "active"_n},
+                    STAKINGACCOUNT,
+                    "incgrewards"_n,
+                    std::make_tuple((uint64_t)(static_cast<double>(amount) * .25))
             ).send();
         }
     }
@@ -366,7 +422,13 @@ namespace fioio {
                 permission_level{actor, "active"_n},
                 TREASURYACCOUNT,
                 "bprewdupdate"_n,
-                std::make_tuple((uint64_t)(static_cast<double>(amount) * .95))
+                std::make_tuple((uint64_t)(static_cast<double>(amount) * .70))
+        ).send();
+        action(
+                permission_level{actor, "active"_n},
+                STAKINGACCOUNT,
+                "incgrewards"_n,
+                std::make_tuple((uint64_t)(static_cast<double>(amount) * .25))
         ).send();
 
         action(
@@ -404,11 +466,13 @@ namespace fioio {
     static const uint64_t INITIALACCOUNTRAM  = 25600;
     static const uint64_t ADDITIONALRAMBPDESCHEDULING = 25600;
 
+    static const uint64_t STAKEFIOTOKENSRAM = 512; //integrated.
+    static const uint64_t UNSTAKEFIOTOKENSRAM = 512; //integrated.
     static const uint64_t REGDOMAINRAM  = 2560;  //integrated.
     static const uint64_t REGADDRESSRAM = 2560; //integrated.
     static const uint64_t ADDADDRESSRAM = 512; //integrated.
     static const uint64_t SETDOMAINPUBRAM = 256; //integrated.
-    static const uint64_t NEWFUNDSREQUESTRAM = 4098; //integrated.
+    static const uint64_t NEWFUNDSREQUESTRAM = 3120; //integrated.
     static const uint64_t RECORDOBTRAM = 4098; //integrated.
     static const uint64_t RENEWADDRESSRAM = 1024; //integrated.
     static const uint64_t RENEWDOMAINRAM = 1024; //integrated.
@@ -419,8 +483,12 @@ namespace fioio {
     static const uint64_t SETFEEVOTERAM = 4000; //integrated. //note this bump allows consecutive calls to voting with
                                                               //different fees to avoid ram limits for non top 21 producers.
     static const uint64_t BUNDLEVOTERAM = 0; //integrated.
+    static const uint64_t ADDNFTRAMBASE = 512;
+    static const uint64_t ADDNFTRAM = 2048;
+    static const uint64_t LISTDOMAINRAM = 1536; // FIOESCROW - List Domain 1140 bytes round to 512 x 3
 
-
-
-
+    static const uint64_t BASECONTENTAMOUNT = 1000; // base amount for content on newfundsreq and obt transactions
+    
+  
+  
 } // namespace fioio
