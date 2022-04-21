@@ -432,11 +432,11 @@
       "fields": [
         {
           "name": "offset",
-          "type": "int64"
+          "type": "uint64"
         },
         {
           "name": "limit",
-          "type": "int32"
+          "type": "uint32"
         }
       ]
     },
