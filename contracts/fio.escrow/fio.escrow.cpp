@@ -196,6 +196,9 @@ namespace fioio {
                            "E-Break Enabled, action disabled", ErrorNoWork);
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
+            fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
+                          "TPID must be empty or valid FIO address",
+                          ErrorPubKeyValid);
 
             const uint128_t domainHash = string_to_uint128_hash(fio_domain.c_str());
 
@@ -296,11 +299,15 @@ namespace fioio {
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
 
-            const uint128_t domainHash = string_to_uint128_hash(fio_domain.c_str());
+            fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
+                           "TPID must be empty or valid FIO address",
+                           ErrorPubKeyValid);
 
-            auto domainsalesbydomain = domainsales.get_index<"bydomain"_n>();
-            auto domainsale_iter     = domainsalesbydomain.find(domainHash);
-            fio_400_assert(domainsale_iter != domainsalesbydomain.end(), "domainsale", fio_domain,
+//            const uint128_t domainHash = string_to_uint128_hash(fio_domain.c_str());
+
+            auto domainsale_iter = domainsales.find(sale_id);
+//            auto domainsale_iter     = domainsalesbydomain.find(domainHash);
+            fio_400_assert(domainsale_iter != domainsales.end(), "domainsale", fio_domain,
                            "Domain not found", ErrorDomainSaleNotFound);
 
             fio_400_assert(domainsale_iter->status == 1, "status", to_string(domainsale_iter->status),
@@ -352,12 +359,12 @@ namespace fioio {
             ).send();
 
 //            domainsalesbydomain.erase(domainsale_iter);
-            domainsalesbydomain.modify(domainsale_iter, EscrowContract, [&](auto &row) {
+            domainsales.modify(domainsale_iter, EscrowContract, [&](auto &row) {
                 row.status       = 2; // status = 1: on sale, status = 2: Sold, status = 3; Cancelled
                 row.date_updated = now();
             });
 
-            domainsale_iter = domainsalesbydomain.find(domainHash);
+            domainsale_iter = domainsales.find(sale_id);
 
             const uint128_t endpoint_hash = string_to_uint128_hash(LIST_DOMAIN_ENDPOINT);
 
