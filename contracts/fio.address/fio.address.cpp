@@ -1003,7 +1003,7 @@ namespace fioio {
          * and addresses.
          */
         [[eosio::action]]
-        void burnexpired(const int64_t &offset = 0, const int32_t &limit = 15) {
+        void burnexpired(const uint64_t &offset = 0, const uint32_t &limit = 15) {
             uint32_t numbertoburn = limit;
             if (numbertoburn > 15) { numbertoburn = 15; }
             unsigned int recordProcessed = 0;
@@ -1011,7 +1011,7 @@ namespace fioio {
             uint32_t minexpiration = nowtime - DOMAINWAITFORBURNDAYS;
             uint32_t currentWork = 0;
 
-            int64_t index = offset;
+            uint64_t index = offset;
             auto domainiter = domains.find(index);
 
             while (domainiter != domains.end()) {
