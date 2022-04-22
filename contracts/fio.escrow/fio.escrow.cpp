@@ -196,6 +196,9 @@ namespace fioio {
                            "E-Break Enabled, action disabled", ErrorNoWork);
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
+            fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
+                          "TPID must be empty or valid FIO address",
+                          ErrorPubKeyValid);
 
             const uint128_t domainHash = string_to_uint128_hash(fio_domain.c_str());
 
@@ -296,18 +299,21 @@ namespace fioio {
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
 
+            fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
+                           "TPID must be empty or valid FIO address",
+                           ErrorPubKeyValid);
+
             const uint128_t domainHash = string_to_uint128_hash(fio_domain.c_str());
 
-            auto domainsalesbydomain = domainsales.get_index<"bydomain"_n>();
-            auto domainsale_iter     = domainsalesbydomain.find(domainHash);
-            fio_400_assert(domainsale_iter != domainsalesbydomain.end(), "domainsale", fio_domain,
-                           "Domain not found", ErrorDomainSaleNotFound);
+            auto domainsale_iter = domainsales.find(sale_id);
+            fio_400_assert(domainsale_iter != domainsales.end(), "sale_id", to_string(sale_id),
+                           "Sale ID not found", ErrorDomainSaleNotFound);
 
             fio_400_assert(domainsale_iter->status == 1, "status", to_string(domainsale_iter->status),
-                           "domain has already been bought or cancelled", ErrorNoWork);
+                           "Domain has already been bought or cancelled", ErrorNoWork);
 
-            fio_400_assert(domainsale_iter->id == sale_id, "sale_id", to_string(sale_id),
-                           "Sale ID does not match", ErrorDomainSaleNotFound);
+            fio_400_assert(domainsale_iter->domainhash == domainHash, "fio_domain", fio_domain.c_str(),
+                           "Domain does not match",ErrorDomainSaleNotFound);
 
             auto saleprice           = asset(domainsale_iter->sale_price, FIOSYMBOL);
             auto buyer_max_buy_price = asset(max_buy_price, FIOSYMBOL);
@@ -351,13 +357,12 @@ namespace fioio {
                     std::make_tuple(fio_domain, buyerAcct->clientkey, isTransferToEscrow, actor)
             ).send();
 
-//            domainsalesbydomain.erase(domainsale_iter);
-            domainsalesbydomain.modify(domainsale_iter, EscrowContract, [&](auto &row) {
+            domainsales.modify(domainsale_iter, EscrowContract, [&](auto &row) {
                 row.status       = 2; // status = 1: on sale, status = 2: Sold, status = 3; Cancelled
                 row.date_updated = now();
             });
 
-            domainsale_iter = domainsalesbydomain.find(domainHash);
+            domainsale_iter = domainsales.find(sale_id);
 
             const uint128_t endpoint_hash = string_to_uint128_hash(LIST_DOMAIN_ENDPOINT);
 
