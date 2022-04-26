@@ -534,6 +534,7 @@ namespace eosio {
 
         //check for pre existing account is done here.
         name owner = transfer_public_key(payee_public_key,amount,max_fee,actor,tpid,reg_amount,false);
+        print("[DBG] owner: ", owner, "\n");
 
         //FIP-41 new logic for send lock tokens to existing account
         auto locks_by_owner = generalLockTokensTable.get_index<"byowner"_n>();

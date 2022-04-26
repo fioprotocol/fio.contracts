@@ -412,7 +412,7 @@ public:
         }
 
         //7 days unstaking lock duration.
-        int64_t UNSTAKELOCKDURATIONSECONDS = 604800;
+        int64_t UNSTAKELOCKDURATIONSECONDS = 70;
 
 
         auto locks_by_owner = generallocks.get_index<"byowner"_n>();
@@ -424,7 +424,7 @@ public:
             uint32_t insertperiod = (present_time - lockiter->timestamp) + UNSTAKELOCKDURATIONSECONDS;
 
 
-            uint32_t insertday = (lockiter->timestamp + insertperiod) / SECONDSPERDAY;
+            uint32_t insertday = (lockiter->timestamp + insertperiod) / 10;
             uint32_t expirednowduration = present_time - lockiter->timestamp;
             uint32_t payouts = lockiter->payouts_performed;
             vector <eosiosystem::lockperiodv2> newperiods;
@@ -436,7 +436,7 @@ public:
             bool foundinsix = false;
 
             for (int i = 0; i < lockiter->periods.size(); i++) {
-                daysforperiod = (lockiter->timestamp + lockiter->periods[i].duration)/SECONDSPERDAY;
+                daysforperiod = (lockiter->timestamp + lockiter->periods[i].duration)/10;
                 uint64_t amountthisperiod = lockiter->periods[i].amount;
                 //only set the insertindex on the first one greater than or equal that HAS NOT been paid out.
                 if ((daysforperiod >= insertday) && !foundinsix && (i > (int)lockiter->payouts_performed-1)) {
