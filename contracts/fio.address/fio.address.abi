@@ -432,11 +432,11 @@
       "fields": [
         {
           "name": "offset",
-          "type": "int64"
+          "type": "uint64"
         },
         {
           "name": "limit",
-          "type": "int32"
+          "type": "uint32"
         }
       ]
     },
@@ -653,20 +653,6 @@
         {
           "name": "actor",
           "type": "name"
-        }
-      ]
-    },
-    {
-      "name": "modexpire",
-      "base": "",
-      "fields": [
-        {
-          "name": "fio_address",
-          "type": "string"
-        },
-        {
-          "name": "expire",
-          "type": "int64"
         }
       ]
     },

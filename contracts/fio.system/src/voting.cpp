@@ -175,6 +175,11 @@ namespace eosiosystem {
         uint64_t account = fioname_iter->owner_account;
         fio_403_assert(account == actor.value, ErrorSignature);
 
+	auto accountmap = _accountmap.find(account);
+	fio_400_assert(accountmap->clientkey == fio_pub_key, "fio_pub_key", fio_pub_key,
+                       "Invalid Public Key", ErrorFioNameNotReg);
+
+
         auto domainsbyname = _domains.get_index<"byname"_n>();
         auto domains_iter = domainsbyname.find(domainHash);
 

@@ -84,33 +84,57 @@ namespace eosio {
     void token::retire(const int64_t &quantity, const string &memo, const name &actor) {
         require_auth(actor);
         fio_400_assert(memo.size() <= 256, "memo", memo, "memo has more than 256 bytes", ErrorInvalidMemo);
-        fio_400_assert(quantity >= 1000000000000ULL,"quantity", std::to_string(quantity), "Minimum 1000 FIO has to be retired", ErrorRetireQuantity);
+        fio_400_assert(quantity >= MINIMUMRETIRE,"quantity", std::to_string(quantity), "Minimum 1000 FIO has to be retired", ErrorRetireQuantity);
         stats statstable(_self, FIOSYMBOL.code().raw());
         auto existing = statstable.find(FIOSYMBOL.code().raw());
         const auto &st = *existing;
 
+        const asset my_balance = eosio::token::get_balance("fio.token"_n, actor, FIOSYMBOL.code());
+
+        fio_400_assert(quantity <= my_balance.amount, "quantity", to_string(quantity),
+                       "Insufficient balance",
+                       ErrorInsufficientUnlockedFunds);
 
         auto astakebyaccount = accountstaking.get_index<"byaccount"_n>();
         auto stakeiter = astakebyaccount.find(actor.value);
         if (stakeiter != astakebyaccount.end()) {
-          fio_400_assert(stakeiter->total_staked_fio == 0, "actor", to_string(actor.value), "Account staking cannot retire", ErrorRetireQuantity); //signature error if user has stake
+          fio_400_assert(stakeiter->total_staked_fio == 0, "actor", actor.to_string(), "Account staking cannot retire", ErrorRetireQuantity); //signature error if user has stake
         }
 
         auto genlocks = generalLockTokensTable.get_index<"byowner"_n>();
         auto genlockiter = genlocks.find(actor.value);
-        if (genlockiter != genlocks.end()) {
-          fio_400_assert(genlockiter->remaining_lock_amount == 0, "actor", to_string(actor.value), "Account with partially locked balance cannot retire", ErrorRetireQuantity);  //signature error if user has general lock
-        }
-        const asset my_balance = eosio::token::get_balance("fio.token"_n, actor, FIOSYMBOL.code());
 
-        fio_400_assert(quantity <= my_balance.amount && can_transfer(actor, 0, quantity, false), "actor", to_string(actor.value),
-                       "Insufficient balance",
-                       ErrorInsufficientUnlockedFunds);
+        if (genlockiter != genlocks.end()) {
+          fio_400_assert(genlockiter->remaining_lock_amount == 0, "actor", actor.to_string(), "Account with partially locked balance cannot retire", ErrorRetireQuantity);  //signature error if user has general lock
+        }
+
+        auto lockiter = lockedTokensTable.find(actor.value);
+        if (lockiter != lockedTokensTable.end()) {
+          if (lockiter->remaining_locked_amount > 0) {
+
+            uint64_t unlocked = quantity;
+            if(quantity > lockiter->remaining_locked_amount) {
+              unlocked  = lockiter->remaining_locked_amount;
+            }
+            uint64_t new_remaining_unlocked_amount = lockiter->remaining_locked_amount - unlocked;
+
+            INLINE_ACTION_SENDER(eosiosystem::system_contract, updlocked)
+                    ("eosio"_n, {{_self, "active"_n}},
+                     {actor, new_remaining_unlocked_amount}
+                    );
+
+          }
+        }
 
         sub_balance(actor, asset(quantity, FIOSYMBOL));
         statstable.modify(st, same_payer, [&](auto &s) {
           s.supply.amount -= quantity;
         });
+
+        INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
+            ("eosio"_n, {{_self, "active"_n}},
+              {actor, true}
+            );
 
         const string response_string = string("{\"status\": \"OK\"}");
 
@@ -119,13 +143,7 @@ namespace eosio {
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
 
-        INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
-            ("eosio"_n, {{_self, "active"_n}},
-              {actor, true}
-            );
-
     }
-
 
     bool token::can_transfer(const name &tokenowner, const uint64_t &feeamount, const uint64_t &transferamount,
                              const bool &isfee) {
@@ -372,14 +390,13 @@ namespace eosio {
          * we permit the use of transfer from the treasury account to any other accounts.
          * we permit the use of transfer from any other accounts to the treasury account for fees.
          */
-        if (from != SYSTEMACCOUNT && from != TREASURYACCOUNT && from != EscrowContract) {
+        if (from != SYSTEMACCOUNT && from != TREASURYACCOUNT && from != EscrowContract && from != FIOORACLEContract) {
             if(!has_auth(EscrowContract)){
                 check(to == TREASURYACCOUNT, "transfer not allowed");
             }
         }
-        eosio_assert((has_auth(SYSTEMACCOUNT) || has_auth(TREASURYACCOUNT) || has_auth(EscrowContract)),
+        eosio_assert((has_auth(SYSTEMACCOUNT) || has_auth(TREASURYACCOUNT) || has_auth(EscrowContract) || has_auth(FIOORACLEContract)),
                      "missing required authority of treasury or eosio");
-
 
         check(from != to, "cannot transfer to self");
         check(is_account(to), "to account does not exist");
@@ -483,23 +500,8 @@ namespace eosio {
 
         fio_400_assert(((periods.size()) >= 1 && (periods.size() <= 50)), "unlock_periods", "Invalid unlock periods",
                        "Invalid number of unlock periods", ErrorTransactionTooLarge);
-        uint64_t tota = 0;
-        double tv = 0.0;
 
-        for(int i=0;i<periods.size();i++){
-            fio_400_assert(periods[i].amount > 0, "unlock_periods", "Invalid unlock periods",
-                           "Invalid amount value in unlock periods", ErrorInvalidUnlockPeriods);
-            fio_400_assert(periods[i].duration > 0, "unlock_periods", "Invalid unlock periods",
-                           "Invalid duration value in unlock periods", ErrorInvalidUnlockPeriods);
-            tota += periods[i].amount;
-            if (i>0){
-                fio_400_assert(periods[i].duration > periods[i-1].duration, "unlock_periods", "Invalid unlock periods",
-                               "Invalid duration value in unlock periods, must be sorted", ErrorInvalidUnlockPeriods);
-            }
-        }
-
-        fio_400_assert(tota == amount, "unlock_periods", "Invalid unlock periods",
-                       "Invalid total amount for unlock periods", ErrorInvalidUnlockPeriods);
+        uint32_t present_time = now();
 
         fio_400_assert(((can_vote == 0)||(can_vote == 1)), "can_vote", to_string(can_vote),
                        "Invalid can_vote value", ErrorInvalidValue);
@@ -531,16 +533,59 @@ namespace eosio {
         reg_amount = ninetydayperiods * reg_amount;
 
         //check for pre existing account is done here.
-        name owner = transfer_public_key(payee_public_key,amount,max_fee,actor,tpid,reg_amount,true);
+        name owner = transfer_public_key(payee_public_key,amount,max_fee,actor,tpid,reg_amount,false);
 
-        //if no locked tokens in the account do this.
-        bool canvote = (can_vote == 1);
-        INLINE_ACTION_SENDER(eosiosystem::system_contract, addgenlocked)
-                ("eosio"_n, {{_self, "active"_n}},
-                 {owner,periods,canvote,amount}
-                );
+        //FIP-41 new logic for send lock tokens to existing account
+        auto locks_by_owner = generalLockTokensTable.get_index<"byowner"_n>();
+        auto lockiter = locks_by_owner.find(owner.value);
+        if (lockiter != locks_by_owner.end()) {
+            int64_t newlockamount = lockiter->lock_amount + amount;
+            int64_t newremaininglockamount = lockiter->remaining_lock_amount + amount;
+            uint32_t payouts = lockiter->payouts_performed;
+            bool err1 = (can_vote == 0) && can_vote == lockiter->can_vote;
+            bool err2 = (can_vote == 1) && can_vote == lockiter->can_vote;
+            string errmsg = "Locked tokens with restricted voting can only be transferred to a new account.";
+            if(err2)
+            {
+                errmsg = "This account has voting restriction on locked tokens, sending locked tokens without voting restriction is not allowed.";
+            }
+            fio_400_assert(err1 || err2, "can_vote", to_string(can_vote),
+                           errmsg, ErrorInvalidValue);
+            vector<eosiosystem::lockperiodv2> periods_t1 = recalcdurations(periods,lockiter->timestamp, present_time, amount);
+            vector <eosiosystem::lockperiodv2> newperiods = mergeperiods(periods_t1,lockiter->periods);
+            action(
+                    permission_level{get_self(), "active"_n},
+                    SYSTEMACCOUNT,
+                    "modgenlocked"_n,
+                    std::make_tuple(owner, newperiods, newlockamount, newremaininglockamount, payouts)
+            ).send();
+        }else {
+            uint64_t tota = 0;
+            double tv = 0.0;
 
-        int64_t raminc = 1024 + (64 * periods.size());
+            for(int i=0;i<periods.size();i++){
+                fio_400_assert(periods[i].amount > 0, "unlock_periods", "Invalid unlock periods",
+                               "Invalid amount value in unlock periods", ErrorInvalidUnlockPeriods);
+                fio_400_assert(periods[i].duration > 0, "unlock_periods", "Invalid unlock periods",
+                               "Invalid duration value in unlock periods", ErrorInvalidUnlockPeriods);
+                tota += periods[i].amount;
+                if (i>0){
+                    fio_400_assert(periods[i].duration > periods[i-1].duration, "unlock_periods", "Invalid unlock periods",
+                                   "Invalid duration value in unlock periods, must be sorted", ErrorInvalidUnlockPeriods);
+                }
+            }
+            fio_400_assert(tota == amount, "unlock_periods", "Invalid unlock periods",
+                           "Invalid total amount for unlock periods", ErrorInvalidUnlockPeriods);
+            const bool canvote = (can_vote == 1);
+
+            INLINE_ACTION_SENDER(eosiosystem::system_contract, addgenlocked)
+                    ("eosio"_n, {{_self, "active"_n}},
+                     {owner, periods, canvote, amount}
+                    );
+        }
+        // end FIP-41 logic for send lock tokens to existing account
+
+        int64_t raminc = 1200;
 
         action(
                 permission_level{SYSTEMACCOUNT, "active"_n},
@@ -552,7 +597,6 @@ namespace eosio {
 
         const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
                                        to_string(reg_amount) + string("}");
-
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
                        "Transaction is too large", ErrorTransactionTooLarge);
 

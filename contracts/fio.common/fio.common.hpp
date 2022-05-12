@@ -42,7 +42,7 @@
 #define STAKEDTOKENPOOLMINIMUM 1000000000000000 // 1M FIO SUFS
 #define STAKINGREWARDSRESERVEMAXIMUM 25000000000000000 // 25M FIO SUFS.
 #define DAILYSTAKINGMINTTHRESHOLD 25000000000000 //25k FIO threshold for MINTING staking rewards.
-
+#define MINIMUMRETIRE 1000000000000
 #define STAKE_FIO_TOKENS_ENDPOINT "stake_fio_tokens"
 #define UNSTAKE_FIO_TOKENS_ENDPOINT "unstake_fio_tokens"
 #define REGISTER_ADDRESS_ENDPOINT "register_fio_address"
@@ -63,6 +63,8 @@
 #define TRANSFER_LOCKED_TOKENS_ENDPOINT "transfer_locked_tokens"
 #define TRANSFER_TOKENS_PUBKEY_ENDPOINT "transfer_tokens_pub_key"
 #define SET_DOMAIN_PUBLIC "set_fio_domain_public"
+#define WRAP_FIO_TOKENS_ENDPOINT "wrap_fio_tokens"
+#define WRAP_FIO_DOMAIN_ENDPOINT "wrap_fio_domain"
 #define CANCEL_FUNDS_REQUEST_ENDPOINT "cancel_funds_request"
 #define REJECT_FUNDS_REQUEST_ENDPOINT "reject_funds_request"
 #define NEW_FUNDS_REQUEST_ENDPOINT "new_funds_request"
@@ -130,7 +132,8 @@ namespace fioio {
              actor == fioio::TREASURYACCOUNT ||
              actor == fioio::FIOSYSTEMACCOUNT ||
              actor == fioio::FIOACCOUNT ||
-             actor == fioio::EscrowContract);
+             actor == fioio::EscrowContract ||
+             actor == FIOORACLEContract);
     }
 
     static constexpr uint64_t string_to_uint64_hash(const char *str) {
@@ -276,6 +279,15 @@ namespace fioio {
                 "fdtnrwdupdat"_n,
                 std::make_tuple((uint64_t)(static_cast<double>(amount) * .05))
         ).send();
+
+        //call action to check general locks for clearing.
+        action(
+                permission_level{auth, "active"_n},
+                SYSTEMACCOUNT, "clrgenlocked"_n,
+                make_tuple(actor)
+        ).send();
+
+
         fionames_table fionames(AddressContract, AddressContract.value);
         uint128_t fioaddhash = string_to_uint128_hash(tpid.c_str());
 
@@ -479,13 +491,14 @@ namespace fioio {
     static const uint64_t XFERRAM = 512; //integrated.
     static const uint64_t TRANSFERPUBKEYRAM = 1024; //integrated.
     static const uint64_t REJECTFUNDSRAM = 512; //integrated.
+    static const uint64_t WRAPTOKENRAM = 512; //integrated.
     static const uint64_t CANCELFUNDSRAM = 512; //integrated.
     static const uint64_t SETFEEVOTERAM = 4000; //integrated. //note this bump allows consecutive calls to voting with
                                                               //different fees to avoid ram limits for non top 21 producers.
     static const uint64_t BUNDLEVOTERAM = 0; //integrated.
     static const uint64_t ADDNFTRAMBASE = 512;
     static const uint64_t ADDNFTRAM = 2048;
-    static const uint64_t FIOESCROWRAM = 512; // FIOESCROW
+    static const uint64_t LISTDOMAINRAM = 1536; // FIOESCROW - List Domain 1140 bytes round to 512 x 3
 
     static const uint64_t BASECONTENTAMOUNT = 1000; // base amount for content on newfundsreq and obt transactions
     

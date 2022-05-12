@@ -71,7 +71,10 @@ namespace fioio {
         )
     };
 
-    typedef multi_index<"mrkplconfigs"_n, mrkplconfig> mrkplconfigs_table;
+    typedef multi_index<"mrkplconfigs"_n, mrkplconfig,
+	    indexed_by<"byowner"_n, const_mem_fun<mrkplconfig, uint128_t, &mrkplconfig::by_owner>>
+    >
+    mrkplconfigs_table;
 }
 
 #endif //FIO_CONTRACTS_FIO_ESCROW_H

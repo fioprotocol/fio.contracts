@@ -458,6 +458,73 @@ namespace eosio {
         }
 
 
+        //this action will recalculate durations from the specific timestampforperiods to the specified targettimestamp
+        static vector<eosiosystem::lockperiodv2> recalcdurations( const vector<eosiosystem::lockperiodv2> &periods,
+                                                        const uint32_t targettimestamp,
+                                                        const uint32_t timestampofperiods,
+                                                        const uint64_t amount) {
+            check(targettimestamp < timestampofperiods,"illegal timestamp for reset of locking periods");
+            vector <eosiosystem::lockperiodv2> newperiods;
+            uint32_t duration_delta = timestampofperiods - targettimestamp;
+            uint64_t tota = 0;
+            for(int i=0;i<periods.size();i++){
+                fio_400_assert(periods[i].amount > 0, "unlock_periods", "Invalid unlock periods",
+                               "Invalid amount value in unlock periods", ErrorInvalidUnlockPeriods);
+                fio_400_assert(periods[i].duration > 0, "unlock_periods", "Invalid unlock periods",
+                               "Invalid duration value in unlock periods", ErrorInvalidUnlockPeriods);
+                tota += periods[i].amount;
+                if (i>0){
+                    fio_400_assert(periods[i].duration > periods[i-1].duration, "unlock_periods", "Invalid unlock periods",
+                                   "Invalid duration value in unlock periods, must be sorted", ErrorInvalidUnlockPeriods);
+                }
+                eosiosystem::lockperiodv2 iperiod;
+                iperiod.duration = periods[i].duration + duration_delta;
+                iperiod.amount = periods[i].amount;
+                newperiods.push_back(iperiod);
+            }
+            fio_400_assert(tota == amount, "unlock_periods", "Invalid unlock periods",
+                           "Invalid total amount for unlock periods", ErrorInvalidUnlockPeriods);
+           return newperiods;
+        }
 
+        static vector<eosiosystem::lockperiodv2> mergeperiods( const vector<eosiosystem::lockperiodv2> &op1,
+                                                  const vector<eosiosystem::lockperiodv2> &op2
+                                                 ) {
+            vector <eosiosystem::lockperiodv2> newperiods;
+            check(op1.size() > 0,"illegal size op1 periods");
+            check(op2.size() > 0,"illegal size op1 periods");
+            check(op1.size() + op2.size() <= 50,
+                    "illegal number of periods results from merge, cannot merge two lists that have more than 50 periods total");
+            int op1idx = 0;
+            int op2idx = 0;
+            while ((op1idx < op1.size() )  ||   (op2idx < op2.size())) {
+                while (op2idx < op2.size() &&
+                       (op1idx >= op1.size() || (op2[op2idx].duration < op1[op1idx].duration))) {
+                    eosiosystem::lockperiodv2 iperiod;
+                    iperiod.duration = op2[op2idx].duration;
+                    iperiod.amount = op2[op2idx].amount;
+                    newperiods.push_back(iperiod);
+                    op2idx++;
+                }
+                while (op1idx < op1.size() &&
+                       (op2idx >= op2.size() || (op1[op1idx].duration < op2[op2idx].duration))){
+                    eosiosystem::lockperiodv2 iperiod;
+                    iperiod.duration = op1[op1idx].duration;
+                    iperiod.amount = op1[op1idx].amount;
+                    newperiods.push_back(iperiod);
+                    op1idx++;
+                }
+                if ((op2idx < op2.size() && (op1idx < op1.size())) &&
+                     (op2[op2idx].duration == op1[op1idx].duration)){
+                    eosiosystem::lockperiodv2 iperiod;
+                    iperiod.duration = op2[op2idx].duration;
+                    iperiod.amount = op2[op2idx].amount + op1[op1idx].amount;
+                    newperiods.push_back(iperiod);
+                    op2idx++;
+                    op1idx++;
+                }
+            }
+            return newperiods;
+        }
     };
 } /// namespace eosio

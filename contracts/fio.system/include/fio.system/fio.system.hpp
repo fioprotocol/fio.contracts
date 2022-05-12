@@ -361,6 +361,9 @@ public:
                       const uint32_t &payouts);
 
     [[eosio::action]]
+    void clrgenlocked(const name &owner);
+
+    [[eosio::action]]
     void setnolimits(const name &account);
 
     [[eosio::action]]

@@ -1003,7 +1003,7 @@ namespace fioio {
          * and addresses.
          */
         [[eosio::action]]
-        void burnexpired(const int64_t &offset = 0, const int32_t &limit = 15) {
+        void burnexpired(const uint64_t &offset = 0, const uint32_t &limit = 15) {
             uint32_t numbertoburn = limit;
             if (numbertoburn > 15) { numbertoburn = 15; }
             unsigned int recordProcessed = 0;
@@ -1011,7 +1011,7 @@ namespace fioio {
             uint32_t minexpiration = nowtime - DOMAINWAITFORBURNDAYS;
             uint32_t currentWork = 0;
 
-            int64_t index = offset;
+            uint64_t index = offset;
             auto domainiter = domains.find(index);
 
             while (domainiter != domains.end()) {
@@ -2170,7 +2170,14 @@ namespace fioio {
 
         [[eosio::action]]
         void xferescrow(const string &fio_domain, const string &public_key, const bool isEscrow, const name &actor){
-            require_auth(EscrowContract);
+            name nm;
+            // This inline permissioned action is used during wrapping and marketplace operations.
+            if(has_auth(EscrowContract)){
+                nm = name("fio.escrow");
+            } else{
+                require_auth(FIOORACLEContract);
+                nm = name("fio.oracle");
+            }
 
             FioAddress fa;
             getFioAddressStruct(fio_domain, fa);
@@ -2192,7 +2199,6 @@ namespace fioio {
                            ErrorDomainExpired);
 
             //Transfer the domain
-            name nm = name("fio.escrow");
             if(!isEscrow){
                 string owner_account;
                 key_to_account(public_key, owner_account);

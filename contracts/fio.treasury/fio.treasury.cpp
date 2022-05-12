@@ -148,10 +148,10 @@ public:
                 auto proditer = prodbyowner.find(producer);
 
                 fio_400_assert(proditer != prodbyowner.end(), "fio_address", fio_address,
-                               "FIO Address not producer or nothing payable", ErrorNoFioAddressProducer);
+                               "FIO Address is not a producer", ErrorNoFioAddressProducer);
 
                 fio_400_assert((now() - proditer->last_bpclaim) > SECONDSBETWEENBPCLAIM, "fio_address", fio_address,
-                               "FIO Address not producer or nothing payable", ErrorNoFioAddressProducer);
+                               "Minimum time between BPCLAIM calls has not yet passed", ErrorNoFioAddressProducer);
 
                 //Invoke system contract to update producer last_bpclaim time
                 action(permission_level{get_self(), "active"_n},
@@ -399,8 +399,8 @@ public:
         void bprewdupdate(const uint64_t &amount) {
 
                 eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
-                             has_auth(STAKINGACCOUNT) ||  has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) || has_auth(FeeContract)),
-                             "missing required authority of fio.address, fio.treasury, fio.fee, fio.token, fio.staking, eosio or fio.reqobt");
+                             has_auth(STAKINGACCOUNT) ||  has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) || has_auth(FeeContract) || has_auth(FIOORACLEContract)),
+                             "missing required authority of fio.address, fio.treasury, fio.fee, fio.token, fio.staking, fio.oracle, eosio or fio.reqobt");
 
                 bprewards.set(bprewards.exists() ? bpreward{bprewards.get().rewards + amount} : bpreward{amount}, get_self());
         }
@@ -408,19 +408,17 @@ public:
         // @abi action
         [[eosio::action]]
         void bppoolupdate(const uint64_t &amount) {
-
                 eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
-                             has_auth(REQOBTACCOUNT) || has_auth(EscrowContract)),
-                             "missing required authority of fio.address, fio.treasury, fio.token, fio.escrow or fio.reqobt");
+                             has_auth(REQOBTACCOUNT) || has_auth(FIOORACLEContract) || has_auth(EscrowContract)),
+                             "missing required authority of fio.address, fio.treasury, fio.token, fio.oracle or fio.reqobt");
                 bucketrewards.set(bucketrewards.exists() ? bucketpool{bucketrewards.get().rewards + amount} : bucketpool{amount}, get_self());
         }
 
         // @abi action
         [[eosio::action]]
         void fdtnrwdupdat(const uint64_t &amount) {
-                eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
-                                     has_auth(STAKINGACCOUNT) ||has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) || has_auth(FeeContract) || has_auth(EscrowContract)),
-                             "missing required authority of fio.address, fio.token, fio.fee, fio.treasury, fio.escrow, fio.staking, or fio.reqobt");
+                eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(StakingContract) || has_auth(TREASURYACCOUNT) || has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) || has_auth(FeeContract) || has_auth(FIOORACLEContract) || has_auth(EscrowContract)),
+                             "missing required authority of fio.address, fio.token, fio.staking, fio.fee, fio.treasury, fio.oracle or fio.reqobt");
 
                 fdtnrewards.set(fdtnrewards.exists() ? fdtnreward{fdtnrewards.get().rewards + amount} : fdtnreward{amount}, get_self());
         }
