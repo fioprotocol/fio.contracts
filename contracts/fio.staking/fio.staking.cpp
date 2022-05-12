@@ -412,8 +412,8 @@ public:
         }
 
         //7 days unstaking lock duration.
-        //int64_t UNSTAKELOCKDURATIONSECONDS = 604800;
         int64_t UNSTAKELOCKDURATIONSECONDS = 70;
+
 
         auto locks_by_owner = generallocks.get_index<"byowner"_n>();
         auto lockiter = locks_by_owner.find(actor.value);
