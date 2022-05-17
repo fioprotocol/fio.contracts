@@ -391,7 +391,7 @@ namespace eosio {
          * we permit the use of transfer from any other accounts to the treasury account for fees.
          */
         if (from != SYSTEMACCOUNT && from != TREASURYACCOUNT && from != EscrowContract && from != FIOORACLEContract) {
-            if(!has_auth(EscrowContract)){
+            if(!has_auth(EscrowContract) || !has_auth(FIOORACLEContract)){
                 check(to == TREASURYACCOUNT, "transfer not allowed");
             }
         }
