@@ -52,13 +52,12 @@ public:
         }
 
 
-
     [[eosio::action]]
-    void incgrewards(const int64_t &fioamountsufs ) {
+    void incgrewards(const int64_t &fioamountsufs) {
         eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
-                      has_auth(STAKINGACCOUNT) ||  has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) ||
-                      has_auth(FeeContract) || has_auth(EscrowContract)),
-                     "missing required authority of fio.address, fio.treasury, fio.fee, fio.token, fio.staking, fio.escrow, eosio or fio.reqobt");
+                      has_auth(STAKINGACCOUNT) || has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) ||
+                      has_auth(FeeContract) || has_auth(FIOORACLEContract) || has_auth(EscrowContract)),
+                     "missing required authority of fio.address, fio.treasury, fio.fee, fio.token, fio.staking, fio.oracle, fio.escrow, eosio or fio.reqobt");
 
         const uint32_t present_time = now();
         gstaking.rewards_token_pool += fioamountsufs;
@@ -67,7 +66,7 @@ public:
         if ((gstaking.staked_token_pool >= STAKEDTOKENPOOLMINIMUM) && (present_time > ENABLESTAKINGREWARDSEPOCHSEC)) {
             gstaking.last_combined_token_pool = gstaking.combined_token_pool;
         }
-     }
+    }
 
     [[eosio::action]]
     void recorddaily(const int64_t &amounttomint ) {
