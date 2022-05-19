@@ -299,17 +299,18 @@ namespace eosiosystem {
     void eosiosystem::system_contract::clrgenlocked(const name &owner) {
 
         eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
-                      has_auth(STAKINGACCOUNT) ||has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) || has_auth(FeeContract) || has_auth(EscrowContract)),
-                     "missing required authority of fio.address, fio.token, fio.fee, fio.treasury, fio.escrow, fio.staking, or fio.reqobt");
-        check(is_account(owner),"account must pre exist");
+                      has_auth(STAKINGACCOUNT) || has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) ||
+                      has_auth(FIOORACLEContract) || has_auth(FeeContract) || has_auth(EscrowContract)),
+                     "missing required authority of fio.address, fio.token, fio.fee, fio.treasury, fio.oracle, fio.escrow, fio.staking, or fio.reqobt");
+        check(is_account(owner), "account must pre exist");
         auto locks_by_owner = _generallockedtokens.get_index<"byowner"_n>();
         auto lockiter = locks_by_owner.find(owner.value);
         if (lockiter != locks_by_owner.end()) {
             uint32_t present_time = now();
             //never clear another accounts stuff.
             if ((lockiter->owner_account == owner) &&
-                    ( ((lockiter->periods[lockiter->periods.size()-1].duration + lockiter->timestamp) < present_time) ||
-                            lockiter->periods.size() == 0)) {
+                (((lockiter->periods[lockiter->periods.size() - 1].duration + lockiter->timestamp) < present_time) ||
+                 lockiter->periods.size() == 0)) {
                 locks_by_owner.erase(lockiter);
             }
         }
