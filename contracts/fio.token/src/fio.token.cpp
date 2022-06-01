@@ -231,7 +231,8 @@ namespace eosio {
                              const int64_t &feeamount,
                              const bool &errorifaccountexists,
                              const int32_t &canvote,
-                             const bool &errorlocksifaccountexists)
+                             const bool &errorlocksifaccountexists,
+                             const bool &updatepowerowner)
                              {
 
         require_auth(actor);
@@ -281,14 +282,11 @@ namespace eosio {
         name new_account_name = name(payee_account.c_str());
         const bool accountExists = is_account(new_account_name);
 
-        print("EDEDEDEDEDEDEDEDEDED account exists ", accountExists, " for account ",new_account_name);
-
         if (errorifaccountexists){
             fio_400_assert(!(accountExists), "payee_public_key", payee_public_key,
                            "Locked tokens can only be transferred to new account",
                            ErrorPubKeyValid);
         }
-
 
         auto other = eosionames.find(new_account_name.value);
 
@@ -304,7 +302,6 @@ namespace eosio {
                     .weight = 1,
             };
 
-            print("EDEDEDEDEDEDEDEDEDEDEDED creating account ", new_account_name);
             const auto owner_auth = authority{1, {pubkey_weight}, {}, {}};
 
             INLINE_ACTION_SENDER(call::eosio, newaccount)
@@ -333,25 +330,17 @@ namespace eosio {
 
         }
 
-         print("EDEDEDEDEDEDEEDEDEDEDEEDEDED before the new logic for can vote");
          if(errorlocksifaccountexists){
-             print("EDEDEDEDEDEDEDEDEDEDEDED in the logic");
              if (accountExists) {
-                 print("EDEDEDEDEDEDEDEDEDEDEDED ACCOUNT exists");
                  auto locks_by_owner = generalLockTokensTable.get_index<"byowner"_n>();
                  auto lockiter = locks_by_owner.find(new_account_name.value);
                  if (lockiter != locks_by_owner.end()) {
-                     print("EDEDEDEDEDEDEDEDEDEDEDED ACCOUNT HAS LOCKS ");
                      int64_t newlockamount = lockiter->lock_amount + amount;
                      int64_t newremaininglockamount = lockiter->remaining_lock_amount + amount;
                      uint32_t payouts = lockiter->payouts_performed;
-                     print("EDEDEDEDEDEDEDEDEDEDEDED can vote param is ",canvote);
-                     print("EDEDEDEDEDEDEDEDEDEDEDED can vote iterator is ",lockiter->can_vote);
                      bool err1 = (canvote == 0) && canvote != lockiter->can_vote;
                      bool err2 = (canvote == 1) && canvote != lockiter->can_vote;
-                     print("EDEDEDEDEDEDEDEDEDEDEDED can vote 0 err1 ",err1);
                      string errmsg = "can_vote:0 locked tokens cannot be transferred to an account that contains can_vote:1 locked tokens";
-                     print("EDEDEDEDEDEDEDEDEDEDEDED can vote 1 err2 ",err2);
                      if (err2) {
                          errmsg = "can_vote:1 locked tokens cannot be transferred to an account that contains can_vote:0 locked tokens";
                      }
@@ -359,7 +348,6 @@ namespace eosio {
                                     errmsg, ErrorInvalidValue);
                  }
                  else {
-                     print("EDEDEDEDEDEDEDEDEDEDEDED ACCOUNT DOES NOT HAVE LOCKS ");
                      fio_400_assert((canvote == 1), "can_vote", to_string(canvote),
                                     "can_vote:0 locked tokens cannot be transferred to an account that already exists",
                                     ErrorInvalidValue);
@@ -417,13 +405,12 @@ namespace eosio {
                  {actor, true}
                 );
 
-        if (accountExists) {
+        if (accountExists && updatepowerowner) {
             INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
                     ("eosio"_n, {{_self, "active"_n}},
                      {new_account_name, true}
                     );
         }
-
         return new_account_name;
     }
 
@@ -515,7 +502,7 @@ namespace eosio {
                       ErrorMaxFeeExceeded);
 
         //do the transfer
-        transfer_public_key(payee_public_key,amount,max_fee,actor,tpid,reg_amount,false,0,false);
+        transfer_public_key(payee_public_key,amount,max_fee,actor,tpid,reg_amount,false,0,false,true);
 
         if (TRANSFERPUBKEYRAM > 0) {
             action(
@@ -543,7 +530,6 @@ namespace eosio {
                              const int64_t &max_fee,
                              const name &actor,
                              const string &tpid) {
-        print("EDEDEDEDEDEDED called trnsloctoks \n");
 
         fio_400_assert(((periods.size()) >= 1 && (periods.size() <= 50)), "unlock_periods", "Invalid unlock periods",
                        "Invalid number of unlock periods", ErrorTransactionTooLarge);
@@ -580,8 +566,7 @@ namespace eosio {
         reg_amount = ninetydayperiods * reg_amount;
 
         //check for pre existing account is done here.
-        print("EDEDEDEDEDEDED calling transfer public key \n");
-        name owner = transfer_public_key(payee_public_key,amount,max_fee,actor,tpid,reg_amount,false,can_vote,true);
+        name owner = transfer_public_key(payee_public_key,amount,max_fee,actor,tpid,reg_amount,false,can_vote,true,false);
 
         //FIP-41 new logic for send lock tokens to existing account
         auto locks_by_owner = generalLockTokensTable.get_index<"byowner"_n>();
@@ -623,6 +608,11 @@ namespace eosio {
                     );
         }
         // end FIP-41 logic for send lock tokens to existing account
+        //because we adapt locks do one more voting power calc here.
+        INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
+                    ("eosio"_n, {{_self, "active"_n}},
+                     {owner, true}
+                    );
 
         int64_t raminc = 1200;
 
