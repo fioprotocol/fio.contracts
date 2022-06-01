@@ -237,8 +237,7 @@ namespace eosio {
 
         require_auth(actor);
         asset qty;
-
-        print("EDEDEDEDEDEDEEDEDEDEDEEDEDED in transfer public key");
+        
         fio_400_assert(isPubKeyValid(payee_public_key), "payee_public_key", payee_public_key,
                        "Invalid FIO Public Key", ErrorPubKeyValid);
 
