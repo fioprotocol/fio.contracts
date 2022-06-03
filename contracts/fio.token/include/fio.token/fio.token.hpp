@@ -137,7 +137,10 @@ namespace eosio {
                                         const name &actor,
                                         const string &tpid,
                                         const int64_t &feeamount,
-                                        const bool &errorifaccountexists);
+                                        const bool &errorifaccountexists,
+                                        const int32_t &canvote,
+                                        const bool &errorlocksifaccountexists,
+                                        const bool &updatepowerowner);
 
     public:
 
