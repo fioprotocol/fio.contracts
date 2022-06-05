@@ -85,7 +85,7 @@ namespace fioio {
             fio_400_assert(marketplace_iter != mrkplconfigs.end(), "marketplace_iter", "marketplace_iter",
                            "Marketplace not found", ErrorDomainOwner);
 
-            fio_400_assert(marketplace_iter->e_break == 0, "marketplace_iter->e_break",
+            fio_400_assert(marketplace_iter->e_break == 0, "e_break",
                            to_string(marketplace_iter->e_break),
                            "E-Break Enabled, action disabled", ErrorNoWork);
 
@@ -192,7 +192,7 @@ namespace fioio {
             fio_400_assert(marketplace_iter != mrkplconfigs.end(), "marketplace_iter", "marketplace_iter",
                            "Marketplace not found", ErrorDomainOwner);
 
-            fio_400_assert(marketplace_iter->e_break == 0, "marketplace_iter->e_break",
+            fio_400_assert(marketplace_iter->e_break == 0, "e_break",
                            to_string(marketplace_iter->e_break),
                            "E-Break Enabled, action disabled", ErrorNoWork);
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
@@ -292,7 +292,7 @@ namespace fioio {
             fio_400_assert(marketplace_iter != mrkplconfigs.end(), "marketplace_iter", "marketplace_iter",
                            "Marketplace not found", ErrorDomainOwner);
 
-            fio_400_assert(marketplace_iter->e_break == 0, "marketplace_iter->e_break",
+            fio_400_assert(marketplace_iter->e_break == 0, "e_break",
                            to_string(marketplace_iter->e_break),
                            "E-Break Enabled, action disabled", ErrorNoWork);
 
