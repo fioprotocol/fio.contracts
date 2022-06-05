@@ -176,13 +176,14 @@ namespace fioio {
 
         /***********
         * This action will cancel a listing a fio domain
-         * @param actor this is the account name that listed the domain
-         * @param fio_domain this is the name of the fio_domain
-         * @param max_fee this is the max fee paid to the network for calling this action
-         * @param tpid this is the technology provider id that helped facilitate this action to the end user
+         * @param actor account name that listed the domain
+         * @param fio_domain name of the fio_domain
+         * @param sale_id primary key of the record that will be cancelled
+         * @param max_fee max fee paid to the network for calling this action
+         * @param tpid technology provider id that helped facilitate this action to the end user
         */
         [[eosio::action]]
-        void cxlistdomain(const name &actor, const string &fio_domain,
+        void cxlistdomain(const name &actor, const string &fio_domain, const int64_t &sale_id,
                           const int64_t &max_fee, const string &tpid) {
             check(has_auth(actor) || has_auth(EscrowContract), "Permission Denied");
 
@@ -202,10 +203,9 @@ namespace fioio {
 
             const uint128_t domainHash = string_to_uint128_hash(fio_domain.c_str());
 
-            auto domainsalesbydomain = domainsales.get_index<"bydomain"_n>();
-            auto domainsale_iter     = domainsalesbydomain.find(domainHash);
-            fio_400_assert(domainsale_iter != domainsalesbydomain.end(), "domainsale", fio_domain,
-                           "Domain not found", ErrorDomainSaleNotFound);
+            auto domainsale_iter = domainsales.find(sale_id);
+            fio_400_assert(domainsale_iter != domainsales.end(), "sale_id", to_string(sale_id),
+                           "Sale ID not found", ErrorDomainSaleNotFound);
 
             fio_400_assert(domainsale_iter->owner == actor.value, "actor", actor.to_string(),
                            "Only owner of domain may cancel listing", ErrorNoWork);
@@ -213,7 +213,7 @@ namespace fioio {
             fio_400_assert(domainsale_iter->status == 1, "status", to_string(domainsale_iter->status),
                            "domain has already been bought or cancelled", ErrorNoWork);
 
-            domainsalesbydomain.modify(domainsale_iter, EscrowContract, [&](auto &row) {
+            domainsales.modify(domainsale_iter, EscrowContract, [&](auto &row) {
                 row.status       = 3; // status = 1: on sale, status = 2: Sold, status = 3; Cancelled
                 row.date_updated = now();
             });
