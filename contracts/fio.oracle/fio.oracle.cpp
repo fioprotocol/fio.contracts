@@ -54,7 +54,7 @@ namespace fioio {
                            ErrorPubKeyValid);
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
-            fio_400_assert(public_address.length() > 0, "public_address", public_address,
+            fio_400_assert(validatePubAddressFormat(public_address), "public_address", public_address,
                            "Invalid public address", ErrorInvalidFioNameFormat);
             fio_400_assert(validateChainNameFormat(chain_code), "chain_code", chain_code, "Invalid chain code format",
                            ErrorInvalidFioNameFormat);
@@ -357,7 +357,7 @@ namespace fioio {
                            ErrorPubKeyValid);
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
-            fio_400_assert(public_address.length() > 0, "public_address", public_address,
+            fio_400_assert(validatePubAddressFormat(public_address), "public_address", public_address,
                            "Invalid public address", ErrorInvalidFioNameFormat);
             fio_400_assert(validateChainNameFormat(chain_code), "chain_code", chain_code, "Invalid chain code format",
                            ErrorInvalidFioNameFormat);
