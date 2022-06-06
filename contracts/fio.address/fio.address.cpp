@@ -1225,7 +1225,7 @@ namespace fioio {
             send_response(response_string.c_str());
         } //remalladdr
 
-        [[eosio::action]]
+  [[eosio::action]]
         void
         addnft(const string &fio_address, const vector <nftparam> &nfts, const int64_t &max_fee,
                const name &actor, const string &tpid) {
@@ -1315,11 +1315,12 @@ namespace fioio {
                           fio_400_assert(nftobj->token_id.length() <= 128, "token_id", nftobj->token_id.c_str(), "Invalid Token ID",
                                         ErrorInvalidFioNameFormat);
                             n.token_id = nftobj->token_id.c_str();
-                            n.token_id_hash = string_to_uint128_hash(string(fio_address.c_str()) +
-                                                                     string(nftobj->contract_address.c_str()) +
-                                                                     string(nftobj->token_id.c_str()) +
-                                                                     string(nftobj->chain_code.c_str()));
-                        }
+						}
+						n.token_id_hash = string_to_uint128_hash(string(fio_address.c_str()) +
+																 string(nftobj->contract_address.c_str()) +
+																 string(nftobj->token_id.c_str()) +
+																 string(nftobj->chain_code.c_str()));
+
                         if (!nftobj->contract_address.empty()) {
                             n.contract_address = nftobj->contract_address;
                             n.contract_address_hash = string_to_uint128_hash(nftobj->contract_address.c_str());
@@ -1422,6 +1423,7 @@ namespace fioio {
 
         }
 
+
         [[eosio::action]]
         void
         remnft(const string &fio_address, const vector <remnftparam> &nfts, const int64_t &max_fee,
@@ -1460,6 +1462,8 @@ namespace fioio {
                            "domain", fa.fiodomain, "FIO Domain expired", ErrorDomainExpired);
 
             auto nftbyid = nftstable.get_index<"bytokenid"_n>();
+            auto nftbycontract = nftstable.get_index<"bycontract"_n>();
+
             uint32_t count_erase = 0;
 
             for (auto nftobj = nfts.begin(); nftobj != nfts.end(); nftobj++) {
@@ -1475,20 +1479,42 @@ namespace fioio {
                 if (!nftobj->token_id.empty()) {
                     fio_400_assert(nftobj->token_id.length() <= 128, "token_id", nftobj->token_id, "Invalid Token ID",
                                    ErrorInvalidFioNameFormat);
-                }
+               
 
-                auto nft_iter = nftbyid.find(string_to_uint128_hash(string(fio_address.c_str()) +
-                                                                    string(nftobj->contract_address.c_str()) +
-                                                                    string(nftobj->token_id.c_str()) +
-                                                                    string(nftobj->chain_code.c_str())));
+					auto thehash = string_to_uint128_hash(string(fio_address.c_str()) +
+																		string(nftobj->contract_address.c_str()) +
+																		string(nftobj->token_id.c_str()) +
+																		string(nftobj->chain_code.c_str()));
 
-                fio_400_assert(nft_iter != nftbyid.end(), "fio_address", fio_address, "NFT not found",
-                            ErrorInvalidValue);
+					auto nft_iter = nftbyid.find(thehash);
 
-                if (nft_iter != nftbyid.end()) {
-                    fio_403_assert(nft_iter->fio_address == fio_address, ErrorSignature);
-                    nft_iter = nftbyid.erase(nft_iter);
+					fio_400_assert(nft_iter != nftbyid.end(), "fio_address", fio_address, "NFT not found",
+								ErrorInvalidValue);
+
+					print(thehash);
+
+					if (nft_iter != nftbyid.end()) {
+						fio_403_assert(nft_iter->fio_address == fio_address, ErrorSignature);
+						nft_iter = nftbyid.erase(nft_iter);
+						count_erase++;
+					}
+
+         	  }
+                //bugfix BD-3826 - removes NFTs that did not correctly map a token_id hash
+
+                if (nftobj->token_id.empty()) {
+					auto contract_iter = nftbycontract.find(string_to_uint128_hash(nftobj->contract_address));
+					
+					fio_400_assert(contract_iter != nftbycontract.end(), "fio_address", fio_address, "NFT not found",
+					ErrorInvalidValue);
+					
+                    //if contract address, token_code match aparam and token_id_hash is 0x0000000 then remove
+                    if(contract_iter->contract_address == nftobj->contract_address && contract_iter->chain_code == nftobj->chain_code && contract_iter->token_id_hash == uint128_t()) {
+                    fio_403_assert(contract_iter->fio_address == fio_address, ErrorSignature);
+                    contract_iter = nftbycontract.erase(contract_iter);
                     count_erase++;
+                    }
+
                 }
 
             } // for auto nftobj
