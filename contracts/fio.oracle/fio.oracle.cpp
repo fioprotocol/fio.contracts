@@ -318,6 +318,11 @@ namespace fioio {
             fio_400_assert(oraclesearch != oracles.end(), "actor", actor.to_string(),
                            "Oracle is not registered", ErrorPubAddressExist);
 
+            fio_400_assert(wrap_fio_domain >= 0, "wrap_fio_domain", to_string(wrap_fio_domain), "Invalid fee value",
+                           ErrorMaxFeeInvalid);
+            fio_400_assert(wrap_fio_tokens >= 0, "wrap_fio_tokens", to_string(wrap_fio_tokens), "Invalid fee value",
+                           ErrorMaxFeeInvalid);
+
             //search if fee is already set.
             std::vector <oraclefees> fees = oraclesearch->fees;
 
