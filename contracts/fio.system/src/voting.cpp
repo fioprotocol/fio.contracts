@@ -1174,26 +1174,14 @@ namespace eosiosystem {
             //if the values are equal and isproxy, then show this error.
             fio_400_assert((isproxy != pitr->is_proxy)|| !isproxy, "fio_address", fio_address,
                            "Already registered as proxy. ", ErrorPubAddressExist);
-            //check(!isproxy || !pitr->proxy, "account that uses a proxy is not allowed to become a proxy");
-            if (isproxy && !pitr->proxy) {
-                votersbyowner.modify(pitr, same_payer, [&](auto &p) {
+            name nm;
+            votersbyowner.modify(pitr, same_payer, [&](auto &p) {
                     p.fioaddress = fio_address;
                     p.addresshash = addresshash;
                     p.is_proxy = isproxy;
                     p.is_auto_proxy = false;
+                    p.proxy = nm;
                 });
-            }else{  //clear any proxy that may have been set.
-                name nm;
-                votersbyowner.modify(pitr, same_payer, [&](auto &p) {
-                    p.fioaddress = "";      // TODO: placed here to revert to same state as from regproducer, not sure if correct, verify...
-                    p.addresshash = 0;      // TODO: placed here to revert to same state as from regproducer, not sure if correct, verify...
-                    p.is_proxy = isproxy;
-                    p.is_auto_proxy = false;
-                    p.proxy = nm; //set to a null state, an uninitialized name,
-                                  //we need to be sure this returns true on (!proxy) so other logic
-                                  //areas work correctly.
-                });
-            }
             propagate_weight_change(*pitr);
         } else if (isproxy){  //only do the emplace if isproxy is true,
                               //it makes no sense to emplace a voter record when isproxy is false,
