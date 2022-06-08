@@ -1171,7 +1171,6 @@ namespace eosiosystem {
         auto pitr = votersbyowner.find(proxy.value);
         uint128_t addresshash = string_to_uint128_hash(fio_address.c_str());
         if (pitr != votersbyowner.end()) {
-
             //if the values are equal and isproxy, then show this error.
             fio_400_assert((isproxy != pitr->is_proxy)|| !isproxy, "fio_address", fio_address,
                            "Already registered as proxy. ", ErrorPubAddressExist);
@@ -1183,7 +1182,7 @@ namespace eosiosystem {
                     p.is_proxy = isproxy;
                     p.is_auto_proxy = false;
                 });
-            }else if (!isproxy) { //this is how we undo/clear a proxy
+            }else{  //clear any proxy that may have been set.
                 name nm;
                 votersbyowner.modify(pitr, same_payer, [&](auto &p) {
                     p.fioaddress = "";      // TODO: placed here to revert to same state as from regproducer, not sure if correct, verify...
@@ -1210,7 +1209,6 @@ namespace eosiosystem {
                 p.is_proxy = isproxy;
             });
         }
-
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
 
