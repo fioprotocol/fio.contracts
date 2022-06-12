@@ -910,11 +910,21 @@ namespace eosiosystem {
 
         update_total_votepay_share(ct, -total_inactive_vpay_share, delta_change_rate);
 
-        votersbyowner.modify(voter, same_payer, [&](auto &av) {
-            av.last_vote_weight = new_vote_weight;
-            av.producers = producers;
-            av.proxy = proxy;
-        });
+        if(voting) {
+            votersbyowner.modify(voter, same_payer, [&](auto &av) {
+                av.last_vote_weight = new_vote_weight;
+                av.producers = producers;
+                av.proxy = proxy;
+                av.is_auto_proxy = false;
+            });
+        }
+        else {
+            votersbyowner.modify(voter, same_payer, [&](auto &av) {
+                av.last_vote_weight = new_vote_weight;
+                av.producers = producers;
+                av.proxy = proxy;
+            });
+        }
     }
 
     void system_contract::updlocked(const name &owner,const uint64_t &amountremaining)
