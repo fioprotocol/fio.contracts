@@ -1417,9 +1417,6 @@ namespace fioio {
                            "Transaction is too large", ErrorTransactionTooLarge);
 
             send_response(response_string.c_str());
-
-              print("TRX SIZE", std::to_string(transaction_size()), "\n");
-
         }
 
         [[eosio::action]]
@@ -1460,6 +1457,8 @@ namespace fioio {
                            "domain", fa.fiodomain, "FIO Domain expired", ErrorDomainExpired);
 
             auto nftbyid = nftstable.get_index<"bytokenid"_n>();
+            auto nftbycontract = nftstable.get_index<"bycontract"_n>();
+
             uint32_t count_erase = 0;
 
             for (auto nftobj = nfts.begin(); nftobj != nfts.end(); nftobj++) {
@@ -1475,20 +1474,40 @@ namespace fioio {
                 if (!nftobj->token_id.empty()) {
                     fio_400_assert(nftobj->token_id.length() <= 128, "token_id", nftobj->token_id, "Invalid Token ID",
                                    ErrorInvalidFioNameFormat);
-                }
 
-                auto nft_iter = nftbyid.find(string_to_uint128_hash(string(fio_address.c_str()) +
-                                                                    string(nftobj->contract_address.c_str()) +
-                                                                    string(nftobj->token_id.c_str()) +
-                                                                    string(nftobj->chain_code.c_str())));
 
-                fio_400_assert(nft_iter != nftbyid.end(), "fio_address", fio_address, "NFT not found",
-                            ErrorInvalidValue);
+					auto thehash = string_to_uint128_hash(string(fio_address.c_str()) +
+																		string(nftobj->contract_address.c_str()) +
+																		string(nftobj->token_id.c_str()) +
+																		string(nftobj->chain_code.c_str()));
 
-                if (nft_iter != nftbyid.end()) {
-                    fio_403_assert(nft_iter->fio_address == fio_address, ErrorSignature);
-                    nft_iter = nftbyid.erase(nft_iter);
+					auto nft_iter = nftbyid.find(thehash);
+
+					fio_400_assert(nft_iter != nftbyid.end(), "fio_address", fio_address, "NFT not found",
+								ErrorInvalidValue);
+
+					if (nft_iter != nftbyid.end()) {
+						fio_403_assert(nft_iter->fio_address == fio_address, ErrorSignature);
+						nft_iter = nftbyid.erase(nft_iter);
+						count_erase++;
+					}
+
+         	  }
+                //bugfix BD-3826 - removes NFTs that did not correctly map a token_id hash
+
+                if (nftobj->token_id.empty()) {
+					auto contract_iter = nftbycontract.find(string_to_uint128_hash(nftobj->contract_address));
+
+					fio_400_assert(contract_iter != nftbycontract.end(), "fio_address", fio_address, "NFT not found",
+					ErrorInvalidValue);
+
+                    //if contract address, token_code match aparam and token_id_hash is 0x0000000 then remove
+                    if(contract_iter->contract_address == nftobj->contract_address && contract_iter->chain_code == nftobj->chain_code && contract_iter->token_id_hash == uint128_t()) {
+                    fio_403_assert(contract_iter->fio_address == fio_address, ErrorSignature);
+                    contract_iter = nftbycontract.erase(contract_iter);
                     count_erase++;
+                    }
+
                 }
 
             } // for auto nftobj
@@ -1546,8 +1565,6 @@ namespace fioio {
                            "Transaction is too large", ErrorTransactionTooLarge);
 
             send_response(response_string.c_str());
-
-                          print("TRX SIZE", std::to_string(transaction_size()), "\n");
 
         }
 
@@ -1648,8 +1665,6 @@ namespace fioio {
                            "Transaction is too large", ErrorTransactionTooLarge);
 
             send_response(response_string.c_str());
-
-            print("TRX SIZE", std::to_string(transaction_size()), "\n");
 
         }
 
