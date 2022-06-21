@@ -210,13 +210,7 @@ namespace fioio {
             fio_400_assert(domainsale_iter->owner == actor.value, "actor", actor.to_string(),
                            "Only owner of domain may cancel listing", ErrorNoWork);
 
-            fio_400_assert(domainsale_iter->status == 1, "status", to_string(domainsale_iter->status),
-                           "domain has already been bought or cancelled", ErrorNoWork);
-
-            domainsales.modify(domainsale_iter, EscrowContract, [&](auto &row) {
-                row.status       = 3; // status = 1: on sale, status = 2: Sold, status = 3; Cancelled
-                row.date_updated = now();
-            });
+            domainsales.erase(domainsale_iter);
 
             const bool accountExists = is_account(actor);
 
@@ -357,12 +351,7 @@ namespace fioio {
                     std::make_tuple(fio_domain, buyerAcct->clientkey, isTransferToEscrow, actor)
             ).send();
 
-            domainsales.modify(domainsale_iter, EscrowContract, [&](auto &row) {
-                row.status       = 2; // status = 1: on sale, status = 2: Sold, status = 3; Cancelled
-                row.date_updated = now();
-            });
-
-            domainsale_iter = domainsales.find(sale_id);
+            domainsales.erase(domainsale_iter);
 
             const uint128_t endpoint_hash = string_to_uint128_hash(LIST_DOMAIN_ENDPOINT);
 
@@ -515,23 +504,17 @@ namespace fioio {
         } // setmrkplcfg
 
         /*
-         * This is an admin action only called from burnexpired in fio.address to cancel the listing if the listed
+         * This is an admin action only called from burnexpired in fio.address to delete the listing if the listed
          * domain is expired and being burned.
          */
         [[eosio::action]]
         void cxburned(const uint128_t &domainhash){
-            // make sure it's from the address contract
             has_auth(AddressContract);
 
             auto domainsalesbydomain = domainsales.get_index<"bydomain"_n>();
             auto domainsale_iter     = domainsalesbydomain.find(domainhash);
 
-            if(domainsale_iter->status == 1) {
-                domainsalesbydomain.modify(domainsale_iter, EscrowContract, [&](auto &row) {
-                    row.status       = 3; // status = 1: on sale, status = 2: Sold, status = 3; Cancelled
-                    row.date_updated = now();
-                });
-            }
+            domainsalesbydomain.erase(domainsale_iter);
         }
     }; // class FioEscrow
 
