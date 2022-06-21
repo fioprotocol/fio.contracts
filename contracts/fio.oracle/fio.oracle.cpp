@@ -169,7 +169,7 @@ namespace fioio {
         void unwraptokens(int64_t &amount, string &obt_id, string &fio_address, name &actor) {
             require_auth(actor);
             //max amount would go here
-            fio_400_assert(amount >= 0, "amount", to_string(amount), "Invalid amount",
+            fio_400_assert(amount > 0, "amount", to_string(amount), "Invalid amount",
                            ErrorMaxFeeInvalid);
 
             fio_400_assert(obt_id.size() > 0 && obt_id.size() <= 128, "obt_id", obt_id,
