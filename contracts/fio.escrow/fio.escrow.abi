@@ -147,6 +147,10 @@
           "type": "string"
         },
         {
+          "name": "sale_id",
+          "type": "int64"
+        },
+        {
           "name": "max_fee",
           "type": "int64"
         },
