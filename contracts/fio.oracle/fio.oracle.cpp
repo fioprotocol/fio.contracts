@@ -54,7 +54,7 @@ namespace fioio {
                            ErrorPubKeyValid);
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
-            fio_400_assert(public_address.length() > 0, "public_address", public_address,
+            fio_400_assert(validatePubAddressFormat(public_address), "public_address", public_address,
                            "Invalid public address", ErrorInvalidFioNameFormat);
             fio_400_assert(validateChainNameFormat(chain_code), "chain_code", chain_code, "Invalid chain code format",
                            ErrorInvalidFioNameFormat);
@@ -169,10 +169,10 @@ namespace fioio {
         void unwraptokens(int64_t &amount, string &obt_id, string &fio_address, name &actor) {
             require_auth(actor);
             //max amount would go here
-            fio_400_assert(amount >= 0, "amount", to_string(amount), "Invalid amount",
+            fio_400_assert(amount > 0, "amount", to_string(amount), "Invalid amount",
                            ErrorMaxFeeInvalid);
 
-            fio_400_assert(obt_id.size() > 0 && obt_id.size() <= 128, "obt_it", obt_id,
+            fio_400_assert(obt_id.size() > 0 && obt_id.size() <= 128, "obt_id", obt_id,
                            "Invalid obt_id",
                            ErrorContentLimit);
 
@@ -318,6 +318,11 @@ namespace fioio {
             fio_400_assert(oraclesearch != oracles.end(), "actor", actor.to_string(),
                            "Oracle is not registered", ErrorPubAddressExist);
 
+            fio_400_assert(wrap_fio_domain >= 0, "wrap_fio_domain", to_string(wrap_fio_domain), "Invalid fee value",
+                           ErrorMaxFeeInvalid);
+            fio_400_assert(wrap_fio_tokens >= 0, "wrap_fio_tokens", to_string(wrap_fio_tokens), "Invalid fee value",
+                           ErrorMaxFeeInvalid);
+
             //search if fee is already set.
             std::vector <oraclefees> fees = oraclesearch->fees;
 
@@ -357,7 +362,7 @@ namespace fioio {
                            ErrorPubKeyValid);
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
-            fio_400_assert(public_address.length() > 0, "public_address", public_address,
+            fio_400_assert(validatePubAddressFormat(public_address), "public_address", public_address,
                            "Invalid public address", ErrorInvalidFioNameFormat);
             fio_400_assert(validateChainNameFormat(chain_code), "chain_code", chain_code, "Invalid chain code format",
                            ErrorInvalidFioNameFormat);
@@ -499,7 +504,7 @@ namespace fioio {
             auto domains_iter  = domainsbyname.find(domainHash);
             name nm = name("fio.oracle");
 
-            fio_400_assert(obt_id.size() > 0 && obt_id.size() <= 128, "obt_it", obt_id,
+            fio_400_assert(obt_id.size() > 0 && obt_id.size() <= 128, "obt_id", obt_id,
                            "Invalid obt_id",
                            ErrorContentLimit);
 

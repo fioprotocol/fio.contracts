@@ -275,7 +275,7 @@ public:
         eosio_assert(astakeiter->account == actor,"incacctstake, actor accountstake lookup error." );
         fio_400_assert(astakeiter->total_staked_fio >= amount, "amount", to_string(amount), "Cannot unstake more than staked.",
                        ErrorInvalidValue);
-        auto stakeablebalance = eosio::token::computeusablebalance(actor,false,false);
+
 
         uint64_t paid_fee_amount = 0;
         //begin, bundle eligible fee logic for unstaking
@@ -314,6 +314,15 @@ public:
             }
         }
         //End, bundle eligible fee logic for staking
+
+        auto usablebalance = eosio::token::computeusablebalance(actor,false,false);
+
+        //if the usable balance is greater than the fee, we are clear of affects of
+        //fees.
+        //else if the usable balance is less than the amount of the fee, this is an error
+        // cannot unstake, insufficient funds for unstake operation.
+        fio_400_assert(usablebalance >= paid_fee_amount, "amount", to_string(usablebalance), "Insufficient funds to cover fee",
+                       ErrorMaxFeeExceeded);
 
         //RAM bump
         if (UNSTAKEFIOTOKENSRAM > 0) {
