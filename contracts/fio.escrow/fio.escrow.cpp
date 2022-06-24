@@ -85,7 +85,7 @@ namespace fioio {
             fio_400_assert(marketplace_iter != mrkplconfigs.end(), "marketplace_iter", "marketplace_iter",
                            "Marketplace not found", ErrorDomainOwner);
 
-            fio_400_assert(marketplace_iter->e_break == 0, "marketplace_iter->e_break",
+            fio_400_assert(marketplace_iter->e_break == 0, "e_break",
                            to_string(marketplace_iter->e_break),
                            "E-Break Enabled, action disabled", ErrorNoWork);
 
@@ -176,13 +176,14 @@ namespace fioio {
 
         /***********
         * This action will cancel a listing a fio domain
-         * @param actor this is the account name that listed the domain
-         * @param fio_domain this is the name of the fio_domain
-         * @param max_fee this is the max fee paid to the network for calling this action
-         * @param tpid this is the technology provider id that helped facilitate this action to the end user
+         * @param actor account name that listed the domain
+         * @param fio_domain name of the fio_domain
+         * @param sale_id primary key of the record that will be cancelled
+         * @param max_fee max fee paid to the network for calling this action
+         * @param tpid technology provider id that helped facilitate this action to the end user
         */
         [[eosio::action]]
-        void cxlistdomain(const name &actor, const string &fio_domain,
+        void cxlistdomain(const name &actor, const string &fio_domain, const int64_t &sale_id,
                           const int64_t &max_fee, const string &tpid) {
             check(has_auth(actor) || has_auth(EscrowContract), "Permission Denied");
 
@@ -191,29 +192,25 @@ namespace fioio {
             fio_400_assert(marketplace_iter != mrkplconfigs.end(), "marketplace_iter", "marketplace_iter",
                            "Marketplace not found", ErrorDomainOwner);
 
-            fio_400_assert(marketplace_iter->e_break == 0, "marketplace_iter->e_break",
+            fio_400_assert(marketplace_iter->e_break == 0, "e_break",
                            to_string(marketplace_iter->e_break),
                            "E-Break Enabled, action disabled", ErrorNoWork);
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
+            fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
+                           "TPID must be empty or valid FIO address",
+                           ErrorPubKeyValid);
 
             const uint128_t domainHash = string_to_uint128_hash(fio_domain.c_str());
 
-            auto domainsalesbydomain = domainsales.get_index<"bydomain"_n>();
-            auto domainsale_iter     = domainsalesbydomain.find(domainHash);
-            fio_400_assert(domainsale_iter != domainsalesbydomain.end(), "domainsale", fio_domain,
-                           "Domain not found", ErrorDomainSaleNotFound);
+            auto domainsale_iter = domainsales.find(sale_id);
+            fio_400_assert(domainsale_iter != domainsales.end(), "sale_id", to_string(sale_id),
+                           "Sale ID not found", ErrorDomainSaleNotFound);
 
             fio_400_assert(domainsale_iter->owner == actor.value, "actor", actor.to_string(),
                            "Only owner of domain may cancel listing", ErrorNoWork);
 
-            fio_400_assert(domainsale_iter->status == 1, "status", to_string(domainsale_iter->status),
-                           "domain has already been bought or cancelled", ErrorNoWork);
-
-            domainsalesbydomain.modify(domainsale_iter, EscrowContract, [&](auto &row) {
-                row.status       = 3; // status = 1: on sale, status = 2: Sold, status = 3; Cancelled
-                row.date_updated = now();
-            });
+            domainsales.erase(domainsale_iter);
 
             const bool accountExists = is_account(actor);
 
@@ -289,25 +286,28 @@ namespace fioio {
             fio_400_assert(marketplace_iter != mrkplconfigs.end(), "marketplace_iter", "marketplace_iter",
                            "Marketplace not found", ErrorDomainOwner);
 
-            fio_400_assert(marketplace_iter->e_break == 0, "marketplace_iter->e_break",
+            fio_400_assert(marketplace_iter->e_break == 0, "e_break",
                            to_string(marketplace_iter->e_break),
                            "E-Break Enabled, action disabled", ErrorNoWork);
 
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
 
+            fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
+                           "TPID must be empty or valid FIO address",
+                           ErrorPubKeyValid);
+
             const uint128_t domainHash = string_to_uint128_hash(fio_domain.c_str());
 
-            auto domainsalesbydomain = domainsales.get_index<"bydomain"_n>();
-            auto domainsale_iter     = domainsalesbydomain.find(domainHash);
-            fio_400_assert(domainsale_iter != domainsalesbydomain.end(), "domainsale", fio_domain,
-                           "Domain not found", ErrorDomainSaleNotFound);
+            auto domainsale_iter = domainsales.find(sale_id);
+            fio_400_assert(domainsale_iter != domainsales.end(), "sale_id", to_string(sale_id),
+                           "Sale ID not found", ErrorDomainSaleNotFound);
 
             fio_400_assert(domainsale_iter->status == 1, "status", to_string(domainsale_iter->status),
-                           "domain has already been bought or cancelled", ErrorNoWork);
+                           "Domain has already been bought or cancelled", ErrorNoWork);
 
-            fio_400_assert(domainsale_iter->id == sale_id, "sale_id", to_string(sale_id),
-                           "Sale ID does not match", ErrorDomainSaleNotFound);
+            fio_400_assert(domainsale_iter->domainhash == domainHash, "fio_domain", fio_domain.c_str(),
+                           "Domain does not match",ErrorDomainSaleNotFound);
 
             auto saleprice           = asset(domainsale_iter->sale_price, FIOSYMBOL);
             auto buyer_max_buy_price = asset(max_buy_price, FIOSYMBOL);
@@ -351,13 +351,7 @@ namespace fioio {
                     std::make_tuple(fio_domain, buyerAcct->clientkey, isTransferToEscrow, actor)
             ).send();
 
-//            domainsalesbydomain.erase(domainsale_iter);
-            domainsalesbydomain.modify(domainsale_iter, EscrowContract, [&](auto &row) {
-                row.status       = 2; // status = 1: on sale, status = 2: Sold, status = 3; Cancelled
-                row.date_updated = now();
-            });
-
-            domainsale_iter = domainsalesbydomain.find(domainHash);
+            domainsales.erase(domainsale_iter);
 
             const uint128_t endpoint_hash = string_to_uint128_hash(LIST_DOMAIN_ENDPOINT);
 
@@ -510,23 +504,17 @@ namespace fioio {
         } // setmrkplcfg
 
         /*
-         * This is an admin action only called from burnexpired in fio.address to cancel the listing if the listed
+         * This is an admin action only called from burnexpired in fio.address to delete the listing if the listed
          * domain is expired and being burned.
          */
         [[eosio::action]]
         void cxburned(const uint128_t &domainhash){
-            // make sure it's from the address contract
             has_auth(AddressContract);
 
             auto domainsalesbydomain = domainsales.get_index<"bydomain"_n>();
             auto domainsale_iter     = domainsalesbydomain.find(domainhash);
 
-            if(domainsale_iter->status == 1) {
-                domainsalesbydomain.modify(domainsale_iter, EscrowContract, [&](auto &row) {
-                    row.status       = 3; // status = 1: on sale, status = 2: Sold, status = 3; Cancelled
-                    row.date_updated = now();
-                });
-            }
+            domainsalesbydomain.erase(domainsale_iter);
         }
     }; // class FioEscrow
 
