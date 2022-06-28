@@ -82,7 +82,7 @@ namespace fioio {
             vector<uint64_t> totalfees;
             uint64_t feeFinal;
 
-            while( idx != oracles.end() && idx->fees.size() > 0 ){
+            while( idx != oracles.end() || idx->fees.size() > 0 ){
                 uint64_t tempfee = idx->fees[1].fee_amount; //1 is token in fee vector
                 totalfees.push_back(tempfee);
                 idx++;
