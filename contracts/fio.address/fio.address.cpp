@@ -1500,12 +1500,15 @@ namespace fioio {
 
 					fio_400_assert(contract_iter != nftbycontract.end(), "fio_address", fio_address, "NFT not found",
 					ErrorInvalidValue);
-
-                    //if contract address, token_code match aparam and token_id_hash is 0x0000000 then remove
-                    if(contract_iter->contract_address == nftobj->contract_address && contract_iter->chain_code == nftobj->chain_code && contract_iter->token_id_hash == uint128_t()) {
-                    fio_403_assert(contract_iter->fio_address == fio_address, ErrorSignature);
-                    contract_iter = nftbycontract.erase(contract_iter);
-                    count_erase++;
+                    for (auto idx = nftbycontract.begin(); idx != nftbycontract.end(); idx++) {
+                        //if contract address, token_code match aparam and token_id_hash is 0x0000000 then remove
+                        if(idx->contract_address == nftobj->contract_address && idx->chain_code == nftobj->chain_code &&
+                         idx->token_id_hash == uint128_t() && 
+                         idx->fio_address == fio_address ) {
+                            idx = nftbycontract.erase(idx);
+                            count_erase++;
+                            break;
+                         }
                     }
 
                 }
