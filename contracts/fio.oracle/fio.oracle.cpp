@@ -82,13 +82,14 @@ namespace fioio {
             vector<uint64_t> totalfees;
             uint64_t feeFinal;
 
-            while( idx != oracles.end() || idx->fees.size() > 0 ){
+            while( idx != oracles.end() ){
+                if(idx->fees.size() == 0){ break; }
                 uint64_t tempfee = idx->fees[1].fee_amount; //1 is token in fee vector
                 totalfees.push_back(tempfee);
                 idx++;
             }
 
-            fio_400_assert(totalfees.size() == oracle_size, "max_oracle_fee", to_string(max_oracle_fee), "Not all oracles have voted for fees",
+            fio_400_assert(totalfees.size() == oracle_size, "max_oracle_fee", to_string(max_oracle_fee), "All registered oracles have not set fees",
                            ErrorMaxFeeInvalid);
 
             // median fee / oracle_info.size = fee paid
@@ -402,13 +403,14 @@ namespace fioio {
             vector<uint64_t> totalfees;
             uint64_t feeFinal;
 
-            while( idx != oracles.end() ){
+            while( idx != oracles.end() ){ 
+                if(idx->fees.size() == 0){ break; }
                 uint64_t tempfee = idx->fees[0].fee_amount; //0 is domain in fee vector
                 totalfees.push_back(tempfee);
                 idx++;
             }
 
-            fio_400_assert(totalfees.size() == oracle_size, "max_oracle_fee", to_string(max_oracle_fee), "Not all oracles have voted for fees",
+            fio_400_assert(totalfees.size() == oracle_size, "max_oracle_fee", to_string(max_oracle_fee), "All registered oracles have not set fees",
                            ErrorMaxFeeInvalid);
 
             // median fee / oracle_info.size = fee paid
