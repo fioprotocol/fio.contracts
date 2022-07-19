@@ -430,8 +430,6 @@ public:
             int64_t newlockamount = lockiter->lock_amount + (stakingrewardamount + amount);
             int64_t newremaininglockamount = lockiter->remaining_lock_amount + (stakingrewardamount + amount);
             uint32_t insertperiod = (present_time - lockiter->timestamp) + UNSTAKELOCKDURATIONSECONDS;
-
-
             uint32_t insertday = (lockiter->timestamp + insertperiod) / SECONDSPERDAY;
             uint32_t expirednowduration = present_time - lockiter->timestamp;
             uint32_t payouts = lockiter->payouts_performed;
@@ -445,6 +443,7 @@ public:
 
             for (int i = 0; i < lockiter->periods.size(); i++) {
                 daysforperiod = (lockiter->timestamp + lockiter->periods[i].duration)/SECONDSPERDAY;
+
                 uint64_t amountthisperiod = lockiter->periods[i].amount;
                 //only set the insertindex on the first one greater than or equal that HAS NOT been paid out.
                 if ((daysforperiod >= insertday) && !foundinsix && (i > (int)lockiter->payouts_performed-1)) {
@@ -497,12 +496,30 @@ public:
                 }
             }
 
-            action(
-                    permission_level{get_self(), "active"_n},
-                    SYSTEMACCOUNT,
-                    "modgenlocked"_n,
-                    std::make_tuple(actor, newperiods, newlockamount, newremaininglockamount, payouts)
-            ).send();
+            //BD-3941 begin, be sure to handle edge case where we have locks and all are in the past.
+            if (foundinsix) {
+                action(
+                        permission_level{get_self(), "active"_n},
+                        SYSTEMACCOUNT,
+                        "modgenlocked"_n,
+                        std::make_tuple(actor, newperiods, newlockamount, newremaininglockamount, payouts)
+                ).send();
+            }else {
+                //else make the lock as if it was new, ALL perdiods in current locks are in the past!
+                bool canvote = true;
+                int64_t lockamount = (int64_t)(stakingrewardamount + amount);
+
+                vector <eosiosystem::lockperiodv2> periods;
+                eosiosystem::lockperiodv2 period;
+                period.duration = UNSTAKELOCKDURATIONSECONDS;
+                period.amount = lockamount;
+                periods.push_back(period);
+                INLINE_ACTION_SENDER(eosiosystem::system_contract, addgenlocked)
+                        ("eosio"_n, {{_self, "active"_n}},
+                         {actor, periods, canvote, lockamount}
+                        );
+            }
+            //BD-3941 end
         }else {
             //else make new lock.
             bool canvote = true;
