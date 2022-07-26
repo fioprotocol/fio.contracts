@@ -77,6 +77,9 @@
 #define ADD_NFT_ENDPOINT "add_nft"
 #define REM_NFT_ENDPOINT "remove_nft"
 #define REM_ALL_NFTS_ENDPOINT "remove_all_nfts"
+//FIP-38 begin
+#define NEW_FIO_CHAIN_ACCOUNT_ENDPOINT "new_fio_chain_account"
+//FIP-38 end
 
 #define LIST_DOMAIN_ENDPOINT "list_domain"
 #define CANCEL_LIST_DOMAIN_ENDPOINT "cancel_list_domain"
@@ -501,7 +504,9 @@ namespace fioio {
     static const uint64_t LISTDOMAINRAM = 1536; // FIOESCROW - List Domain 1140 bytes round to 512 x 3
 
     static const uint64_t BASECONTENTAMOUNT = 1000; // base amount for content on newfundsreq and obt transactions
-    
+    //FIP-38 begin
+    static const uint64_t NEWFIOCHAINACCOUNTRAM = 0;
+    //FIP-38 end
   
   
 } // namespace fioio
