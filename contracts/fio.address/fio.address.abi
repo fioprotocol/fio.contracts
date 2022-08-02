@@ -45,6 +45,28 @@
       ]
     },
     {
+      "name": "fioname_info_item",
+      "base": "",
+      "fields": [
+        {
+          "name": "id",
+          "type": "uint64"
+        },
+        {
+          "name": "fionameid",
+          "type": "uint64"
+        },
+        {
+          "name": "datadesc",
+          "type": "string"
+        },
+        {
+          "name": "datavalue",
+          "type": "string"
+        }
+      ]
+    },
+    {
       "name": "domain",
       "base": "",
       "fields": [
@@ -791,6 +813,13 @@
         "string"
       ],
       "type": "fioname"
+    },
+    {
+      "name": "handleinfo",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": [],
+      "type": "fioname_info_item"
     },
     {
       "name": "domains",

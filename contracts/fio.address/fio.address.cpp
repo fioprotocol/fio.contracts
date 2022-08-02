@@ -23,6 +23,9 @@ namespace fioio {
         domains_table domains;
         domainsales_table domainsales;
         fionames_table fionames;
+        //FIP-39 begin
+        handleinfo_table handleinfo;
+        //FIP-39 end
         fiofee_table fiofees;
         eosio_names_table accountmap;
         bundlevoters_table bundlevoters;
@@ -42,6 +45,9 @@ namespace fioio {
                                                                         domains(_self, _self.value),
                                                                         domainsales(EscrowContract, EscrowContract.value),
                                                                         fionames(_self, _self.value),
+                                                                        //FIP-39 begin
+                                                                        handleinfo(_self, _self.value),
+                                                                        //FIP-39 end
                                                                         fiofees(FeeContract, FeeContract.value),
                                                                         bundlevoters(FeeContract, FeeContract.value),
                                                                         accountmap(_self, _self.value),
