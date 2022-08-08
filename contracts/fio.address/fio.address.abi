@@ -154,6 +154,32 @@
         }
       ]
     },
+     {
+       "name": "updcryptkey",
+       "base": "",
+       "fields": [
+         {
+           "name": "fio_address",
+           "type": "string"
+         },
+         {
+           "name": "encrypt_public_key",
+           "type": "string"
+         },
+         {
+           "name": "max_fee",
+           "type": "int64"
+         },
+         {
+           "name": "actor",
+           "type": "name"
+         },
+         {
+           "name": "tpid",
+           "type": "string"
+         }
+       ]
+     },
     {
       "name": "tokenpubaddr",
       "base": "",
@@ -712,6 +738,11 @@
       "type": "regaddress",
       "ricardian_contract": ""
     },
+     {
+       "name": "updcryptkey",
+       "type": "updcryptkey",
+       "ricardian_contract": ""
+     },
     {
       "name": "addaddress",
       "type": "addaddress",

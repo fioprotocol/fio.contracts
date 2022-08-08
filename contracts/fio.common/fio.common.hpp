@@ -488,6 +488,9 @@ namespace fioio {
     static const uint64_t STAKEFIOTOKENSRAM = 512; //integrated.
     static const uint64_t UNSTAKEFIOTOKENSRAM = 512; //integrated.
     static const uint64_t REGDOMAINRAM  = 2560;  //integrated.
+    //FIP-39 begin
+    static const uint64_t UPDENCRYPTKEYRAM = 2560;
+    //FIP-39 end
     static const uint64_t REGADDRESSRAM = 2560; //integrated.
     static const uint64_t ADDADDRESSRAM = 512; //integrated.
     static const uint64_t SETDOMAINPUBRAM = 256; //integrated.
