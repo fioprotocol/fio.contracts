@@ -53,6 +53,9 @@
 #define TRANSFER_DOMAIN_ENDPOINT "transfer_fio_domain"
 #define REMOVE_ALL_PUB_ENDPOINT "remove_all_pub_addresses"
 #define REMOVE_PUB_ADDRESS_ENDPOINT "remove_pub_address"
+//FIP-39 begin
+#define UPDATE_ENCRYPT_KEY_ENDPOINT "update_encrypt_key"
+//FIP-39 end
 #define REGISTER_PRODUCER_ENDPOINT "register_producer"
 #define ADD_PUB_ADDRESS_ENDPOINT "add_pub_address"
 #define UNREGISTER_PRODUCER_ENDPOINT "unregister_producer"

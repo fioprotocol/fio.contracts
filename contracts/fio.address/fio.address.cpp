@@ -682,6 +682,9 @@ namespace fioio {
                    const name &actor,
                    const string &tpid) {
 
+
+            print("updcryptkey --      called. \n");
+
             //VERIFY INPUTS
             FioAddress fa;
             fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
@@ -730,7 +733,7 @@ namespace fioio {
             uint64_t fee_amount = 0;
 
             //begin fees, bundle eligible fee logic
-            const uint128_t endpoint_hash = string_to_uint128_hash(REMOVE_PUB_ADDRESS_ENDPOINT);
+            const uint128_t endpoint_hash = string_to_uint128_hash(UPDATE_ENCRYPT_KEY_ENDPOINT);
 
             auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
@@ -743,7 +746,7 @@ namespace fioio {
             const uint64_t fee_type = fee_iter->type;
 
             fio_400_assert(fee_type == 1, "fee_type", to_string(fee_type),
-                           "remove_fio_address unexpected fee type for endpoint remove_pub_address, expected 1",
+                           "update_encrypt_key unexpected fee type for endpoint update_encrypt_key, expected 1",
                            ErrorNoEndpoint);
 
             const uint64_t bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
@@ -779,6 +782,30 @@ namespace fioio {
                         std::make_tuple(actor, UPDENCRYPTKEYRAM)
                 ).send();
             }
+
+
+            //do the update
+
+
+            auto handleinfobynameid = handleinfo.get_index<"byfionameid"_n>();
+            auto handleinfo_iter = handleinfobynameid.find(fioname_iter->id);
+
+            //insert or update record into the handleinfo table
+            if(handleinfo_iter == handleinfobynameid.end()){
+                uint64_t id = handleinfo.available_primary_key();
+
+                handleinfo.emplace(actor, [&](struct fioname_info_item &d) {
+                    d.id = id;
+                    d.fionameid = fioname_iter->id;
+                    d.datadesc = FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC;
+                    d.datavalue = encrypt_public_key;
+                });
+            }
+                fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", REMOVE_PUB_ADDRESS_ENDPOINT,
+                               "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+
+
 
 
             const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
