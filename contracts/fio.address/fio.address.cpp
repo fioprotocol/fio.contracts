@@ -150,6 +150,7 @@ namespace fioio {
 
         }
 
+        // FIP-39 begin
         inline void updhandleinf(const string &datavalue, const string &datadesc, const uint64_t &fionameid, const name &actor) {
             auto handleinfobynameid = handleinfo.get_index<"byfionameid"_n>();
             auto handleinfo_iter = handleinfobynameid.find(fionameid);
@@ -192,6 +193,7 @@ namespace fioio {
                 handleinfo_iter = next_iter;
             }
         }
+        //FIP-39 end
 
         inline void register_errors(const FioAddress &fa, bool domain) const {
             string fioname = "fio_address";
@@ -278,8 +280,10 @@ namespace fioio {
             fio_400_assert(key_iter != accountmap.end(), "owner", to_string(owner.value),
                            "Owner is not bound in the account map.", ErrorActorNotInFioAccountMap);
 
+            //FIP-39 begin
             //update the encryption key to use.
             updhandleinf(key_iter->clientkey, FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC,fioname_iter->id,owner);
+            //FIP-39 end
 
             uint64_t id = fionames.available_primary_key();
             vector <tokenpubaddr> pubaddresses;
@@ -2078,8 +2082,10 @@ namespace fioio {
                 a.addresses = pubaddresses;
             });
 
+            //FIP-39 begin
             //update the encryption key to use.
             updhandleinf(new_owner_fio_public_key, FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC,fioname_iter->id,nm);
+            //FIP-39 end
 
             // Burn the NFTs belonging to the FIO address that was just transferred
 
@@ -2164,8 +2170,10 @@ namespace fioio {
 
             //do the burn
             const uint64_t bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
+            //FIP-39 begin
             //remove the associated handle information.
             remhandleinf(fioname_iter->id);
+            //FIP-39 end
             namesbyname.erase(fioname_iter);
             if (tpid_iter != tpid_by_name.end()) { tpid_by_name.erase(tpid_iter); }
 
