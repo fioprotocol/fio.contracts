@@ -150,6 +150,49 @@ namespace fioio {
 
         }
 
+        inline void updhandleinf(const string &datavalue, const string &datadesc, const uint64_t &fionameid, const name &actor) {
+            auto handleinfobynameid = handleinfo.get_index<"byfionameid"_n>();
+            auto handleinfo_iter = handleinfobynameid.find(fionameid);
+            if(handleinfo_iter == handleinfobynameid.end()){
+                uint64_t id = handleinfo.available_primary_key();
+                handleinfo.emplace(actor, [&](struct fioname_info_item &d) {
+                    d.id = id;
+                    d.fionameid = fionameid;
+                    d.datadesc = datadesc;
+                    d.datavalue = datavalue;
+                });
+            }else {
+                auto matchdesc_iter = handleinfo_iter;
+                //now check for multiples of same desc, enforce no duplicate datadesc values permitted in table.
+                int countem = 0;
+                while (handleinfo_iter != handleinfobynameid.end()) {
+                    if (handleinfo_iter->datadesc.compare(datadesc) == 0) {
+                        countem++;
+                        matchdesc_iter = handleinfo_iter;
+                    }
+                    handleinfo_iter++;
+                }
+                //we found one to get into this block so if more than one then error.
+                fio_400_assert(countem == 1, "datadesc", datadesc,
+                               "handle info error -- multiple data values present for datadesc",
+                               ErrorInvalidValue);
+                handleinfobynameid.modify(matchdesc_iter, actor, [&](struct fioname_info_item &d) {
+                    d.datavalue = datavalue;
+                });
+            }
+        }
+
+        inline void remhandleinf(const uint64_t &fionameid) {
+            auto handleinfobynameid = handleinfo.get_index<"byfionameid"_n>();
+            auto handleinfo_iter = handleinfobynameid.find(fionameid);
+            if(handleinfo_iter != handleinfobynameid.end()){
+                auto next_iter = handleinfo_iter;
+                next_iter++;
+                handleinfobynameid.erase(handleinfo_iter);
+                handleinfo_iter = next_iter;
+            }
+        }
+
         inline void register_errors(const FioAddress &fa, bool domain) const {
             string fioname = "fio_address";
             string fioerror = "Invalid FIO address";
@@ -234,6 +277,9 @@ namespace fioio {
 
             fio_400_assert(key_iter != accountmap.end(), "owner", to_string(owner.value),
                            "Owner is not bound in the account map.", ErrorActorNotInFioAccountMap);
+
+            //update the encryption key to use.
+            updhandleinf(key_iter->clientkey, FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC,fioname_iter->id,owner);
 
             uint64_t id = fionames.available_primary_key();
             vector <tokenpubaddr> pubaddresses;
@@ -694,6 +740,7 @@ namespace fioio {
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
 
+            //requirement, allow empty string to be used!
             if (encrypt_public_key.length() > 0) {
                 fio_400_assert(isPubKeyValid(encrypt_public_key), "encrypt_public_key", encrypt_public_key,
                                "Invalid FIO Public Key",
@@ -725,6 +772,8 @@ namespace fioio {
             auto fioname_iter = namesbyname.find(nameHash);
             fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fa.fioaddress,
                            "FIO address not registered", ErrorFioNameNotRegistered);
+            fio_403_assert(fioname_iter->owner_account == actor.value,
+                           ErrorSignature); // check if actor owns FIO Address
 
 
 
@@ -783,29 +832,10 @@ namespace fioio {
                 ).send();
             }
 
+            updhandleinf(encrypt_public_key, FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC,fioname_iter->id,actor);
 
-            //do the update
-
-
-            auto handleinfobynameid = handleinfo.get_index<"byfionameid"_n>();
-            auto handleinfo_iter = handleinfobynameid.find(fioname_iter->id);
-
-            //insert or update record into the handleinfo table
-            if(handleinfo_iter == handleinfobynameid.end()){
-                uint64_t id = handleinfo.available_primary_key();
-
-                handleinfo.emplace(actor, [&](struct fioname_info_item &d) {
-                    d.id = id;
-                    d.fionameid = fioname_iter->id;
-                    d.datadesc = FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC;
-                    d.datavalue = encrypt_public_key;
-                });
-            }
-                fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", REMOVE_PUB_ADDRESS_ENDPOINT,
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", REMOVE_PUB_ADDRESS_ENDPOINT,
                                "FIO fee not found for endpoint", ErrorNoEndpoint);
-
-
-
 
 
             const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
@@ -2048,6 +2078,9 @@ namespace fioio {
                 a.addresses = pubaddresses;
             });
 
+            //update the encryption key to use.
+            updhandleinf(new_owner_fio_public_key, FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC,fioname_iter->id,nm);
+
             // Burn the NFTs belonging to the FIO address that was just transferred
 
             auto contractsbyname = nftstable.get_index<"byaddress"_n>();
@@ -2131,6 +2164,8 @@ namespace fioio {
 
             //do the burn
             const uint64_t bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
+            //remove the associated handle information.
+            remhandleinf(fioname_iter->id);
             namesbyname.erase(fioname_iter);
             if (tpid_iter != tpid_by_name.end()) { tpid_by_name.erase(tpid_iter); }
 
