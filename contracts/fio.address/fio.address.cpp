@@ -280,10 +280,7 @@ namespace fioio {
             fio_400_assert(key_iter != accountmap.end(), "owner", to_string(owner.value),
                            "Owner is not bound in the account map.", ErrorActorNotInFioAccountMap);
 
-            //FIP-39 begin
-            //update the encryption key to use.
-            updhandleinf(key_iter->clientkey, FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC,fioname_iter->id,owner);
-            //FIP-39 end
+
 
             uint64_t id = fionames.available_primary_key();
             vector <tokenpubaddr> pubaddresses;
@@ -304,6 +301,11 @@ namespace fioio {
                 a.owner_account = owner.value;
                 a.bundleeligiblecountdown = getBundledAmount();
             });
+
+            //FIP-39 begin
+            //update the encryption key to use.
+            updhandleinf(key_iter->clientkey, FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC,id,owner);
+            //FIP-39 end
 
             uint64_t fee_amount = chain_data_update(fa.fioaddress, pubaddresses, max_fee, fa, actor, owner,
                                                     true, tpid);
