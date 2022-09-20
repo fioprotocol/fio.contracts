@@ -13,7 +13,9 @@ This repository contains examples of these privileged contracts that are useful 
 
 The following unprivileged contract(s) are also part of the system.
    * [fio.address](./contracts/fio.address)
+   * [fio.escrow](./contracts/fio.escrow)
    * [fio.fee](./contracts/fio.fee)
+   * [fio.oracle](./contracts/fio.oracle)
    * [fio.request.obt](./contracts/fio.request.obt)
    * [fio.token](./contracts/fio.token)
    * [fio.tpid](./contracts/fio.tpid)
