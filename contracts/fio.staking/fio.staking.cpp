@@ -439,6 +439,7 @@ public:
             uint32_t lastperiodduration = 0;
             int insertindex = -1;
             uint32_t daysforperiod = 0;
+            bool foundinsix = false;
 
             for (int i = 0; i < lockiter->periods.size(); i++) {
                 daysforperiod = (lockiter->timestamp + lockiter->periods[i].duration)/SECONDSPERDAY;
@@ -452,6 +453,7 @@ public:
                         insertintoexisting = true;
                         amountthisperiod += (stakingrewardamount + amount);
                     }
+                    foundinsix = true;
                 }
                 lastperiodduration = lockiter->periods[i].duration;
                 eosiosystem::lockperiodv2 tperiod;
@@ -495,8 +497,7 @@ public:
             }
 
             //BD-3941 begin, be sure to handle edge case where we have locks and all are in the past.
-            //BD-4082 ensure modgenlocked is called properly for all cases
-            if (newperiods.size() > 1) {
+            if (foundinsix || newperiods.size() > 1) {
                 action(
                         permission_level{get_self(), "active"_n},
                         SYSTEMACCOUNT,
