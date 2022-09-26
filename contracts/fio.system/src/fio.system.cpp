@@ -240,6 +240,10 @@ namespace eosiosystem {
         check(is_account(owner),"account must pre exist");
         check(amount > 0,"cannot add locked token amount less or equal 0.");
 
+        auto locks_by_owner = _generallockedtokens.get_index<"byowner"_n>();
+        auto lockiter = locks_by_owner.find(owner.value);
+        check(lockiter == locks_by_owner.end(),"cannot emplace locks when locks pre-exist.");
+
         _generallockedtokens.emplace(owner, [&](struct locked_tokens_info_v2 &a) {
             a.id = _generallockedtokens.available_primary_key();
             a.owner_account = owner;
