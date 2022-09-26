@@ -246,6 +246,7 @@ namespace eosiosystem {
         auto lockiter = locks_by_owner.find(owner.value);
         check(lockiter == locks_by_owner.end(),"cannot emplace locks when locks pre-exist.");
 
+
         //BD-4082 end
 
 

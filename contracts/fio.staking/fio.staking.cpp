@@ -439,7 +439,6 @@ public:
             uint32_t lastperiodduration = 0;
             int insertindex = -1;
             uint32_t daysforperiod = 0;
-            bool foundinsix = false;
 
             for (int i = 0; i < lockiter->periods.size(); i++) {
                 daysforperiod = (lockiter->timestamp + lockiter->periods[i].duration)/SECONDSPERDAY;
@@ -453,7 +452,6 @@ public:
                         insertintoexisting = true;
                         amountthisperiod += (stakingrewardamount + amount);
                     }
-                    foundinsix = true;
                 }
                 lastperiodduration = lockiter->periods[i].duration;
                 eosiosystem::lockperiodv2 tperiod;
@@ -497,27 +495,30 @@ public:
             }
 
             //BD-3941 begin, be sure to handle edge case where we have locks and all are in the past.
-            if (foundinsix) {
+            //BD-4082 ensure modgenlocked is called properly for all cases
+            if (newperiods.size() > 1) {
                 action(
                         permission_level{get_self(), "active"_n},
                         SYSTEMACCOUNT,
                         "modgenlocked"_n,
                         std::make_tuple(actor, newperiods, newlockamount, newremaininglockamount, payouts)
                 ).send();
-            }else {
-                //else make the lock as if it was new, ALL perdiods in current locks are in the past!
-                bool canvote = true;
-                int64_t lockamount = (int64_t)(stakingrewardamount + amount);
+            }
+            else {
 
-                vector <eosiosystem::lockperiodv2> periods;
-                eosiosystem::lockperiodv2 period;
-                period.duration = UNSTAKELOCKDURATIONSECONDS;
-                period.amount = lockamount;
-                periods.push_back(period);
-                INLINE_ACTION_SENDER(eosiosystem::system_contract, addgenlocked)
-                        ("eosio"_n, {{_self, "active"_n}},
-                         {actor, periods, canvote, lockamount}
-                        );
+                    bool canvote = true;
+                    int64_t lockamount = (int64_t)(stakingrewardamount + amount);
+
+                    vector <eosiosystem::lockperiodv2> periods;
+                    eosiosystem::lockperiodv2 period;
+                    period.duration = UNSTAKELOCKDURATIONSECONDS;
+                    period.amount = lockamount;
+                    periods.push_back(period);
+                    INLINE_ACTION_SENDER(eosiosystem::system_contract, addgenlocked)
+                            ("eosio"_n, {{_self, "active"_n}},
+                             {actor, periods, canvote, lockamount}
+                            );
+
             }
             //BD-3941 end
         }else {
