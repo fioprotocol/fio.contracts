@@ -809,6 +809,139 @@ namespace fioio {
             send_response(response_string.c_str());
         }
 
+
+        /***********
+         * This action will register a fio domain and fio handle on the domain. T
+         * @param fio_address this is the fio address that will be registered to the domain. Domain must not already be registered.
+         * @param is_public 0 - the domain will be private; 1 - the new domain will be public
+         * @param owner_fio_public_key this is the public key that will own the registered fio address and fio domain
+         * @param max_fee  this is the maximum fee that is willing to be paid for this transaction on the blockchain.
+         * @param tpid  this is the fio address of the owner of the domain.
+         * @param actor this is the fio account that has sent this transaction.
+         */
+        [[eosio::action]]
+        void
+        regdomadd(const string &fio_address, const uint8_t &is_public, const string &owner_fio_public_key, const int64_t &max_fee, const string &tpid, const name &actor) 
+        {
+
+            FioAddress fa;
+            fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
+                           "TPID must be empty or valid FIO address",
+                           ErrorPubKeyValid);
+            fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                           ErrorMaxFeeInvalid);
+
+            if (owner_fio_public_key.length() > 0) {
+                fio_400_assert(isPubKeyValid(owner_fio_public_key), "owner_fio_public_key", owner_fio_public_key,
+                               "Invalid FIO Public Key",
+                               ErrorPubKeyValid);
+            }
+
+            name owner_account_name = accountmgnt(actor, owner_fio_public_key);
+
+
+            getFioAddressStruct(fio_address, fa);
+
+            register_errors(fa, false);
+
+            const name nm = name{owner_account_name};
+
+            uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+            uint32_t expiration_time;
+
+            auto domainsbyname = domains.get_index<"byname"_n>();
+            auto domains_iter = domainsbyname.find(domainHash);
+
+            fio_400_assert(domains_iter == domainsbyname.end(), "fio_name", fa.fioaddress,
+                           "FIO domain already registered", ErrorDomainAlreadyRegistered);
+
+            const uint128_t endpoint_hash = string_to_uint128_hash(REGISTER_FIO_DOMAIN_ADDRESS_ENDPOINT);
+
+            auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
+            auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", REGISTER_FIO_DOMAIN_ADDRESS_ENDPOINT,
+                           "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+            const uint64_t reg_amount = fee_iter->suf_amount;
+            const uint64_t fee_type = fee_iter->type;
+
+            fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                           "unexpected fee type for endpoint register_fio_address, expected 0",
+                           ErrorNoEndpoint);
+
+            fio_400_assert(max_fee >= (int64_t) reg_amount, "max_fee", to_string(max_fee),
+                           "Fee exceeds supplied maximum.",
+                           ErrorMaxFeeExceeded);
+
+            expiration_time = get_now_plus_one_year();
+
+            uint64_t id = domains.available_primary_key();
+
+            domains.emplace(actor, [&](struct domain &d) {
+                d.id = id;
+                d.name = fa.fiodomain;
+                d.domainhash = domainHash;
+                d.expiration = expiration_time;
+                d.account = actor.value;
+            });
+
+            // Add handle
+
+            uint128_t handleHash = string_to_uint128_hash(fa.fioaddress.c_str());
+            auto handlesbyname = fionames.get_index<"byname"_n>();
+
+            auto key_iter = accountmap.find(actor.value);
+
+            fio_400_assert(key_iter != accountmap.end(), "owner", to_string(actor.value),
+                           "Owner is not bound in the account map.", ErrorActorNotInFioAccountMap);
+
+            id = fionames.available_primary_key();
+            vector <tokenpubaddr> pubaddresses;
+            tokenpubaddr t1;
+            t1.public_address = key_iter->clientkey;
+            t1.token_code = "FIO";
+            t1.chain_code = "FIO";
+            pubaddresses.push_back(t1);
+
+            fionames.emplace(actor, [&](struct fioname &a) {
+                a.id = id;
+                a.name = fa.fioaddress;
+                a.addresses = pubaddresses;
+                a.namehash = handleHash;
+                a.domain = fa.fiodomain;
+                a.domainhash = domainHash;
+                a.expiration = 4294967295; //Sunday, February 7, 2106 6:28:15 AM GMT+0000 (Max 32 bit expiration)
+                a.owner_account = actor.value;
+                a.bundleeligiblecountdown = getBundledAmount();
+            });
+
+            fio_fees(actor, asset(reg_amount, FIOSYMBOL), REGISTER_FIO_DOMAIN_ADDRESS_ENDPOINT);
+            processbucketrewards(tpid, reg_amount, get_self(), actor);
+
+            if (REGDOMADDRAM > 0) {
+                action(
+                        permission_level{SYSTEMACCOUNT, "active"_n},
+                        "eosio"_n,
+                        "incram"_n,
+                        std::make_tuple(actor, REGDOMADDRAM)
+                ).send();
+            }
+            struct tm timeinfo;
+            fioio::convertfiotime(expiration_time, &timeinfo);
+            std::string timebuffer = fioio::tmstringformat(timeinfo);
+
+            const string response_string = string("{\"status\": \"OK\",\"expiration\":\"") +
+                                           timebuffer + string("\",\"fee_collected\":") +
+                                           to_string(reg_amount) + string("}");
+
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransactionTooLarge);
+
+            send_response(response_string.c_str());
+
+        }
+
         /***********
          * This action will renew a fio domain, the domains expiration time will be extended by one year.
          * @param fio_domain this is the fio domain to be renewed.
@@ -2233,8 +2366,7 @@ namespace fioio {
 
     };
 
-    EOSIO_DISPATCH(FioNameLookup, (regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(renewaddress)(
-            setdomainpub)(burnexpired)(decrcounter)
-            (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(xferescrow)(addnft)(remnft)(remallnfts)
-    (burnnfts))
+    EOSIO_DISPATCH(FioNameLookup, (regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(renewaddress)
+    (setdomainpub)(burnexpired)(decrcounter)(bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(xferescrow)
+    (addnft)(remnft)(remallnfts)(burnnfts)(regdomadd))
 }

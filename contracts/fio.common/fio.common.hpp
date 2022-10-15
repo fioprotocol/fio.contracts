@@ -83,6 +83,8 @@
 #define BUY_DOMAIN_ENDPOINT "buy_domain"
 #define SET_MARKETPLACE_CONFIG_ENDPOINT "set_marketplace_config"
 
+#define REGISTER_FIO_DOMAIN_ADDRESS_ENDPOINT "register_fio_domain_address"
+
 namespace fioio {
 
     using namespace eosio;
@@ -482,6 +484,7 @@ namespace fioio {
     static const uint64_t UNSTAKEFIOTOKENSRAM = 512; //integrated.
     static const uint64_t REGDOMAINRAM  = 2560;  //integrated.
     static const uint64_t REGADDRESSRAM = 2560; //integrated.
+    static const uint64_t REGDOMADDRAM = 5120;
     static const uint64_t ADDADDRESSRAM = 512; //integrated.
     static const uint64_t SETDOMAINPUBRAM = 256; //integrated.
     static const uint64_t NEWFUNDSREQUESTRAM = 3120; //integrated.
