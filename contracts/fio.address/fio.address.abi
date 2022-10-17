@@ -741,6 +741,11 @@
       "ricardian_contract": ""
     },
     {
+      "name": "regdomadd",
+      "type": "regdomadd",
+      "ricardian_contract": ""
+    },
+    {
       "name": "renewdomain",
       "type": "renewdomain",
       "ricardian_contract": ""
