@@ -847,34 +847,13 @@ namespace fioio {
 
             fio_400_assert(validateFioNameFormat(fa), "fio_address", fa.fioaddress, "Invalid FIO Address format", ErrorInvalidFioNameFormat);
 
-            const name nm = name{owner_account_name};
-
             uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
-
 
             auto domainsbyname = domains.get_index<"byname"_n>();
             auto domains_iter = domainsbyname.find(domainHash);
 
             fio_400_assert(domains_iter == domainsbyname.end(), "fio_name", fa.fioaddress,
                            "Domain already registered, use regaddress instead.", ErrorDomainAlreadyRegistered);
-
-            const uint128_t endpoint_hash = string_to_uint128_hash(REGISTER_FIO_DOMAIN_ADDRESS_ENDPOINT);
-
-            auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
-            auto fee_iter = fees_by_endpoint.find(endpoint_hash);
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", REGISTER_FIO_DOMAIN_ADDRESS_ENDPOINT,
-                           "FIO fee not found for endpoint", ErrorNoEndpoint);
-
-            const uint64_t reg_amount = fee_iter->suf_amount;
-            const uint64_t fee_type = fee_iter->type;
-
-            fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
-                           "unexpected fee type for endpoint register_fio_address, expected 0",
-                           ErrorNoEndpoint);
-
-            fio_400_assert(max_fee >= (int64_t) reg_amount, "max_fee", to_string(max_fee),
-                           "Fee exceeds supplied maximum.",
-                           ErrorMaxFeeExceeded);
             
             uint32_t domain_expiration = get_now_plus_one_year();
             domains.emplace(actor, [&](struct domain &d) {
@@ -884,9 +863,6 @@ namespace fioio {
                 d.expiration = domain_expiration;
                 d.account = actor.value;
             });
-
-            // Add handle
-            auto handlesbyname = fionames.get_index<"byname"_n>();
 
             auto key_iter = accountmap.find(actor.value);
 
@@ -912,6 +888,24 @@ namespace fioio {
                 a.bundleeligiblecountdown = getBundledAmount();
             });
             
+            const uint128_t endpoint_hash = string_to_uint128_hash(REGISTER_FIO_DOMAIN_ADDRESS_ENDPOINT);
+
+            auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
+            auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", REGISTER_FIO_DOMAIN_ADDRESS_ENDPOINT,
+                           "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+            const uint64_t reg_amount = fee_iter->suf_amount;
+            const uint64_t fee_type = fee_iter->type;
+
+            fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                           "unexpected fee type for endpoint register_fio_address, expected 0",
+                           ErrorNoEndpoint);
+
+            fio_400_assert(max_fee >= (int64_t) reg_amount, "max_fee", to_string(max_fee),
+                           "Fee exceeds supplied maximum.",
+                           ErrorMaxFeeExceeded);
+
             fio_fees(actor, asset(reg_amount, FIOSYMBOL), REGISTER_FIO_DOMAIN_ADDRESS_ENDPOINT);
             processbucketrewards(tpid, reg_amount, get_self(), actor);
 
