@@ -809,6 +809,8 @@ namespace fioio {
             send_response(response_string.c_str());
         }
 
+
+    
         /***********
          * This action will renew a fio domain, the domains expiration time will be extended by one year.
          * @param fio_domain this is the fio domain to be renewed.
@@ -2233,8 +2235,7 @@ namespace fioio {
 
     };
 
-    EOSIO_DISPATCH(FioNameLookup, (regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(renewaddress)(
-            setdomainpub)(burnexpired)(decrcounter)
-            (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(xferescrow)(addnft)(remnft)(remallnfts)
-    (burnnfts))
+    EOSIO_DISPATCH(FioNameLookup, (regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(renewaddress)
+    (setdomainpub)(burnexpired)(decrcounter)(bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(xferescrow)
+    (addnft)(remnft)(remallnfts)(burnnfts))
 }

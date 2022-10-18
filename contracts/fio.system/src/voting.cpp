@@ -95,15 +95,18 @@ namespace eosiosystem {
         const auto ct = current_time_point();
 
         if (prod != prodbyowner.end()) {
-
+             auto key = abieos::string_to_public_key(producer_key);
              if (prod->is_active) {
-                fio_400_assert(fio_address == prod->fio_address && (url != prod->url || abieos::string_to_public_key(producer_key) != prod->producer_public_key || prod->url != url), "fio_address", fio_address,
+                fio_400_assert(fio_address == prod->fio_address && (url != prod->url || key != prod->producer_public_key || prod->url != url), "fio_address", fio_address,
                 "Already registered as producer", ErrorFioNameNotReg);
              }
 
             prodbyowner.modify(prod, producer, [&](producer_info &info) {
-                if(abieos::string_to_public_key(producer_key) != prod->producer_public_key) {
-                    info.producer_public_key = abieos::string_to_public_key(producer_key); }
+                if(key != prod->producer_public_key) {
+                    string newowner;
+                    key_to_account(producer_key, newowner);
+                    info.updateowner(name(newowner.c_str()));
+                    info.producer_public_key = key; }
                 if(url != prod->url) {
                     info.url = url; }
                 if(location != prod->location) {
@@ -119,7 +122,7 @@ namespace eosiosystem {
                 info.fio_address = fio_address;
                 info.addresshash = addresshash;
                 info.total_votes = 0;
-                info.producer_public_key = abieos::string_to_public_key(producer_key);
+                info.producer_public_key = key;
                 info.is_active = true;
                 info.url = url;
                 info.location = location;
