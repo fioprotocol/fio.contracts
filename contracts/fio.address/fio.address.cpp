@@ -837,16 +837,15 @@ namespace fioio {
 
             if (owner_fio_public_key.length() > 0) {
                 fio_400_assert(isPubKeyValid(owner_fio_public_key), "owner_fio_public_key", owner_fio_public_key,
-                               "Invalid FIO Public Key",
+                               "Invalid FIO Public Key format",
                                ErrorPubKeyValid);
             }
             
             name owner_account_name = accountmgnt(actor, owner_fio_public_key);
 
-
             getFioAddressStruct(fio_address, fa);
 
-            register_errors(fa, false);
+            fio_400_assert(validateFioNameFormat(fa), "fio_address", fa.fioaddress, "Invalid FIO Address format", ErrorInvalidFioNameFormat);
 
             const name nm = name{owner_account_name};
 
@@ -857,7 +856,7 @@ namespace fioio {
             auto domains_iter = domainsbyname.find(domainHash);
 
             fio_400_assert(domains_iter == domainsbyname.end(), "fio_name", fa.fioaddress,
-                           "FIO domain already registered", ErrorDomainAlreadyRegistered);
+                           "Domain already registered, use regaddress instead.", ErrorDomainAlreadyRegistered);
 
             const uint128_t endpoint_hash = string_to_uint128_hash(REGISTER_FIO_DOMAIN_ADDRESS_ENDPOINT);
 
