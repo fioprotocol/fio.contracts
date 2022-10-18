@@ -74,10 +74,11 @@ namespace eosiosystem {
 
 
     /**
-     *  This method will create a producer_config and producer_info object for 'producer'
+     *  This method will create a producer_config and producer_info object for 'producer'. Subsequent calls will update the producer fio_address, public key, url and location.
      *
-     *  @pre producer is not already registered
      *  @pre producer to register is an account
+     *  @pre or producer is already registered to be updated with new properties
+     *  @pre fio_address has previously been validated
      *  @pre authority of producer to register
      *
      */
@@ -94,21 +95,21 @@ namespace eosiosystem {
         const auto ct = current_time_point();
 
         if (prod != prodbyowner.end()) {
-            if (prod->is_active) {
-                fio_400_assert(false, "fio_address", fio_address,
-                               "Already registered as producer", ErrorFioNameNotReg);
-            } else {
-                prodbyowner.modify(prod, producer, [&](producer_info &info) {
-                    info.is_active = true;
-                    info.fio_address = fio_address;
-                    info.addresshash = addresshash;
-                    info.producer_public_key = abieos::string_to_public_key(producer_key);
-                    info.url = url;
-                    info.location = location;
-                    if (info.last_claim_time == time_point())
-                        info.last_claim_time = ct;
-                });
-            }
+
+             if (prod->is_active) {
+                fio_400_assert(fio_address == prod->fio_address && (url != prod->url || abieos::string_to_public_key(producer_key) != prod->producer_public_key || prod->url != url), "fio_address", fio_address,
+                "Already registered as producer", ErrorFioNameNotReg);
+             }
+
+            prodbyowner.modify(prod, producer, [&](producer_info &info) {
+                if(abieos::string_to_public_key(producer_key) != prod->producer_public_key) {
+                    info.producer_public_key = abieos::string_to_public_key(producer_key); }
+                if(url != prod->url) {
+                    info.url = url; }
+                if(location != prod->location) {
+                    info.location = location; }
+            });
+
         } else {
             uint64_t id = _producers.available_primary_key();
 
@@ -175,10 +176,12 @@ namespace eosiosystem {
         uint64_t account = fioname_iter->owner_account;
         fio_403_assert(account == actor.value, ErrorSignature);
 
-	auto accountmap = _accountmap.find(account);
-	fio_400_assert(accountmap->clientkey == fio_pub_key, "fio_pub_key", fio_pub_key,
+        auto accountmap = _accountmap.find(account);
+        string accountname;
+        key_to_account(fio_pub_key, accountname);
+        name acct2 = name(accountname.c_str());
+        fio_400_assert(accountmap->clientkey == fio_pub_key || (has_auth(acct2) && _accountmap.find(acct2.value) != _accountmap.end()), "fio_pub_key", fio_pub_key,
                        "Invalid Public Key", ErrorFioNameNotReg);
-
 
         auto domainsbyname = _domains.get_index<"byname"_n>();
         auto domains_iter = domainsbyname.find(domainHash);
