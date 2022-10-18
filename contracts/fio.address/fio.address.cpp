@@ -835,13 +835,12 @@ namespace fioio {
             fio_400_assert((is_public == 1 || is_public == 0), "is_public", to_string(is_public), "Only 0 or 1 allowed",
                            ErrorMaxFeeInvalid);
 
-
             if (owner_fio_public_key.length() > 0) {
                 fio_400_assert(isPubKeyValid(owner_fio_public_key), "owner_fio_public_key", owner_fio_public_key,
                                "Invalid FIO Public Key",
                                ErrorPubKeyValid);
             }
-
+            
             name owner_account_name = accountmgnt(actor, owner_fio_public_key);
 
 
@@ -853,7 +852,6 @@ namespace fioio {
 
             uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
 
-            uint32_t expiration_time;
 
             auto domainsbyname = domains.get_index<"byname"_n>();
             auto domains_iter = domainsbyname.find(domainHash);
@@ -878,22 +876,17 @@ namespace fioio {
             fio_400_assert(max_fee >= (int64_t) reg_amount, "max_fee", to_string(max_fee),
                            "Fee exceeds supplied maximum.",
                            ErrorMaxFeeExceeded);
-
-            expiration_time = get_now_plus_one_year();
-
-            uint64_t id = domains.available_primary_key();
-
+            
+            uint32_t domain_expiration = get_now_plus_one_year();
             domains.emplace(actor, [&](struct domain &d) {
-                d.id = id;
+                d.id = domains.available_primary_key();;
                 d.name = fa.fiodomain;
                 d.domainhash = domainHash;
-                d.expiration = expiration_time;
+                d.expiration = domain_expiration;
                 d.account = actor.value;
             });
 
             // Add handle
-
-            uint128_t handleHash = string_to_uint128_hash(fa.fioaddress.c_str());
             auto handlesbyname = fionames.get_index<"byname"_n>();
 
             auto key_iter = accountmap.find(actor.value);
@@ -901,7 +894,6 @@ namespace fioio {
             fio_400_assert(key_iter != accountmap.end(), "owner", to_string(actor.value),
                            "Owner is not bound in the account map.", ErrorActorNotInFioAccountMap);
 
-            id = fionames.available_primary_key();
             vector <tokenpubaddr> pubaddresses;
             tokenpubaddr t1;
             t1.public_address = key_iter->clientkey;
@@ -910,17 +902,17 @@ namespace fioio {
             pubaddresses.push_back(t1);
 
             fionames.emplace(actor, [&](struct fioname &a) {
-                a.id = id;
+                a.id = fionames.available_primary_key();;
                 a.name = fa.fioaddress;
                 a.addresses = pubaddresses;
-                a.namehash = handleHash;
+                a.namehash = string_to_uint128_hash(fa.fioaddress.c_str());;
                 a.domain = fa.fiodomain;
                 a.domainhash = domainHash;
                 a.expiration = 4294967295; //Sunday, February 7, 2106 6:28:15 AM GMT+0000 (Max 32 bit expiration)
                 a.owner_account = actor.value;
                 a.bundleeligiblecountdown = getBundledAmount();
             });
-
+            
             fio_fees(actor, asset(reg_amount, FIOSYMBOL), REGISTER_FIO_DOMAIN_ADDRESS_ENDPOINT);
             processbucketrewards(tpid, reg_amount, get_self(), actor);
 
@@ -932,8 +924,9 @@ namespace fioio {
                         std::make_tuple(actor, REGDOMADDRAM)
                 ).send();
             }
+            
             struct tm timeinfo;
-            fioio::convertfiotime(expiration_time, &timeinfo);
+            fioio::convertfiotime(domain_expiration, &timeinfo);
             std::string timebuffer = fioio::tmstringformat(timeinfo);
 
             const string response_string = string("{\"status\": \"OK\",\"expiration\":\"") +
@@ -943,7 +936,7 @@ namespace fioio {
             fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
                            "Transaction is too large", ErrorTransactionTooLarge);
 
-            send_response(response_string.c_str());
+            send_response(response_string.c_str()); 
 
         }
 
