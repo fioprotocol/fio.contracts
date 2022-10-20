@@ -4,3 +4,4 @@ cmake-build-release/
 .DS_Store
 .idea/
 build/
+.vscode/
