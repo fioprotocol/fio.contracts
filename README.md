@@ -1,6 +1,6 @@
 # fio.contracts
 
-## Version : 2.8.0
+## Version : 2.9.0
 
 Smart contracts that provide some of the basic functions of the FIO blockchain
 
@@ -13,8 +13,11 @@ This repository contains examples of these privileged contracts that are useful 
 
 The following unprivileged contract(s) are also part of the system.
    * [fio.address](./contracts/fio.address)
+   * [fio.escrow](./contracts/fio.escrow)
    * [fio.fee](./contracts/fio.fee)
+   * [fio.oracle](./contracts/fio.oracle)
    * [fio.request.obt](./contracts/fio.request.obt)
+   * [fio.staking](./contracts/fio.staking)
    * [fio.token](./contracts/fio.token)
    * [fio.tpid](./contracts/fio.tpid)
    * [fio.treasury](./contracts/fio.treasury)
