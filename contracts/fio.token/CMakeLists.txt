@@ -3,7 +3,8 @@ add_contract(fio.token fio.token ${CMAKE_CURRENT_SOURCE_DIR}/src/fio.token.cpp)
 target_include_directories(fio.token
         PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/../fio.system/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../fio.system/include     
+        ${CMAKE_CURRENT_SOURCE_DIR}/../fio.address/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../
         )
 
