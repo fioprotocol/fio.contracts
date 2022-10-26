@@ -4,6 +4,7 @@ target_include_directories(eosio.msig
         PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../fio.system/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../fio.address/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../
         )
 

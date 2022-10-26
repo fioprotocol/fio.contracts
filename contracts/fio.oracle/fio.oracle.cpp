@@ -16,7 +16,7 @@
 
 namespace fioio {
 
-    class [[eosio::contract("FIOOracle")]]  FIOOracle : public eosio::contract {
+    class [[eosio::contract("fio.oracle")]]  FIOOracle : public eosio::contract {
 
     private:
         oracleledger_table receipts;

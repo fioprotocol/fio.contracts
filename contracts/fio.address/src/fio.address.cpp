@@ -5,7 +5,7 @@
  *  @license FIO Foundation ( https://github.com/fioprotocol/fio/blob/master/LICENSE ) Dapix
  */
 
-#include "fio.address.hpp"
+#include "../include/fio.address/fio.address.hpp"
 #include <fio.fee/fio.fee.hpp>
 #include <fio.common/fio.common.hpp>
 #include <fio.common/fiotime.hpp>
@@ -16,7 +16,7 @@
 
 namespace fioio {
 
-    class [[eosio::contract("FioAddressLookup")]]  FioNameLookup : public eosio::contract {
+    class [[eosio::contract("fio.address")]]  FioNameLookup : public eosio::contract {
 
     private:
         const int MIN_VOTES_FOR_AVERAGING = 15;
