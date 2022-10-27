@@ -420,7 +420,7 @@ public:
         }
 
         //7 days unstaking lock duration.
-        int64_t UNSTAKELOCKDURATIONSECONDS = 604800;
+        int64_t UNSTAKELOCKDURATIONSECONDS = 70;
 
 
         auto locks_by_owner = generallocks.get_index<"byowner"_n>();
@@ -430,7 +430,7 @@ public:
             int64_t newlockamount = lockiter->lock_amount + (stakingrewardamount + amount);
             int64_t newremaininglockamount = lockiter->remaining_lock_amount + (stakingrewardamount + amount);
             uint32_t insertperiod = (present_time - lockiter->timestamp) + UNSTAKELOCKDURATIONSECONDS;
-            uint32_t insertday = (lockiter->timestamp + insertperiod) / SECONDSPERDAY;
+            uint32_t insertday = (lockiter->timestamp + insertperiod) / 10;
             uint32_t expirednowduration = present_time - lockiter->timestamp;
             uint32_t payouts = lockiter->payouts_performed;
             vector <eosiosystem::lockperiodv2> newperiods;
@@ -442,7 +442,7 @@ public:
             bool foundinsix = false;
 
             for (int i = 0; i < lockiter->periods.size(); i++) {
-                daysforperiod = (lockiter->timestamp + lockiter->periods[i].duration)/SECONDSPERDAY;
+                daysforperiod = (lockiter->timestamp + lockiter->periods[i].duration)/10;
 
                 uint64_t amountthisperiod = lockiter->periods[i].amount;
                 //only set the insertindex on the first one greater than or equal that HAS NOT been paid out.
@@ -497,7 +497,7 @@ public:
             }
 
             //BD-3941 begin, be sure to handle edge case where we have locks and all are in the past.
-            if (foundinsix) {
+            if (foundinsix || newperiods.size() > 1) {
                 action(
                         permission_level{get_self(), "active"_n},
                         SYSTEMACCOUNT,

@@ -260,7 +260,7 @@ namespace fioio {
 
         [[eosio::action]]
         void regoracle(name oracle_actor, name &actor) {
-            require_auth(SYSTEMACCOUNT);
+            //require_auth(SYSTEMACCOUNT);
 
             const bool accountExists = is_account(oracle_actor);
             auto other = accountmap.find(oracle_actor.value);
@@ -293,7 +293,7 @@ namespace fioio {
 
         [[eosio::action]]
         void unregoracle(name oracle_actor) {
-            require_auth(SYSTEMACCOUNT);
+            //require_auth(SYSTEMACCOUNT);
 
             auto oraclesearch = oracles.find(oracle_actor.value);
             fio_400_assert(oraclesearch != oracles.end(), "oracle_actor", oracle_actor.to_string(),
