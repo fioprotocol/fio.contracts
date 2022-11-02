@@ -93,25 +93,34 @@ namespace eosiosystem {
         auto prod = prodbyowner.find(producer.value);
         uint128_t addresshash = string_to_uint128_hash(fio_address.c_str());
         const auto ct = current_time_point();
-
+        auto key = abieos::string_to_public_key(producer_key);
         if (prod != prodbyowner.end()) {
-             auto key = abieos::string_to_public_key(producer_key);
+       
              if (prod->is_active) {
                 fio_400_assert(fio_address == prod->fio_address && (url != prod->url || key != prod->producer_public_key || prod->url != url), "fio_address", fio_address,
                 "Already registered as producer", ErrorFioNameNotReg);
              }
 
+            bool doprodupdate = false;
+            string newowner;
+            if(key != prod->producer_public_key) {
+                doprodupdate = true;
+                key_to_account(producer_key, newowner);
+            } 
+
             prodbyowner.modify(prod, producer, [&](producer_info &info) {
-                if(key != prod->producer_public_key) {
-                    string newowner;
-                    key_to_account(producer_key, newowner);
-                    info.updateowner(name(newowner.c_str()));
-                    info.producer_public_key = key; }
-                if(url != prod->url) {
-                    info.url = url; }
-                if(location != prod->location) {
-                    info.location = location; }
+                if(doprodupdate) info.producer_public_key = key; 
+                if(url != prod->url) info.url = url; 
+                if(location != prod->location) info.location = location; 
             });
+
+            if (doprodupdate) {
+                name newprod = name(newowner.c_str());
+                INLINE_ACTION_SENDER(eosiosystem::system_contract, updateprod)
+                    ("eosio"_n, {{_self, "active"_n}},
+                    {newprod, producer}
+                );
+            }
 
         } else {
             uint64_t id = _producers.available_primary_key();

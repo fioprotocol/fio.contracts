@@ -240,10 +240,6 @@ struct [[eosio::table, eosio::contract("fio.system")]] producer_info {
         is_active = false;
     }
 
-    void updateowner(name _owner) {
-        owner = _owner;
-    }
-
     // explicit serialization macro is not necessary, used here only to improve compilation time
     EOSLIB_SERIALIZE( producer_info, (id)(owner)(fio_address)(addresshash)(total_votes)(producer_public_key)(is_active)(url)
             (unpaid_blocks)(last_claim_time)(last_bpclaim)(location)
@@ -412,6 +408,9 @@ public:
     void updatepower(const name &voter, bool updateonly);
 
     [[eosio::action]]
+    void updateprod(const name &newprod, const name &producer);
+
+    [[eosio::action]]
     void voteproxy(const string &proxy, const string &fio_address, const name &actor, const int64_t &max_fee);
 
     [[eosio::action]]
@@ -462,6 +461,7 @@ public:
     using updtrevision_action = eosio::action_wrapper<"updtrevision"_n, &system_contract::updtrevision>;
     using setpriv_action = eosio::action_wrapper<"setpriv"_n, &system_contract::setpriv>;
     using setparams_action = eosio::action_wrapper<"setparams"_n, &system_contract::setparams>;
+    using updateprod_action = eosio::action_wrapper<"updateprod"_n, &system_contract::updateprod>;
 
 private:
 
