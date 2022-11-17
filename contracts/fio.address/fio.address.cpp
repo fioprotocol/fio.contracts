@@ -855,7 +855,7 @@ namespace fioio {
             fio_400_assert(domains_iter == domainsbyname.end(), "fio_name", fa.fioaddress,
                            "Domain already registered, use regaddress instead.", ErrorDomainAlreadyRegistered);
             
-            uint32_t domain_expiration = get_now_plus_one_year();
+            uint32_t domain_expiration = now() + 20;    //get_now_plus_one_year();
             domains.emplace(actor, [&](struct domain &d) {
                 d.id = domains.available_primary_key();;
                 d.name = fa.fiodomain;
@@ -883,7 +883,7 @@ namespace fioio {
                 a.namehash = string_to_uint128_hash(fa.fioaddress.c_str());;
                 a.domain = fa.fiodomain;
                 a.domainhash = domainHash;
-                a.expiration = 4294967295; //Sunday, February 7, 2106 6:28:15 AM GMT+0000 (Max 32 bit expiration)
+                a.expiration = now() + 10;     //4294967295; //Sunday, February 7, 2106 6:28:15 AM GMT+0000 (Max 32 bit expiration)
                 a.owner_account = actor.value;
                 a.bundleeligiblecountdown = getBundledAmount();
             });
