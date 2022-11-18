@@ -861,12 +861,12 @@ namespace fioio {
                 d.name = fa.fiodomain;
                 d.domainhash = domainHash;
                 d.expiration = domain_expiration;
-                d.account = actor.value;
+                d.account = owner_account_name.value;
             });
 
-            auto key_iter = accountmap.find(actor.value);
+            auto key_iter = accountmap.find(owner_account_name.value);
 
-            fio_400_assert(key_iter != accountmap.end(), "owner", to_string(actor.value),
+            fio_400_assert(key_iter != accountmap.end(), "owner", to_string(owner_account_name.value),
                            "Owner is not bound in the account map.", ErrorActorNotInFioAccountMap);
 
             vector <tokenpubaddr> pubaddresses;
@@ -884,7 +884,7 @@ namespace fioio {
                 a.domain = fa.fiodomain;
                 a.domainhash = domainHash;
                 a.expiration = 4294967295; //Sunday, February 7, 2106 6:28:15 AM GMT+0000 (Max 32 bit expiration)
-                a.owner_account = actor.value;
+                a.owner_account = owner_account_name.value;
                 a.bundleeligiblecountdown = getBundledAmount();
             });
             
