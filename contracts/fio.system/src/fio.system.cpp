@@ -244,9 +244,25 @@ namespace eosiosystem {
 
         auto locks_by_owner = _generallockedtokens.get_index<"byowner"_n>();
         auto lockiter = locks_by_owner.find(owner.value);
-        check(lockiter == locks_by_owner.end(),"cannot emplace locks when locks pre-exist.");
+        bool haslocks = false;
+        bool allexpired = false;
+        // BD-4162 begin
+        if (lockiter != locks_by_owner.end()) {
+            haslocks = true;
+            uint32_t present_time = now();
+            //never clear another accounts stuff. check all locks in the past, remove if they are.
+            if ((lockiter->owner_account == owner) &&
+                (((lockiter->periods[lockiter->periods.size() - 1].duration + lockiter->timestamp) < present_time) ||
+                 lockiter->periods.size() == 0)) {
+                allexpired = true;
+                locks_by_owner.erase(lockiter);
+            }
+        }
 
+        //if previous locks and not all expired then error.
+        check((haslocks && allexpired) || lockiter == locks_by_owner.end(),"cannot emplace locks when locks pre-exist.");
 
+        //BD-4162 end
         //BD-4082 end
 
 
