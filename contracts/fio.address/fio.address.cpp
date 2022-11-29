@@ -862,6 +862,7 @@ namespace fioio {
                 d.domainhash = domainHash;
                 d.expiration = domain_expiration;
                 d.account = owner_account_name.value;
+                d.is_public = is_public;
             });
 
             auto key_iter = accountmap.find(owner_account_name.value);
