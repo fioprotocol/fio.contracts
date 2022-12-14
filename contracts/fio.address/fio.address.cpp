@@ -34,6 +34,7 @@ namespace fioio {
         eosiosystem::locked_tokens_table lockedTokensTable;
         nfts_table nftstable;
         config appConfig;
+        read_block_size_singleton _readblocksize;
 
     public:
         using contract::contract;
@@ -52,7 +53,8 @@ namespace fioio {
                                                                         topprods(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                                                                         producers(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                                                                         lockedTokensTable(SYSTEMACCOUNT,
-                                                                                          SYSTEMACCOUNT.value) {
+                                                                                          SYSTEMACCOUNT.value),
+                                                                        _readblocksize(_self, _self.value){
             configs_singleton configsSingleton(FeeContract, FeeContract.value);
             appConfig = configsSingleton.get_or_default(config());
         }

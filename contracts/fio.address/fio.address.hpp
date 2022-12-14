@@ -8,6 +8,7 @@
 #pragma once
 
 #include <eosiolib/eosio.hpp>
+#include <eosiolib/time.hpp>
 #include <eosiolib/singleton.hpp>
 #include <eosiolib/asset.hpp>
 
@@ -18,6 +19,7 @@ using std::string;
 namespace fioio {
 
     using namespace eosio;
+    using eosio::time_point;
 
     struct tokenpubaddr {
         string token_code;
@@ -25,6 +27,7 @@ namespace fioio {
         string public_address;
         EOSLIB_SERIALIZE( tokenpubaddr, (token_code)(chain_code)(public_address))
     };
+
 
     struct find_token {
         string token_code;
@@ -111,6 +114,49 @@ namespace fioio {
             indexed_by<"bykey"_n, const_mem_fun < eosio_name, uint128_t, &eosio_name::by_keyhash>>
     >
     eosio_names_table;
+
+
+    //the design pattern here is to perform the following for any indexes that
+    //are read limited in FIO IE- there are more than 1500 or so rows with the same value
+    //of secondary index.
+    //the following pattern may only be applied when the table in question
+    //has a primary index id (a one up for each row in the table).
+    //we will define a FIO read block size on chain (we will set it initially to be 500)
+    //this will be tunable for the protocol in state (IE we can change this read block size when necessary)
+    //we will make a lookup table with columns
+    //          id -- id of row
+    //        index name -- the string rep of the index value (which will be "original index"+"fioblocknumber"
+    //        index name hash
+    //        table name -- state table to use
+    //        table name hash
+    //        read block -- the read block for this entry
+    //        read block hash -- table name +index name + read block hashed
+    //        tableid -- the primary index of the table in table name for the desired row.
+
+    //
+    //  indexes are
+    //    primary
+    //       id
+    //
+    //    secondary
+    //       index name hash
+    //       table name hash
+    //       read block hash
+    //
+    //
+    //   add a new action for each table block insert nft(with necessary parameters)
+    //     this checks the
+    //
+    //
+    // once we have this lookup table populated, getters may now use paging as follows
+    //   read the fio read block size from state,
+    //   compute the start block of the offset for the table roundup(offset/read block size)
+    //   compute the end block of the limit specified roundup(limit/read block offset)
+    // the getter can enforce the "sensible"use of limit and offset, throw an error when it is not sensible
+    // (IE the getter must return less than 1500 records)
+    //now to integrate the lookup table completely we must add logic whenever a row is inserted into the
+    // table in question (to add a record to the lookup table by calling and whenever a record is removed from the table in question.
+
 
     // Maps NFT information to FIO Address
     struct [[eosio::action]] nftinfo {
