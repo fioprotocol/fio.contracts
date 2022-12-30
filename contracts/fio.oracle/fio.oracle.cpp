@@ -124,7 +124,7 @@ namespace fioio {
                 p.timestamp = present_time;
             });
 
-            //Tokens are transferred to fio.wrapping.
+            //Tokens are transferred to fio.oracle for escrow.
             action(permission_level{get_self(), "active"_n},
                    TokenContract, "transfer"_n,
                    make_tuple(actor, FIOORACLEContract, asset(amount, FIOSYMBOL), string("Token Wrapping"))
