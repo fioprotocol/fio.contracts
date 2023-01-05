@@ -133,6 +133,37 @@
       ]
     },
     {
+      "name": "regdomadd",
+      "base": "",
+      "fields": [
+        {
+          "name": "fio_address",
+          "type": "string"
+        },
+        {
+          "name": "is_public",
+          "type": "int8"
+        },
+        {
+          "name": "owner_fio_public_key",
+          "type": "string"
+        },
+        {
+          "name": "max_fee",
+          "type": "int64"
+        },
+        {
+          "name": "tpid",
+          "type": "string"
+        },
+        {
+          "name": "actor",
+          "type": "name"
+        },
+
+      ]
+    },
+    {
       "name": "tokenpubaddr",
       "base": "",
       "fields": [
@@ -708,6 +739,11 @@
     {
       "name": "regdomain",
       "type": "regdomain",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "regdomadd",
+      "type": "regdomadd",
       "ricardian_contract": ""
     },
     {

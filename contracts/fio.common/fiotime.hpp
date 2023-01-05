@@ -102,14 +102,14 @@ namespace fioio {
         for (months = 0; days_in_month[months] <= remdays; months++)
             remdays -= days_in_month[months];
 
-        if (years + 100 > INT_MAX || years + 100 < INT_MIN)
+        if (years + 2000 > INT_MAX || years + 2000 < INT_MIN)
             return -1;
 
         tm->tm_year = years + 2000;
         tm->tm_mon = months + 3;
         if (tm->tm_mon >= 12) {
             tm->tm_mon -= 12;
-            tm->tm_year++;
+            //tm->tm_year++;
 
             if(tm->tm_mon == 00){ // some unknown but that makes the 12th month 00.
                 tm->tm_mon = 12;
