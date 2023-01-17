@@ -316,24 +316,6 @@ namespace eosiosystem {
         }
     }
 
-
-    void eosiosystem::system_contract::updateprod(const name &newprod, const name &producer) {
-        require_auth(get_self());
-        auto prodbyowner = _producers.get_index<"byowner"_n>();
-        auto prod = prodbyowner.find(producer.value);
-        check(prod != prodbyowner.end(), "producer not found");
-        auto prod2 = prodbyowner.find(newprod.value);
-        check(prod2 == prodbyowner.end(), "new producer already registered");
-
-        prodbyowner.modify(prod, same_payer, [&](auto &p) {
-            p.owner = newprod;
-        });
-
-        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-          "System error: updateprod trx is too large. Try again?", ErrorTransactionTooLarge);
-
-    }
-
 } /// fio.system
 
 
@@ -348,7 +330,7 @@ EOSIO_DISPATCH( eosiosystem::system_contract,
 // voting.cpp
         (regproducer)(regiproducer)(unregprod)(voteproducer)(voteproxy)(inhibitunlck)
         (updlocked)(unlocktokens)(setautoproxy)(crautoproxy)(burnaction)(incram)
-        (unregproxy)(regiproxy)(regproxy)(updateprod)
+        (unregproxy)(regiproxy)(regproxy)
 // producer_pay.cpp
         (onblock)
         (resetclaim)

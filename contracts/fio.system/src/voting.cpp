@@ -109,18 +109,13 @@ namespace eosiosystem {
             } 
 
             prodbyowner.modify(prod, producer, [&](producer_info &info) {
-                if(doprodupdate) info.producer_public_key = key; 
+                if(doprodupdate) { 
+                    info.producer_public_key = key;
+                    info.owner = name(newowner.c_str());
+                } 
                 if(url != prod->url) info.url = url; 
                 if(location != prod->location) info.location = location; 
             });
-
-            if (doprodupdate) {
-                name newprod = name(newowner.c_str());
-                INLINE_ACTION_SENDER(eosiosystem::system_contract, updateprod)
-                    ("eosio"_n, {{_self, "active"_n}},
-                    {newprod, producer}
-                );
-            }
 
         } else {
             uint64_t id = _producers.available_primary_key();

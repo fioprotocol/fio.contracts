@@ -408,9 +408,6 @@ public:
     void updatepower(const name &voter, bool updateonly);
 
     [[eosio::action]]
-    void updateprod(const name &newprod, const name &producer);
-
-    [[eosio::action]]
     void voteproxy(const string &proxy, const string &fio_address, const name &actor, const int64_t &max_fee);
 
     [[eosio::action]]
@@ -461,7 +458,6 @@ public:
     using updtrevision_action = eosio::action_wrapper<"updtrevision"_n, &system_contract::updtrevision>;
     using setpriv_action = eosio::action_wrapper<"setpriv"_n, &system_contract::setpriv>;
     using setparams_action = eosio::action_wrapper<"setparams"_n, &system_contract::setparams>;
-    using updateprod_action = eosio::action_wrapper<"updateprod"_n, &system_contract::updateprod>;
 
 private:
 
