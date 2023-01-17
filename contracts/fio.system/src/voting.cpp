@@ -97,7 +97,7 @@ namespace eosiosystem {
         if (prod != prodbyowner.end()) {
        
              if (prod->is_active) {
-                fio_400_assert(fio_address == prod->fio_address && (url != prod->url || key != prod->producer_public_key || prod->url != url), "fio_address", fio_address,
+                fio_400_assert(fio_address == prod->fio_address && (url != prod->url || key != prod->producer_public_key || prod->location != location), "fio_address", fio_address,
                 "Already registered as producer", ErrorFioNameNotReg);
              }
 
