@@ -78,7 +78,7 @@ namespace eosiosystem {
      *
      *  @pre producer to register is an account
      *  @pre or producer is already registered to be updated with new properties
-     *  @pre fio_address has previously been validated
+     *  @pre fio_address has previously been validated and its owner is authorized signer
      *  @pre authority of producer to register
      *
      */
@@ -101,18 +101,8 @@ namespace eosiosystem {
                 "Already registered as producer", ErrorFioNameNotReg);
              }
 
-            bool doprodupdate = false;
-            string newowner;
-            if(key != prod->producer_public_key) {
-                doprodupdate = true;
-                key_to_account(producer_key, newowner);
-            } 
-
             prodbyowner.modify(prod, producer, [&](producer_info &info) {
-                if(doprodupdate) { 
-                    info.producer_public_key = key;
-                    info.owner = name(newowner.c_str());
-                } 
+                if(key != info.producer_public_key) info.producer_public_key = key;
                 if(url != prod->url) info.url = url; 
                 if(location != prod->location) info.location = location; 
             });
