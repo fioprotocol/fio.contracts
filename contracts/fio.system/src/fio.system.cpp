@@ -118,9 +118,6 @@ namespace eosiosystem {
               const string &tpid) {
 
 
-        print("EDEDEDEDEDED in newfioacc ");
-
-
         fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
                        "TPID must be empty or valid FIO address",
                        ErrorPubKeyValid);
@@ -129,7 +126,7 @@ namespace eosiosystem {
 
         if (fio_public_key.length() > 0) {
             fio_400_assert(isPubKeyValid(fio_public_key), "fio_public_key", fio_public_key,
-                           "Invalid FIO Public Key",
+                           "Invalid FIO Public Key format",
                            ErrorPubKeyValid);
         }
 

@@ -749,7 +749,7 @@ namespace fioio {
             //requirement, allow empty string to be used!
             if (encrypt_public_key.length() > 0) {
                 fio_400_assert(isPubKeyValid(encrypt_public_key), "encrypt_public_key", encrypt_public_key,
-                               "Invalid FIO Public Key",
+                               "Encrypt key not a valid FIO Public Key",
                                ErrorPubKeyValid);
             }
 
