@@ -151,7 +151,7 @@ namespace fioio {
         }
 
         // FIP-39 begin
-        inline void updhandleinf(const string &datavalue, const string &datadesc, const uint64_t &fionameid, const name &actor) {
+        inline void updfionminf(const string &datavalue, const string &datadesc, const uint64_t &fionameid, const name &actor) {
             auto fionameinfobynameid = fionameinfo.get_index<"byfionameid"_n>();
             auto fionameinfo_iter = fionameinfobynameid.find(fionameid);
             if(fionameinfo_iter == fionameinfobynameid.end()){
@@ -304,7 +304,7 @@ namespace fioio {
 
             //FIP-39 begin
             //update the encryption key to use.
-            updhandleinf(key_iter->clientkey, FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC,id,owner);
+            updfionminf(key_iter->clientkey, FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC,id,owner);
             //FIP-39 end
 
             uint64_t fee_amount = chain_data_update(fa.fioaddress, pubaddresses, max_fee, fa, actor, owner,
@@ -838,7 +838,7 @@ namespace fioio {
                 ).send();
             }
 
-            updhandleinf(encrypt_public_key, FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC,fioname_iter->id,actor);
+            updfionminf(encrypt_public_key, FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC,fioname_iter->id,actor);
 
             fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UPDATE_ENCRYPT_KEY_ENDPOINT,
                                "FIO fee not found for endpoint", ErrorNoEndpoint);
@@ -2082,7 +2082,7 @@ namespace fioio {
 
             //FIP-39 begin
             //update the encryption key to use.
-            updhandleinf(new_owner_fio_public_key, FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC,fioname_iter->id,nm);
+            updfionminf(new_owner_fio_public_key, FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC,fioname_iter->id,nm);
             //FIP-39 end
 
             // Burn the NFTs belonging to the FIO address that was just transferred
