@@ -24,7 +24,7 @@ namespace fioio {
         domainsales_table domainsales;
         fionames_table fionames;
         //FIP-39 begin
-        handleinfo_table handleinfo;
+        fionameinfo_table fionameinfo;
         //FIP-39 end
         fiofee_table fiofees;
         eosio_names_table accountmap;
@@ -46,7 +46,7 @@ namespace fioio {
                                                                         domainsales(EscrowContract, EscrowContract.value),
                                                                         fionames(_self, _self.value),
                                                                         //FIP-39 begin
-                                                                        handleinfo(_self, _self.value),
+                                                                        fionameinfo(_self, _self.value),
                                                                         //FIP-39 end
                                                                         fiofees(FeeContract, FeeContract.value),
                                                                         bundlevoters(FeeContract, FeeContract.value),
@@ -152,45 +152,45 @@ namespace fioio {
 
         // FIP-39 begin
         inline void updhandleinf(const string &datavalue, const string &datadesc, const uint64_t &fionameid, const name &actor) {
-            auto handleinfobynameid = handleinfo.get_index<"byfionameid"_n>();
-            auto handleinfo_iter = handleinfobynameid.find(fionameid);
-            if(handleinfo_iter == handleinfobynameid.end()){
-                uint64_t id = handleinfo.available_primary_key();
-                handleinfo.emplace(actor, [&](struct fioname_info_item &d) {
+            auto fionameinfobynameid = fionameinfo.get_index<"byfionameid"_n>();
+            auto fionameinfo_iter = fionameinfobynameid.find(fionameid);
+            if(fionameinfo_iter == fionameinfobynameid.end()){
+                uint64_t id = fionameinfo.available_primary_key();
+                fionameinfo.emplace(actor, [&](struct fioname_info_item &d) {
                     d.id = id;
                     d.fionameid = fionameid;
                     d.datadesc = datadesc;
                     d.datavalue = datavalue;
                 });
             }else {
-                auto matchdesc_iter = handleinfo_iter;
+                auto matchdesc_iter = fionameinfo_iter;
                 //now check for multiples of same desc, enforce no duplicate datadesc values permitted in table.
                 int countem = 0;
-                while (handleinfo_iter != handleinfobynameid.end()) {
-                    if (handleinfo_iter->datadesc.compare(datadesc) == 0) {
+                while (fionameinfo_iter != fionameinfobynameid.end()) {
+                    if (fionameinfo_iter->datadesc.compare(datadesc) == 0) {
                         countem++;
-                        matchdesc_iter = handleinfo_iter;
+                        matchdesc_iter = fionameinfo_iter;
                     }
-                    handleinfo_iter++;
+                    fionameinfo_iter++;
                 }
                 //we found one to get into this block so if more than one then error.
                 fio_400_assert(countem == 1, "datadesc", datadesc,
                                "handle info error -- multiple data values present for datadesc",
                                ErrorInvalidValue);
-                handleinfobynameid.modify(matchdesc_iter, actor, [&](struct fioname_info_item &d) {
+                fionameinfobynameid.modify(matchdesc_iter, actor, [&](struct fioname_info_item &d) {
                     d.datavalue = datavalue;
                 });
             }
         }
 
         inline void remhandleinf(const uint64_t &fionameid) {
-            auto handleinfobynameid = handleinfo.get_index<"byfionameid"_n>();
-            auto handleinfo_iter = handleinfobynameid.find(fionameid);
-            if(handleinfo_iter != handleinfobynameid.end()){
-                auto next_iter = handleinfo_iter;
+            auto fionameinfobynameid = fionameinfo.get_index<"byfionameid"_n>();
+            auto fionameinfo_iter = fionameinfobynameid.find(fionameid);
+            if(fionameinfo_iter != fionameinfobynameid.end()){
+                auto next_iter = fionameinfo_iter;
                 next_iter++;
-                handleinfobynameid.erase(handleinfo_iter);
-                handleinfo_iter = next_iter;
+                fionameinfobynameid.erase(fionameinfo_iter);
+                fionameinfo_iter = next_iter;
             }
         }
         //FIP-39 end
@@ -794,7 +794,7 @@ namespace fioio {
             auto fee_iter = fees_by_endpoint.find(endpoint_hash);
 
             //if the fee isnt found for the endpoint, then 400 error.
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", REMOVE_PUB_ADDRESS_ENDPOINT,
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UPDATE_ENCRYPT_KEY_ENDPOINT,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
 
             const int64_t reg_amount = fee_iter->suf_amount;
@@ -818,7 +818,7 @@ namespace fioio {
 
                 //NOTE -- question here, should we always record the transfer for the fees, even when its zero,
                 //or should we do as this code does and not do a transaction when the fees are 0.
-                fio_fees(actor, asset(reg_amount, FIOSYMBOL), REMOVE_PUB_ADDRESS_ENDPOINT);
+                fio_fees(actor, asset(reg_amount, FIOSYMBOL), UPDATE_ENCRYPT_KEY_ENDPOINT);
                 process_rewards(tpid, reg_amount, get_self(), actor);
 
                 if (reg_amount > 0) {
@@ -840,15 +840,11 @@ namespace fioio {
 
             updhandleinf(encrypt_public_key, FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC,fioname_iter->id,actor);
 
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", REMOVE_PUB_ADDRESS_ENDPOINT,
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UPDATE_ENCRYPT_KEY_ENDPOINT,
                                "FIO fee not found for endpoint", ErrorNoEndpoint);
-
-
+            
             const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
                                            to_string(reg_amount) + string("}");
-
-            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
-                           "Transaction is too large", ErrorTransactionTooLarge);
 
             send_response(response_string.c_str());
 

@@ -846,7 +846,7 @@
       "type": "fioname"
     },
     {
-      "name": "handleinfo",
+      "name": "fionameinfo",
       "index_type": "i64",
       "key_names": [],
       "key_types": [],

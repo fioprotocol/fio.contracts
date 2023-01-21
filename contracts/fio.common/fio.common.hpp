@@ -84,7 +84,7 @@
 #define NEW_FIO_CHAIN_ACCOUNT_ENDPOINT "new_fio_chain_account"
 //FIP-38 end
 //FIP-39 begin
-//the following section contains the set of data descriptions used in the handleinfo table.
+//the following section contains the set of data descriptions used in the fionameinfo table.
 #define FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC "FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY"
 //FIP-39 end
 
