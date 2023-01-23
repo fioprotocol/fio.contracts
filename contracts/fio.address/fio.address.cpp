@@ -173,14 +173,29 @@ namespace fioio {
                     }
                     fionameinfo_iter++;
                 }
-                //we found one to get into this block so if more than one then error.
-                fio_400_assert(countem == 1, "datadesc", datadesc,
-                               "handle info error -- multiple data values present for datadesc",
-                               ErrorInvalidValue);
-                fionameinfobynameid.modify(matchdesc_iter, actor, [&](struct fioname_info_item &d) {
-                    d.datavalue = datavalue;
-                });
+
+                //this code if(countem == 0) is not tested by the existing contracts because we have only got one data description used by the contracts
+                // in the first delivery of the new table.
+                if(countem == 0){
+                    uint64_t id = fionameinfo.available_primary_key();
+                    fionameinfo.emplace(actor, [&](struct fioname_info_item &d) {
+                        d.id = id;
+                        d.fionameid = fionameid;
+                        d.datadesc = datadesc;
+                        d.datavalue = datavalue;
+                    });
+                }
+                else {
+                        //we found one to get into this block so if more than one then error.
+                        fio_400_assert(countem == 1, "datadesc", datadesc,
+                                       "handle info error -- multiple data values present for datadesc",
+                                       ErrorInvalidValue);
+                        fionameinfobynameid.modify(matchdesc_iter, actor, [&](struct fioname_info_item &d) {
+                            d.datavalue = datavalue;
+                        });
+                    }
             }
+
         }
 
         inline void remhandleinf(const uint64_t &fionameid) {
