@@ -459,8 +459,6 @@ namespace fioio {
                                "Fee exceeds supplied maximum.",
                                ErrorMaxFeeExceeded);
 
-                //NOTE -- question here, should we always record the transfer for the fees, even when its zero,
-                //or should we do as this code does and not do a transaction when the fees are 0.
                 fio_fees(actor, asset(reg_amount, FIOSYMBOL), REMOVE_PUB_ADDRESS_ENDPOINT);
                 process_rewards(tpid, reg_amount, get_self(), actor);
 
@@ -561,8 +559,6 @@ namespace fioio {
                                "Fee exceeds supplied maximum.",
                                ErrorMaxFeeExceeded);
 
-                //NOTE -- question here, should we always record the transfer for the fees, even when its zero,
-                //or should we do as this code does and not do a transaction when the fees are 0.
                 fio_fees(actor, asset(reg_amount, FIOSYMBOL), REMOVE_ALL_PUB_ENDPOINT);
                 process_rewards(tpid, reg_amount, get_self(), actor);
 
@@ -831,8 +827,6 @@ namespace fioio {
                                "Fee exceeds supplied maximum.",
                                ErrorMaxFeeExceeded);
 
-                //NOTE -- question here, should we always record the transfer for the fees, even when its zero,
-                //or should we do as this code does and not do a transaction when the fees are 0.
                 fio_fees(actor, asset(reg_amount, FIOSYMBOL), UPDATE_ENCRYPT_KEY_ENDPOINT);
                 process_rewards(tpid, reg_amount, get_self(), actor);
 
