@@ -97,11 +97,12 @@ namespace eosiosystem {
         if (prod != prodbyowner.end()) {
        
              if (prod->is_active) {
-                fio_400_assert(fio_address == prod->fio_address && (url != prod->url || key != prod->producer_public_key || prod->location != location), "fio_address", fio_address,
+                fio_400_assert(fio_address != prod->fio_address || url != prod->url || key != prod->producer_public_key || prod->location != location, "fio_address", fio_address,
                 "Already registered as producer", ErrorFioNameNotReg);
              }
 
             prodbyowner.modify(prod, producer, [&](producer_info &info) {
+                if(fio_address != info.fio_address) info.fio_address = fio_address;
                 if(key != info.producer_public_key) info.producer_public_key = key;
                 if(url != prod->url) info.url = url; 
                 if(location != prod->location) info.location = location; 
