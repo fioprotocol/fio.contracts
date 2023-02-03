@@ -438,6 +438,13 @@ public:
     [[eosio::action]]
     void setpriv(const name &account,const uint8_t &is_priv);
 
+    //FIP-38 begin
+    [[eosio::action]]
+    void newfioacc(const string &fio_public_key, const authority &owner, const authority &active, const int64_t &max_fee,
+              const name &actor,
+              const string &tpid);
+    //FIP-38 end
+
     [[eosio::action]]
     void rmvproducer(const name &producer);
 
@@ -457,6 +464,9 @@ public:
     using rmvproducer_action = eosio::action_wrapper<"rmvproducer"_n, &system_contract::rmvproducer>;
     using updtrevision_action = eosio::action_wrapper<"updtrevision"_n, &system_contract::updtrevision>;
     using setpriv_action = eosio::action_wrapper<"setpriv"_n, &system_contract::setpriv>;
+    //FIP-38 begin
+    using newfioacc_action = eosio::action_wrapper<"newfioacc"_n, &system_contract::newfioacc>;
+    //FIP-38 end
     using setparams_action = eosio::action_wrapper<"setparams"_n, &system_contract::setparams>;
 
 private:
