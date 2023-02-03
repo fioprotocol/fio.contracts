@@ -23,9 +23,6 @@ namespace fioio {
         domains_table domains;
         domainsales_table domainsales;
         fionames_table fionames;
-        //FIP-39 begin
-        fionameinfo_table fionameinfo;
-        //FIP-39 end
         fiofee_table fiofees;
         eosio_names_table accountmap;
         bundlevoters_table bundlevoters;
@@ -37,6 +34,10 @@ namespace fioio {
         eosiosystem::locked_tokens_table lockedTokensTable;
         nfts_table nftstable;
         config appConfig;
+        
+        //FIP-39 begin
+        fionameinfo_table fionameinfo;
+        //FIP-39 end
 
     public:
         using contract::contract;
@@ -45,9 +46,6 @@ namespace fioio {
                                                                         domains(_self, _self.value),
                                                                         domainsales(EscrowContract, EscrowContract.value),
                                                                         fionames(_self, _self.value),
-                                                                        //FIP-39 begin
-                                                                        fionameinfo(_self, _self.value),
-                                                                        //FIP-39 end
                                                                         fiofees(FeeContract, FeeContract.value),
                                                                         bundlevoters(FeeContract, FeeContract.value),
                                                                         accountmap(_self, _self.value),
@@ -58,7 +56,10 @@ namespace fioio {
                                                                         topprods(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                                                                         producers(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                                                                         lockedTokensTable(SYSTEMACCOUNT,
-                                                                                          SYSTEMACCOUNT.value) {
+                                                                                          SYSTEMACCOUNT.value),
+        //FIP-39 begin
+        fionameinfo(_self, _self.value),
+        //FIP-39 end{
             configs_singleton configsSingleton(FeeContract, FeeContract.value);
             appConfig = configsSingleton.get_or_default(config());
         }
@@ -150,65 +151,71 @@ namespace fioio {
 
         }
 
-        // FIP-39 begin
-        inline void updfionminf(const string &datavalue, const string &datadesc, const uint64_t &fionameid, const name &actor) {
-            auto fionameinfobynameid = fionameinfo.get_index<"byfionameid"_n>();
-            auto fionameinfo_iter = fionameinfobynameid.find(fionameid);
-            if(fionameinfo_iter == fionameinfobynameid.end()){
-                uint64_t id = fionameinfo.available_primary_key();
-                fionameinfo.emplace(actor, [&](struct fioname_info_item &d) {
-                    d.id = id;
-                    d.fionameid = fionameid;
-                    d.datadesc = datadesc;
+
+
+// FIP-39 begin
+inline void updfionminf(const string &datavalue, const string &datadesc, const uint64_t &fionameid, const name &actor) {
+    auto fionameinfobynameid = fionameinfo.get_index<"byfionameid"_n>();
+    auto fionameinfo_iter = fionameinfobynameid.find(fionameid);
+    if(fionameinfo_iter == fionameinfobynameid.end()){
+        uint64_t id = fionameinfo.available_primary_key();
+        fionameinfo.emplace(actor, [&](struct fioname_info_item &d) {
+            d.id = id;
+            d.fionameid = fionameid;
+            d.datadesc = datadesc;
+            d.datavalue = datavalue;
+        });
+    }else {
+        auto matchdesc_iter = fionameinfo_iter;
+        //now check for multiples of same desc, enforce no duplicate datadesc values permitted in table.
+        int countem = 0;
+        while (fionameinfo_iter != fionameinfobynameid.end()) {
+            if (fionameinfo_iter->datadesc.compare(datadesc) == 0) {
+                countem++;
+                matchdesc_iter = fionameinfo_iter;
+            }
+            fionameinfo_iter++;
+        }
+
+        //this code if(countem == 0) is not tested by the existing contracts because we have only got one data description used by the contracts
+        // in the first delivery of the new table.
+        if(countem == 0){
+            uint64_t id = fionameinfo.available_primary_key();
+            fionameinfo.emplace(actor, [&](struct fioname_info_item &d) {
+                d.id = id;
+                d.fionameid = fionameid;
+                d.datadesc = datadesc;
+                d.datavalue = datavalue;
+            });
+        }
+        else {
+                //we found one to get into this block so if more than one then error.
+                fio_400_assert(countem == 1, "datadesc", datadesc,
+                               "handle info error -- multiple data values present for datadesc",
+                               ErrorInvalidValue);
+                fionameinfobynameid.modify(matchdesc_iter, actor, [&](struct fioname_info_item &d) {
                     d.datavalue = datavalue;
                 });
-            }else {
-                auto matchdesc_iter = fionameinfo_iter;
-                //now check for multiples of same desc, enforce no duplicate datadesc values permitted in table.
-                int countem = 0;
-                while (fionameinfo_iter != fionameinfobynameid.end()) {
-                    if (fionameinfo_iter->datadesc.compare(datadesc) == 0) {
-                        countem++;
-                        matchdesc_iter = fionameinfo_iter;
-                    }
-                    fionameinfo_iter++;
-                }
-
-                //this code if(countem == 0) is not tested by the existing contracts because we have only got one data description used by the contracts
-                // in the first delivery of the new table.
-                if(countem == 0){
-                    uint64_t id = fionameinfo.available_primary_key();
-                    fionameinfo.emplace(actor, [&](struct fioname_info_item &d) {
-                        d.id = id;
-                        d.fionameid = fionameid;
-                        d.datadesc = datadesc;
-                        d.datavalue = datavalue;
-                    });
-                }
-                else {
-                        //we found one to get into this block so if more than one then error.
-                        fio_400_assert(countem == 1, "datadesc", datadesc,
-                                       "handle info error -- multiple data values present for datadesc",
-                                       ErrorInvalidValue);
-                        fionameinfobynameid.modify(matchdesc_iter, actor, [&](struct fioname_info_item &d) {
-                            d.datavalue = datavalue;
-                        });
-                    }
             }
+    }
 
-        }
+}
 
-        inline void remhandleinf(const uint64_t &fionameid) {
-            auto fionameinfobynameid = fionameinfo.get_index<"byfionameid"_n>();
-            auto fionameinfo_iter = fionameinfobynameid.find(fionameid);
-            if(fionameinfo_iter != fionameinfobynameid.end()){
-                auto next_iter = fionameinfo_iter;
-                next_iter++;
-                fionameinfobynameid.erase(fionameinfo_iter);
-                fionameinfo_iter = next_iter;
-            }
-        }
-        //FIP-39 end
+inline void remhandleinf(const uint64_t &fionameid) {
+    auto fionameinfobynameid = fionameinfo.get_index<"byfionameid"_n>();
+    auto fionameinfo_iter = fionameinfobynameid.find(fionameid);
+    if(fionameinfo_iter != fionameinfobynameid.end()){
+        auto next_iter = fionameinfo_iter;
+        next_iter++;
+        fionameinfobynameid.erase(fionameinfo_iter);
+        fionameinfo_iter = next_iter;
+    }
+}
+//FIP-39 end
+
+
+
+
 
         inline void register_errors(const FioAddress &fa, bool domain) const {
             string fioname = "fio_address";
@@ -295,8 +302,6 @@ namespace fioio {
             fio_400_assert(key_iter != accountmap.end(), "owner", to_string(owner.value),
                            "Owner is not bound in the account map.", ErrorActorNotInFioAccountMap);
 
-
-
             uint64_t id = fionames.available_primary_key();
             vector <tokenpubaddr> pubaddresses;
             tokenpubaddr t1;
@@ -321,7 +326,8 @@ namespace fioio {
             //update the encryption key to use.
             updfionminf(key_iter->clientkey, FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC,id,owner);
             //FIP-39 end
-
+            
+            
             uint64_t fee_amount = chain_data_update(fa.fioaddress, pubaddresses, max_fee, fa, actor, owner,
                                                     true, tpid);
 
@@ -459,6 +465,8 @@ namespace fioio {
                                "Fee exceeds supplied maximum.",
                                ErrorMaxFeeExceeded);
 
+                //NOTE -- question here, should we always record the transfer for the fees, even when its zero,
+                //or should we do as this code does and not do a transaction when the fees are 0.
                 fio_fees(actor, asset(reg_amount, FIOSYMBOL), REMOVE_PUB_ADDRESS_ENDPOINT);
                 process_rewards(tpid, reg_amount, get_self(), actor);
 
@@ -559,6 +567,8 @@ namespace fioio {
                                "Fee exceeds supplied maximum.",
                                ErrorMaxFeeExceeded);
 
+                //NOTE -- question here, should we always record the transfer for the fees, even when its zero,
+                //or should we do as this code does and not do a transaction when the fees are 0.
                 fio_fees(actor, asset(reg_amount, FIOSYMBOL), REMOVE_ALL_PUB_ENDPOINT);
                 process_rewards(tpid, reg_amount, get_self(), actor);
 
@@ -738,127 +748,134 @@ namespace fioio {
 
         /********* CONTRACT ACTIONS ********/
 
-        //FIP-39 begin
-        [[eosio::action]]
-        void
-        updcryptkey(const string &fio_address, const string &encrypt_public_key, const int64_t &max_fee,
-                   const name &actor,
-                   const string &tpid) {
+//FIP-39 begin
+[[eosio::action]]
+void
+updcryptkey(const string &fio_address, const string &encrypt_public_key, const int64_t &max_fee,
+           const name &actor,
+           const string &tpid) {
 
 
-            print("updcryptkey --      called. \n");
+    print("updcryptkey --      called. \n");
 
-            //VERIFY INPUTS
-            FioAddress fa;
-            fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
-                           "TPID must be empty or valid FIO address",
-                           ErrorPubKeyValid);
+    //VERIFY INPUTS
+    FioAddress fa;
+    fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
+                   "TPID must be empty or valid FIO address",
+                   ErrorPubKeyValid);
 
-            fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
-                           ErrorMaxFeeInvalid);
+    fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                   ErrorMaxFeeInvalid);
 
-            //requirement, allow empty string to be used!
-            if (encrypt_public_key.length() > 0) {
-                fio_400_assert(isPubKeyValid(encrypt_public_key), "encrypt_public_key", encrypt_public_key,
-                               "Encrypt key not a valid FIO Public Key",
-                               ErrorPubKeyValid);
-            }
+    //requirement, allow empty string to be used!
+    if (encrypt_public_key.length() > 0) {
+        fio_400_assert(isPubKeyValid(encrypt_public_key), "encrypt_public_key", encrypt_public_key,
+                       "Encrypt key not a valid FIO Public Key",
+                       ErrorPubKeyValid);
+    }
 
-            getFioAddressStruct(fio_address, fa);
-            const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
-            const uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+    getFioAddressStruct(fio_address, fa);
+    const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
+    const uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
 
-            fio_400_assert(!fa.domainOnly, "fio_address", fa.fioaddress, "Invalid FIO address",
-                           ErrorInvalidFioNameFormat);
+    fio_400_assert(!fa.domainOnly, "fio_address", fa.fioaddress, "Invalid FIO address",
+                   ErrorInvalidFioNameFormat);
 
-            auto domainsbyname = domains.get_index<"byname"_n>();
-            auto domains_iter = domainsbyname.find(domainHash);
+    auto domainsbyname = domains.get_index<"byname"_n>();
+    auto domains_iter = domainsbyname.find(domainHash);
 
-            fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fa.fioaddress,
-                           "FIO Domain not registered",
-                           ErrorDomainNotRegistered);
+    fio_400_assert(domains_iter != domainsbyname.end(), "fio_address", fa.fioaddress,
+                   "FIO Domain not registered",
+                   ErrorDomainNotRegistered);
 
-            //add 30 days to the domain expiration, this call will work until 30 days past expire.
-            const uint32_t domain_expiration = get_time_plus_seconds(domains_iter->expiration, SECONDS30DAYS);
+    //add 30 days to the domain expiration, this call will work until 30 days past expire.
+    const uint32_t domain_expiration = get_time_plus_seconds(domains_iter->expiration, SECONDS30DAYS);
 
-            const uint32_t present_time = now();
-            fio_400_assert(present_time <= domain_expiration, "fio_address", fa.fioaddress, "FIO Domain expired",
-                           ErrorDomainExpired);
+    const uint32_t present_time = now();
+    fio_400_assert(present_time <= domain_expiration, "fio_address", fa.fioaddress, "FIO Domain expired",
+                   ErrorDomainExpired);
 
-            auto namesbyname = fionames.get_index<"byname"_n>();
-            auto fioname_iter = namesbyname.find(nameHash);
-            fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fa.fioaddress,
-                           "FIO address not registered", ErrorFioNameNotRegistered);
-            fio_403_assert(fioname_iter->owner_account == actor.value,
-                           ErrorSignature); // check if actor owns FIO Address
-
-
+    auto namesbyname = fionames.get_index<"byname"_n>();
+    auto fioname_iter = namesbyname.find(nameHash);
+    fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fa.fioaddress,
+                   "FIO address not registered", ErrorFioNameNotRegistered);
+    fio_403_assert(fioname_iter->owner_account == actor.value,
+                   ErrorSignature); // check if actor owns FIO Address
 
 
-            //FEE PROCESSING
-            uint64_t fee_amount = 0;
 
-            //begin fees, bundle eligible fee logic
-            const uint128_t endpoint_hash = string_to_uint128_hash(UPDATE_ENCRYPT_KEY_ENDPOINT);
 
-            auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
-            auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+    //FEE PROCESSING
+    uint64_t fee_amount = 0;
 
-            //if the fee isnt found for the endpoint, then 400 error.
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UPDATE_ENCRYPT_KEY_ENDPOINT,
-                           "FIO fee not found for endpoint", ErrorNoEndpoint);
+    //begin fees, bundle eligible fee logic
+    const uint128_t endpoint_hash = string_to_uint128_hash(UPDATE_ENCRYPT_KEY_ENDPOINT);
 
-            const int64_t reg_amount = fee_iter->suf_amount;
-            const uint64_t fee_type = fee_iter->type;
+    auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
+    auto fee_iter = fees_by_endpoint.find(endpoint_hash);
 
-            fio_400_assert(fee_type == 1, "fee_type", to_string(fee_type),
-                           "update_encrypt_key unexpected fee type for endpoint update_encrypt_key, expected 1",
-                           ErrorNoEndpoint);
+    //if the fee isnt found for the endpoint, then 400 error.
+    fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UPDATE_ENCRYPT_KEY_ENDPOINT,
+                   "FIO fee not found for endpoint", ErrorNoEndpoint);
 
-            const uint64_t bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
+    const int64_t reg_amount = fee_iter->suf_amount;
+    const uint64_t fee_type = fee_iter->type;
 
-            if (bundleeligiblecountdown > 0) {
-                namesbyname.modify(fioname_iter, _self, [&](struct fioname &a) {
-                    a.bundleeligiblecountdown = (bundleeligiblecountdown - 1);
-                });
-            } else {
-                fee_amount = fee_iter->suf_amount;
-                fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
-                               "Fee exceeds supplied maximum.",
-                               ErrorMaxFeeExceeded);
+    fio_400_assert(fee_type == 1, "fee_type", to_string(fee_type),
+                   "update_encrypt_key unexpected fee type for endpoint update_encrypt_key, expected 1",
+                   ErrorNoEndpoint);
 
-                fio_fees(actor, asset(reg_amount, FIOSYMBOL), UPDATE_ENCRYPT_KEY_ENDPOINT);
-                process_rewards(tpid, reg_amount, get_self(), actor);
+    const uint64_t bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
 
-                if (reg_amount > 0) {
-                    INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
-                            ("eosio"_n, {{_self, "active"_n}},
-                             {actor, true}
-                            );
-                }
-            }
+    if (bundleeligiblecountdown > 0) {
+        namesbyname.modify(fioname_iter, _self, [&](struct fioname &a) {
+            a.bundleeligiblecountdown = (bundleeligiblecountdown - 1);
+        });
+    } else {
+        fee_amount = fee_iter->suf_amount;
+        fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
+                       "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
 
-            if (UPDENCRYPTKEYRAM > 0) {
-                action(
-                        permission_level{SYSTEMACCOUNT, "active"_n},
-                        "eosio"_n,
-                        "incram"_n,
-                        std::make_tuple(actor, UPDENCRYPTKEYRAM)
-                ).send();
-            }
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), UPDATE_ENCRYPT_KEY_ENDPOINT);
+        process_rewards(tpid, reg_amount, get_self(), actor);
 
-            updfionminf(encrypt_public_key, FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC,fioname_iter->id,actor);
-
-            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UPDATE_ENCRYPT_KEY_ENDPOINT,
-                               "FIO fee not found for endpoint", ErrorNoEndpoint);
-            
-            const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
-                                           to_string(reg_amount) + string("}");
-
-            send_response(response_string.c_str());
-
+        if (reg_amount > 0) {
+            INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
+                    ("eosio"_n, {{_self, "active"_n}},
+                     {actor, true}
+                    );
         }
-        //FIP-39 end
+    }
+
+    if (UPDENCRYPTKEYRAM > 0) {
+        action(
+                permission_level{SYSTEMACCOUNT, "active"_n},
+                "eosio"_n,
+                "incram"_n,
+                std::make_tuple(actor, UPDENCRYPTKEYRAM)
+        ).send();
+    }
+
+    updfionminf(encrypt_public_key, FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC,fioname_iter->id,actor);
+
+    fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", UPDATE_ENCRYPT_KEY_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+    
+    const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
+                                   to_string(reg_amount) + string("}");
+
+    send_response(response_string.c_str());
+
+}
+//FIP-39 end
+
+
+
+
+
+
+
 
         [[eosio::action]]
         void
@@ -998,6 +1015,131 @@ namespace fioio {
                            "Transaction is too large", ErrorTransactionTooLarge);
 
             send_response(response_string.c_str());
+        }
+
+
+        /***********
+         * This action will register a fio domain and fio handle on the domain. T
+         * @param fio_address this is the fio address that will be registered to the domain. Domain must not already be registered.
+         * @param is_public 0 - the domain will be private; 1 - the new domain will be public
+         * @param owner_fio_public_key this is the public key that will own the registered fio address and fio domain
+         * @param max_fee  this is the maximum fee that is willing to be paid for this transaction on the blockchain.
+         * @param tpid  this is the fio address of the owner of the domain.
+         * @param actor this is the fio account that has sent this transaction.
+         */
+        [[eosio::action]]
+        void
+        regdomadd(const string &fio_address, const uint8_t &is_public, const string &owner_fio_public_key, const int64_t &max_fee, const string &tpid, const name &actor) 
+        {
+
+            FioAddress fa;
+            fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
+                           "TPID must be empty or valid FIO address",
+                           ErrorPubKeyValid);
+            fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                           ErrorMaxFeeInvalid);
+
+
+            fio_400_assert((is_public == 1 || is_public == 0), "is_public", to_string(is_public), "Only 0 or 1 allowed",
+                           ErrorMaxFeeInvalid);
+
+            if (owner_fio_public_key.length() > 0) {
+                fio_400_assert(isPubKeyValid(owner_fio_public_key), "owner_fio_public_key", owner_fio_public_key,
+                               "Invalid FIO Public Key format",
+                               ErrorPubKeyValid);
+            }
+            
+            name owner_account_name = accountmgnt(actor, owner_fio_public_key);
+
+            getFioAddressStruct(fio_address, fa);
+
+            fio_400_assert(validateFioNameFormat(fa), "fio_address", fa.fioaddress, "Invalid FIO Address format", ErrorInvalidFioNameFormat);
+
+            uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+
+            auto domainsbyname = domains.get_index<"byname"_n>();
+            auto domains_iter = domainsbyname.find(domainHash);
+
+            fio_400_assert(domains_iter == domainsbyname.end(), "fio_name", fa.fioaddress,
+                           "Domain already registered, use regaddress instead.", ErrorDomainAlreadyRegistered);
+            
+            uint32_t domain_expiration = get_now_plus_one_year();
+            domains.emplace(actor, [&](struct domain &d) {
+                d.id = domains.available_primary_key();;
+                d.name = fa.fiodomain;
+                d.domainhash = domainHash;
+                d.expiration = domain_expiration;
+                d.account = owner_account_name.value;
+                d.is_public = is_public;
+            });
+
+            auto key_iter = accountmap.find(owner_account_name.value);
+
+            fio_400_assert(key_iter != accountmap.end(), "owner", to_string(owner_account_name.value),
+                           "Owner is not bound in the account map.", ErrorActorNotInFioAccountMap);
+
+            vector <tokenpubaddr> pubaddresses;
+            tokenpubaddr t1;
+            t1.public_address = key_iter->clientkey;
+            t1.token_code = "FIO";
+            t1.chain_code = "FIO";
+            pubaddresses.push_back(t1);
+
+            fionames.emplace(actor, [&](struct fioname &a) {
+                a.id = fionames.available_primary_key();;
+                a.name = fa.fioaddress;
+                a.addresses = pubaddresses;
+                a.namehash = string_to_uint128_hash(fa.fioaddress.c_str());;
+                a.domain = fa.fiodomain;
+                a.domainhash = domainHash;
+                a.expiration = 4294967295; //Sunday, February 7, 2106 6:28:15 AM GMT+0000 (Max 32 bit expiration)
+                a.owner_account = owner_account_name.value;
+                a.bundleeligiblecountdown = getBundledAmount();
+            });
+            
+            const uint128_t endpoint_hash = string_to_uint128_hash(REGISTER_FIO_DOMAIN_ADDRESS_ENDPOINT);
+
+            auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
+            auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", REGISTER_FIO_DOMAIN_ADDRESS_ENDPOINT,
+                           "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+            const uint64_t reg_amount = fee_iter->suf_amount;
+            const uint64_t fee_type = fee_iter->type;
+
+            fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                           "unexpected fee type for endpoint register_fio_address, expected 0",
+                           ErrorNoEndpoint);
+
+            fio_400_assert(max_fee >= (int64_t) reg_amount, "max_fee", to_string(max_fee),
+                           "Fee exceeds supplied maximum.",
+                           ErrorMaxFeeExceeded);
+
+            fio_fees(actor, asset(reg_amount, FIOSYMBOL), REGISTER_FIO_DOMAIN_ADDRESS_ENDPOINT);
+            processbucketrewards(tpid, reg_amount, get_self(), actor);
+
+            if (REGDOMADDRAM > 0) {
+                action(
+                        permission_level{SYSTEMACCOUNT, "active"_n},
+                        "eosio"_n,
+                        "incram"_n,
+                        std::make_tuple(actor, REGDOMADDRAM)
+                ).send();
+            }
+            
+            struct tm timeinfo;
+            fioio::convertfiotime(domain_expiration, &timeinfo);
+            std::string timebuffer = fioio::tmstringformat(timeinfo);
+
+            const string response_string = string("{\"status\": \"OK\",\"expiration\":\"") +
+                                           timebuffer + string("\",\"fee_collected\":") +
+                                           to_string(reg_amount) + string("}");
+
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransactionTooLarge);
+
+            send_response(response_string.c_str()); 
+
         }
 
         /***********
@@ -2093,7 +2235,8 @@ namespace fioio {
             //update the encryption key to use.
             updfionminf(new_owner_fio_public_key, FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC,fioname_iter->id,nm);
             //FIP-39 end
-
+            
+            
             // Burn the NFTs belonging to the FIO address that was just transferred
 
             auto contractsbyname = nftstable.get_index<"byaddress"_n>();
@@ -2177,13 +2320,16 @@ namespace fioio {
 
             //do the burn
             const uint64_t bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
+            namesbyname.erase(fioname_iter);
+            if (tpid_iter != tpid_by_name.end()) { tpid_by_name.erase(tpid_iter); }
+
+            
             //FIP-39 begin
             //remove the associated handle information.
             remhandleinf(fioname_iter->id);
             //FIP-39 end
-            namesbyname.erase(fioname_iter);
-            if (tpid_iter != tpid_by_name.end()) { tpid_by_name.erase(tpid_iter); }
-
+            
+            
             //// NEW inline function call ////
             addburnq(fio_address, nameHash);
 
@@ -2434,7 +2580,7 @@ namespace fioio {
     };
 
     EOSIO_DISPATCH(FioNameLookup, (regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(renewaddress)(
-            setdomainpub)(burnexpired)(decrcounter)(updcryptkey)
-            (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(xferescrow)(addnft)(remnft)(remallnfts)
-    (burnnfts))
+        setdomainpub)(burnexpired)(decrcounter)(updcryptkey)
+        (bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(xferescrow)(addnft)(remnft)(remallnfts)
+(burnnfts))
 }
