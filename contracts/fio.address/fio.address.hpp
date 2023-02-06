@@ -19,6 +19,31 @@ namespace fioio {
 
     using namespace eosio;
 
+    //FIP-39 begin
+    struct [[eosio::action]] fioname_info_item {
+
+        uint64_t id = 0;
+        uint64_t fionameid = 0;
+        string  datadesc = "";
+        string  datavalue = "";
+
+
+        // primary_key is required to store structure in multi_index table
+        uint64_t primary_key() const { return id; }
+        uint64_t by_fionameid() const { return fionameid; }
+
+        EOSLIB_SERIALIZE(fioname_info_item, (id)(fionameid)(datadesc)(datavalue))
+    };
+    //this state table contains string formatted intfo associated with a fio name/fio handle/ fio address
+    //todo --describe the process of adding new entries into this table here!!
+    typedef multi_index<"fionameinfo"_n, fioname_info_item,
+            indexed_by<"byfionameid"_n, const_mem_fun < fioname_info_item, uint64_t, &fioname_info_item::by_fionameid>>
+    >
+    fionameinfo_table;
+
+    //FIP-39 end
+
+
     struct tokenpubaddr {
         string token_code;
         string chain_code;
