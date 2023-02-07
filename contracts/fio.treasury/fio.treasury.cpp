@@ -408,11 +408,9 @@ public:
         // @abi action
         [[eosio::action]]
         void bppoolupdate(const uint64_t &amount) {
-                //FIP-38 begin
-                eosio_assert((has_auth(SYSTEMACCOUNT) || has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
+                eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
                              has_auth(REQOBTACCOUNT) || has_auth(FIOORACLEContract) || has_auth(EscrowContract)),
                              "missing required authority of fio.address, fio.treasury, fio.token, fio.oracle or fio.reqobt");
-                //FIP-38 end
                 bucketrewards.set(bucketrewards.exists() ? bucketpool{bucketrewards.get().rewards + amount} : bucketpool{amount}, get_self());
         }
 
