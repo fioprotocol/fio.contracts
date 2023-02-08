@@ -15,6 +15,14 @@
 #include <fio.tpid/fio.tpid.hpp>
 #include <fio.staking/fio.staking.hpp>
 
+//FIP-38 begin
+struct bind2eosio {
+    name accountName;
+    string public_key;
+    bool existing;
+};
+//FIP-38 end
+
 namespace eosiosystem {
     class system_contract;
 }
@@ -149,12 +157,6 @@ namespace eosio {
             name to;
             asset quantity;
             string memo;
-        };
-
-        struct bind2eosio {
-            name accountName;
-            string public_key;
-            bool existing;
         };
 
         //This action will compute the number of unlocked tokens contained within an account.
