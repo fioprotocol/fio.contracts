@@ -125,7 +125,7 @@ namespace eosiosystem {
 
         if (fio_public_key.length() > 0) {
             fio_400_assert(isPubKeyValid(fio_public_key), "fio_public_key", fio_public_key,
-                           "Invalid FIO Public Key format",
+                           "Invalid FIO Public Key",
                            ErrorPubKeyValid);
         }
 
