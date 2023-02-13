@@ -1047,7 +1047,7 @@ namespace fioio {
 
             if (owner_fio_public_key.length() > 0) {
                 fio_400_assert(isPubKeyValid(owner_fio_public_key), "owner_fio_public_key", owner_fio_public_key,
-                               "Invalid FIO Public Key format",
+                               "Invalid FIO Public Key",
                                ErrorPubKeyValid);
             }
             
