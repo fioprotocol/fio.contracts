@@ -153,12 +153,12 @@ namespace eosiosystem {
             };
 
             authority owner_auth = owner;
-            if (owner.accounts.size() == 0) {
+            if ((owner.accounts.size() == 0)&&(owner.keys.size() == 0)) {
                 owner_auth = authority{1, {pubkey_weight}, {}, {}};
             }
 
             authority active_auth = active;
-            if (active.accounts.size() == 0) {
+            if ((active.accounts.size() == 0)&&(active.keys.size()==0)) {
                 active_auth = authority{1, {pubkey_weight}, {}, {}};
             }
 
