@@ -441,6 +441,7 @@ namespace eosiosystem {
             }
         }
     }
+
 } /// fio.system
 
 
