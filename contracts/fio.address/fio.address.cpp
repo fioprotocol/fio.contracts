@@ -167,18 +167,18 @@ namespace fioio {
                 });
             }else {
                 auto matchdesc_iter = fionameinfo_iter;
-                //now check for multiples of same desc, enforce no duplicate datadesc values permitted in table.
+                //now check for multiples. no duplicates permitted in table.
                 int countem = 0;
                 while (fionameinfo_iter != fionameinfobynameid.end()) {
-                    if (fionameinfo_iter->datadesc.compare(datadesc) == 0) {
+                    if ( (fionameinfo_iter->datadesc.compare(datadesc) == 0) && (fionameinfo_iter->fionameid == fionameid)) {
                         countem++;
                         matchdesc_iter = fionameinfo_iter;
+                    }else if (fionameinfo_iter->fionameid != fionameid){
+                        break;
                     }
                     fionameinfo_iter++;
                 }
 
-                //this code if(countem == 0) is not tested by the existing contracts because we have only got one data description used by the contracts
-                // in the first delivery of the new table.
                 if(countem == 0){
                     uint64_t id = fionameinfo.available_primary_key();
                     fionameinfo.emplace(actor, [&](struct fioname_info_item &d) {
@@ -191,7 +191,7 @@ namespace fioio {
                 else {
                     //we found one to get into this block so if more than one then error.
                     fio_400_assert(countem == 1, "datadesc", datadesc,
-                                   "handle info error -- multiple data values present for datadesc",
+                                   "handle info error -- multiple data values present for datadesc ",
                                    ErrorInvalidValue);
                     fionameinfobynameid.modify(matchdesc_iter, actor, [&](struct fioname_info_item &d) {
                         d.datavalue = datavalue;
