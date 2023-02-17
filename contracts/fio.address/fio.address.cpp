@@ -325,7 +325,7 @@ namespace fioio {
 
             //FIP-39 begin
             //update the encryption key to use.
-            updfionminf(key_iter->clientkey, FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC,id,owner);
+            updfionminf(key_iter->clientkey, FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC,id,actor);
             //FIP-39 end
 
             uint64_t fee_amount = chain_data_update(fa.fioaddress, pubaddresses, max_fee, fa, actor, owner,
@@ -2235,7 +2235,7 @@ namespace fioio {
 
             //FIP-39 begin
             //update the encryption key to use.
-            updfionminf(new_owner_fio_public_key, FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC,fioname_iter->id,nm);
+            updfionminf(new_owner_fio_public_key, FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC,fioname_iter->id,actor);
             //FIP-39 end
 
             // Burn the NFTs belonging to the FIO address that was just transferred
