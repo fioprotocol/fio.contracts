@@ -26,6 +26,8 @@ namespace fioio {
         fiorequest_contexts_table fiorequestContextsTable;
         fiorequest_status_table fiorequestStatusTable;
         fionames_table fionames;
+        //FIP-39
+        fionameinfo_table fionameinfo;
         domains_table domains;
         eosio_names_table clientkeys;
         fiofee_table fiofees;
@@ -42,6 +44,7 @@ namespace fioio {
                   fiorequestContextsTable(_self, _self.value),
                   fiorequestStatusTable(_self, _self.value),
                   fionames(AddressContract, AddressContract.value),
+                  fionameinfo(AddressContract,AddressContract.value),
                   domains(AddressContract, AddressContract.value),
                   fiofees(FeeContract, FeeContract.value),
                   clientkeys(AddressContract, AddressContract.value),
@@ -178,7 +181,22 @@ namespace fioio {
             fio_400_assert(account_iter != clientkeys.end(), "payer_fio_address", payer_fio_address,
                            "No such FIO Address",
                            ErrorClientKeyNotFound);
+
             string payer_key = account_iter->clientkey; // Index 0 is FIO
+
+            //FIP-39 begin
+            auto fionameinfobynameid = fionameinfo.get_index<"byfionameid"_n>();
+            auto fionameinfo_iter = fionameinfobynameid.find(fioname_iter->id);
+            if(fionameinfo_iter != fionameinfobynameid.end()){
+                //now check for an encryption key.
+                while (fionameinfo_iter != fionameinfobynameid.end()) {
+                    if ( (fionameinfo_iter->datadesc.compare(FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC) == 0) && (fionameinfo_iter->fionameid == fioname_iter->id)) {
+                        payer_key = fionameinfo_iter->datavalue;
+                    }
+                    fionameinfo_iter++;
+                }
+            }
+            //FIP-39 end
 
             nameHash = string_to_uint128_hash(payee_fio_address.c_str());
             namesbyname = fionames.get_index<"byname"_n>();
@@ -196,6 +214,22 @@ namespace fioio {
                            "No such FIO Address",
                            ErrorClientKeyNotFound);
             string payee_key = account_iter->clientkey;
+
+            //FIP-39 begin
+            auto fionameinfobynameid2 = fionameinfo.get_index<"byfionameid"_n>();
+            auto fionameinfo_iter2 = fionameinfobynameid2.find(fioname_iter2->id);
+            if(fionameinfo_iter2 != fionameinfobynameid2.end()){
+                //now check for an encryption key.
+                while (fionameinfo_iter2 != fionameinfobynameid2.end()) {
+                    if ( (fionameinfo_iter2->datadesc.compare(FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC) == 0) && (fionameinfo_iter2->fionameid == fioname_iter2->id)) {
+                        payee_key = fionameinfo_iter2->datavalue;
+                    }
+                    fionameinfo_iter2++;
+                }
+            }
+
+            //FIP-39 end
+
 
             //begin fees, bundle eligible fee logic
             uint128_t endpoint_hash = string_to_uint128_hash(RECORD_OBT_DATA_ENDPOINT);
@@ -363,6 +397,21 @@ namespace fioio {
                            ErrorClientKeyNotFound);
             string payer_key = account_iter->clientkey; // Index 0 is FIO
 
+            //FIP-39 begin
+            auto fionameinfobynameid2 = fionameinfo.get_index<"byfionameid"_n>();
+            auto fionameinfo_iter2 = fionameinfobynameid2.find(fioname_iter2->id);
+            if(fionameinfo_iter2 != fionameinfobynameid2.end()){
+                //now check for an encryption key.
+                while (fionameinfo_iter2 != fionameinfobynameid2.end()) {
+                    if ( (fionameinfo_iter2->datadesc.compare(FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC) == 0) && (fionameinfo_iter2->fionameid == fioname_iter2->id)) {
+                        payer_key = fionameinfo_iter2->datavalue;
+                    }
+                    fionameinfo_iter2++;
+                }
+            }
+            //FIP-39 end
+
+
             nameHash = string_to_uint128_hash(payee_fio_address.c_str());
             namesbyname = fionames.get_index<"byname"_n>();
             auto fioname_iter = namesbyname.find(nameHash);
@@ -376,6 +425,20 @@ namespace fioio {
                            "No such FIO Address",
                            ErrorClientKeyNotFound);
             string payee_key = account_iter->clientkey;
+
+            //FIP-39 begin
+            auto fionameinfobynameid = fionameinfo.get_index<"byfionameid"_n>();
+            auto fionameinfo_iter = fionameinfobynameid.find(fioname_iter->id);
+            if(fionameinfo_iter != fionameinfobynameid.end()){
+                //now check for an encryption key.
+                while (fionameinfo_iter != fionameinfobynameid.end()) {
+                    if ( (fionameinfo_iter->datadesc.compare(FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC) == 0) && (fionameinfo_iter->fionameid == fioname_iter->id)) {
+                        payee_key = fionameinfo_iter->datavalue;
+                    }
+                    fionameinfo_iter++;
+                }
+            }
+            //FIP-39 end
 
             const uint128_t domHash = string_to_uint128_hash(payeefa.fiodomain.c_str());
             auto domainsbyname = domains.get_index<"byname"_n>();
