@@ -35,7 +35,7 @@ namespace fioio {
 
         EOSLIB_SERIALIZE(fioname_info_item, (id)(fionameid)(datadesc)(datavalue))
     };
-    //this state table contains string formatted intfo associated with a fio name/fio handle/ fio address
+    //this state table contains string formatted info associated with a fio name/fio handle/ fio address
     //todo --describe the process of adding new entries into this table here!!
     typedef multi_index<"fionameinfo"_n, fioname_info_item,
             indexed_by<"byfionameid"_n, const_mem_fun < fioname_info_item, uint64_t, &fioname_info_item::by_fionameid>>
