@@ -1,0 +1,174 @@
+{
+  "version": "eosio::abi/1.1",
+  "types": [],
+  "structs": [
+    {
+      "name": "permission_info",
+      "base": "",
+      "fields": [
+        {
+          "name": "id",
+          "type": "uint64"
+        },
+        {
+          "name": "object_type",
+          "type": "string"
+        },
+        {
+          "name": "object_type_hash",
+          "type": "uint128"
+        },
+        {
+          "name": "object_name",
+          "type": "string"
+        },
+        {
+          "name": "object_name_hash",
+          "type": "uint128"
+        },
+        {
+          "name": "permission_name",
+          "type": "string"
+        },
+        {
+          "name": "permission_name_hash",
+          "type": "uint128"
+        },
+        {
+          "name": "permission_control_hash",
+          "type": "uint128"
+        },
+        {
+          "name": "owner_account",
+          "type": "uint64"
+        },
+        {
+          "name": "auxilliary_info",
+          "type": "string"
+        }
+      ]
+    },
+    {
+       "name": "access_info",
+       "base": "",
+       "fields": [
+         {
+           "name": "id",
+           "type": "uint64"
+         },
+         {
+           "name": "permission_id",
+           "type": "uint64"
+         },
+         {
+           "name": "grantee_account",
+           "type": "uint64"
+         },
+         {
+           "name": "access_hash",
+           "type": "uint128"
+         }
+       ]
+     },
+    {
+      "name": "addperm",
+      "base": "",
+      "fields": [
+        {
+          "name": "grantee_account",
+          "type": "name"
+        },
+        {
+          "name": "permission_name",
+          "type": "string"
+        },
+        {
+          "name": "permission_info",
+          "type": "string"
+        },
+        {
+          "name": "object_name",
+          "type": "string"
+        },
+        {
+          "name": "max_fee",
+          "type": "int64"
+        },
+        {
+          "name": "tpid",
+          "type": "string"
+        },
+        {
+          "name": "actor",
+          "type": "name"
+        }
+      ]
+    },
+    {
+      "name": "remperm",
+      "base": "",
+      "fields": [
+        {
+          "name": "grantee_account",
+          "type": "name"
+        },
+        {
+          "name": "permission_name",
+          "type": "string"
+        },
+        {
+          "name": "object_name",
+          "type": "string"
+        },
+        {
+          "name": "max_fee",
+          "type": "int64"
+        },
+        {
+          "name": "tpid",
+          "type": "string"
+        },
+        {
+          "name": "actor",
+          "type": "name"
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "name": "addperm",
+      "type": "addperm",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "remperm",
+      "type": "remperm",
+      "ricardian_contract": ""
+    }
+  ],
+  "tables": [
+    {
+      "name": "permissions",
+      "index_type": "i64",
+      "key_names": [
+        "id"
+      ],
+      "key_types": [
+        "string"
+      ],
+      "type": "permission_info"
+    },
+     {
+       "name": "access",
+       "index_type": "i64",
+       "key_names": [],
+       "key_types": [],
+       "type": "access_info"
+     }
+  ],
+  "ricardian_clauses": [],
+  "error_messages": [],
+  "abi_extensions": [],
+  "variants": []
+}
