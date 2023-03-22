@@ -778,7 +778,7 @@ namespace fioio {
             const uint128_t nameHash = string_to_uint128_hash(fa.fioaddress.c_str());
             const uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
 
-            fio_400_assert(!fa.domainOnly, "fio_address", fa.fioaddress, "Invalid FIO address",
+            fio_400_assert(!fa.domainOnly, "fio_address", fa.fioaddress, "FIO Address invalid or does not exist.",
                            ErrorInvalidFioNameFormat);
 
             auto domainsbyname = domains.get_index<"byname"_n>();
@@ -798,7 +798,7 @@ namespace fioio {
             auto namesbyname = fionames.get_index<"byname"_n>();
             auto fioname_iter = namesbyname.find(nameHash);
             fio_400_assert(fioname_iter != namesbyname.end(), "fio_address", fa.fioaddress,
-                           "FIO address not registered", ErrorFioNameNotRegistered);
+                           "FIO Address invalid or does not exist", ErrorInvalidFioNameFormat);
             fio_403_assert(fioname_iter->owner_account == actor.value,
                            ErrorSignature); // check if actor owns FIO Address
 
