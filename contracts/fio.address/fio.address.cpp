@@ -757,6 +757,8 @@ namespace fioio {
 
 
             print("updcryptkey --      called. \n");
+            
+            require_auth(actor);
 
             //VERIFY INPUTS
             FioAddress fa;
