@@ -59,12 +59,15 @@ namespace fioio {
         eosio_names_table accountmap;
         config appConfig;
 
+        permissions_table permissions;
+
 
 
     public:
         using contract::contract;
 
         FioPermissions(name s, name code, datastream<const char *> ds) : contract(s, code, ds),
+                                                                         permissions(_self,_self.value),
                                                                         domains(_self, _self.value),
                                                                         fionames(_self, _self.value),
                                                                         fiofees(FeeContract, FeeContract.value),
@@ -90,7 +93,51 @@ namespace fioio {
             print("addperm --      called. \n");
 
 
-            const string response_string = "status: OK, Fee collected : 0";
+            // error if permission name is not the expected name register_address_on_domain.
+            fio_400_assert(permission_name.compare("register_address_on_domain") == 0, "permission_name", permission_name,
+                           "Permission name is invalid", ErrorInvalidPermissionName);
+            // error if permission info is not empty.
+            fio_400_assert(permission_info.size()  == 0, "permission_info", permission_info,
+                           "Permission info is invalid", ErrorInvalidPermissionInfo);
+            // error if object name is not * or is not in the domains table
+            fio_400_assert(object_name.size()  > 0, "object_name", object_name,
+                           "Object name is invalid", ErrorInvalidObjectName);
+            // TODO error if the object name is not a domain owned by the actor.
+            // error if the grantee account does not exist.
+            fio_400_assert(is_account(grantee_account), "grantee_account", grantee_account.to_string(),
+                           "grantee account is invalid", ErrorInvalidGranteeAccount);
+            // TODO error if the grantee account already has this permission.
+
+
+            //look for the permission in the permissions table. if it exists, verify all info, then note the id.
+            //if it does not exist then insert it, and note the id.
+            //look for an existing entry in the access table for this id, and grantee account.
+            //if the entry exists then error permission exists for this account.
+            //if it doesnt exist then add the record to the access table.
+
+
+
+
+            /*
+            const string controlv = "stuff" + object_name + permission_name;
+
+            const uint64_t id = permissions.available_primary_key();
+            //just blindly emplace for prototyping.
+            permissions.emplace(get_self(), [&](struct permission_info &p) {
+                p.id = id;
+                p.object_type = "stuff";
+                p.object_type_hash = string_to_uint128_hash("stuff");
+                p.object_name = object_name;
+                p.object_name_hash = string_to_uint128_hash(object_name);
+                p.permission_name = permission_name;
+                p.permission_name_hash = string_to_uint128_hash(permission_name);
+                p.permission_control_hash = string_to_uint128_hash(controlv);
+                p.owner_account = actor.value;
+                p.auxilliary_info = "";
+            });
+            */
+
+            const string response_string = "{\"status\": \"OK\", \"fee_collected\" : 0}";
 
             send_response(response_string.c_str());
 
@@ -110,7 +157,20 @@ namespace fioio {
             print("remperm --      called. \n");
 
 
-            const string response_string = "status: OK, Fee collected : 0";
+            uint128_t permnamehash = string_to_uint128_hash(permission_name);
+            auto permsbypermname = permissions.get_index<"bypermname"_n>();
+            auto bynameiter = permsbypermname.find(permnamehash);
+            int c = 0;
+            while (bynameiter != permsbypermname.end()) {
+                bynameiter++;
+                if (permission_name.compare(bynameiter->permission_name)==0) {
+                    c++;
+                }
+            }
+
+            print("remperm --      there are this many rows with name of. "+permission_name+ " count : "+to_string(c)+" \n");
+
+            const string response_string = "{\"status\": \"OK\", \"fee_collected\" : 0}";
 
             send_response(response_string.c_str());
 

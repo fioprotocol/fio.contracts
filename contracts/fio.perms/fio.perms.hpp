@@ -52,7 +52,7 @@ namespace fioio {
 
 
         EOSLIB_SERIALIZE(permission_info, (id)(object_type)(object_type_hash)(object_name)(object_name_hash)
-                (permission_name)(permission_control_hash)(owner_account)(auxilliary_info))
+                (permission_name)(permission_name_hash)(permission_control_hash)(owner_account)(auxilliary_info))
     };
     //this state table contains information relating to the permissions that are granted in the FIO protocol
     //please examine fio.perms.cpp for details relating to FIO permissions.

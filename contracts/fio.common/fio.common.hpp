@@ -145,7 +145,9 @@ namespace fioio {
              actor == fioio::FIOSYSTEMACCOUNT ||
              actor == fioio::FIOACCOUNT ||
              actor == fioio::EscrowContract ||
-             actor == FIOORACLEContract);
+             actor == FIOORACLEContract ||
+             //FIP-40
+             actor == PERMSACCOUNT);
     }
 
     static constexpr uint64_t string_to_uint64_hash(const char *str) {

@@ -150,7 +150,8 @@ namespace eosiosystem {
                  account == fioio::STAKINGACCOUNT ||
                  account == fioio::FIOACCOUNT ||
                  account == fioio::FIOORACLEContract ||
-                 account == fioio::FIOACCOUNT)
+                 account == fioio::FIOACCOUNT ||
+                 account == fioio::PERMSACCOUNT)
                 ) {
 
                 //get the sizes of the tx.

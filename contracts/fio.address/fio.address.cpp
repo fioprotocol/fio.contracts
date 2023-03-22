@@ -2514,9 +2514,10 @@ namespace fioio {
         void decrcounter(const string &fio_address, const int32_t &step) {
 
         check(step > 0, "step must be greater than 0");
+        //FIP-40
         check((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) || has_auth(STAKINGACCOUNT) ||
-                     has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) || has_auth(FeeContract)),
-                     "missing required authority of fio.address, fio.token, fio.fee, fio.treasury, fio.reqobt, fio.system, fio.staking ");
+                     has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) || has_auth(FeeContract) || has_auth(PERMSACCOUNT)),
+                     "missing required authority of fio.address, fio.token, fio.fee, fio.treasury, fio.reqobt, fio.system, fio.staking fio.perms");
 
             auto namesbyname = fionames.get_index<"byname"_n>();
             auto fioname_iter = namesbyname.find(string_to_uint128_hash(fio_address.c_str()));
@@ -2578,7 +2579,7 @@ namespace fioio {
 
     };
 
-    EOSIO_DISPATCH(FioNameLookup, (regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(renewaddress)
+    EOSIO_DISPATCH(FioNameLookup,(regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(renewaddress)
     (setdomainpub)(burnexpired)(decrcounter)(bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(xferescrow)
     (addnft)(remnft)(remallnfts)(burnnfts)(regdomadd)(updcryptkey))
 }

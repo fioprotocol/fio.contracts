@@ -41,6 +41,8 @@ namespace fioio {
     static const name EscrowContract    = name("fio.escrow");
     static const name FIOACCOUNT =   name("fio");
     static const name FIOORACLEContract = name("fio.oracle");
+    //FIP-40
+    static const name PERMSACCOUNT =     name("fio.perms");
 
     static constexpr name FIOISSUER = name("eosio"_n);
     static constexpr eosio::symbol FIOSYMBOL = eosio::symbol("FIO", 9);

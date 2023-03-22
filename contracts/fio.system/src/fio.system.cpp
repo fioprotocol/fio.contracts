@@ -304,7 +304,8 @@ namespace eosiosystem {
                       acnt == FIOSYSTEMACCOUNT ||
                       acnt == EscrowContract ||
                       acnt == FIOORACLEContract ||
-                      acnt == FIOACCOUNT),"set abi not permitted." );
+                      acnt == FIOACCOUNT ||
+                      acnt == PERMSACCOUNT),"set abi not permitted." );
 
 
         eosio::multi_index<"abihash"_n, abi_hash> table(_self, _self.value);
@@ -426,8 +427,9 @@ namespace eosiosystem {
 
         eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
                       has_auth(STAKINGACCOUNT) || has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) ||
-                      has_auth(FIOORACLEContract) || has_auth(FeeContract) || has_auth(EscrowContract)),
-                     "missing required authority of fio.address, fio.token, fio.fee, fio.treasury, fio.oracle, fio.escrow, fio.staking, or fio.reqobt");
+                      has_auth(FIOORACLEContract) || has_auth(FeeContract) || has_auth(EscrowContract) ||
+                      has_auth(PERMSACCOUNT)),
+                     "missing required authority of fio.address, fio.token, fio.fee, fio.treasury, fio.oracle, fio.escrow, fio.staking, fio.perms or fio.reqobt");
         check(is_account(owner), "account must pre exist");
         auto locks_by_owner = _generallockedtokens.get_index<"byowner"_n>();
         auto lockiter = locks_by_owner.find(owner.value);
