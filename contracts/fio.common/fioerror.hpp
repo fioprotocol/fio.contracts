@@ -102,6 +102,7 @@ namespace fioio {
     constexpr auto ErrorInvalidPermissionInfo = ident | httpDataError | 163;
     constexpr auto ErrorInvalidObjectName = ident | httpDataError | 164;
     constexpr auto ErrorInvalidGranteeAccount = ident | httpDataError | 165;
+    constexpr auto ErrorPermissionExists = ident | httpDataError | 166;
 
     /**
     * Helper funtions for detecting rich error messages and extracting bitfielded values

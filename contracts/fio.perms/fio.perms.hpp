@@ -19,6 +19,8 @@ namespace fioio {
 
     using namespace eosio;
 
+    const static string REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME = "register_address_on_domain";
+    const static string REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE = "domain";
 
     struct [[eosio::action]] permission_info {
 
