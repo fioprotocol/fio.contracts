@@ -70,8 +70,8 @@ namespace fioio {
         FioPermissions(name s, name code, datastream<const char *> ds) : contract(s, code, ds),
                                                                          permissions(_self,_self.value),
                                                                          access(_self,_self.value),
-                                                                         domains(_self, _self.value),
-                                                                        fionames(_self, _self.value),
+                                                                         domains(AddressContract, AddressContract.value),
+                                                                        fionames(AddressContract, AddressContract.value),
                                                                         fiofees(FeeContract, FeeContract.value),
                                                                         accountmap(_self, _self.value){
 
@@ -95,14 +95,151 @@ namespace fioio {
             print("addperm --      called. \n");
 
             require_auth(actor);
+            string useperm = makeLowerCase(permission_name);
 
-            // error if permission name is not the expected name register_address_on_domain.
-            fio_400_assert(permission_name.compare(REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME) == 0, "permission_name", permission_name,
+
+            fio_400_assert(permission_name.length()  > 0, "permission_name", permission_name,
                            "Permission name is invalid", ErrorInvalidPermissionName);
+            //  error if permission name is not the expected name register_address_on_domain.
+            fio_400_assert(useperm.compare(REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME) == 0, "permission_name", permission_name,
+                           "Permission name is invalid", ErrorInvalidPermissionName);
+
             // error if permission info is not empty.
             fio_400_assert(permission_info.size()  == 0, "permission_info", permission_info,
                            "Permission info is invalid", ErrorInvalidPermissionInfo);
             // error if object name is not * or is not in the domains table
+            fio_400_assert(object_name.size()  > 0, "object_name", object_name,
+                           "Object name is invalid", ErrorInvalidObjectName);
+
+            //verify domain name, and that domain is owned by the actor account.
+            FioAddress fa;
+            getFioAddressStruct(object_name, fa);
+
+            fio_400_assert(fa.domainOnly, "domonlyobject_name", object_name, "Invalid object name",
+                           ErrorInvalidObjectName);
+
+            const uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+            auto domainsbyname = domains.get_index<"byname"_n>();
+            auto domains_iter = domainsbyname.find(domainHash);
+
+            fio_400_assert(domains_iter != domainsbyname.end(), "domnotfound object_name", object_name,
+                           "Invalid object name",
+                           ErrorInvalidObjectName);
+
+            //add 30 days to the domain expiration, this call will work until 30 days past expire.
+            const uint32_t domain_expiration = get_time_plus_seconds(domains_iter->expiration, SECONDS30DAYS);
+
+            const uint32_t present_time = now();
+            fio_400_assert(present_time <= domain_expiration, "domexpired object_name", object_name, "Invalid object name",
+                           ErrorInvalidObjectName);
+
+            //check domain owner is actor
+            fio_400_assert((actor.value == domains_iter->account), "actornotowner object_name", object_name,
+                           "Invalid object name", ErrorInvalidObjectName);
+
+
+            //check grantee exists.
+            fio_400_assert(is_account(grantee_account), "grantee_account", grantee_account.to_string(),
+                           "grantee account is invalid", ErrorInvalidGranteeAccount);
+
+            fio_400_assert((grantee_account.value != actor.value), "grantee_account", grantee_account.to_string(),
+                           "grantee account is invalid", ErrorInvalidGranteeAccount);
+
+
+            //error if the grantee account already has this permission.
+            string permcontrol = REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE + object_name + REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME;
+
+            const uint128_t permcontrolHash = string_to_uint128_hash(permcontrol.c_str());
+
+            auto permissionsbycontrolhash = permissions.get_index<"bypermctrl"_n>();
+            auto permctrl_iter = permissionsbycontrolhash.find(permcontrolHash);
+            if (permctrl_iter != permissionsbycontrolhash.end() ){
+                //get the id and look in access
+                uint64_t permid = permctrl_iter->id;
+                string accessctrl = grantee_account.to_string() + to_string(permid);
+
+                const uint128_t accessHash = string_to_uint128_hash(accessctrl.c_str());
+
+                auto accessbyhash = access.get_index<"byaccess"_n>();
+                auto access_iter = accessbyhash.find(accessHash);
+
+                fio_400_assert((access_iter == accessbyhash.end() ), "grantee_account", grantee_account.to_string(),
+                               "Permission already exists", ErrorPermissionExists);
+
+
+            }
+
+            fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                           ErrorMaxFeeInvalid);
+            fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
+                           "TPID must be empty or valid FIO address",
+                           ErrorPubKeyValid);
+
+           // fio_400_assert((permctrl == permissionsbycontrolhash.end() ), "grantee_account", grantee_account.to_string(),
+           //                "Permission already exists", ErrorPermissionExists);
+
+
+
+            //look for the permission in the permissions table. if it exists, verify all info, then note the id.
+            //if it does not exist then insert it, and note the id.
+            //look for an existing entry in the access table for this id, and grantee account.
+            //if the entry exists then error permission exists for this account.
+            //if it doesnt exist then add the record to the access table.
+
+
+
+
+            /*
+            const string controlv = "stuff" + object_name + useperm;
+
+            const uint64_t id = permissions.available_primary_key();
+            //just blindly emplace for prototyping.
+            permissions.emplace(get_self(), [&](struct permission_info &p) {
+                p.id = id;
+                p.object_type = "stuff";
+                p.object_type_hash = string_to_uint128_hash("stuff");
+                p.object_name = object_name;
+                p.object_name_hash = string_to_uint128_hash(object_name);
+                p.permission_name = userperm;
+                p.permission_name_hash = string_to_uint128_hash(useperm);
+                p.permission_control_hash = string_to_uint128_hash(controlv);
+                p.owner_account = actor.value;
+                p.auxilliary_info = "";
+            });
+            */
+
+            const string response_string = "{\"status\": \"OK\", \"fee_collected\" : 0}";
+
+            send_response(response_string.c_str());
+
+        }
+
+        [[eosio::action]]
+        void
+        remperm(const name &grantee_account,
+                const string &permission_name,
+                const string &object_name,
+                const int64_t &max_fee,
+                const string &tpid,
+                const name &actor
+        ) {
+
+
+            print("remperm --      called. \n");
+
+            require_auth(actor);
+
+
+            fio_400_assert(permission_name.length()  > 0, "permission_name", permission_name,
+                           "Permission name is invalid", ErrorInvalidPermissionName);
+
+            string useperm = makeLowerCase(permission_name);
+
+            // error if permission name is not the expected name register_address_on_domain.
+            fio_400_assert(useperm.compare(REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME) == 0, "permission_name", permission_name,
+                           "Permission name is invalid", ErrorInvalidPermissionName);
+
+             // error if object name is not * or is not in the domains table
             fio_400_assert(object_name.size()  > 0, "object_name", object_name,
                            "Object name is invalid", ErrorInvalidObjectName);
 
@@ -138,8 +275,11 @@ namespace fioio {
             fio_400_assert(is_account(grantee_account), "grantee_account", grantee_account.to_string(),
                            "grantee account is invalid", ErrorInvalidGranteeAccount);
 
+            fio_400_assert((grantee_account.value != actor.value), "grantee_account", grantee_account.to_string(),
+                           "grantee account is invalid", ErrorInvalidGranteeAccount);
 
-           //error if the grantee account already has this permission.
+
+            //error if the grantee account already has this permission.
             string permcontrol = REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE + object_name + REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME;
 
             const uint128_t permcontrolHash = string_to_uint128_hash(permcontrol.c_str());
@@ -147,7 +287,10 @@ namespace fioio {
             auto permissionsbycontrolhash = permissions.get_index<"bypermctrl"_n>();
             auto permctrl_iter = permissionsbycontrolhash.find(permcontrolHash);
             if (permctrl_iter != permissionsbycontrolhash.end() ){
-                //get the id and look in access
+                //get the id and look in access,
+                // todo and remove it.
+                //todo do one more check for this permission by perm id, if no results then
+                //todo remove from permissions.
                 uint64_t permid = permctrl_iter->id;
                 string accessctrl = grantee_account.to_string() + to_string(permid);
 
@@ -156,73 +299,40 @@ namespace fioio {
                 auto accessbyhash = access.get_index<"byaccess"_n>();
                 auto access_iter = accessbyhash.find(accessHash);
 
-                fio_400_assert((access_iter == accessbyhash.end() ), "grantee_account", grantee_account.to_string(),
-                               "Permission already exists", ErrorPermissionExists);
+                fio_400_assert((access_iter != accessbyhash.end() ), "grantee_account", grantee_account.to_string(),
+                               "Permission not found", ErrorPermissionExists);
 
 
             }
 
-           // fio_400_assert((permctrl == permissionsbycontrolhash.end() ), "grantee_account", grantee_account.to_string(),
-           //                "Permission already exists", ErrorPermissionExists);
-
-
-
-            //look for the permission in the permissions table. if it exists, verify all info, then note the id.
-            //if it does not exist then insert it, and note the id.
-            //look for an existing entry in the access table for this id, and grantee account.
-            //if the entry exists then error permission exists for this account.
-            //if it doesnt exist then add the record to the access table.
+            fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                           ErrorMaxFeeInvalid);
+            fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
+                           "TPID must be empty or valid FIO address",
+                           ErrorPubKeyValid);
 
 
 
 
-            /*
-            const string controlv = "stuff" + object_name + permission_name;
-
-            const uint64_t id = permissions.available_primary_key();
-            //just blindly emplace for prototyping.
-            permissions.emplace(get_self(), [&](struct permission_info &p) {
-                p.id = id;
-                p.object_type = "stuff";
-                p.object_type_hash = string_to_uint128_hash("stuff");
-                p.object_name = object_name;
-                p.object_name_hash = string_to_uint128_hash(object_name);
-                p.permission_name = permission_name;
-                p.permission_name_hash = string_to_uint128_hash(permission_name);
-                p.permission_control_hash = string_to_uint128_hash(controlv);
-                p.owner_account = actor.value;
-                p.auxilliary_info = "";
-            });
-            */
-
-            const string response_string = "{\"status\": \"OK\", \"fee_collected\" : 0}";
-
-            send_response(response_string.c_str());
-
-        }
-
-        [[eosio::action]]
-        void
-        remperm(const name &grantee_account,
-                const string &permission_name,
-                const string &object_name,
-                const int64_t &max_fee,
-                const string &tpid,
-                const name &actor
-        ) {
 
 
-            print("remperm --      called. \n");
 
-            require_auth(actor);
 
-            uint128_t permnamehash = string_to_uint128_hash(permission_name);
+
+
+
+
+
+
+
+
+            uint128_t permnamehash = string_to_uint128_hash(useperm);
             auto permsbypermname = permissions.get_index<"bypermname"_n>();
             auto bynameiter = permsbypermname.find(permnamehash);
             int c = 0;
             while (bynameiter != permsbypermname.end()) {
                 bynameiter++;
-                if (permission_name.compare(bynameiter->permission_name)==0) {
+                if (useperm.compare(bynameiter->permission_name)==0) {
                     c++;
                 }
             }
