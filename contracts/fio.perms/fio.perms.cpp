@@ -101,6 +101,8 @@ namespace fioio {
             fio_400_assert(permission_name.length()  > 0, "permission_name", permission_name,
                            "Permission name is invalid", ErrorInvalidPermissionName);
             //  error if permission name is not the expected name register_address_on_domain.
+            //one permission name is integrated for fip 40, modify this logic for any new permission names
+            //being supported
             fio_400_assert(useperm.compare(REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME) == 0, "permission_name", permission_name,
                            "Permission name is invalid", ErrorInvalidPermissionName);
 
@@ -167,6 +169,26 @@ namespace fioio {
                                "Permission already exists", ErrorPermissionExists);
 
 
+            } else { //insert the permission
+                //one permission name is integrated for fip 40, modify this logic for any new permission names
+                //being supported
+                string object_type = PERMISSION_OBJECT_TYPE_DOMAIN;
+                const string controlv = object_type + object_name + useperm;
+
+                const uint64_t id = permissions.available_primary_key();
+
+                permissions.emplace(get_self(), [&](struct permission_info &p) {
+                    p.id = id;
+                    p.object_type = PERMISSION_OBJECT_TYPE_DOMAIN;
+                    p.object_type_hash = string_to_uint128_hash(PERMISSION_OBJECT_TYPE_DOMAIN);
+                    p.object_name = object_name;
+                    p.object_name_hash = string_to_uint128_hash(object_name);
+                    p.permission_name = useperm;
+                    p.permission_name_hash = string_to_uint128_hash(useperm);
+                    p.permission_control_hash = string_to_uint128_hash(controlv);
+                    p.owner_account = actor.value;
+                    p.auxilliary_info = "";
+                });
             }
 
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
@@ -175,40 +197,47 @@ namespace fioio {
                            "TPID must be empty or valid FIO address",
                            ErrorPubKeyValid);
 
-           // fio_400_assert((permctrl == permissionsbycontrolhash.end() ), "grantee_account", grantee_account.to_string(),
-           //                "Permission already exists", ErrorPermissionExists);
+
+            //fees
+            const uint128_t endpoint_hash = string_to_uint128_hash(ADD_PERMISSION_ENDPOINT);
+            auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
+            auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", ADD_PERMISSION_ENDPOINT,
+                           "FIO fee not found for endpoint", ErrorNoEndpoint);
+            const uint64_t fee_amount = fee_iter->suf_amount;
+            const uint64_t fee_type = fee_iter->type;
+
+            fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                           "unexpected fee type for endpoint transfer_fio_domain, expected 0",
+                           ErrorNoEndpoint);
+
+            fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
+                           "Fee exceeds supplied maximum.",
+                           ErrorMaxFeeExceeded);
+
+            fio_fees(actor, asset(fee_amount, FIOSYMBOL), ADD_PERMISSION_ENDPOINT);
+            processbucketrewards(tpid, fee_amount, get_self(), actor);
+
+            if (fee_amount > 0) {
+                INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
+                        (SYSTEMACCOUNT, {{_self, "active"_n}},
+                         {actor, true}
+                        );
+            }
+
+            //ram bump
+            if (ADDPERMISSIONRAM > 0) {
+                action(
+                        permission_level{SYSTEMACCOUNT, "active"_n},
+                        "eosio"_n,
+                        "incram"_n,
+                        std::make_tuple(actor, ADDPERMISSIONRAMBASE + (ADDPERMISSIONRAM * permission_info.size()))
+                ).send();
+            }
 
 
 
-            //look for the permission in the permissions table. if it exists, verify all info, then note the id.
-            //if it does not exist then insert it, and note the id.
-            //look for an existing entry in the access table for this id, and grantee account.
-            //if the entry exists then error permission exists for this account.
-            //if it doesnt exist then add the record to the access table.
-
-
-
-
-            /*
-            const string controlv = "stuff" + object_name + useperm;
-
-            const uint64_t id = permissions.available_primary_key();
-            //just blindly emplace for prototyping.
-            permissions.emplace(get_self(), [&](struct permission_info &p) {
-                p.id = id;
-                p.object_type = "stuff";
-                p.object_type_hash = string_to_uint128_hash("stuff");
-                p.object_name = object_name;
-                p.object_name_hash = string_to_uint128_hash(object_name);
-                p.permission_name = userperm;
-                p.permission_name_hash = string_to_uint128_hash(useperm);
-                p.permission_control_hash = string_to_uint128_hash(controlv);
-                p.owner_account = actor.value;
-                p.auxilliary_info = "";
-            });
-            */
-
-            const string response_string = "{\"status\": \"OK\", \"fee_collected\" : 0}";
+            const string response_string = "{\"status\": \"OK\", \"fee_collected\" : "+ to_string(fee_amount) +"}";
 
             send_response(response_string.c_str());
 
@@ -251,9 +280,8 @@ namespace fioio {
                            ErrorInvalidObjectName);
 
             const uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
-
-            auto domainsbyname = domains.get_index<"byname"_n>();
-            auto domains_iter = domainsbyname.find(domainHash);
+            auto  domainsbyname        = domains.get_index<"byname"_n>();
+            auto  domains_iter         = domainsbyname.find(domainHash);
 
             fio_400_assert(domains_iter != domainsbyname.end(), "object_name", object_name,
                            "Invalid object name",
@@ -261,8 +289,8 @@ namespace fioio {
 
             //add 30 days to the domain expiration, this call will work until 30 days past expire.
             const uint32_t domain_expiration = get_time_plus_seconds(domains_iter->expiration, SECONDS30DAYS);
+            const uint32_t present_time      = now();
 
-            const uint32_t present_time = now();
             fio_400_assert(present_time <= domain_expiration, "object_name", object_name, "Invalid object name",
                            ErrorInvalidObjectName);
 
@@ -287,22 +315,27 @@ namespace fioio {
             auto permissionsbycontrolhash = permissions.get_index<"bypermctrl"_n>();
             auto permctrl_iter = permissionsbycontrolhash.find(permcontrolHash);
             if (permctrl_iter != permissionsbycontrolhash.end() ){
-                //get the id and look in access,
-                // todo and remove it.
-                //todo do one more check for this permission by perm id, if no results then
-                //todo remove from permissions.
-                uint64_t permid = permctrl_iter->id;
-                string accessctrl = grantee_account.to_string() + to_string(permid);
-
-                const uint128_t accessHash = string_to_uint128_hash(accessctrl.c_str());
-
-                auto accessbyhash = access.get_index<"byaccess"_n>();
-                auto access_iter = accessbyhash.find(accessHash);
+                //get the id and look in access, remove it if its there, error if not there
+                uint64_t permid               = permctrl_iter->id;
+                string   accessctrl           = grantee_account.to_string() + to_string(permid);
+                const    uint128_t accessHash = string_to_uint128_hash(accessctrl.c_str());
+                auto     accessbyhash         = access.get_index<"byaccess"_n>();
+                auto     access_iter          = accessbyhash.find(accessHash);
 
                 fio_400_assert((access_iter != accessbyhash.end() ), "grantee_account", grantee_account.to_string(),
                                "Permission not found", ErrorPermissionExists);
 
+                accessbyhash.erase(access_iter);
 
+                //do one more check for this access by permission id, if no results then
+                //remove from permissions.
+                auto accessbypermid = access.get_index<"bypermid"_n>();
+                auto accessbyperm_iter    = accessbypermid.find(permid);
+
+                if(accessbyperm_iter == accessbypermid.end()){
+                    //no accounts with this access left, remove the permission.
+                    permissionsbycontrolhash.erase(permctrl_iter);
+                }
             }
 
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
@@ -313,34 +346,35 @@ namespace fioio {
 
 
 
+            //fees
+            const uint128_t endpoint_hash = string_to_uint128_hash(REMOVE_PERMISSION_ENDPOINT);
+            auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
+            auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+            fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", REMOVE_PERMISSION_ENDPOINT,
+                           "FIO fee not found for endpoint", ErrorNoEndpoint);
+            const uint64_t fee_amount = fee_iter->suf_amount;
+            const uint64_t fee_type = fee_iter->type;
 
+            fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                           "unexpected fee type for endpoint remove permission, expected 0",
+                           ErrorNoEndpoint);
 
+            fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
+                           "Fee exceeds supplied maximum.",
+                           ErrorMaxFeeExceeded);
 
+            fio_fees(actor, asset(fee_amount, FIOSYMBOL), REMOVE_PERMISSION_ENDPOINT);
+            processbucketrewards(tpid, fee_amount, get_self(), actor);
 
-
-
-
-
-
-
-
-
-
-            uint128_t permnamehash = string_to_uint128_hash(useperm);
-            auto permsbypermname = permissions.get_index<"bypermname"_n>();
-            auto bynameiter = permsbypermname.find(permnamehash);
-            int c = 0;
-            while (bynameiter != permsbypermname.end()) {
-                bynameiter++;
-                if (useperm.compare(bynameiter->permission_name)==0) {
-                    c++;
-                }
+            if (fee_amount > 0) {
+                INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
+                        (SYSTEMACCOUNT, {{_self, "active"_n}},
+                         {actor, true}
+                        );
             }
 
-            print("remperm --      there are this many rows with name of. "+permission_name+ " count : "+to_string(c)+" \n");
 
-            const string response_string = "{\"status\": \"OK\", \"fee_collected\" : 0}";
-
+            const string response_string = "{\"status\": \"OK\", \"fee_collected\" : "+ to_string(fee_amount) +"}";
             send_response(response_string.c_str());
 
         }
