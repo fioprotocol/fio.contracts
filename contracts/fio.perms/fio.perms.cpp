@@ -53,14 +53,13 @@ namespace fioio {
 
     private:
 
-        domains_table domains;
-        fionames_table fionames;
-        fiofee_table fiofees;
+        domains_table     domains;
+        fionames_table    fionames;
+        fiofee_table      fiofees;
         eosio_names_table accountmap;
-        config appConfig;
-
         permissions_table permissions;
-        access_table accesses;
+        access_table      accesses;
+        config            appConfig;
 
 
 
@@ -74,18 +73,23 @@ namespace fioio {
                                                                         fionames(AddressContract, AddressContract.value),
                                                                         fiofees(FeeContract, FeeContract.value),
                                                                         accountmap(_self, _self.value){
-
             configs_singleton configsSingleton(FeeContract, FeeContract.value);
             appConfig = configsSingleton.get_or_default(config());
         }
 
 
+        /*
+         * This action will check if a permission exists for the specified arguments, if it does not
+         * yet exist in the permissions table a new record will be added, the accesses table will also
+         * be updated to indicate the grantee account access that has been granted. please see the code
+         * for error logic and parameter descriptions.
+         */
         [[eosio::action]]
         void
         addperm(const name &grantee_account,
-                const string &permission_name,
-                const string &permission_info,
-                const string &object_name,
+                const string &permission_name,   //one permission is permitted register_address_on_domain
+                const string &permission_info,   //this is empty for FIP-40, an extensibility field for the future.
+                const string &object_name,       //the name of the fio domain
                 const int64_t &max_fee,
                 const string &tpid,
                 const name &actor
@@ -150,12 +154,11 @@ namespace fioio {
 
             //error if the grantee account already has this permission.
             string permcontrol = REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE + object_name + REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME;
-
-            const uint128_t permcontrolHash = string_to_uint128_hash(permcontrol.c_str());
+            const    uint128_t permcontrolHash = string_to_uint128_hash(permcontrol.c_str());
             auto     accessbyhash              = accesses.get_index<"byaccess"_n>();
-            auto     permissionsbycontrolhash   = permissions.get_index<"bypermctrl"_n>();
-            auto     permctrl_iter              = permissionsbycontrolhash.find(permcontrolHash);
-            uint64_t permid = 0;
+            auto     permissionsbycontrolhash  = permissions.get_index<"bypermctrl"_n>();
+            auto     permctrl_iter             = permissionsbycontrolhash.find(permcontrolHash);
+            uint64_t permid                    = 0;
 
             if(permctrl_iter == permissionsbycontrolhash.end())
             { //insert the permission
@@ -163,9 +166,7 @@ namespace fioio {
                 //being supported
                 string object_type = PERMISSION_OBJECT_TYPE_DOMAIN;
                 const string controlv = object_type + object_name + useperm;
-
                 permid = permissions.available_primary_key();
-
                 permissions.emplace(get_self(), [&](struct permission_info &p) {
                     p.id = permid;
                     p.object_type = PERMISSION_OBJECT_TYPE_DOMAIN;
@@ -245,11 +246,7 @@ namespace fioio {
                         std::make_tuple(actor, ADDPERMISSIONRAMBASE + (ADDPERMISSIONRAM * permission_info.size()))
                 ).send();
             }
-
-
-
             const string response_string = "{\"status\": \"OK\", \"fee_collected\" : "+ to_string(fee_amount) +"}";
-
             send_response(response_string.c_str());
 
         }
@@ -335,14 +332,11 @@ namespace fioio {
 
                 fio_400_assert((access_iter != accessbyhash.end() ), "grantee_account", grantee_account.to_string(),
                                "Permission not found", ErrorPermissionExists);
-
                 accessbyhash.erase(access_iter);
-
                 //do one more check for this access by permission id, if no results then
                 //remove from permissions.
-                auto accessbypermid = accesses.get_index<"bypermid"_n>();
+                auto accessbypermid       = accesses.get_index<"bypermid"_n>();
                 auto accessbyperm_iter    = accessbypermid.find(permid);
-
                 if(accessbyperm_iter == accessbypermid.end()){
                     //no accounts with this access left, remove the permission.
                     permissionsbycontrolhash.erase(permctrl_iter);
@@ -359,16 +353,16 @@ namespace fioio {
                            "TPID must be empty or valid FIO address",
                            ErrorPubKeyValid);
 
-
-
             //fees
-            const uint128_t endpoint_hash = string_to_uint128_hash(REMOVE_PERMISSION_ENDPOINT);
-            auto fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
-            auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+            const uint128_t endpoint_hash    = string_to_uint128_hash(REMOVE_PERMISSION_ENDPOINT);
+            auto            fees_by_endpoint = fiofees.get_index<"byendpoint"_n>();
+            auto            fee_iter         = fees_by_endpoint.find(endpoint_hash);
+
             fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", REMOVE_PERMISSION_ENDPOINT,
                            "FIO fee not found for endpoint", ErrorNoEndpoint);
+
             const uint64_t fee_amount = fee_iter->suf_amount;
-            const uint64_t fee_type = fee_iter->type;
+            const uint64_t fee_type   = fee_iter->type;
 
             fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
                            "unexpected fee type for endpoint remove permission, expected 0",
@@ -387,14 +381,9 @@ namespace fioio {
                          {actor, true}
                         );
             }
-
-
             const string response_string = "{\"status\": \"OK\", \"fee_collected\" : "+ to_string(fee_amount) +"}";
             send_response(response_string.c_str());
-
         }
-
-
     };
 
     EOSIO_DISPATCH(FioPermissions, (addperm)(remperm))
