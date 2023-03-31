@@ -90,7 +90,7 @@ struct [[eosio::action]] access_info {
 };
 //this state table contains information relating to the acesses that are granted in the FIO protocol
 //please examine fio.perms.cpp for details relating to FIO permissions.
-typedef multi_index<"access"_n, access_info,
+typedef multi_index<"accesses"_n, access_info,
         indexed_by<"bypermid"_n, const_mem_fun < access_info, uint64_t, &access_info::by_permission_id>>,
         indexed_by<"bygrantee"_n, const_mem_fun < access_info, uint64_t, &access_info::by_grantee_account>>,
         indexed_by<"byaccess"_n, const_mem_fun < access_info, uint128_t, &access_info::by_access_hash>>

@@ -60,7 +60,7 @@ namespace fioio {
         config appConfig;
 
         permissions_table permissions;
-        access_table access;
+        access_table accesses;
 
 
 
@@ -69,7 +69,7 @@ namespace fioio {
 
         FioPermissions(name s, name code, datastream<const char *> ds) : contract(s, code, ds),
                                                                          permissions(_self,_self.value),
-                                                                         access(_self,_self.value),
+                                                                         accesses(_self,_self.value),
                                                                          domains(AddressContract, AddressContract.value),
                                                                         fionames(AddressContract, AddressContract.value),
                                                                         fiofees(FeeContract, FeeContract.value),
@@ -152,33 +152,22 @@ namespace fioio {
             string permcontrol = REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE + object_name + REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME;
 
             const uint128_t permcontrolHash = string_to_uint128_hash(permcontrol.c_str());
+            auto     accessbyhash              = accesses.get_index<"byaccess"_n>();
+            auto     permissionsbycontrolhash   = permissions.get_index<"bypermctrl"_n>();
+            auto     permctrl_iter              = permissionsbycontrolhash.find(permcontrolHash);
+            uint64_t permid = 0;
 
-            auto permissionsbycontrolhash = permissions.get_index<"bypermctrl"_n>();
-            auto permctrl_iter = permissionsbycontrolhash.find(permcontrolHash);
-            if (permctrl_iter != permissionsbycontrolhash.end() ){
-                //get the id and look in access
-                uint64_t permid = permctrl_iter->id;
-                string accessctrl = grantee_account.to_string() + to_string(permid);
-
-                const uint128_t accessHash = string_to_uint128_hash(accessctrl.c_str());
-
-                auto accessbyhash = access.get_index<"byaccess"_n>();
-                auto access_iter = accessbyhash.find(accessHash);
-
-                fio_400_assert((access_iter == accessbyhash.end() ), "grantee_account", grantee_account.to_string(),
-                               "Permission already exists", ErrorPermissionExists);
-
-
-            } else { //insert the permission
+            if(permctrl_iter == permissionsbycontrolhash.end())
+            { //insert the permission
                 //one permission name is integrated for fip 40, modify this logic for any new permission names
                 //being supported
                 string object_type = PERMISSION_OBJECT_TYPE_DOMAIN;
                 const string controlv = object_type + object_name + useperm;
 
-                const uint64_t id = permissions.available_primary_key();
+                permid = permissions.available_primary_key();
 
                 permissions.emplace(get_self(), [&](struct permission_info &p) {
-                    p.id = id;
+                    p.id = permid;
                     p.object_type = PERMISSION_OBJECT_TYPE_DOMAIN;
                     p.object_type_hash = string_to_uint128_hash(PERMISSION_OBJECT_TYPE_DOMAIN);
                     p.object_name = object_name;
@@ -190,6 +179,28 @@ namespace fioio {
                     p.auxilliary_info = "";
                 });
             }
+            else {
+                //get the id for the perm
+                permid = permctrl_iter->id;
+            }
+
+
+            string accessctrl           = grantee_account.to_string() + to_string(permid);
+            const  uint128_t accessHash = string_to_uint128_hash(accessctrl.c_str());
+            auto access_iter            = accessbyhash.find(accessHash);
+
+            fio_400_assert((access_iter == accessbyhash.end() ), "grantee_account", grantee_account.to_string(),
+                           "Permission already exists", ErrorPermissionExists);
+
+            //add the record to accesses.
+            const uint64_t accessid = accesses.available_primary_key();
+            accesses.emplace(get_self(), [&](struct access_info &a) {
+                a.id = accessid;
+                a.permission_id = permid;
+                a.grantee_account = grantee_account.value;
+                a.access_hash = accessHash;
+            });
+
 
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
                            ErrorMaxFeeInvalid);
@@ -319,7 +330,7 @@ namespace fioio {
                 uint64_t permid               = permctrl_iter->id;
                 string   accessctrl           = grantee_account.to_string() + to_string(permid);
                 const    uint128_t accessHash = string_to_uint128_hash(accessctrl.c_str());
-                auto     accessbyhash         = access.get_index<"byaccess"_n>();
+                auto     accessbyhash         = accesses.get_index<"byaccess"_n>();
                 auto     access_iter          = accessbyhash.find(accessHash);
 
                 fio_400_assert((access_iter != accessbyhash.end() ), "grantee_account", grantee_account.to_string(),
@@ -329,13 +340,17 @@ namespace fioio {
 
                 //do one more check for this access by permission id, if no results then
                 //remove from permissions.
-                auto accessbypermid = access.get_index<"bypermid"_n>();
+                auto accessbypermid = accesses.get_index<"bypermid"_n>();
                 auto accessbyperm_iter    = accessbypermid.find(permid);
 
                 if(accessbyperm_iter == accessbypermid.end()){
                     //no accounts with this access left, remove the permission.
                     permissionsbycontrolhash.erase(permctrl_iter);
                 }
+            }else{
+                //cant find access by control hash. permission not found
+                fio_400_assert((permctrl_iter != permissionsbycontrolhash.end()), "grantee_account", grantee_account.to_string(),
+                               "Permission not found", ErrorPermissionExists);
             }
 
             fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",

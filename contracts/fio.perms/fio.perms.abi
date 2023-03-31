@@ -160,10 +160,14 @@
       "type": "permission_info"
     },
      {
-       "name": "access",
+       "name": "accesses",
        "index_type": "i64",
-       "key_names": [],
-       "key_types": [],
+        "key_names": [
+          "id"
+        ],
+        "key_types": [
+          "string"
+        ],
        "type": "access_info"
      }
   ],
