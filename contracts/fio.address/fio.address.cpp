@@ -5,6 +5,12 @@
  *  @license FIO Foundation ( https://github.com/fioprotocol/fio/blob/master/LICENSE ) Dapix
  */
 
+/*
+ * FIP-40
+todo fio.address	burnexpired	/burn_expired	Burn all the associated domain permissions when FIO Domain is burned.
+todo fio.address	xferdomain	/transfer_fio_domain	Burn all the associated domain permissions when FIO Domain is transferred.
+ */
+
 #include "fio.address.hpp"
 #include <fio.fee/fio.fee.hpp>
 #include <fio.common/fio.common.hpp>
@@ -13,6 +19,7 @@
 #include <eosiolib/asset.hpp>
 #include <fio.request.obt/fio.request.obt.hpp> //TEMP FOR XFERADDRESS
 #include <fio.escrow/fio.escrow.hpp>
+#include <fio.perms/fio.perms.hpp>
 
 namespace fioio {
 
@@ -33,6 +40,8 @@ namespace fioio {
         eosiosystem::producers_table producers;
         eosiosystem::locked_tokens_table lockedTokensTable;
         nfts_table nftstable;
+        permissions_table permissions_table;
+        access_table accesses_table;
         config appConfig;
 
         //FIP-39 begin
@@ -56,8 +65,9 @@ namespace fioio {
                                                                         voters(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                                                                         topprods(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                                                                         producers(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
-                                                                        lockedTokensTable(SYSTEMACCOUNT,
-                                                                                          SYSTEMACCOUNT.value),
+                                                                        lockedTokensTable(SYSTEMACCOUNT,SYSTEMACCOUNT.value),
+                                                                        permissions_table(PERMSACCOUNT,PERMSACCOUNT.value),
+                                                                        accesses_table(PERMSACCOUNT,PERMSACCOUNT.value),
                 //FIP-39 begin
                                                                         fionameinfo(_self, _self.value){
                 //FIP-39 end
@@ -282,7 +292,25 @@ namespace fioio {
             const bool isPublic = domains_iter->is_public;
             uint64_t domain_owner = domains_iter->account;
 
-            if (!isPublic) {
+            //object_type, object_name, and permission_name get hashed for permission control hash
+            bool      hasDomainAccess      = false;
+            string    permctrl             = REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE+fa.fiodomain+REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME;
+            uint128_t permctrlhash         = string_to_uint128_hash(permctrl.c_str());
+            auto      permissionbyctrl     = permissions_table.get_index<"bypermctrl"_n>();
+            auto      permsbypermctrl_iter = permissionbyctrl.find(permctrlhash);
+
+
+            if(permsbypermctrl_iter != permissionbyctrl.end()){
+                string    accessctrl     = actor.to_string()+to_string(permsbypermctrl_iter->id);
+                uint128_t accessctrlhash = string_to_uint128_hash(accessctrl.c_str());
+                auto      accessesbyctrl     = accesses_table.get_index<"byaccess"_n>();
+                auto      accessesbyctrl_iter = accessesbyctrl.find(accessctrlhash);
+                if(accessesbyctrl_iter != accessesbyctrl.end()){
+                    hasDomainAccess = true;
+                }
+            }
+
+            if (!(isPublic || hasDomainAccess)) {
                 fio_400_assert(domain_owner == actor.value, "fio_address", fa.fioaddress,
                                "FIO Domain is not public. Only owner can create FIO Addresses.",
                                ErrorInvalidFioNameFormat);

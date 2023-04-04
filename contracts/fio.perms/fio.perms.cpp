@@ -153,7 +153,7 @@ namespace fioio {
 
 
             //error if the grantee account already has this permission.
-            string permcontrol = REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE + object_name + REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME;
+            string permcontrol = REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE + object_name + useperm;
             const    uint128_t permcontrolHash = string_to_uint128_hash(permcontrol.c_str());
             auto     accessbyhash              = accesses.get_index<"byaccess"_n>();
             auto     permissionsbycontrolhash  = permissions.get_index<"bypermctrl"_n>();
@@ -165,7 +165,6 @@ namespace fioio {
                 //one permission name is integrated for fip 40, modify this logic for any new permission names
                 //being supported
                 string object_type = PERMISSION_OBJECT_TYPE_DOMAIN;
-                const string controlv = object_type + object_name + useperm;
                 permid = permissions.available_primary_key();
                 permissions.emplace(get_self(), [&](struct permission_info &p) {
                     p.id = permid;
@@ -175,7 +174,7 @@ namespace fioio {
                     p.object_name_hash = string_to_uint128_hash(object_name);
                     p.permission_name = useperm;
                     p.permission_name_hash = string_to_uint128_hash(useperm);
-                    p.permission_control_hash = string_to_uint128_hash(controlv);
+                    p.permission_control_hash = permcontrolHash;
                     p.owner_account = actor.value;
                     p.auxilliary_info = "";
                 });
