@@ -133,7 +133,21 @@
           "type": "name"
         }
       ]
-    }
+    },
+     {
+       "name": "clearperm",
+       "base": "",
+       "fields": [
+         {
+           "name": "permission_name",
+           "type": "string"
+         },
+         {
+           "name": "object_name",
+           "type": "string"
+         }
+       ]
+     }
   ],
   "actions": [
     {
@@ -145,7 +159,12 @@
       "name": "remperm",
       "type": "remperm",
       "ricardian_contract": ""
-    }
+    },
+     {
+       "name": "clearperm",
+       "type": "remperm",
+       "ricardian_contract": ""
+     }
   ],
   "tables": [
     {

@@ -156,6 +156,7 @@ namespace fioio {
             string permcontrol = REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE + object_name + useperm;
             const    uint128_t permcontrolHash = string_to_uint128_hash(permcontrol.c_str());
             auto     accessbyhash              = accesses.get_index<"byaccess"_n>();
+            auto     accessbypermid            = accesses.get_index<"bypermid"_n>();
             auto     permissionsbycontrolhash  = permissions.get_index<"bypermctrl"_n>();
             auto     permctrl_iter             = permissionsbycontrolhash.find(permcontrolHash);
             uint64_t permid                    = 0;
@@ -191,6 +192,21 @@ namespace fioio {
 
             fio_400_assert((access_iter == accessbyhash.end() ), "grantee_account", grantee_account.to_string(),
                            "Permission already exists", ErrorPermissionExists);
+
+            //count the number of grantees.
+            auto grantees_iter = accessbypermid.find(permid);
+
+            int countgrantees = 0;
+            while(grantees_iter != accessbypermid.end()){
+                countgrantees ++;
+                grantees_iter ++;
+            }
+
+            string msg = "Number of grantees exceeded, Max number grantees permitted is "+ to_string(MAX_GRANTEES);
+
+            fio_400_assert((countgrantees <= MAX_GRANTEES ), "grantee_account", grantee_account.to_string(),
+                         msg  , ErrorPermissionExists);
+
 
             //add the record to accesses.
             const uint64_t accessid = accesses.available_primary_key();
@@ -383,7 +399,79 @@ namespace fioio {
             const string response_string = "{\"status\": \"OK\", \"fee_collected\" : "+ to_string(fee_amount) +"}";
             send_response(response_string.c_str());
         }
-    };
 
-    EOSIO_DISPATCH(FioPermissions, (addperm)(remperm))
+
+        [[eosio::action]]
+        void
+        clearperm(
+                const string &permission_name,
+                const string &object_name
+        ) {
+
+
+            print("clearperm --      called. \n");
+
+            eosio_assert((has_auth(AddressContract) ),
+                         "missing required authority of fio.addresss");
+
+
+            fio_400_assert(permission_name.length()  > 0, "permission_name", permission_name,
+                           "Permission name is invalid", ErrorInvalidPermissionName);
+
+            string useperm = makeLowerCase(permission_name);
+
+            // error if permission name is not the expected name register_address_on_domain.
+            fio_400_assert(useperm.compare(REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME) == 0, "permission_name", permission_name,
+                           "Permission name is invalid", ErrorInvalidPermissionName);
+
+            // error if object name is not * or is not in the domains table
+            fio_400_assert(object_name.size()  > 0, "object_name", object_name,
+                           "Object name is invalid", ErrorInvalidObjectName);
+
+            //verify domain name, and that domain is owned by the actor account.
+            FioAddress fa;
+            getFioAddressStruct(object_name, fa);
+
+            fio_400_assert(fa.domainOnly, "object_name", object_name, "Invalid object name",
+                           ErrorInvalidObjectName);
+
+            string permcontrol = REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE + object_name + REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME;
+
+            const uint128_t permcontrolHash = string_to_uint128_hash(permcontrol.c_str());
+
+            auto permissionsbycontrolhash = permissions.get_index<"bypermctrl"_n>();
+            auto permctrl_iter = permissionsbycontrolhash.find(permcontrolHash);
+            if (permctrl_iter != permissionsbycontrolhash.end() ) {
+                int numcleared =0;
+                //get the id and look in access, remove it if its there, error if not there
+                uint64_t permid = permctrl_iter->id;
+                auto accessbypermid1 = accesses.get_index<"bypermid"_n>();
+                auto accessbypermid_iter = accessbypermid1.find(permid);
+                //remove all accesses, this code assumes that there are less than 5k accesses per permission.
+                //if there are more than this, then the method of removal must be changed to be more
+                //like the NFT clearing in FIO. make a queue and remove some number at a time.
+                //for register address on domain we limit the number of grantees to 100.
+                while (accessbypermid_iter != accessbypermid1.end()) {
+                    numcleared++;
+                    auto nextaccess = accessbypermid_iter;
+                    nextaccess++;
+                    accessbypermid1.erase(accessbypermid_iter);
+                    accessbypermid_iter = nextaccess;
+                }
+                permissionsbycontrolhash.erase(permctrl_iter);
+            }else{
+                //cant find access by control hash. permission not found
+                fio_400_assert((permctrl_iter != permissionsbycontrolhash.end()), "permission_name", permission_name,
+                               "Permission not found", ErrorPermissionExists);
+            }
+
+
+            const string response_string = "{\"status\": \"OK\"}";
+            send_response(response_string.c_str());
+        }
+};
+
+
+
+    EOSIO_DISPATCH(FioPermissions, (addperm)(remperm)(clearperm))
 }

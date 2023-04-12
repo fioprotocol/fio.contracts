@@ -1380,10 +1380,37 @@ namespace fioio {
             while (domainiter != domains.end()) {
                 const uint64_t expire = domainiter->expiration;
                 if ((expire + DOMAINWAITFORBURNDAYS) < nowtime) {
+
+                  //clear the domain permissions.
+                  //if there are domain permissions.
+                  //call to clear them and return.
+                  //if no permissions continue the process.
+                    string permcontrol = REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE + domainiter->name + REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME;
+
+                    const uint128_t permcontrolHash = string_to_uint128_hash(permcontrol.c_str());
+
+                    auto permissionsbycontrolhash = permissions_table.get_index<"bypermctrl"_n>();
+                    auto permctrl_iter = permissionsbycontrolhash.find(permcontrolHash);
+                    if (permctrl_iter != permissionsbycontrolhash.end() ) {
+                        //delete the permission, and the granted accounts,
+                        // clear all the permissions for this domain.
+                        //FIP-40
+                        action(
+                                permission_level{get_self(), "active"_n},
+                                "fio.perms"_n,
+                                "clearperm"_n,
+                                std::make_tuple(REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME, domainiter->name)
+                        ).send();
+
+                        // increment the number record processed by one
+                        //this increment helps manage the time used by the burn
+                        recordProcessed++;
+                        if (recordProcessed == numbertoburn) { break; }
+                    }
+
                     const auto domainhash = domainiter->domainhash;
                     auto nameexpidx = fionames.get_index<"bydomain"_n>();
                     auto nameiter = nameexpidx.find(domainhash);
-
                     while (nameiter != nameexpidx.end()) {
                         auto nextname = nameiter;
                         nextname++;
@@ -2043,11 +2070,14 @@ namespace fioio {
 
             auto burnqbyname = nftburnqueue.get_index<"byaddress"_n>();
             auto nftburnq_iter = burnqbyname.begin();
-            auto contractsbyname = nftstable.get_index<"byaddress"_n>();
+            auto contractsbyname = nftstable.get_index<"byaddress"_n>(); //more than 3k records ed@edge
             uint16_t counter = 0;
             auto nft_iter = contractsbyname.begin();
             while (nftburnq_iter != burnqbyname.end()) {
-                nft_iter = contractsbyname.find(nftburnq_iter->fio_address_hash);
+                //as soon as this has toooo many records it will not execute in a tx, we limit the number
+                // of accounts granted a permission see fio.perms.hpp MAX_GRANTEES in
+                // the code for a more detailed explanation
+                nft_iter = contractsbyname.find(nftburnq_iter->fio_address_hash); //search delay.
                 counter++;
                 if (nft_iter != contractsbyname.end()) { // if row, delete an nft
                     nft_iter = contractsbyname.erase(nft_iter);
@@ -2432,6 +2462,17 @@ namespace fioio {
             domainsbyname.modify(domains_iter, actor, [&](struct domain &a) {
                 a.account = nm.value;
             });
+            
+            //clear all the permissions for this domainas paert of the transfer
+            //note we limit grantees to 100 in the protocol to permit this kind of operation.
+            //see fio.perms.hpp MAX_GRANTEES documentaiton for further details.
+            //FIP-40
+            action(
+                    permission_level{get_self(), "active"_n},
+                    "fio.perms"_n,
+                    "clearperm"_n,
+                    std::make_tuple(REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME, fio_domain)
+            ).send();
 
             //fees
             const uint64_t fee_amount = fee_iter->suf_amount;

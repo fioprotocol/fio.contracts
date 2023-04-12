@@ -21,6 +21,18 @@ namespace fioio {
 
     const static string REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME = "register_address_on_domain";
     const static string REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE = "domain";
+    /**
+     * The fio protocol could permit users to grant a host of accounts a given permission, just like any
+     * well known permissions schemes users could then grant so many accounts permissioins that it becomes an
+     * extended offline effort to perform housekeeping and other analysis when the permission changes or are removed.
+     * we decide to enforce that 100 accounts can be granted a permission, this number provides that
+     * house keeping of permissions in state can have a chance to be performed by the contracts when users
+     * perform operations that necessitate that pre-existing permissions be removed as part of an operation
+     * (for example for FIP-40 when transferring a domain, we must remove pre-exisitng permissions
+     * for the user or we could give an error and make users clean permissions offline before allowing the
+     * transfer).
+     */
+    const static int MAX_GRANTEES = 100;
 
     struct [[eosio::action]] permission_info {
 
