@@ -21,7 +21,7 @@
  *      the owning account, and also including all parameterized data used by the permission according to the
  *      business logic required (such as access levels, or other abstractions that can be set when an
  *      account grants the permission).
- *      Permission Auxilliary Info – the json definition of all of the parameterized data used by a given permission that is unique for a permission.
+ *      Permission Auxiliary Info – the json definition of all of the parameterized data used by a given permission that is unique for a permission.
  *      for FIP-40 no additional data is necessary. this field provides extensibility such that we can introduce new
  *      or novel parameters and dials used by a new permission if this is necessary.
  *      Grantor – the granting/owning account of the object that relates to the permission.
@@ -177,7 +177,7 @@ namespace fioio {
                     p.permission_name_hash = string_to_uint128_hash(useperm);
                     p.permission_control_hash = permcontrolHash;
                     p.owner_account = actor.value;
-                    p.auxilliary_info = "";
+                    p.auxiliary_info = "";
                 });
             }
             else {

@@ -43,7 +43,7 @@
           "type": "uint64"
         },
         {
-          "name": "auxilliary_info",
+          "name": "auxiliary_info",
           "type": "string"
         }
       ]
@@ -162,7 +162,7 @@
     },
      {
        "name": "clearperm",
-       "type": "remperm",
+       "type": "clearperm",
        "ricardian_contract": ""
      }
   ],

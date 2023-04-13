@@ -2070,7 +2070,7 @@ namespace fioio {
 
             auto burnqbyname = nftburnqueue.get_index<"byaddress"_n>();
             auto nftburnq_iter = burnqbyname.begin();
-            auto contractsbyname = nftstable.get_index<"byaddress"_n>(); //more than 3k records ed@edge
+            auto contractsbyname = nftstable.get_index<"byaddress"_n>();
             uint16_t counter = 0;
             auto nft_iter = contractsbyname.begin();
             while (nftburnq_iter != burnqbyname.end()) {
@@ -2462,10 +2462,10 @@ namespace fioio {
             domainsbyname.modify(domains_iter, actor, [&](struct domain &a) {
                 a.account = nm.value;
             });
-            
-            //clear all the permissions for this domainas paert of the transfer
+
+            //clear all the permissions for this domain as part of the transfer
             //note we limit grantees to 100 in the protocol to permit this kind of operation.
-            //see fio.perms.hpp MAX_GRANTEES documentaiton for further details.
+            //see fio.perms.hpp MAX_GRANTEES documentation for further details.
             //FIP-40
             action(
                     permission_level{get_self(), "active"_n},
