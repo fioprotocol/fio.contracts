@@ -358,9 +358,7 @@ namespace eosio {
                                  fio_fees(actor, asset{(int64_t) reg_amount, FIOSYMBOL}, TRANSFER_TOKENS_PUBKEY_ENDPOINT);
         process_rewards(tpid, reg_amount,get_self(), actor);
 
-        //BD-2893 don't allow actor to run contract on their account
-        auto data = eosio::unpack_action_data<st_trnsfiopubky>();
-        fio_403_assert(data.actor != get_self(), ErrorSignature);
+        require_recipient(actor);
 
         if (accountExists) {
             require_recipient(new_account_name);
