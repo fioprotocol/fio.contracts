@@ -14,7 +14,6 @@
 #include <fio.fee/fio.fee.hpp>
 #include <fio.tpid/fio.tpid.hpp>
 #include <fio.staking/fio.staking.hpp>
-#include <eosiolib/action.hpp>
 
 //FIP-38 begin
 struct bind2eosio {
@@ -111,15 +110,6 @@ namespace eosio {
         using mintfio_action = eosio::action_wrapper<"mintfio"_n, &token::mintfio>;
         using retire_action = eosio::action_wrapper<"retire"_n, &token::retire>;
         using transfer_action = eosio::action_wrapper<"transfer"_n, &token::transfer>;
-        using trnsfiopubky_action = eosio::action_wrapper<"trnsfiopubky"_n, &token::trnsfiopubky>;
-
-        struct st_trnsfiopubky {
-            string payee_public_key;
-            int64_t amount;
-            int64_t max_fee;
-            name actor;
-            string tpid;
-        };
 
     private:
         struct [[eosio::table]] account {
