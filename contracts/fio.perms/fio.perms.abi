@@ -39,8 +39,8 @@
           "type": "uint128"
         },
         {
-          "name": "owner_account",
-          "type": "uint64"
+          "name": "grantor_account",
+          "type": "name"
         },
         {
           "name": "auxiliary_info",
@@ -62,12 +62,20 @@
          },
          {
            "name": "grantee_account",
-           "type": "uint64"
+           "type": "name"
          },
          {
            "name": "access_hash",
            "type": "uint128"
-         }
+         },
+       {
+         "name": "grantor_account",
+         "type": "name"
+       },
+       {
+         "name": "names_hash",
+         "type": "uint128"
+       }
        ]
      },
     {

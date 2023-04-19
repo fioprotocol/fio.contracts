@@ -51,7 +51,7 @@ namespace fioio {
         //by convention we will store the hashed value of the following concatination in this field to provide a
         //unique search key by object_type, object_name, and permission_name
         uint128_t permission_control_hash = 0;
-        uint64_t owner_account = 0;
+        uint64_t grantor_account = 0;
         //this field can contain any string based info that is useful for the permission.
         //it shouldbe json based. for FIP-40 this is unused.
         string  auxiliary_info = "";
@@ -62,11 +62,11 @@ namespace fioio {
         uint128_t by_object_name_hash() const { return object_name_hash; }
         uint128_t by_permission_name_hash() const { return permission_name_hash; }
         uint128_t by_permission_control_hash() const { return permission_control_hash; }
-        uint64_t by_owner_account() const { return owner_account; }
+        uint64_t by_grantor_account() const { return grantor_account; }
 
 
         EOSLIB_SERIALIZE(permission_info, (id)(object_type)(object_type_hash)(object_name)(object_name_hash)
-                (permission_name)(permission_name_hash)(permission_control_hash)(owner_account)(auxiliary_info))
+                (permission_name)(permission_name_hash)(permission_control_hash)(grantor_account)(auxiliary_info))
     };
     //this state table contains information relating to the permissions that are granted in the FIO protocol
     //please examine fio.perms.cpp for details relating to FIO permissions.
@@ -75,7 +75,7 @@ namespace fioio {
             indexed_by<"byobjname"_n, const_mem_fun < permission_info, uint128_t, &permission_info::by_object_name_hash>>,
             indexed_by<"bypermname"_n, const_mem_fun < permission_info, uint128_t, &permission_info::by_permission_name_hash>>,
             indexed_by<"bypermctrl"_n, const_mem_fun < permission_info, uint128_t, &permission_info::by_permission_control_hash>>,
-            indexed_by<"byowner"_n, const_mem_fun < permission_info, uint64_t, &permission_info::by_owner_account>>
+            indexed_by<"bygrantor"_n, const_mem_fun < permission_info, uint64_t, &permission_info::by_grantor_account>>
     >
     permissions_table;
 
@@ -90,22 +90,28 @@ struct [[eosio::action]] access_info {
     uint64_t grantee_account = 0;
     //this is the hashed value of the string concatination of grantee account, permission id
     uint128_t access_hash = 0;
+    uint64_t grantor_account = 0;
+    uint128_t names_hash = 0; //the hashed value of the string concatination of the object name and permission name.
 
 
     uint64_t primary_key() const { return id; }
     uint64_t by_permission_id() const { return permission_id; }
     uint64_t by_grantee_account() const { return grantee_account; }
     uint128_t by_access_hash() const { return access_hash; }
+    uint64_t by_grantor_account() const {return grantor_account; }
+    uint128_t by_names_hash() const { return names_hash; }
 
 
-    EOSLIB_SERIALIZE(access_info, (id)(permission_id)(grantee_account)(access_hash))
+    EOSLIB_SERIALIZE(access_info, (id)(permission_id)(grantee_account)(access_hash)(grantor_account)(names_hash))
 };
-//this state table contains information relating to the acesses that are granted in the FIO protocol
+//this state table contains information relating to the accesses that are granted in the FIO protocol
 //please examine fio.perms.cpp for details relating to FIO permissions.
 typedef multi_index<"accesses"_n, access_info,
         indexed_by<"bypermid"_n, const_mem_fun < access_info, uint64_t, &access_info::by_permission_id>>,
         indexed_by<"bygrantee"_n, const_mem_fun < access_info, uint64_t, &access_info::by_grantee_account>>,
-        indexed_by<"byaccess"_n, const_mem_fun < access_info, uint128_t, &access_info::by_access_hash>>
+        indexed_by<"byaccess"_n, const_mem_fun < access_info, uint128_t, &access_info::by_access_hash>>,
+        indexed_by<"bygrantor"_n, const_mem_fun < access_info, uint64_t, &access_info::by_grantor_account>>,
+        indexed_by<"bynames"_n, const_mem_fun < access_info, uint128_t, &access_info::by_names_hash>>
 >
 access_table;
 

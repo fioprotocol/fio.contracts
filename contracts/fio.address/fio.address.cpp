@@ -5,11 +5,6 @@
  *  @license FIO Foundation ( https://github.com/fioprotocol/fio/blob/master/LICENSE ) Dapix
  */
 
-/*
- * FIP-40
-todo fio.address	burnexpired	/burn_expired	Burn all the associated domain permissions when FIO Domain is burned.
-todo fio.address	xferdomain	/transfer_fio_domain	Burn all the associated domain permissions when FIO Domain is transferred.
- */
 
 #include "fio.address.hpp"
 #include <fio.fee/fio.fee.hpp>
@@ -1381,18 +1376,11 @@ namespace fioio {
                 const uint64_t expire = domainiter->expiration;
                 if ((expire + DOMAINWAITFORBURNDAYS) < nowtime) {
 
-                  //clear the domain permissions.
-                  //if there are domain permissions.
-                  //call to clear them and return.
-                  //if no permissions continue the process.
                     string permcontrol = REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE + domainiter->name + REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME;
-
                     const uint128_t permcontrolHash = string_to_uint128_hash(permcontrol.c_str());
-
                     auto permissionsbycontrolhash = permissions_table.get_index<"bypermctrl"_n>();
                     auto permctrl_iter = permissionsbycontrolhash.find(permcontrolHash);
                     if (permctrl_iter != permissionsbycontrolhash.end() ) {
-                        //delete the permission, and the granted accounts,
                         // clear all the permissions for this domain.
                         //FIP-40
                         action(
@@ -2074,9 +2062,6 @@ namespace fioio {
             uint16_t counter = 0;
             auto nft_iter = contractsbyname.begin();
             while (nftburnq_iter != burnqbyname.end()) {
-                //as soon as this has toooo many records it will not execute in a tx, we limit the number
-                // of accounts granted a permission see fio.perms.hpp MAX_GRANTEES in
-                // the code for a more detailed explanation
                 nft_iter = contractsbyname.find(nftburnq_iter->fio_address_hash); //search delay.
                 counter++;
                 if (nft_iter != contractsbyname.end()) { // if row, delete an nft

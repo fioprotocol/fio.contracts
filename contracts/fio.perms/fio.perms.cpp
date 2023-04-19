@@ -2,18 +2,16 @@
  *  Description:
  *
  *
- *        We will introduce a notion of a permission, a permission is a definition of information that provides some control
- *       and/or access to objects in state which are owned by the account that creates the permission.
+ *        We will introduce a notion of a permission, a permission is a definition of information that provides some
+ *       access control to objects in state which are owned by the account that creates the permission.
  *       Permissions definitions will be extensible within the FIO protocol. new permissions can be added into
- *       the protocols contracts using the permmissions tables in this contract.
+ *       the FIO protocol by performing the following process:
  *
- *
- *       The following process will be used for the definition and integration of new permissions in the FIO protocols:
- *               Step 1:  define the permission desired.
- *               Step 2: modify the fio.contracts affected by the new access to enforce and integrate the new permission.
+ *               Step 1:  define the functionality of the permission desired.
+ *               Step 2: modify the fio.contracts to enforce and integrate the new permission.
  *               Step 3: rollout the new permission into testnet and main net using the following actions
  *                     3.1.   rollout the new version of the contracts supporting the new permission.
- *                     3.2   FIO user accounts begin using the permission as indicated in the spec.
+ *                     3.2   FIO user accounts then begin using the permission as indicated in the spec.
  *
  *      The following vernacular is used throughout our design:
  *      Permission –  the name of the permission,
@@ -96,7 +94,7 @@ namespace fioio {
                 ) {
 
 
-            print("addperm --      called. \n");
+            //print("addperm --      called. \n");
 
             require_auth(actor);
             string useperm = makeLowerCase(permission_name);
@@ -154,11 +152,12 @@ namespace fioio {
 
             //error if the grantee account already has this permission.
             string permcontrol = REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE + object_name + useperm;
-            const    uint128_t permcontrolHash = string_to_uint128_hash(permcontrol.c_str());
+            const    uint128_t permcontrolhash = string_to_uint128_hash(permcontrol.c_str());
+            const    uint128_t objectnamehash = string_to_uint128_hash(object_name);
             auto     accessbyhash              = accesses.get_index<"byaccess"_n>();
             auto     accessbypermid            = accesses.get_index<"bypermid"_n>();
             auto     permissionsbycontrolhash  = permissions.get_index<"bypermctrl"_n>();
-            auto     permctrl_iter             = permissionsbycontrolhash.find(permcontrolHash);
+            auto     permctrl_iter             = permissionsbycontrolhash.find(permcontrolhash);
             uint64_t permid                    = 0;
 
             if(permctrl_iter == permissionsbycontrolhash.end())
@@ -172,11 +171,11 @@ namespace fioio {
                     p.object_type = PERMISSION_OBJECT_TYPE_DOMAIN;
                     p.object_type_hash = string_to_uint128_hash(PERMISSION_OBJECT_TYPE_DOMAIN);
                     p.object_name = object_name;
-                    p.object_name_hash = string_to_uint128_hash(object_name);
+                    p.object_name_hash = objectnamehash;
                     p.permission_name = useperm;
                     p.permission_name_hash = string_to_uint128_hash(useperm);
-                    p.permission_control_hash = permcontrolHash;
-                    p.owner_account = actor.value;
+                    p.permission_control_hash = permcontrolhash;
+                    p.grantor_account = actor.value;
                     p.auxiliary_info = "";
                 });
             }
@@ -187,8 +186,8 @@ namespace fioio {
 
 
             string accessctrl           = grantee_account.to_string() + to_string(permid);
-            const  uint128_t accessHash = string_to_uint128_hash(accessctrl.c_str());
-            auto access_iter            = accessbyhash.find(accessHash);
+            const  uint128_t accesshash = string_to_uint128_hash(accessctrl.c_str());
+            auto access_iter            = accessbyhash.find(accesshash);
 
             fio_400_assert((access_iter == accessbyhash.end() ), "grantee_account", grantee_account.to_string(),
                            "Permission already exists", ErrorPermissionExists);
@@ -196,6 +195,8 @@ namespace fioio {
             //count the number of grantees.
             auto grantees_iter = accessbypermid.find(permid);
 
+            //enforce the limit on the number of grantee accounts see the comments in fio.perms.hpp for MAX_GRANTEES
+            //for details
             int countgrantees = 0;
             while(grantees_iter != accessbypermid.end()){
                 countgrantees ++;
@@ -214,7 +215,9 @@ namespace fioio {
                 a.id = accessid;
                 a.permission_id = permid;
                 a.grantee_account = grantee_account.value;
-                a.access_hash = accessHash;
+                a.access_hash = accesshash;
+                a.grantor_account = actor.value;
+                a.names_hash = string_to_uint128_hash(object_name + useperm);
             });
 
 
@@ -277,7 +280,7 @@ namespace fioio {
         ) {
 
 
-            print("remperm --      called. \n");
+           // print("remperm --      called. \n");
 
             require_auth(actor);
 
@@ -409,7 +412,7 @@ namespace fioio {
         ) {
 
 
-            print("clearperm --      called. \n");
+           // print("clearperm --      called. \n");
 
             eosio_assert((has_auth(AddressContract) ),
                          "missing required authority of fio.addresss");
