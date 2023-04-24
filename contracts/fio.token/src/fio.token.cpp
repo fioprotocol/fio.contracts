@@ -57,9 +57,7 @@ namespace eosio {
         add_balance(FIOISSUER, quantity, FIOISSUER);
 
         if (to != FIOISSUER) {
-            SEND_INLINE_ACTION(*this, transfer, {{FIOISSUER, "active"_n}},
-                               {FIOISSUER, to, quantity, memo}
-            );
+            transfer(FIOISSUER, to, quantity, memo);
         }
     }
 
