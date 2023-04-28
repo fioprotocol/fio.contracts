@@ -147,6 +147,10 @@
        "base": "",
        "fields": [
          {
+           "name": "grantor_account",
+           "type": "name"
+         },
+         {
            "name": "permission_name",
            "type": "string"
          },

@@ -287,21 +287,38 @@ namespace fioio {
             const bool isPublic = domains_iter->is_public;
             uint64_t domain_owner = domains_iter->account;
 
+
             //object_type, object_name, and permission_name get hashed for permission control hash
             bool      hasDomainAccess      = false;
-            string    permctrl             = REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE+fa.fiodomain+REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME;
-            uint128_t permctrlhash         = string_to_uint128_hash(permctrl.c_str());
-            auto      permissionbyctrl     = permissions_table.get_index<"bypermctrl"_n>();
-            auto      permsbypermctrl_iter = permissionbyctrl.find(permctrlhash);
 
+            //if actor is NOT owner, check for permissions
+            if(actor.value != domain_owner) {
 
-            if(permsbypermctrl_iter != permissionbyctrl.end()){
-                string    accessctrl     = actor.to_string()+to_string(permsbypermctrl_iter->id);
-                uint128_t accessctrlhash = string_to_uint128_hash(accessctrl.c_str());
-                auto      accessesbyctrl     = accesses_table.get_index<"byaccess"_n>();
-                auto      accessesbyctrl_iter = accessesbyctrl.find(accessctrlhash);
-                if(accessesbyctrl_iter != accessesbyctrl.end()){
-                    hasDomainAccess = true;
+                name grantor_account = name(domain_owner);
+                name grantee_account = actor;
+                string permctrl =
+                        grantor_account.to_string() + REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE + fa.fiodomain + REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME;
+                uint128_t permctrlhash = string_to_uint128_hash(permctrl.c_str());
+                auto permissionbyctrl = permissions_table.get_index<"bypermctrl"_n>();
+                auto permsbypermctrl_iter = permissionbyctrl.find(permctrlhash);
+
+                if (permsbypermctrl_iter == permissionbyctrl.end()) {
+                    permissionbyctrl = permissions_table.get_index<"bypermctrl"_n>();
+                    permctrl =
+                           grantor_account.to_string() + REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE + "*" + REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME;
+                    permctrlhash = string_to_uint128_hash(permctrl.c_str());
+                    permsbypermctrl_iter = permissionbyctrl.find(permctrlhash);
+
+                }
+
+                if(permsbypermctrl_iter != permissionbyctrl.end()){
+                    string accessctrl = actor.to_string() + to_string(permsbypermctrl_iter->id);
+                    uint128_t accessctrlhash = string_to_uint128_hash(accessctrl.c_str());
+                    auto accessesbyctrl = accesses_table.get_index<"byaccess"_n>();
+                    auto accessesbyctrl_iter = accessesbyctrl.find(accessctrlhash);
+                    if (accessesbyctrl_iter != accessesbyctrl.end()) {
+                        hasDomainAccess = true;
+                    }
                 }
             }
 
@@ -1377,8 +1394,8 @@ namespace fioio {
             while (domainiter != domains.end()) {
                 const uint64_t expire = domainiter->expiration;
                 if ((expire + DOMAINWAITFORBURNDAYS) < nowtime) {
-
-                    string permcontrol = REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE + domainiter->name + REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME;
+                    name grantor_account = name(domainiter->account);
+                    string permcontrol = grantor_account.to_string() + REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE + domainiter->name + REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME;
                     const uint128_t permcontrolHash = string_to_uint128_hash(permcontrol.c_str());
                     auto permissionsbycontrolhash = permissions_table.get_index<"bypermctrl"_n>();
                     auto permctrl_iter = permissionsbycontrolhash.find(permcontrolHash);
@@ -1389,7 +1406,7 @@ namespace fioio {
                                 permission_level{get_self(), "active"_n},
                                 "fio.perms"_n,
                                 "clearperm"_n,
-                                std::make_tuple(REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME, domainiter->name)
+                                std::make_tuple(grantor_account, REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME, domainiter->name)
                         ).send();
 
                         // increment the number record processed by one
@@ -2454,13 +2471,23 @@ namespace fioio {
             //note we limit grantees to 100 in the protocol to permit this kind of operation.
             //see fio.perms.hpp MAX_GRANTEES documentation for further details.
             //FIP-40
-            action(
-                    permission_level{get_self(), "active"_n},
-                    "fio.perms"_n,
-                    "clearperm"_n,
-                    std::make_tuple(REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME, fio_domain)
-            ).send();
 
+            string permcontrol = actor.to_string() + REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE + fio_domain + REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME;
+            const uint128_t permcontrolHash = string_to_uint128_hash(permcontrol.c_str());
+            auto permissionsbycontrolhash = permissions_table.get_index<"bypermctrl"_n>();
+            auto permctrl_iter = permissionsbycontrolhash.find(permcontrolHash);
+            if (permctrl_iter != permissionsbycontrolhash.end() ) {
+                // clear all the permissions for this domain.
+                //FIP-40
+                action(
+                        permission_level{get_self(), "active"_n},
+                        "fio.perms"_n,
+                        "clearperm"_n,
+                        std::make_tuple(actor, REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME, fio_domain)
+                ).send();
+            }
+
+            
             //fees
             const uint64_t fee_amount = fee_iter->suf_amount;
             const uint64_t fee_type = fee_iter->type;

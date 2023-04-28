@@ -101,57 +101,59 @@ namespace fioio {
 
 
             fio_400_assert(permission_name.length()  > 0, "permission_name", permission_name,
-                           "Permission name is invalid", ErrorInvalidPermissionName);
+                           "Permission name is invalid.", ErrorInvalidPermissionName);
             //  error if permission name is not the expected name register_address_on_domain.
             //one permission name is integrated for fip 40, modify this logic for any new permission names
             //being supported
             fio_400_assert(useperm.compare(REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME) == 0, "permission_name", permission_name,
-                           "Permission name is invalid", ErrorInvalidPermissionName);
+                           "Permission name is invalid.", ErrorInvalidPermissionName);
 
             // error if permission info is not empty.
             fio_400_assert(permission_info.size()  == 0, "permission_info", permission_info,
-                           "Permission info is invalid", ErrorInvalidPermissionInfo);
+                           "Permission Info is invalid.", ErrorInvalidPermissionInfo);
             // error if object name is not * or is not in the domains table
             fio_400_assert(object_name.size()  > 0, "object_name", object_name,
-                           "Object name is invalid", ErrorInvalidObjectName);
+                           "Object Name is invalid.", ErrorInvalidObjectName);
 
-            //verify domain name, and that domain is owned by the actor account.
-            FioAddress fa;
-            getFioAddressStruct(object_name, fa);
+            if(object_name.compare("*")!=0) {
+                //verify domain name, and that domain is owned by the actor account.
+                FioAddress fa;
+                getFioAddressStruct(object_name, fa);
 
-            fio_400_assert(fa.domainOnly, "domonlyobject_name", object_name, "Invalid object name",
-                           ErrorInvalidObjectName);
+                fio_400_assert(fa.domainOnly, "object_name", object_name, "Object Name is invalid.",
+                               ErrorInvalidObjectName);
 
-            const uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
-            auto domainsbyname = domains.get_index<"byname"_n>();
-            auto domains_iter = domainsbyname.find(domainHash);
+                const uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+                auto domainsbyname = domains.get_index<"byname"_n>();
+                auto domains_iter = domainsbyname.find(domainHash);
 
-            fio_400_assert(domains_iter != domainsbyname.end(), "domnotfound object_name", object_name,
-                           "Invalid object name",
-                           ErrorInvalidObjectName);
+                fio_400_assert(domains_iter != domainsbyname.end(), "object_name", object_name,
+                               "Object Name is invalid.",
+                               ErrorInvalidObjectName);
 
-            //add 30 days to the domain expiration, this call will work until 30 days past expire.
-            const uint32_t domain_expiration = get_time_plus_seconds(domains_iter->expiration, SECONDS30DAYS);
+                //add 30 days to the domain expiration, this call will work until 30 days past expire.
+                const uint32_t domain_expiration = get_time_plus_seconds(domains_iter->expiration, SECONDS30DAYS);
 
-            const uint32_t present_time = now();
-            fio_400_assert(present_time <= domain_expiration, "domexpired object_name", object_name, "Invalid object name",
-                           ErrorInvalidObjectName);
+                const uint32_t present_time = now();
+                fio_400_assert(present_time <= domain_expiration, "object_name", object_name, "Object Name is invalid.",
+                               ErrorInvalidObjectName);
 
-            //check domain owner is actor
-            fio_400_assert((actor.value == domains_iter->account), "actornotowner object_name", object_name,
-                           "Invalid object name", ErrorInvalidObjectName);
+                //check domain owner is actor
+                fio_400_assert((actor.value == domains_iter->account), "object_name", object_name,
+                               "Object Name is invalid.", ErrorInvalidObjectName);
+            }
 
 
             //check grantee exists.
             fio_400_assert(is_account(grantee_account), "grantee_account", grantee_account.to_string(),
-                           "grantee account is invalid", ErrorInvalidGranteeAccount);
+                           "Account is invalid or does not exist.", ErrorInvalidGranteeAccount);
 
             fio_400_assert((grantee_account.value != actor.value), "grantee_account", grantee_account.to_string(),
-                           "grantee account is invalid", ErrorInvalidGranteeAccount);
+                           "Account is invalid or does not exist.", ErrorInvalidGranteeAccount);
 
 
             //error if the grantee account already has this permission.
-            string permcontrol = REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE + object_name + useperm;
+            string permcontrol = actor.to_string() + REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE + object_name + useperm;
             const    uint128_t permcontrolhash = string_to_uint128_hash(permcontrol.c_str());
             const    uint128_t objectnamehash = string_to_uint128_hash(object_name);
             auto     accessbyhash              = accesses.get_index<"byaccess"_n>();
@@ -286,55 +288,60 @@ namespace fioio {
 
 
             fio_400_assert(permission_name.length()  > 0, "permission_name", permission_name,
-                           "Permission name is invalid", ErrorInvalidPermissionName);
+                           "Permission name is invalid.", ErrorInvalidPermissionName);
 
             string useperm = makeLowerCase(permission_name);
 
             // error if permission name is not the expected name register_address_on_domain.
             fio_400_assert(useperm.compare(REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME) == 0, "permission_name", permission_name,
-                           "Permission name is invalid", ErrorInvalidPermissionName);
+                           "Permission name is invalid.", ErrorInvalidPermissionName);
 
              // error if object name is not * or is not in the domains table
             fio_400_assert(object_name.size()  > 0, "object_name", object_name,
-                           "Object name is invalid", ErrorInvalidObjectName);
+                           "Object Name is invalid.", ErrorInvalidObjectName);
 
-            //verify domain name, and that domain is owned by the actor account.
-            FioAddress fa;
-            getFioAddressStruct(object_name, fa);
+            //todo handle the *
 
-            fio_400_assert(fa.domainOnly, "object_name", object_name, "Invalid object name",
-                           ErrorInvalidObjectName);
+            if(object_name.compare("*")!= 0) {
 
-            const uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
-            auto  domainsbyname        = domains.get_index<"byname"_n>();
-            auto  domains_iter         = domainsbyname.find(domainHash);
+                //verify domain name, and that domain is owned by the actor account.
+                FioAddress fa;
+                getFioAddressStruct(object_name, fa);
 
-            fio_400_assert(domains_iter != domainsbyname.end(), "object_name", object_name,
-                           "Invalid object name",
-                           ErrorInvalidObjectName);
+                fio_400_assert(fa.domainOnly, "object_name", object_name, "Object Name is invalid.",
+                               ErrorInvalidObjectName);
 
-            //add 30 days to the domain expiration, this call will work until 30 days past expire.
-            const uint32_t domain_expiration = get_time_plus_seconds(domains_iter->expiration, SECONDS30DAYS);
-            const uint32_t present_time      = now();
+                const uint128_t domainHash = string_to_uint128_hash(fa.fiodomain.c_str());
+                auto domainsbyname = domains.get_index<"byname"_n>();
+                auto domains_iter = domainsbyname.find(domainHash);
 
-            fio_400_assert(present_time <= domain_expiration, "object_name", object_name, "Invalid object name",
-                           ErrorInvalidObjectName);
+                fio_400_assert(domains_iter != domainsbyname.end(), "object_name", object_name,
+                               "Object Name is invalid.",
+                               ErrorInvalidObjectName);
 
-            //check domain owner is actor
-            fio_400_assert((actor.value == domains_iter->account), "object_name", object_name,
-                           "Invalid object name", ErrorInvalidObjectName);
+                //add 30 days to the domain expiration, this call will work until 30 days past expire.
+                const uint32_t domain_expiration = get_time_plus_seconds(domains_iter->expiration, SECONDS30DAYS);
+                const uint32_t present_time = now();
+
+                fio_400_assert(present_time <= domain_expiration, "object_name", object_name, "Object Name is invalid.",
+                               ErrorInvalidObjectName);
+
+                //check domain owner is actor
+                fio_400_assert((actor.value == domains_iter->account), "object_name", object_name,
+                               "Object Name is invalid.", ErrorInvalidObjectName);
+            }
 
 
             //check grantee exists.
             fio_400_assert(is_account(grantee_account), "grantee_account", grantee_account.to_string(),
-                           "grantee account is invalid", ErrorInvalidGranteeAccount);
+                           "Account is invalid or does not exist.", ErrorInvalidGranteeAccount);
 
             fio_400_assert((grantee_account.value != actor.value), "grantee_account", grantee_account.to_string(),
-                           "grantee account is invalid", ErrorInvalidGranteeAccount);
+                           "Account is invalid or does not exist.", ErrorInvalidGranteeAccount);
 
 
             //error if the grantee account already has this permission.
-            string permcontrol = REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE + object_name + REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME;
+            string permcontrol = actor.to_string() + REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE + object_name + REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME;
 
             const uint128_t permcontrolHash = string_to_uint128_hash(permcontrol.c_str());
 
@@ -407,6 +414,7 @@ namespace fioio {
         [[eosio::action]]
         void
         clearperm(
+                const name   &grantor_account,
                 const string &permission_name,
                 const string &object_name
         ) {
@@ -419,26 +427,26 @@ namespace fioio {
 
 
             fio_400_assert(permission_name.length()  > 0, "permission_name", permission_name,
-                           "Permission name is invalid", ErrorInvalidPermissionName);
+                           "Permission name is invalid.", ErrorInvalidPermissionName);
 
             string useperm = makeLowerCase(permission_name);
 
             // error if permission name is not the expected name register_address_on_domain.
             fio_400_assert(useperm.compare(REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME) == 0, "permission_name", permission_name,
-                           "Permission name is invalid", ErrorInvalidPermissionName);
+                           "Permission name is invalid.", ErrorInvalidPermissionName);
 
             // error if object name is not * or is not in the domains table
             fio_400_assert(object_name.size()  > 0, "object_name", object_name,
-                           "Object name is invalid", ErrorInvalidObjectName);
+                           "Object Name is invalid.", ErrorInvalidObjectName);
 
             //verify domain name, and that domain is owned by the actor account.
             FioAddress fa;
             getFioAddressStruct(object_name, fa);
 
-            fio_400_assert(fa.domainOnly, "object_name", object_name, "Invalid object name",
+            fio_400_assert(fa.domainOnly, "object_name", object_name, "Object Name is invalid.",
                            ErrorInvalidObjectName);
 
-            string permcontrol = REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE + object_name + REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME;
+            string permcontrol = grantor_account.to_string() + REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE + object_name + REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME;
 
             const uint128_t permcontrolHash = string_to_uint128_hash(permcontrol.c_str());
 

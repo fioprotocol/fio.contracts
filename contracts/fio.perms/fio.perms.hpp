@@ -49,7 +49,7 @@ namespace fioio {
         string permission_name = "";
         uint128_t permission_name_hash = 0;
         //by convention we will store the hashed value of the following concatination in this field to provide a
-        //unique search key by object_type, object_name, and permission_name
+        //unique search key by grantor object_type, object_name, and permission_name
         uint128_t permission_control_hash = 0;
         uint64_t grantor_account = 0;
         //this field can contain any string based info that is useful for the permission.
