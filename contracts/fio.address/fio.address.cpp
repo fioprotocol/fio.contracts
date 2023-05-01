@@ -286,9 +286,7 @@ namespace fioio {
 
             const bool isPublic = domains_iter->is_public;
             uint64_t domain_owner = domains_iter->account;
-
-
-            //object_type, object_name, and permission_name get hashed for permission control hash
+            
             bool      hasDomainAccess      = false;
 
             //if actor is NOT owner, check for permissions
