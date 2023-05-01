@@ -271,6 +271,10 @@ namespace fioio {
 
         }
 
+        /*
+        * This action will remove the specified account from the accesses table, if the resulting permission
+        * has no remaining grantees then the permission will be removed from the permissions table.
+        */
         [[eosio::action]]
         void
         remperm(const name &grantee_account,
@@ -299,8 +303,6 @@ namespace fioio {
              // error if object name is not * or is not in the domains table
             fio_400_assert(object_name.size()  > 0, "object_name", object_name,
                            "Object Name is invalid.", ErrorInvalidObjectName);
-
-            //todo handle the *
 
             if(object_name.compare("*")!= 0) {
 
@@ -339,8 +341,6 @@ namespace fioio {
             fio_400_assert((grantee_account.value != actor.value), "grantee_account", grantee_account.to_string(),
                            "Account is invalid or does not exist.", ErrorInvalidGranteeAccount);
 
-
-            //error if the grantee account already has this permission.
             string permcontrol = actor.to_string() + REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE + object_name + REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME;
 
             const uint128_t permcontrolHash = string_to_uint128_hash(permcontrol.c_str());
@@ -411,6 +411,8 @@ namespace fioio {
         }
 
 
+        //This action will clear the specified permission for the specified object and specified grantor account.
+        //all granted accesses will be removed.
         [[eosio::action]]
         void
         clearperm(
