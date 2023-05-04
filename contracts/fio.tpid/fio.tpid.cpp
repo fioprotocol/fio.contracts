@@ -94,9 +94,10 @@ public:
         [[eosio::action]]
         void updatetpid(const string &tpid, const name owner, const uint64_t &amount) {
 
-                eosio_assert(has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) || has_auth(FIOORACLEContract) ||
-                              has_auth(STAKINGACCOUNT) ||   has_auth("fio.reqobt"_n) || has_auth("eosio"_n) || has_auth(EscrowContract),
-                             "missing required authority of fio.address, fio.treasury, fio.token, eosio or fio.reqobt or fio.staking");
+                eosio_assert(has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT)
+                || has_auth(FIOORACLEContract) || has_auth(STAKINGACCOUNT) ||   has_auth("fio.reqobt"_n)
+                || has_auth("eosio"_n) || has_auth(EscrowContract) || has_auth(PERMSACCOUNT),
+                             "missing required authority of fio.address, fio.treasury, fio.token, eosio or fio.reqobt fio.perms or fio.staking");
             if (debugout) {
                 print("update tpid calling updatetpid with tpid ", tpid, " owner ", owner, "\n");
             }

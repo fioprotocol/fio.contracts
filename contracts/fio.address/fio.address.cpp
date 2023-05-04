@@ -5,6 +5,7 @@
  *  @license FIO Foundation ( https://github.com/fioprotocol/fio/blob/master/LICENSE ) Dapix
  */
 
+
 #include "fio.address.hpp"
 #include <fio.fee/fio.fee.hpp>
 #include <fio.common/fio.common.hpp>
@@ -13,6 +14,7 @@
 #include <eosiolib/asset.hpp>
 #include <fio.request.obt/fio.request.obt.hpp> //TEMP FOR XFERADDRESS
 #include <fio.escrow/fio.escrow.hpp>
+#include <fio.perms/fio.perms.hpp>
 
 namespace fioio {
 
@@ -33,6 +35,8 @@ namespace fioio {
         eosiosystem::producers_table producers;
         eosiosystem::locked_tokens_table lockedTokensTable;
         nfts_table nftstable;
+        permissions_table permissions_table;
+        access_table accesses_table;
         config appConfig;
 
         //FIP-39 begin
@@ -56,8 +60,9 @@ namespace fioio {
                                                                         voters(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                                                                         topprods(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                                                                         producers(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
-                                                                        lockedTokensTable(SYSTEMACCOUNT,
-                                                                                          SYSTEMACCOUNT.value),
+                                                                        lockedTokensTable(SYSTEMACCOUNT,SYSTEMACCOUNT.value),
+                                                                        permissions_table(PERMSACCOUNT,PERMSACCOUNT.value),
+                                                                        accesses_table(PERMSACCOUNT,PERMSACCOUNT.value),
                 //FIP-39 begin
                                                                         fionameinfo(_self, _self.value){
                 //FIP-39 end
@@ -282,7 +287,40 @@ namespace fioio {
             const bool isPublic = domains_iter->is_public;
             uint64_t domain_owner = domains_iter->account;
 
-            if (!isPublic) {
+            bool      hasDomainAccess      = false;
+
+            //if actor is NOT owner, check for permissions
+            if(actor.value != domain_owner) {
+
+                name grantor_account = name(domain_owner);
+                name grantee_account = actor;
+                string permctrl =
+                        grantor_account.to_string() + REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE + fa.fiodomain + REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME;
+                uint128_t permctrlhash = string_to_uint128_hash(permctrl.c_str());
+                auto permissionbyctrl = permissions_table.get_index<"bypermctrl"_n>();
+                auto permsbypermctrl_iter = permissionbyctrl.find(permctrlhash);
+
+                if (permsbypermctrl_iter == permissionbyctrl.end()) {
+                    permissionbyctrl = permissions_table.get_index<"bypermctrl"_n>();
+                    permctrl =
+                           grantor_account.to_string() + REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE + "*" + REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME;
+                    permctrlhash = string_to_uint128_hash(permctrl.c_str());
+                    permsbypermctrl_iter = permissionbyctrl.find(permctrlhash);
+
+                }
+
+                if(permsbypermctrl_iter != permissionbyctrl.end()){
+                    string accessctrl = actor.to_string() + to_string(permsbypermctrl_iter->id);
+                    uint128_t accessctrlhash = string_to_uint128_hash(accessctrl.c_str());
+                    auto accessesbyctrl = accesses_table.get_index<"byaccess"_n>();
+                    auto accessesbyctrl_iter = accessesbyctrl.find(accessctrlhash);
+                    if (accessesbyctrl_iter != accessesbyctrl.end()) {
+                        hasDomainAccess = true;
+                    }
+                }
+            }
+
+            if (!(isPublic || hasDomainAccess)) {
                 fio_400_assert(domain_owner == actor.value, "fio_address", fa.fioaddress,
                                "FIO Domain is not public. Only owner can create FIO Addresses.",
                                ErrorInvalidFioNameFormat);
@@ -1354,10 +1392,30 @@ namespace fioio {
             while (domainiter != domains.end()) {
                 const uint64_t expire = domainiter->expiration;
                 if ((expire + DOMAINWAITFORBURNDAYS) < nowtime) {
+                    name grantor_account = name(domainiter->account);
+                    string permcontrol = grantor_account.to_string() + REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE + domainiter->name + REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME;
+                    const uint128_t permcontrolHash = string_to_uint128_hash(permcontrol.c_str());
+                    auto permissionsbycontrolhash = permissions_table.get_index<"bypermctrl"_n>();
+                    auto permctrl_iter = permissionsbycontrolhash.find(permcontrolHash);
+                    if (permctrl_iter != permissionsbycontrolhash.end() ) {
+                        // clear all the permissions for this domain.
+                        //FIP-40
+                        action(
+                                permission_level{get_self(), "active"_n},
+                                "fio.perms"_n,
+                                "clearperm"_n,
+                                std::make_tuple(grantor_account, REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME, domainiter->name)
+                        ).send();
+
+                        // increment the number record processed by one
+                        //this increment helps manage the time used by the burn
+                        recordProcessed++;
+                        if (recordProcessed == numbertoburn) { break; }
+                    }
+
                     const auto domainhash = domainiter->domainhash;
                     auto nameexpidx = fionames.get_index<"bydomain"_n>();
                     auto nameiter = nameexpidx.find(domainhash);
-
                     while (nameiter != nameexpidx.end()) {
                         auto nextname = nameiter;
                         nextname++;
@@ -2021,7 +2079,7 @@ namespace fioio {
             uint16_t counter = 0;
             auto nft_iter = contractsbyname.begin();
             while (nftburnq_iter != burnqbyname.end()) {
-                nft_iter = contractsbyname.find(nftburnq_iter->fio_address_hash);
+                nft_iter = contractsbyname.find(nftburnq_iter->fio_address_hash); 
                 counter++;
                 if (nft_iter != contractsbyname.end()) { // if row, delete an nft
                     nft_iter = contractsbyname.erase(nft_iter);
@@ -2407,6 +2465,27 @@ namespace fioio {
                 a.account = nm.value;
             });
 
+            //clear all the permissions for this domain as part of the transfer
+            //note we limit grantees to 100 in the protocol to permit this kind of operation.
+            //see fio.perms.hpp MAX_GRANTEES documentation for further details.
+            //FIP-40
+
+            string permcontrol = actor.to_string() + REGISTER_ADDRESS_ON_DOMAIN_OBJECT_TYPE + fio_domain + REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME;
+            const uint128_t permcontrolHash = string_to_uint128_hash(permcontrol.c_str());
+            auto permissionsbycontrolhash = permissions_table.get_index<"bypermctrl"_n>();
+            auto permctrl_iter = permissionsbycontrolhash.find(permcontrolHash);
+            if (permctrl_iter != permissionsbycontrolhash.end() ) {
+                // clear all the permissions for this domain.
+                //FIP-40
+                action(
+                        permission_level{get_self(), "active"_n},
+                        "fio.perms"_n,
+                        "clearperm"_n,
+                        std::make_tuple(actor, REGISTER_ADDRESS_ON_DOMAIN_PERMISSION_NAME, fio_domain)
+                ).send();
+            }
+
+            
             //fees
             const uint64_t fee_amount = fee_iter->suf_amount;
             const uint64_t fee_type = fee_iter->type;
@@ -2516,9 +2595,10 @@ namespace fioio {
         void decrcounter(const string &fio_address, const int32_t &step) {
 
         check(step > 0, "step must be greater than 0");
+        //FIP-40
         check((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) || has_auth(STAKINGACCOUNT) ||
-                     has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) || has_auth(FeeContract)),
-                     "missing required authority of fio.address, fio.token, fio.fee, fio.treasury, fio.reqobt, fio.system, fio.staking ");
+                     has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) || has_auth(FeeContract) || has_auth(PERMSACCOUNT)),
+                     "missing required authority of fio.address, fio.token, fio.fee, fio.treasury, fio.reqobt, fio.system, fio.staking fio.perms");
 
             auto namesbyname = fionames.get_index<"byname"_n>();
             auto fioname_iter = namesbyname.find(string_to_uint128_hash(fio_address.c_str()));
@@ -2580,7 +2660,7 @@ namespace fioio {
 
     };
 
-    EOSIO_DISPATCH(FioNameLookup, (regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(renewaddress)
+    EOSIO_DISPATCH(FioNameLookup,(regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(renewaddress)
     (setdomainpub)(burnexpired)(decrcounter)(bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(xferescrow)
     (addnft)(remnft)(remallnfts)(burnnfts)(regdomadd)(updcryptkey))
 }

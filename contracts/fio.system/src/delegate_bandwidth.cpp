@@ -61,9 +61,10 @@ namespace eosiosystem {
                  has_auth(SYSTEMACCOUNT) ||
                  has_auth(FeeContract) ||
                  has_auth(StakingContract) ||
-                 has_auth(REQOBTACCOUNT)
+                 //FIP-40
+                 has_auth(PERMSACCOUNT)
                 ),
-                "missing required authority of fio.address, fio.treasury, eosio, fio.fee, fio.token, fio.staking, or fio.reqobt");
+                "missing required authority of fio.address, fio.treasury, eosio, fio.fee, fio.token, fio.staking, fio.perms or fio.reqobt");
 
         auto votersbyowner = _voters.get_index<"byowner"_n>();
         auto voter_itr = votersbyowner.find(voter.value);

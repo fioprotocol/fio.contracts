@@ -80,6 +80,10 @@
 #define ADD_NFT_ENDPOINT "add_nft"
 #define REM_NFT_ENDPOINT "remove_nft"
 #define REM_ALL_NFTS_ENDPOINT "remove_all_nfts"
+//FIP-40
+#define ADD_PERMISSION_ENDPOINT "add_fio_permission"
+#define REMOVE_PERMISSION_ENDPOINT "remove_fio_permission"
+#define PERMISSION_OBJECT_TYPE_DOMAIN "domain"
 //FIP-38 begin
 #define NEW_FIO_CHAIN_ACCOUNT_ENDPOINT "new_fio_chain_account"
 //FIP-38 end
@@ -145,7 +149,9 @@ namespace fioio {
              actor == fioio::FIOSYSTEMACCOUNT ||
              actor == fioio::FIOACCOUNT ||
              actor == fioio::EscrowContract ||
-             actor == FIOORACLEContract);
+             actor == FIOORACLEContract ||
+             //FIP-40
+             actor == PERMSACCOUNT);
     }
 
     static constexpr uint64_t string_to_uint64_hash(const char *str) {
@@ -514,6 +520,9 @@ namespace fioio {
     static const uint64_t BUNDLEVOTERAM = 0; //integrated.
     static const uint64_t ADDNFTRAMBASE = 512;
     static const uint64_t ADDNFTRAM = 2048;
+    //FIP-40
+    static const uint64_t ADDPERMISSIONRAMBASE = 2560;
+    static const uint64_t ADDPERMISSIONRAM = 2048;
     static const uint64_t LISTDOMAINRAM = 1536; // FIOESCROW - List Domain 1140 bytes round to 512 x 3
     //FIP-38 begin
     static const uint64_t NEWFIOCHAINACCOUNTRAM = 0;
