@@ -154,32 +154,32 @@
         }
       ]
     },
-     {
-        "name": "updcryptkey",
-        "base": "",
-        "fields": [
-          {
-            "name": "fio_address",
-            "type": "string"
-          },
-          {
-            "name": "encrypt_public_key",
-            "type": "string"
-          },
-          {
-            "name": "max_fee",
-            "type": "int64"
-          },
-          {
-            "name": "actor",
-            "type": "name"
-          },
-          {
-            "name": "tpid",
-            "type": "string"
-          }
-        ]
-      },
+    {
+      "name": "updcryptkey",
+      "base": "",
+      "fields": [
+        {
+          "name": "fio_address",
+          "type": "string"
+        },
+        {
+          "name": "encrypt_public_key",
+          "type": "string"
+        },
+        {
+          "name": "max_fee",
+          "type": "int64"
+        },
+        {
+          "name": "actor",
+          "type": "name"
+        },
+        {
+          "name": "tpid",
+          "type": "string"
+        }
+      ]
+    },
     {
       "name": "regdomadd",
       "base": "",
@@ -207,8 +207,7 @@
         {
           "name": "actor",
           "type": "name"
-        },
-
+        }
       ]
     },
     {
