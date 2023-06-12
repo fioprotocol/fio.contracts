@@ -274,10 +274,8 @@ namespace fioio {
                 fio_400_assert(fioreqctx_iter != trxtByRequestId.end(), "fio_request_id", fio_request_id,
                                "No such FIO Request", ErrorRequestContextNotFound);
 
-                string payer_account;
-                key_to_account(fioreqctx_iter->payer_key, payer_account);
-                name payer_acct = name(payer_account.c_str());
-                fio_403_assert(aactor == payer_acct, ErrorSignature);
+                //make sure payer of the request matches the actor.
+                fio_403_assert(aactor.value == fioreqctx_iter->payer_account, ErrorSignature);
 
                 fio_400_assert(fioreqctx_iter->fio_data_type == 0, "fio_request_id", fio_request_id,
                                "Only pending requests can be responded.", ErrorRequestStatusInvalid);
