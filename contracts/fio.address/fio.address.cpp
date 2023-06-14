@@ -493,6 +493,11 @@ namespace fioio {
 
             const uint64_t bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
 
+            //handle auto proxy
+            if (!tpid.empty()) {
+                set_auto_proxy(tpid, 0, get_self(), actor);
+            }
+
             if (bundleeligiblecountdown > 0) {
                 namesbyname.modify(fioname_iter, _self, [&](struct fioname &a) {
                     a.bundleeligiblecountdown = (bundleeligiblecountdown - 1);
@@ -515,6 +520,8 @@ namespace fioio {
                             );
                 }
             }
+
+
             return fee_amount;
         }
 
@@ -616,6 +623,10 @@ namespace fioio {
                              {actor, true}
                             );
                 }
+            }
+            //handle auto proxy
+            if (!tpid.empty()) {
+                set_auto_proxy(tpid, 0, get_self(), actor);
             }
             return fee_amount;
         }
@@ -749,6 +760,12 @@ namespace fioio {
                             );
                 }
             }
+
+            //handle auto proxy
+            if (!tpid.empty()) {
+                set_auto_proxy(tpid, 0, get_self(), actor);
+            }
+
             return fee_amount;
         }
 
@@ -1793,6 +1810,10 @@ namespace fioio {
                             );
                 }
             }
+            //handle auto proxy
+            if (!tpid.empty()) {
+                set_auto_proxy(tpid, 0, get_self(), actor);
+            }
 
             if (ADDNFTRAM > 0) {
                 action(
@@ -1955,6 +1976,10 @@ namespace fioio {
                             );
                 }
             }
+            //handle auto proxy
+            if (!tpid.empty()) {
+                set_auto_proxy(tpid, 0, get_self(), actor);
+            }
 
             const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
                                            to_string(fee_amount) + string("}");
@@ -2053,6 +2078,10 @@ namespace fioio {
                              {actor, true}
                             );
                 }
+            }
+            //handle auto proxy
+            if (!tpid.empty()) {
+                set_auto_proxy(tpid, 0, get_self(), actor);
             }
 
             const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
@@ -2407,6 +2436,7 @@ namespace fioio {
                            "burn_fio_address unexpected fee type for endpoint burn_fio_address, expected 1",
                            ErrorNoEndpoint);
 
+
             if (bundleeligiblecountdown == 0) {
                 fee_amount = fee_iter->suf_amount;
                 fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
@@ -2415,6 +2445,10 @@ namespace fioio {
 
                 fio_fees(actor, asset(fee_amount, FIOSYMBOL), BURN_FIO_ADDRESS_ENDPOINT);
                 process_rewards(tpid, fee_amount, get_self(), actor);
+            }
+            //handle auto proxy
+            if (!tpid.empty()) {
+                set_auto_proxy(tpid, 0, get_self(), actor);
             }
 
             const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
