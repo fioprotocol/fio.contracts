@@ -389,74 +389,90 @@ namespace eosio {
         }
 
         //begin general locked tokens
-        //this will compute the present unlocked tokens for this user based on the
-        //unlocking schedule, it will update the locktokens table if the doupdate
+        //this will compute the present locked token amount for this user based on the
+        //unlocking schedule, it will update the locktokensv2 table if the doupdate
         //is set to true.
         static uint64_t computegenerallockedtokens(const name &actor, bool doupdate) {
             uint32_t present_time = now();
-
+            //set up the query for lock periods this account.
             eosiosystem::general_locks_table_v2 generalLockTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value);
             auto locks_by_owner = generalLockTokensTable.get_index<"byowner"_n>();
             auto lockiter = locks_by_owner.find(actor.value);
+            //if we get results from the query
             if (lockiter != locks_by_owner.end()) {
-
+                //if the lock is not already completely paid out.
                 if (lockiter->payouts_performed < lockiter->periods.size()) {
                     uint32_t secondsSinceGrant = (present_time - lockiter->timestamp);
+                    uint32_t number_unlocks = 0;  //this is the number of unlock periods to perform at this time.
+                    uint64_t computed_amount_unlock = 0; // this is the computed amount of fio to unlock at this time.
 
-                    uint32_t payoutsDue = 0;
-
+                    //loop over periods, total number of unlock periods to perform now, and compute present amount unlocked.
                     for (int i=0;i<lockiter->periods.size(); i++){
                         if (lockiter->periods[i].duration <= secondsSinceGrant){
-                            payoutsDue++;
-                        }
-
-                    }
-                    uint64_t amountpay = 0;
-                    uint64_t newlockedamount = lockiter->remaining_lock_amount;
-                    bool didsomething = false;
-
-                    if (payoutsDue > lockiter->payouts_performed) {
-                        if((lockiter->payouts_performed + payoutsDue) >= lockiter->periods.size())
-                        {
-                            //payout the remaining lock amount.
-                            amountpay = newlockedamount;
-                        }
-                        else {
-
-                            for (int i = lockiter->payouts_performed; i < payoutsDue; i++) {
-                                amountpay += lockiter->periods[i].amount;
+                            number_unlocks++;
+                            if(i < lockiter->payouts_performed) {
+                                computed_amount_unlock += lockiter->periods[i].amount;
                             }
                         }
 
-                        if (newlockedamount > amountpay) {
-                            newlockedamount -= amountpay;
-                        } else {
-                            newlockedamount = 0;
+                    }
+                    //compute the remaining lock amount, for use in incoherency check.
+                    uint64_t computed_remaining_lock_amount = lockiter->lock_amount - computed_amount_unlock;
+
+                    uint64_t unlock_amount = 0;  //the amount to unlock at this time
+                    int unlock_periods = 0;     //the number of periods to unlock at this time.
+
+                    //if there are unlock periods needing processed now, record the number of periods to process.
+                    if (lockiter->payouts_performed < number_unlocks){
+                        unlock_periods = number_unlocks - lockiter->payouts_performed;
+                    }
+
+                    //initialize the remaining lock amount to use from state.
+                    uint64_t use_remaining_lock_amount = lockiter->remaining_lock_amount;
+
+                    //compare the computed remaining lock amount
+                    // and the state remaining lock amount, if they dont match then the lock
+                    // is incoherent, if its incoherent use the computed remaining lock amount going forward.
+                    if (use_remaining_lock_amount != computed_remaining_lock_amount){
+                        use_remaining_lock_amount = computed_remaining_lock_amount;
+                        print(" WARNING lock incoherency detected ", actor.to_string(), " using computed value for remaining_lock_amount ",
+                                computed_remaining_lock_amount, " \n ");
+                    }
+
+                    //if the number of unlock periods is non zero, compute the amount to unlock at this time.
+                    if (unlock_periods > 0) {
+                        for (int i = lockiter->payouts_performed; i < number_unlocks; i++) {
+                            unlock_amount += lockiter->periods[i].amount;
                         }
                     }
 
-                    if ((amountpay > 0) && doupdate) {
+                    //sanity check the amount to unlock and remaining lock amount, if they dont pass the sanity check
+                    //do not proceed. prevent un-expected side effects of bad data.
+                    check(use_remaining_lock_amount >= unlock_amount,
+                          "computegenerallockedtokens, amount to unlock cannot be greater than remaining lock amount " + actor.to_string() );
+
+                    //compute the present remaining lock amount, subtract the amount to unlock at this time.
+                    use_remaining_lock_amount -= unlock_amount;
+
+                    //if there is an amount to unlock, update state with the present lock info.
+                    if (((unlock_amount > 0) && doupdate)) {
                         //get fio balance for this account,
                         uint32_t present_time = now();
                         const auto my_balance = eosio::token::get_balance("fio.token"_n, actor, FIOSYMBOL.code());
                         uint64_t amount = my_balance.amount;
 
-                        if (newlockedamount > amount) {
-                            print(" WARNING computed amount ", newlockedamount, " is more than amount in account ",
-                                  amount, " \n ",
-                                  " Transaction processing order can cause this, this amount is being re-aligned, resetting remaining locked amount to ",
-                                  amount, "\n");
-                            newlockedamount = amount;
-                        }
-
+                        //final sanity check.
+                        check(use_remaining_lock_amount <= amount,
+                              "computegenerallockedtokens, remaining lock amount is larger than balance for " + actor.to_string() );
+                        
                         //update the locked table.
                         locks_by_owner.modify(lockiter, SYSTEMACCOUNT, [&](auto &av) {
-                            av.remaining_lock_amount = newlockedamount;
-                            av.payouts_performed = payoutsDue;
+                            av.remaining_lock_amount = use_remaining_lock_amount;
+                            av.payouts_performed = number_unlocks;
                         });
                     }
 
-                    return newlockedamount;
+                    return use_remaining_lock_amount;
 
                 } else {
                     return lockiter->remaining_lock_amount;
