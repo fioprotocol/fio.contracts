@@ -503,21 +503,21 @@
           "type": "string"
         }
       ]
-    }
-         {
-           "name": "burndomain",
-           "base": "",
-           "fields": [
-           {
-                           "name": "domainname",
-                           "type": "string"
-                         },
-             {
-               "name": "domainidx",
-               "type": "uint64"
-             }
-           ]
-         },
+    },
+      {
+               "name": "burndomain",
+               "base": "",
+               "fields": [
+               {
+                               "name": "domainname",
+                               "type": "string"
+                             },
+                 {
+                   "name": "domainidx",
+                   "type": "uint64"
+                 }
+               ]
+             },
     {
       "name": "burnexpired",
       "base": "",
