@@ -504,20 +504,6 @@
         }
       ]
     },
-    {
-            "name": "modexpire",
-            "base": "",
-            "fields": [
-              {
-                "name": "fio_address",
-                "type": "string"
-              },
-              {
-                "name": "expire",
-                "type": "int64"
-              }
-            ]
-          },
       {
                "name": "burndomain",
                "base": "",
@@ -836,11 +822,6 @@
       "type": "renewaddress",
       "ricardian_contract": ""
     },
-    {
-          "name": "modexpire",
-          "type": "modexpire",
-          "ricardian_contract": ""
-        },
          {
            "name": "burndomain",
            "type": "burndomain",
