@@ -1389,14 +1389,15 @@ namespace fioio {
             send_response(response_string.c_str());
         }
 
-
         [[eosio::action]]
-        void burndomain(const uint64_t &domainidx) {
+        void burndomain(const string &domainname, const uint64_t &domainidx) {
             //only fio.address able to call this.
             eosio_assert(has_auth(AddressContract),
                          "missing required authority of fio.address");
 
             auto domainiter = domains.find(domainidx);
+            fio_400_assert(domainiter->name.compare(domainname) == 0, "domainname", domainname,
+                           "Domain name does not match name at index", ErrorDomainNotFound);
 
             fio_400_assert(domainiter != domains.end(), "domainidx", std::to_string(domainidx),
                            "Domain index not found", ErrorDomainNotFound);
@@ -1408,6 +1409,8 @@ namespace fioio {
             fio_400_assert(nameiter == nameexpidx.end(), "domainidx", std::to_string(domainidx),
                     "Cannot burn domain when domain has fio handles", ErrorDomainNotFound);
 
+            print("EDEDEDEEDEDEDEDEDEDEDEDEDEDEDEDEDED burndomain erasing index ",to_string(domainidx),"\n");
+            print("EDEDEDEEDEDEDEDEDEDEDEDEDEDEDEDEDED burndomain erasing name ",domainname,"\n");
             domains.erase(domainiter);
 
 
@@ -1508,7 +1511,7 @@ namespace fioio {
                                 permission_level{get_self(), "active"_n},
                                 "fio.address"_n,
                                 "burndomain"_n,
-                                std::make_tuple(index)
+                                std::make_tuple(domainiter->name,index)
                         ).send();
                         recordProcessed++;
 

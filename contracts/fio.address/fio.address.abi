@@ -503,11 +503,15 @@
           "type": "string"
         }
       ]
-    },
+    }
          {
            "name": "burndomain",
            "base": "",
            "fields": [
+           {
+                           "name": "domainname",
+                           "type": "string"
+                         },
              {
                "name": "domainidx",
                "type": "uint64"
