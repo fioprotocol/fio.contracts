@@ -504,6 +504,16 @@
         }
       ]
     },
+         {
+           "name": "burndomain",
+           "base": "",
+           "fields": [
+             {
+               "name": "domainidx",
+               "type": "uint64"
+             }
+           ]
+         },
     {
       "name": "burnexpired",
       "base": "",
@@ -808,6 +818,11 @@
       "type": "renewaddress",
       "ricardian_contract": ""
     },
+         {
+           "name": "burndomain",
+           "type": "burndomain",
+           "ricardian_contract": ""
+         },
     {
       "name": "burnexpired",
       "type": "burnexpired",
