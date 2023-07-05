@@ -1409,8 +1409,6 @@ namespace fioio {
             fio_400_assert(nameiter == nameexpidx.end(), "domainidx", std::to_string(domainidx),
                     "Cannot burn domain when domain has fio handles", ErrorDomainNotFound);
 
-            print("EDEDEDEEDEDEDEDEDEDEDEDEDEDEDEDEDED burndomain erasing index ",to_string(domainidx),"\n");
-            print("EDEDEDEEDEDEDEDEDEDEDEDEDEDEDEDEDED burndomain erasing name ",domainname,"\n");
             domains.erase(domainiter);
 
 
