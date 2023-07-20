@@ -263,6 +263,10 @@ namespace fioio {
                             );
                 }
             }
+            //handle auto proxy
+            if (!tpid.empty()) {
+                set_auto_proxy(tpid, 0, get_self(), aactor);
+            }
             //end fees, bundle eligible fee logic
             if (fio_request_id.length() > 0) {
                 uint64_t requestId;
@@ -449,6 +453,11 @@ namespace fioio {
                             );
                 }
             }
+
+            //handle auto proxy
+            if (!tpid.empty()) {
+                set_auto_proxy(tpid, 0, get_self(), aActor);
+            }
             //end fees, bundle eligible fee logic
             const uint64_t id = fioTransactionsTable.available_primary_key();
             const uint128_t toHash = string_to_uint128_hash(payee_fio_address.c_str());
@@ -603,6 +612,10 @@ namespace fioio {
                             );
                 }
             }
+            //handle auto proxy
+            if (!tpid.empty()) {
+                set_auto_proxy(tpid, 0, get_self(), aactor);
+            }
             //end fees, bundle eligible fee logic
 
             trxtByRequestId.modify(fioreqctx_iter, _self, [&](struct fiotrxt_info &fr) {
@@ -740,6 +753,10 @@ namespace fioio {
                          {aactor, true}
                         );
             }
+        }
+        //handle auto proxy
+        if (!tpid.empty()) {
+            set_auto_proxy(tpid, 0, get_self(), aactor);
         }
         //end fees, bundle eligible fee logic
         trxtByRequestId.modify(fioreqctx_iter, _self, [&](struct fiotrxt_info &fr) {

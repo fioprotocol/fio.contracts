@@ -493,6 +493,11 @@ namespace fioio {
 
             const uint64_t bundleeligiblecountdown = fioname_iter->bundleeligiblecountdown;
 
+            //handle auto proxy
+            if (!tpid.empty()) {
+                set_auto_proxy(tpid, 0, get_self(), actor);
+            }
+
             if (bundleeligiblecountdown > 0) {
                 namesbyname.modify(fioname_iter, _self, [&](struct fioname &a) {
                     a.bundleeligiblecountdown = (bundleeligiblecountdown - 1);
@@ -515,6 +520,8 @@ namespace fioio {
                             );
                 }
             }
+
+
             return fee_amount;
         }
 
@@ -616,6 +623,10 @@ namespace fioio {
                              {actor, true}
                             );
                 }
+            }
+            //handle auto proxy
+            if (!tpid.empty()) {
+                set_auto_proxy(tpid, 0, get_self(), actor);
             }
             return fee_amount;
         }
@@ -749,6 +760,12 @@ namespace fioio {
                             );
                 }
             }
+
+            //handle auto proxy
+            if (!tpid.empty()) {
+                set_auto_proxy(tpid, 0, get_self(), actor);
+            }
+
             return fee_amount;
         }
 
@@ -1372,6 +1389,37 @@ namespace fioio {
             send_response(response_string.c_str());
         }
 
+        [[eosio::action]]
+        void burndomain(const string &domainname, const uint64_t &domainidx) {
+            //only fio.address able to call this.
+            eosio_assert(has_auth(AddressContract),
+                         "missing required authority of fio.address");
+
+            auto domainiter = domains.find(domainidx);
+            fio_400_assert(domainiter->name.compare(domainname) == 0, "domainname", domainname,
+                           "Domain name does not match name at index", ErrorDomainNotFound);
+
+            fio_400_assert(domainiter != domains.end(), "domainidx", std::to_string(domainidx),
+                           "Domain index not found", ErrorDomainNotFound);
+
+            const auto domainhash = domainiter->domainhash;
+            auto nameexpidx = fionames.get_index<"bydomain"_n>();
+            auto nameiter = nameexpidx.find(domainhash);
+
+            fio_400_assert(nameiter == nameexpidx.end(), "domainidx", std::to_string(domainidx),
+                    "Cannot burn domain when domain has fio handles", ErrorDomainNotFound);
+
+            domains.erase(domainiter);
+
+
+            const string response_string = string("{\"status\": \"OK\" },\"");
+
+            fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                           "Transaction is too large", ErrorTransactionTooLarge);
+
+            send_response(response_string.c_str());
+        }
+
         /*
          * This action will look for expired domains, then look for expired addresses, it will burn a total
          * of 25 addresses each time called. please see the code for the logic of identifying expired domains
@@ -1457,7 +1505,12 @@ namespace fioio {
                     }
 
                     if (nameiter == nameexpidx.end()) {
-                        domains.erase(domainiter);
+                        action(
+                                permission_level{get_self(), "active"_n},
+                                "fio.address"_n,
+                                "burndomain"_n,
+                                std::make_tuple(domainiter->name,index)
+                        ).send();
                         recordProcessed++;
 
                         // Find any domains listed for sale on the fio.escrow contract table
@@ -1793,6 +1846,10 @@ namespace fioio {
                             );
                 }
             }
+            //handle auto proxy
+            if (!tpid.empty()) {
+                set_auto_proxy(tpid, 0, get_self(), actor);
+            }
 
             if (ADDNFTRAM > 0) {
                 action(
@@ -1955,6 +2012,10 @@ namespace fioio {
                             );
                 }
             }
+            //handle auto proxy
+            if (!tpid.empty()) {
+                set_auto_proxy(tpid, 0, get_self(), actor);
+            }
 
             const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
                                            to_string(fee_amount) + string("}");
@@ -2053,6 +2114,10 @@ namespace fioio {
                              {actor, true}
                             );
                 }
+            }
+            //handle auto proxy
+            if (!tpid.empty()) {
+                set_auto_proxy(tpid, 0, get_self(), actor);
             }
 
             const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
@@ -2407,6 +2472,7 @@ namespace fioio {
                            "burn_fio_address unexpected fee type for endpoint burn_fio_address, expected 1",
                            ErrorNoEndpoint);
 
+
             if (bundleeligiblecountdown == 0) {
                 fee_amount = fee_iter->suf_amount;
                 fio_400_assert(max_fee >= (int64_t) fee_amount, "max_fee", to_string(max_fee),
@@ -2415,6 +2481,10 @@ namespace fioio {
 
                 fio_fees(actor, asset(fee_amount, FIOSYMBOL), BURN_FIO_ADDRESS_ENDPOINT);
                 process_rewards(tpid, fee_amount, get_self(), actor);
+            }
+            //handle auto proxy
+            if (!tpid.empty()) {
+                set_auto_proxy(tpid, 0, get_self(), actor);
             }
 
             const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
@@ -2661,6 +2731,6 @@ namespace fioio {
     };
 
     EOSIO_DISPATCH(FioNameLookup,(regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(renewaddress)
-    (setdomainpub)(burnexpired)(decrcounter)(bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(xferescrow)
+    (setdomainpub)(burnexpired)(burndomain)(decrcounter)(bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(xferescrow)
     (addnft)(remnft)(remallnfts)(burnnfts)(regdomadd)(updcryptkey))
 }
