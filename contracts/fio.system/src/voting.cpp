@@ -647,6 +647,10 @@ namespace eosiosystem {
                 p.id = id;
                 p.owner = actor;
             });
+        }else{
+            if((voter_proxy_iter->last_vote_weight > 0)&&!(voter_proxy_iter->proxy)) {
+                _gstate.total_voted_fio -= voter_proxy_iter->last_vote_weight;
+            }
         }
 
         //note -- we can call these lock token computations like this
