@@ -1181,6 +1181,7 @@ namespace eosiosystem {
             votersbyowner.modify(pitr, same_payer, [&](auto &p) {
                     p.fioaddress = fio_address;
                     p.addresshash = addresshash;
+                    p.proxied_vote_weight = 0;
                     p.is_proxy = isproxy;
                     p.is_auto_proxy = false;
                     p.proxy = nm;
