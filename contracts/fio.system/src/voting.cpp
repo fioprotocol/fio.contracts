@@ -647,6 +647,10 @@ namespace eosiosystem {
                 p.id = id;
                 p.owner = actor;
             });
+        }else{
+            if((voter_proxy_iter->last_vote_weight > 0)&&!(voter_proxy_iter->proxy)) {
+                _gstate.total_voted_fio -= voter_proxy_iter->last_vote_weight;
+            }
         }
 
         //note -- we can call these lock token computations like this
@@ -1177,6 +1181,7 @@ namespace eosiosystem {
             votersbyowner.modify(pitr, same_payer, [&](auto &p) {
                     p.fioaddress = fio_address;
                     p.addresshash = addresshash;
+                    p.proxied_vote_weight = 0;
                     p.is_proxy = isproxy;
                     p.is_auto_proxy = false;
                     p.proxy = nm;
