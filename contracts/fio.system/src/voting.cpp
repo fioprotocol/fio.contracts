@@ -647,6 +647,10 @@ namespace eosiosystem {
                 p.id = id;
                 p.owner = actor;
             });
+        }else{
+            if((voter_proxy_iter->last_vote_weight > 0)&&!(voter_proxy_iter->proxy)) {
+                _gstate.total_voted_fio -= voter_proxy_iter->last_vote_weight;
+            }
         }
 
         //note -- we can call these lock token computations like this
@@ -1054,6 +1058,11 @@ namespace eosiosystem {
         processrewardsnotpid(reg_amount, get_self());
         //end new fees, logic for Mandatory fees.
 
+        INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
+                ("eosio"_n, {{_self, "active"_n}},
+                 {actor, false}
+                );
+
         const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
                                  to_string(reg_amount) + string("}");
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
@@ -1172,6 +1181,7 @@ namespace eosiosystem {
             votersbyowner.modify(pitr, same_payer, [&](auto &p) {
                     p.fioaddress = fio_address;
                     p.addresshash = addresshash;
+                    p.proxied_vote_weight = 0;
                     p.is_proxy = isproxy;
                     p.is_auto_proxy = false;
                     p.proxy = nm;
