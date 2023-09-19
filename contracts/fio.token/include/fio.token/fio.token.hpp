@@ -206,10 +206,20 @@ namespace eosio {
                     return lockiter->remaining_locked_amount;
                 }
                 if (lockiter->unlocked_period_count < 6) {
+                    //TESTING ONLY BE SURE TO UNCOMMENT OPERATIONAL CODE BEFORE RELEASE
+                    //TESTING ONLY BE SURE TO UNCOMMENT OPERATIONAL CODE BEFORE RELEASE
+                    //TESTING ONLY BE SURE TO UNCOMMENT OPERATIONAL CODE BEFORE RELEASE
                     //to shorten the vesting schedule adapt these variables.
-                    uint32_t daysSinceGrant = (int) ((present_time - lockiter->timestamp) / SECONDSPERDAY);
-                    uint32_t firstPayPeriod = 90;
-                    uint32_t payoutTimePeriod = 180;
+                    // uint32_t daysSinceGrant = (int) ((present_time - lockiter->timestamp) / SECONDSPERDAY);
+                    // uint32_t firstPayPeriod = 90;
+                    // uint32_t payoutTimePeriod = 180;
+
+                    // TESTING ONLY!!! REMOVE BELOW CODE BEFORE RELEASE shorten genesis locking periods..DO NOT DELIVER THIS
+                    // TESTING ONLY!!! REMOVE BELOW CODE BEFORE RELEASE shorten genesis locking periods..DO NOT DELIVER THIS
+                    // TESTING ONLY!!! REMOVE BELOW CODE BEFORE RELEASE shorten genesis locking periods..DO NOT DELIVER THIS
+                    uint32_t daysSinceGrant =  (int)((present_time  - lockiter->timestamp) / 10);
+                    uint32_t firstPayPeriod = 1;
+                    uint32_t payoutTimePeriod = 1;
                     
                     bool ninetyDaysSinceGrant = daysSinceGrant >= firstPayPeriod;
 

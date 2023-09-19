@@ -639,6 +639,7 @@ namespace eosiosystem {
 
         std::vector<name> producers{}; // Empty
 
+        //now look at the actors existing vote, did they have a proxy
         voter_proxy_iter = votersbyowner.find(actor.value);
 
         if (voter_proxy_iter == votersbyowner.end()) {
@@ -649,7 +650,11 @@ namespace eosiosystem {
             });
         }else{
             if((voter_proxy_iter->last_vote_weight > 0)&&!(voter_proxy_iter->proxy)) {
-                _gstate.total_voted_fio -= voter_proxy_iter->last_vote_weight;
+              //  if(_gstate.total_voted_fio >= voter_proxy_iter->last_vote_weight) {
+                    _gstate.total_voted_fio -= voter_proxy_iter->last_vote_weight;
+               // }else{
+                //    _gstate.total_voted_fio = 0;
+               // }
             }
         }
 
@@ -768,7 +773,12 @@ namespace eosiosystem {
                 }
             }
 
-           uint32_t issueplus210 = lockiter->timestamp+(210*SECONDSPERDAY);
+            //TESTING ONLY BE SURE TO UNCOMMENT operational issueplus210 before release
+            //TESTING ONLY BE SURE TO UNCOMMENT operational issueplus210 before release
+            //TESTING ONLY BE SURE TO UNCOMMENT operational issueplus210 before release
+            //TESTING ONLY DO NOT DELIVER  uint32_t issueplus210 = lockiter->timestamp+(210*SECONDSPERDAY);
+            //TESTING ONLY DO NOT DELIVER
+            uint32_t issueplus210 = lockiter->timestamp+(20);
 
             //if lock type 2 only subtract remaining locked amount if 210 days since launch, and inhibit locking true.
            if (((lockiter->grant_type == 2)&&((present_time > issueplus210)&&lockiter->inhibit_unlocking)) ||
@@ -833,7 +843,11 @@ namespace eosiosystem {
         if( !(proxy) ) {
 
             if( voter->last_vote_weight > 0.0 ) {
-                _gstate.total_voted_fio -= voter->last_vote_weight;
+               // if(_gstate.total_voted_fio >= voter->last_vote_weight) {
+                    _gstate.total_voted_fio -= voter->last_vote_weight;
+               // }else{
+               //     _gstate.total_voted_fio = 0;
+               // }
             }
 
             _gstate.total_voted_fio += new_vote_weight;
@@ -849,14 +863,24 @@ namespace eosiosystem {
             if (voter->proxy) {
                 auto old_proxy = votersbyowner.find(voter->proxy.value);
                 check(old_proxy != votersbyowner.end(), "old proxy not found"); //data corruption
-                votersbyowner.modify(old_proxy, same_payer, [&](auto &vp) {
-                    vp.proxied_vote_weight -= voter->last_vote_weight;
-                });
+                //if(old_proxy->proxied_vote_weight >= voter->last_vote_weight) {
+                    votersbyowner.modify(old_proxy, same_payer, [&](auto &vp) {
+                        vp.proxied_vote_weight -= voter->last_vote_weight;
+                    });
+               // }else{
+               //     votersbyowner.modify(old_proxy, same_payer, [&](auto &vp) {
+               //         vp.proxied_vote_weight = 0;
+                //    });
+               // }
                 propagate_weight_change(*old_proxy);
             } else {
                 for (const auto &p : voter->producers) {
                     auto &d = producer_deltas[p];
-                    d.first -= voter->last_vote_weight;
+                   // if(d.first >= voter->last_vote_weight) {
+                        d.first -= voter->last_vote_weight;
+                   // }else{
+                   //     d.first = 0;
+                   // }
                     d.second = false;
                 }
             }
@@ -993,7 +1017,13 @@ namespace eosiosystem {
                 votersbyowner.modify(itervoter, _self, [&](struct voter_info &a) {
                     a.proxy = proxy;
                 });
+                propagate_weight_change(*itervoter);
             }
+
+            INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
+                    ("eosio"_n, {{_self, "active"_n}},
+                     {owner, false}
+                    );
         }
     }
 
@@ -1058,10 +1088,12 @@ namespace eosiosystem {
         processrewardsnotpid(reg_amount, get_self());
         //end new fees, logic for Mandatory fees.
 
+        /*
         INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
                 ("eosio"_n, {{_self, "active"_n}},
                  {actor, false}
                 );
+                */
 
         const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
                                  to_string(reg_amount) + string("}");
@@ -1178,15 +1210,38 @@ namespace eosiosystem {
             fio_400_assert((isproxy != pitr->is_proxy)|| !isproxy, "fio_address", fio_address,
                            "Already registered as proxy. ", ErrorPubAddressExist);
             name nm;
+
+            if(pitr->proxy != nm){
+                auto pitr_old_proxy = votersbyowner.find(pitr->proxy.value);
+                if(pitr_old_proxy != votersbyowner.end())
+                {
+                   // if(pitr_old_proxy->proxied_vote_weight >= pitr->last_vote_weight ) {
+                        votersbyowner.modify(pitr_old_proxy, same_payer, [&](auto &vp) {
+                            vp.proxied_vote_weight -= pitr->last_vote_weight;
+                        });
+                   // }
+                   // else{
+                   //     votersbyowner.modify(pitr_old_proxy, same_payer, [&](auto &vp) {
+                  //          vp.proxied_vote_weight = 0;
+                  //      });
+                 //   }
+                        propagate_weight_change(*pitr_old_proxy);
+
+
+                }
+            }
+
             votersbyowner.modify(pitr, same_payer, [&](auto &p) {
                     p.fioaddress = fio_address;
                     p.addresshash = addresshash;
-                    p.proxied_vote_weight = 0;
+                   // p.proxied_vote_weight = 0;
                     p.is_proxy = isproxy;
                     p.is_auto_proxy = false;
                     p.proxy = nm;
                 });
             propagate_weight_change(*pitr);
+            //check proxy, propagate proxy weight change.
+
         } else if (isproxy){  //only do the emplace if isproxy is true,
                               //it makes no sense to emplace a voter record when isproxy is false,
                               // this means making a voting record with no votes, and not a proxy,
@@ -1255,7 +1310,12 @@ namespace eosiosystem {
 
         //adapt the total voted fio.
         if( pitr->last_vote_weight > 0.0 ) {
-            _gstate.total_voted_fio -= pitr->last_vote_weight;
+           // if(_gstate.total_voted_fio >= pitr->last_vote_weight) {
+                _gstate.total_voted_fio -= pitr->last_vote_weight;
+          //  }else{
+         //       _gstate.total_voted_fio = 0;
+         //   }
+
         }
 
         _gstate.total_voted_fio += new_weight;

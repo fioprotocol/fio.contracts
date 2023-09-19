@@ -340,6 +340,13 @@ namespace fioio {
                        TokenContract, "transfer"_n,
                        make_tuple(actor, marketplace_iter->owner, marketCommission, string("Marketplace Commission"))
                 ).send();
+
+                //voting power, update domain sale owner
+                action(permission_level{get_self(), "active"_n},
+                       SYSTEMACCOUNT, "updatepower"_n,
+                       make_tuple(name(domainsale_iter->owner), true)
+                ).send();
+
             }
 
             bool isTransferToEscrow = false;

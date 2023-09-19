@@ -34,7 +34,10 @@ namespace fioio {
     static const name AddressContract =   name("fio.address");
     static const name TPIDContract =      name("fio.tpid");
     static const name TokenContract =     name("fio.token");
-    static const name FOUNDATIONACCOUNT = name("tw4tjkmo4eyd");
+    //TEST ONLY uncomment operational settings for release
+    //TEST ONLY uncomment operational settings for release
+    //TEST ONLY uncomment operational settings for release static const name FOUNDATIONACCOUNT = name("tw4tjkmo4eyd");
+    static const name FOUNDATIONACCOUNT = name("htjonrkf1lgs"); //TESTING ONLY DO NOT DELIVER
     static const name TREASURYACCOUNT =   name("fio.treasury");
     static const name STAKINGACCOUNT =   name("fio.staking");
     static const name FIOSYSTEMACCOUNT=   name("fio.system");

@@ -53,18 +53,25 @@ namespace eosiosystem {
 
     // void system_contract::update_voting_power(const name &voter, const asset &total_update) {
    void system_contract::updatepower(const name &voter,bool updateonly) {
-        check(
-                (has_auth(AddressContract) ||
-                 has_auth(TokenContract) ||
-                 has_auth(TREASURYACCOUNT) ||
-                 has_auth(REQOBTACCOUNT) ||
-                 has_auth(SYSTEMACCOUNT) ||
-                 has_auth(FeeContract) ||
-                 has_auth(StakingContract) ||
-                 //FIP-40
-                 has_auth(PERMSACCOUNT)
-                ),
-                "missing required authority of fio.address, fio.treasury, eosio, fio.fee, fio.token, fio.staking, fio.perms or fio.reqobt");
+
+        check((has_auth(SYSTEMACCOUNT) ||
+               has_auth(MSIGACCOUNT) ||
+               has_auth(WRAPACCOUNT) ||
+               has_auth(ASSERTACCOUNT) ||
+               has_auth(REQOBTACCOUNT) ||
+               has_auth(FeeContract) ||
+               has_auth(AddressContract) ||
+               has_auth(TPIDContract) ||
+               has_auth(TokenContract) ||
+               has_auth(TREASURYACCOUNT) ||
+               has_auth(StakingContract) ||
+               has_auth(FIOSYSTEMACCOUNT) ||
+               has_auth(EscrowContract) ||
+               has_auth(FIOORACLEContract) ||
+               has_auth(PERMSACCOUNT) ||
+               has_auth(FIOACCOUNT)
+              ),
+              "missing required fio system account authority ");
 
         auto votersbyowner = _voters.get_index<"byowner"_n>();
         auto voter_itr = votersbyowner.find(voter.value);
@@ -79,6 +86,7 @@ namespace eosiosystem {
             });
              return;
         }
+
         if (voter_itr->producers.size() || voter_itr->proxy) {
             update_votes(voter, voter_itr->proxy, voter_itr->producers, false);
         }

@@ -6,12 +6,21 @@
  *  @license FIO Foundation ( https://github.com/fioprotocol/fio/blob/master/LICENSE ) Dapix
  */
 
-#define REWARDMAX       100000000000            // 100 FIO
+//TESTINGONLY DO NOT DELIVER #define REWARDMAX       100000000000            // 100 FIO
+//TESTING ONLY DO NOT DELIVER
+#define REWARDMAX       5000000000            // TESTING ONLY DO NOT DELIVER 5 FIO
 #define FDTNMAXTOMINT   150000000000000         // 150,000 FIO
-#define BPMAXTOMINT     50000000000000          // 50,000  FIO
+// TESTING CODE ONLY UNCOMMENT OPERATIONAL CODE FOR RELEASE
+// TESTING CODE ONLY UNCOMMENT OPERATIONAL CODE FOR RELEASE      #define BPMAXTOMINT     50000000000000          // 50,000  FIO
+// TESTING CODE ONLY UNCOMMENT OPERATIONAL CODE FOR RELEASE
+//TESTING ONLY DO NOT DELIVER TEST SETTING
+#define BPMAXTOMINT     1000000000          // 1  FIO
 #define FDTNMAXRESERVE  181253654000000000      // 181,253,654 FIO
 #define BPMAXRESERVE    20000000000000000       // increase BP reserves FIP-23 to 20,000,000 FIO
-#define PAYSCHEDTIME    86401                   //seconds per day + 1
+// TESTING CODE ONLY UNCOMMENT OPERATIONAL CODE FOR RELEASE
+// TESTING CODE ONLY UNCOMMENT OPERATIONAL CODE FOR RELEASE
+// TESTING CODE ONLY UNCOMMENT OPERATIONAL CODE FOR RELEASE #define PAYSCHEDTIME    86401    //seconds per day + 1
+#define PAYSCHEDTIME    1  //TEST ONLY DO NOT DELIVER
 #define PAYABLETPIDS    100
 
 #include "fio.treasury.hpp"
@@ -71,8 +80,10 @@ public:
 
                 //This contract should only be able to iterate throughout the entire tpids table to
                 //to check for rewards once every x blocks.
-                fio_400_assert(now() > state.lasttpidpayout + MINUTE, "tpidclaim", "tpidclaim",
-                               "No work.", ErrorNoWork);
+                //TESTING ONLY UNCOMMENT FOR RELEASE
+                //TSTING ONLY UNCOMMENT FOR RELEASE
+                // TESTING ONLY UNCOMMENT FOR RELEASE fio_400_assert(now() > state.lasttpidpayout + MINUTE, "tpidclaim", "tpidclaim",
+                //                "No work.", ErrorNoWork);
 
                 for (const auto &itr : tpids) {
                         if (itr.rewards >= REWARDMAX) { //100 FIO (100,000,000,000 SUF)
@@ -86,6 +97,10 @@ public:
                                                make_tuple(TREASURYACCOUNT, name(itrfio->owner_account),
                                                           asset(itr.rewards, FIOSYMBOL),
                                                           string("Paying TPID from treasury."))
+                                        ).send();
+                                        action(permission_level{get_self(), "active"_n},
+                                               SYSTEMACCOUNT, "updatepower"_n,
+                                               make_tuple(name(itrfio->owner_account), true)
                                         ).send();
                                 } else { //Allocate to BP buckets instead
                                         bprewards.set(bpreward{bprewards.get().rewards + itr.rewards}, get_self());
@@ -123,6 +138,14 @@ public:
                 make_tuple(TREASURYACCOUNT, name(actor),
                 asset(amount, FIOSYMBOL),
                 string("Paying Staking Rewards"))
+            ).send();
+            action(permission_level{get_self(), "active"_n},
+                   SYSTEMACCOUNT, "updatepower"_n,
+                   make_tuple(name(actor), true)
+            ).send();
+            action(permission_level{get_self(), "active"_n},
+                   SYSTEMACCOUNT, "updatepower"_n,
+                   make_tuple(TREASURYACCOUNT, true)
             ).send();
 
         }
@@ -345,6 +368,14 @@ public:
                                        make_tuple(TREASURYACCOUNT, name(bpiter->owner), asset(payout, FIOSYMBOL),
                                                   string("Paying producer from treasury."))
                                        ).send();
+                                action(permission_level{get_self(), "active"_n},
+                                       SYSTEMACCOUNT, "updatepower"_n,
+                                       make_tuple(name(bpiter->owner), true)
+                                ).send();
+                                action(permission_level{get_self(), "active"_n},
+                                       SYSTEMACCOUNT, "updatepower"_n,
+                                       make_tuple(TREASURYACCOUNT, true)
+                                ).send();
 
                                 // Reduce the producer's share of daily rewards and bucketrewards
                                 if (bpiter->abpayshare > 0) {
@@ -367,6 +398,15 @@ public:
                                    TokenContract, "transfer"_n,
                                    make_tuple(TREASURYACCOUNT, FOUNDATIONACCOUNT, asset(fdtnstate.rewards, FIOSYMBOL),
                                               string("Paying foundation from treasury."))).send();
+                            //foundation account does not vote, so no updatepower here.
+                            action(permission_level{get_self(), "active"_n},
+                                   SYSTEMACCOUNT, "updatepower"_n,
+                                   make_tuple(FOUNDATIONACCOUNT, true)
+                            ).send();
+                            action(permission_level{get_self(), "active"_n},
+                                   SYSTEMACCOUNT, "updatepower"_n,
+                                   make_tuple(TREASURYACCOUNT, true)
+                            ).send();
                         }
 
                         //Clear the foundation rewards counter

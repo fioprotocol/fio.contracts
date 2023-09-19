@@ -155,9 +155,11 @@ namespace eosio {
         //based on grant type.
         auto lockiter = lockedTokensTable.find(tokenowner.value);
         if (lockiter != lockedTokensTable.end()) {
-            //TEST LOCKED TOKENS uint32_t issueplus210 = lockiter->timestamp+(25*60);
-            uint32_t issueplus210 = lockiter->timestamp + (210 * SECONDSPERDAY);
-
+            //TESTING ONLY DO NOT DELIVER set the time rule for type2 to be 2 locking periods!!!!!
+            //TESTING ONLY DO NOT DELIVER set the time rule for type2 to be 2 locking periods!!!!!
+            //TESTING ONLY DO NOT DELIVER set the time rule for type2 to be 2 locking periods!!!!!
+            uint32_t issueplus210 = lockiter->timestamp+(20);
+            //TESTING ONLY UNCOMMNET OPERATIONAL CODE FOR RELEASE   uint32_t issueplus210 = lockiter->timestamp + (210 * SECONDSPERDAY);
             if (
                 //if lock type 1 or 2 or 3, 4 and not a fee subtract remaining locked amount from balance
                     (((lockiter->grant_type == 1) || (lockiter->grant_type == 2) || (lockiter->grant_type == 3) ||
@@ -369,6 +371,13 @@ namespace eosio {
                  {actor}
                 );
 
+         //update token locks on receive of tokens
+         if(updatepowerowner) {
+             INLINE_ACTION_SENDER(eosiosystem::system_contract, unlocktokens)
+                     ("eosio"_n, {{_self, "active"_n}},
+                      {new_account_name}
+                     );
+         }
         accounts from_acnts(_self, actor.value);
         const auto acnts_iter = from_acnts.find(FIOSYMBOL.code().raw());
         fio_400_assert(acnts_iter != from_acnts.end(), "amount", to_string(qty.amount),
