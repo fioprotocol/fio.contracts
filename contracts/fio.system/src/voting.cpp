@@ -1178,10 +1178,21 @@ namespace eosiosystem {
             fio_400_assert((isproxy != pitr->is_proxy)|| !isproxy, "fio_address", fio_address,
                            "Already registered as proxy. ", ErrorPubAddressExist);
             name nm;
+
+            if(pitr->proxy != nm){
+                auto pitr_old_proxy = votersbyowner.find(pitr->proxy.value);
+                if(pitr_old_proxy != votersbyowner.end())
+                {
+                    votersbyowner.modify(pitr_old_proxy, same_payer, [&](auto &vp) {
+                        vp.proxied_vote_weight -= pitr->last_vote_weight;
+                    });
+                    propagate_weight_change(*pitr_old_proxy);
+                }
+            }
+
             votersbyowner.modify(pitr, same_payer, [&](auto &p) {
                     p.fioaddress = fio_address;
                     p.addresshash = addresshash;
-                    p.proxied_vote_weight = 0;
                     p.is_proxy = isproxy;
                     p.is_auto_proxy = false;
                     p.proxy = nm;
