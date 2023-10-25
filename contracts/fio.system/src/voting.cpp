@@ -1215,26 +1215,16 @@ namespace eosiosystem {
                 auto pitr_old_proxy = votersbyowner.find(pitr->proxy.value);
                 if(pitr_old_proxy != votersbyowner.end())
                 {
-                   // if(pitr_old_proxy->proxied_vote_weight >= pitr->last_vote_weight ) {
                         votersbyowner.modify(pitr_old_proxy, same_payer, [&](auto &vp) {
                             vp.proxied_vote_weight -= pitr->last_vote_weight;
                         });
-                   // }
-                   // else{
-                   //     votersbyowner.modify(pitr_old_proxy, same_payer, [&](auto &vp) {
-                  //          vp.proxied_vote_weight = 0;
-                  //      });
-                 //   }
                         propagate_weight_change(*pitr_old_proxy);
-
-
                 }
             }
 
             votersbyowner.modify(pitr, same_payer, [&](auto &p) {
                     p.fioaddress = fio_address;
                     p.addresshash = addresshash;
-                   // p.proxied_vote_weight = 0;
                     p.is_proxy = isproxy;
                     p.is_auto_proxy = false;
                     p.proxy = nm;
