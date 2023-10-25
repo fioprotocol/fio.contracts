@@ -1215,10 +1215,10 @@ namespace eosiosystem {
                 auto pitr_old_proxy = votersbyowner.find(pitr->proxy.value);
                 if(pitr_old_proxy != votersbyowner.end())
                 {
-                        votersbyowner.modify(pitr_old_proxy, same_payer, [&](auto &vp) {
-                            vp.proxied_vote_weight -= pitr->last_vote_weight;
-                        });
-                        propagate_weight_change(*pitr_old_proxy);
+                    votersbyowner.modify(pitr_old_proxy, same_payer, [&](auto &vp) {
+                        vp.proxied_vote_weight -= pitr->last_vote_weight;
+                    });
+                    propagate_weight_change(*pitr_old_proxy);
                 }
             }
 
