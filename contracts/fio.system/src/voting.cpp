@@ -227,6 +227,9 @@ namespace eosiosystem {
             ).send();
         }
 
+
+        _audit_global_info.audit_reset = true;
+
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
 
@@ -301,6 +304,8 @@ namespace eosiosystem {
         processrewardsnotpid(reg_amount, get_self());
 
         //end new fees, logic for Mandatory fees.
+
+        _audit_global_info.audit_reset = true;
 
         const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
                                  to_string(reg_amount) + string("}");
@@ -555,6 +560,8 @@ namespace eosiosystem {
             ).send();
         }
 
+        _audit_global_info.audit_reset = true;
+
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
 
@@ -700,6 +707,8 @@ namespace eosiosystem {
                     std::make_tuple(actor, VOTEPROXYRAM)
             ).send();
         }
+
+        _audit_global_info.audit_reset = true;
 
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
@@ -1095,6 +1104,8 @@ namespace eosiosystem {
                 );
                 */
 
+        _audit_global_info.audit_reset = true;
+
         const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
                                  to_string(reg_amount) + string("}");
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
@@ -1171,6 +1182,8 @@ namespace eosiosystem {
                 ("eosio"_n, {{_self, "active"_n}},
                  {actor, false}
                 );
+
+        _audit_global_info.audit_reset = true;
 
         const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
                                  to_string(reg_amount) + string("}");

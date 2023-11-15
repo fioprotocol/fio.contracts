@@ -31,10 +31,14 @@ namespace eosiosystem {
               _fionames(AddressContract, AddressContract.value),
               _domains(AddressContract, AddressContract.value),
               _accountmap(AddressContract, AddressContract.value),
-              _fiofees(FeeContract, FeeContract.value){
+              _fiofees(FeeContract, FeeContract.value),
+              _auditglobal(_self,_self.value),
+              _auditproxy(_self,_self.value),
+              _auditproducer(_self,_self.value){
         _gstate = _global.exists() ? _global.get() : get_default_parameters();
         _gstate2 = _global2.exists() ? _global2.get() : eosio_global_state2{};
         _gstate3 = _global3.exists() ? _global3.get() : eosio_global_state3{};
+        _audit_global_info = _auditglobal.exists() ? _auditglobal.get() : audit_global_info{};
     }
 
     eosiosystem::eosio_global_state eosiosystem::system_contract::get_default_parameters() {
@@ -62,6 +66,7 @@ namespace eosiosystem {
         _global.set(_gstate, _self);
         _global2.set(_gstate2, _self);
         _global3.set(_gstate3, _self);
+        _auditglobal.set(_audit_global_info,_self);
     }
 
     void eosiosystem::system_contract::setparams(const eosio::blockchain_parameters &params) {
@@ -80,9 +85,11 @@ namespace eosiosystem {
 
     }
 
+    //todo need to write remove producer tests!!!!
     void eosiosystem::system_contract::rmvproducer(const name &producer) {
         require_auth(_self);
         auto prod = _producers.find(producer.value);
+        check(prod->owner == producer,"producer not found");
         check(prod != _producers.end(), "producer not found");
         _producers.modify(prod, same_payer, [&](auto &p) {
             p.deactivate();
@@ -447,6 +454,435 @@ namespace eosiosystem {
         }
     }
 
+    int system_contract::addtoproducervote(const name &voter,
+                          const double &weight, const std::vector <name> &producers ){
+
+        int opcount = 2;
+
+        check(producers.size() > 0,"cannot use empty producer list.");
+        check(weight > 0,"cannot use weight less or equal 0.");
+
+        auto auditprodbyaccount = _auditproducer.get_index<"byaccount"_n>();
+
+        for(name prodnm : producers) {
+            auto auditprodacct_iter = auditprodbyaccount.find(prodnm.value);
+            if(auditprodacct_iter == auditprodbyaccount.end() ){
+                uint64_t id = _auditproducer.available_primary_key();
+                _auditproducer.emplace(_self, [&](auto &p) {
+                    p.id = id;
+                    p.account_name = prodnm;
+                    p.voted_fio = weight;
+                });
+
+
+            } else {
+                auditprodbyaccount.modify(auditprodacct_iter, _self, [&](struct audit_producer_info &a) {
+                    a.voted_fio += weight;
+                });
+             }
+            _audit_global_info.total_producer_vote_weight += weight;
+
+        opcount ++;
+        }
+
+
+        return opcount;
+    }
+
+    //set a proxies relevant info into the auditproxy table when we see a proxy in the voters table.
+    int system_contract::setproxyweight(const uint64_t &voterid,
+                        const uint64_t &votable_balance,
+                        const std::vector <name> &producers) {
+
+        //always operation count 3, read the audit proxy table, check the audit proxy for existance in the
+        //table, then mod or emplace a record.
+        int opcount = 3;
+
+        //get the voter from the audit proxy table.
+        auto auditproxybyvoterid = _auditproxy.get_index<"byvotererid"_n>();
+        auto auditproxy_iter = auditproxybyvoterid.find(voterid);
+
+        //if the record does not exist then create it.
+        if(auditproxy_iter == auditproxybyvoterid.end()) {
+            uint64_t id = _auditproxy.available_primary_key();
+            _auditproxy.emplace(_self, [&](auto &p) {
+                p.id = id;
+                p.voterid = voterid;
+                p.votable_balance = votable_balance;
+                p.proxied_vote_weight = 0;
+                p.producers = producers;
+            });
+            //if the record does exist, just add the producers that have been voted for by this voter.
+        } else {
+            auditproxybyvoterid.modify(auditproxy_iter, _self, [&](struct audit_proxy_info &a) {
+                a.votable_balance = votable_balance;
+                a.producers = producers;
+            });
+        }
+
+
+        return opcount;
+    }
+
+    // add a proxy participant to the proxy summary info for a proxy.
+    // params
+    // voterid of the proxy to which the voting account is proxying.
+    // last vote weight of the voting account.
+    int system_contract::addproxyweight(const uint64_t &voterid,const double &weight){
+
+        //operation count is always 3, read the audit proxy table, check existence of the record in the table,
+        //then emplace/update the record in the audit proxy table.
+        int opcount = 3;
+
+        //if any last vote weight is less than 0 fail.
+        check(weight > 0,"cannot use wieight less than 0.");
+
+        auto auditproxybyvoterid = _auditproxy.get_index<"byvotererid"_n>();
+        auto auditproxy_iter = auditproxybyvoterid.find(voterid);
+
+        //if the audit proxy record does not exist then update the summary info for the proxy.
+        //the voterid and the weight.
+        if(auditproxy_iter == auditproxybyvoterid.end()) {
+            uint64_t id = _auditproxy.available_primary_key();
+            _auditproxy.emplace(_self, [&](auto &p) {
+                p.id = id;
+                p.voterid = voterid;
+                p.proxied_vote_weight = weight;
+                //no producers are set here!!,
+                // producers get set later when we see a proxy that has voted.
+                // just a note we check that producers is not empty when adding proxy to producer vote
+                //during the write of the audit.
+            });
+        } else {
+            //if the record exists then just add the weight to the proxied weight.
+            auditproxybyvoterid.modify(auditproxy_iter, _self, [&](struct audit_proxy_info &a) {
+                a.proxied_vote_weight += weight;
+            });
+        }
+
+
+        return opcount;
+    }
+
+    //begin audit machine
+    // call this action repeatedly and it will progress through the process of auditing the FIO vote.
+    // phase 1, clear any previous audit data, phase 2 analyze the voters table contents iteratively on each call
+    // build a summary of proxy voting weight and producer vote weight for non proxy voters, phase 3 roll up the proxy summary
+    // into the producer vote weight, phase 4 write the audited vote out to the fio blockchain and update the vote with
+    // the results of the audit.
+    void eosiosystem::system_contract::auditvote(const name &actor,  const int64_t &max_fee){
+        string response_string ="";
+
+        print("AUDIT VOTE INFO -- audit vote called \n");
+
+        eosio_assert((has_auth(actor)),
+                     "missing required authority of actor account");
+
+        //if the calling account is in the voters table this is an error.
+        auto votersbyowner = _voters.get_index<"byowner"_n>();
+        auto auditaccount_iter = votersbyowner.find(actor.value);
+        check(auditaccount_iter == votersbyowner.end()," cannot call auditvote using an account that has voted, please use an account that has not voted.\n");
+
+        //get audit state.
+       if( _audit_global_info.audit_reset){
+           print(" AUDIT VOTE INFO -- audit reset is set \n");
+           _audit_global_info.audit_reset = false;
+           _audit_global_info.audit_phase = 1;
+
+       }
+
+       //init to 2 read the voters table for the calling account and verify not in voters table.
+        int operationcount = 2;
+        int recordcount = 0;
+
+       switch(_audit_global_info.audit_phase){
+           case 0: {
+               print("AUDIT VOTE INFO --  ENTERED BEGIN STATE \n");
+               _audit_global_info.audit_phase = 1;
+               //always fall through to phase 1
+           }
+           case 1: {
+               print("AUDIT VOTE INFO --  ENTERED CLEAR STATE \n");
+               //phase 1 is assumed to execute in one block, if it cannot then phase 4 will also fail to transact,
+               // so no number of operation checks are performed on phase 1, we just clear the data.
+               //clear all audit_global_info values.
+               _audit_global_info.total_voted_fio = 0;
+               _audit_global_info.current_proxy_id = 0;
+               _audit_global_info.current_voter_id = 0;
+               _audit_global_info.total_producer_vote_weight = 0;
+
+               print("AUDIT VOTE INFO --  audit globals cleared\n");
+               recordcount = 4;
+
+
+               //remove all audit producers records.
+               for (auto idx = _auditproducer.begin(); idx != _auditproducer.end();) {
+                       idx = _auditproducer.erase(idx);
+                       recordcount++;
+               }
+               print("AUDIT VOTE INFO --  audit producers cleared\n");
+               //remove all audit proxy records.
+               for (auto idx2 = _auditproxy.begin(); idx2 != _auditproxy.end();) {
+                   idx2 = _auditproxy.erase(idx2);
+                   recordcount++;
+               }
+
+               print("AUDIT VOTE INFO --  audit proxy cleared\n");
+
+               _audit_global_info.audit_phase = 2;
+               print("AUDIT VOTE INFO --  setting audit phase to phase 2\n");
+               recordcount++;
+
+               response_string = string("{\"status\": \"OK\",\"audit_phase\":\"") +
+                                             to_string(_audit_global_info.audit_phase) + string("\",\"records_processed\": ") +
+                                             to_string(recordcount) + string(",\"fee_collected\":") +
+                                              to_string(0) + string("}");
+               break;
+           }
+           case 2: {
+               print("AUDIT VOTE INFO --  ENTERED ANALYZE_VOTES STATE \n");
+
+               //first get the index at which to stop, this is the current available primary key value for the voters table.
+               uint64_t stopidx = _voters.available_primary_key();
+
+               //get the index at which to begin processing.
+               uint64_t id = _audit_global_info.current_voter_id;
+               print("AUDIT VOTE INFO --  phase 2 analysis start "+ to_string(id)+"  stop "+to_string(stopidx)+"\n");
+               while( id < stopidx) {
+                   print("AUDIT VOTE INFO --  processing voter id "+to_string(id)+" \n");
+                   //get the current voter by id from voters table
+                   auto voter = _voters.find(id);
+                   //if the voter id is not found in the voters table we just go to the next one.
+                   //gaps will appear in the voters table as a result of removing address and token contract entries
+                   //in the voters table.
+                   if (voter != _voters.end()) {
+                       print("AUDIT VOTE INFO --  found voterid "+to_string(id)+"\n");
+                       //if the voting account is token or address contracts then remvoe this record from the voters table
+                       //as these accounts should not be voting.
+                       if( (voter->owner == TokenContract) ||
+                               (voter->owner == AddressContract) ){
+                           print("AUDIT VOTE INFO --  removing token or address contract from voters \n");
+                           //erase the record.
+                           _voters.erase(voter);
+                           //increment operation count +2 cuz we read the table and updated.
+                           operationcount += 2;
+                       } else {
+                           uint64_t bal =  eosio::token::computeusablebalance(voter->owner,false, false);
+                           // get last vote weight
+                           //if the current voter has voted for producers.
+                           if (voter->producers.size() > 0) {
+                               print("AUDIT VOTE INFO --  saw producers size >0 \n");
+
+                               //if the voter is not proxying to a proxy. note this should NOT be possible, but
+                               // is a good data coherency check on the voters table.
+                               if (!voter->proxy) {
+                                   print("AUDIT VOTE INFO --  saw not proxy \n");
+                                   //check for the known data incoherency of the is auto proxy flag, correct this if its present.
+                                   if(voter->is_auto_proxy){
+                                       print("AUDIT VOTE INFO --  is auto proxy incoherent, resolving incoherency \n");
+                                       //clear the is_auto_proxy
+                                       _voters.modify(voter, _self, [&](struct voter_info &a) {
+                                           a.is_auto_proxy = false;
+                                       });
+                                       // increase op count by 2 read this voter plus update.
+                                       operationcount += 2;
+                                   }
+                                   print("AUDIT VOTE INFO --  adding to producer vote for "+voter->owner.to_string()+" \n")
+                                       operationcount += addtoproducervote(voter->owner,
+                                                                           bal, voter->producers);
+                                       //if its a proxy set the account votable balance to be the usable balance.
+                                       //if it is a proxy also record its vote, if its not longer a proxy then
+                                       //do not record a vote.
+                                       if(voter->is_proxy){
+                                           operationcount += setproxyweight(voter->id, bal, voter->producers);
+                                       }else{ //we will update all proxied vote weights even for proxies that
+                                            //have registered then unregistered.
+                                           if (voter->proxied_vote_weight >0){
+                                               //set the proxy in the table without producers,
+                                               //this voter is not a proxy, so no producers list here.
+                                               //this keeps the proxied vote weight being added into the producer totals
+                                               // in phase 3 of the audit....tricky.
+                                               std::vector <name> emptyprod;
+                                               operationcount += setproxyweight(voter->id, bal, emptyprod);
+                                           }
+                                       }
+                                   _audit_global_info.total_voted_fio += bal;
+                               }
+
+                               //only 2 cases are acceptable for voting for producers, if i am voting without any proxy
+                               //or if i am a proxy.
+                           }
+                           //if its a proxy add the last vote weight to the audit proxy totals
+                           else if (voter->proxy) {
+                               print("AUDIT VOTE INFO --  processing proxy participant "+voter->owner.to_string()+" \n");
+                               //get the proxies voter id from the voters table.
+                               auto votersbyaccount = _voters.get_index<"byowner"_n>();
+                               auto proxy_iter = votersbyaccount.find(voter->proxy.value);
+                               //increment by two read voter, read proxy.
+                               operationcount += 2;
+                               //if the proxy isnt in the voters table this is fine,
+                               //if the proxy is in the voters table increment the audit proxy totals.
+                               if(proxy_iter != votersbyaccount.end()) {
+                                   print("AUDIT VOTE INFO --  adding proxy participant vote weight to proxy summary \n");
+                                   //add this voters last vote weight to the audit proxy total.
+                                   operationcount += addproxyweight(proxy_iter->id,
+                                                                    voter->last_vote_weight);
+                               }
+                               if(proxy_iter->is_proxy){
+                                   _audit_global_info.total_voted_fio += bal;
+                               }
+                               print("AUDIT VOTE INFO -- proxy participant processing completed\n");
+                           }else { //just a plain voter voting for no producers.
+                               _audit_global_info.total_voted_fio += bal;
+                           }
+
+                       }  //end else its not token or address contract account.
+                   } //end if the voter id exists in voters
+                   //go to the next record.
+                   recordcount++;
+                   id++;
+
+                   if(operationcount >= 240) break;
+               } //end loop
+               //store the voter id at which to resume the audit
+               _audit_global_info.current_voter_id = id;
+
+               //if we have processed all ids then got to the next phase of the audit.
+               if (id >= stopidx) {
+                   print("AUDIT VOTE INFO --  setting audit phase to 3 \n");
+                   _audit_global_info.audit_phase = 3;
+               }
+
+               // Return computed status string.
+               response_string = string("{\"status\": \"OK\",\"audit_phase\":\"") +
+                       to_string(_audit_global_info.audit_phase) + string("\",\"records_processed\": ") +
+                                              to_string(recordcount) + string(",\"fee_collected\":") +
+                                              to_string(0) + string("}");
+
+
+               break;
+           }
+           case 3: {
+               print("AUDIT VOTE INFO --  ENTERED ANALYZE_PROXIES STATE \n");
+               uint64_t stopidx = _auditproxy.available_primary_key();
+
+               uint64_t id = _audit_global_info.current_proxy_id;
+               print("AUDIT VOTE INFO --  phase 3 analysis start "+ to_string(id)+"  stop "+to_string(stopidx)+"\n");
+
+               while( id < stopidx) {
+                   print("AUDIT VOTE INFO --  processing id "+ to_string(id)+" \n");
+                   //get the auditproxy by id from voters table
+                   auto audproxy = _auditproxy.find(id);
+                   //if this error happens then vote with any account on chain to reset the audit!!!!
+                   check(audproxy != _auditproxy.end(),"failed to find auditproxy id "+to_string(id)+"\n");
+
+                   auto voter = _voters.find(audproxy->voterid);
+                   //if the voter id is not found in the voters table we just go to the next one.
+                   //if this error happens then vote with any account on chain to reset the audit!!!!
+                   check (voter != _voters.end(),"failed to find proxy in voters table voterid "+to_string(audproxy->voterid)+"\n");
+
+                   operationcount += 2;
+
+                   if((audproxy->producers.size() > 0) && (audproxy->proxied_vote_weight > 0)) {
+                       print("AUDIT VOTE INFO --  phase 3 adding proxied vote weight for proxy "+ voter->owner.to_string()+"  weight "+to_string(audproxy->proxied_vote_weight)+"\n");
+                       operationcount += addtoproducervote(voter->owner,audproxy->proxied_vote_weight, audproxy->producers);
+                   }
+
+                   id++;
+                   recordcount++;
+                   if(operationcount >= 120) break;
+               } //end loop
+               _audit_global_info.current_proxy_id = id;
+               if (id >= stopidx) {
+                   print("AUDIT VOTE INFO --  setting audit phase 4\n");
+
+                   _audit_global_info.audit_phase = 4;
+               }
+               // Return computed status string.
+               response_string = string("{\"status\": \"OK\",\"audit_phase\":\"") +
+                                 to_string(_audit_global_info.audit_phase) + string("\",\"records_processed\": ") +
+                                 to_string(recordcount) + string(",\"fee_collected\":") +
+                                 to_string(0) + string("}");
+
+               break;
+           }
+           case 4: {
+               print("AUDIT VOTE INFO --  ENTERED FINALIZE STATE \n");
+
+               auto producersbyaccount = _producers.get_index<"byowner"_n>();
+
+               print("AUDIT VOTE INFO --  writing audit producer info\n");
+               for (auto idx = _auditproducer.begin(); idx != _auditproducer.end(); idx++) {
+                   print("AUDIT VOTE INFO --  writing audit producer "+ idx->account_name.to_string()+"\n");
+                   auto producer_iter = producersbyaccount.find(idx->account_name.value);
+                   //if the producer is not found, do not complete
+                   //if this error happens then vote with any account on chain to reset the audit!!!!
+                   check (producer_iter != producersbyaccount.end(),"failed to find producer in voters table producers "+idx->account_name.to_string()+"\n");
+                   //set producer vote weight.
+                   producersbyaccount.modify(producer_iter, _self, [&](struct producer_info &p) {
+                       p.total_votes = idx->voted_fio;
+                   });
+               }
+
+               print("AUDIT VOTE INFO --  writing audit proxy info\n");
+               for (auto idx2 = _auditproxy.begin(); idx2 != _auditproxy.end(); idx2++) {
+
+
+                   auto voter = _voters.find(idx2->voterid);
+                   //if the voter id is not found this is an incoherency in the audit. do not complete.
+                   //if this error happens then vote with any account on chain to reset the audit!!!!
+                   check (voter != _voters.end(),"failed to find proxy in voters table voterid "+to_string(idx2->voterid)+"\n");
+                   print("AUDIT VOTE INFO --  writing audit proxy "+ voter->owner.to_string()+"\n");
+                   //set proxy vote weight. and last vote weight.
+                   double last_vote_weight = (double)(idx2->votable_balance);
+                   if(voter->is_proxy) {
+                      last_vote_weight +=  idx2->proxied_vote_weight;
+                   }
+                   _voters.modify(voter, _self, [&](struct voter_info &a) {
+                       a.last_vote_weight = last_vote_weight;
+                       a.proxied_vote_weight = idx2->proxied_vote_weight;
+                   });
+
+               }
+
+               print("AUDIT VOTE INFO --  writing global info\n");
+               _gstate.total_voted_fio = _audit_global_info.total_voted_fio;
+               _gstate.total_producer_vote_weight =  _audit_global_info.total_producer_vote_weight;
+               print("AUDIT VOTE INFO --  setting audit phase 1\n");
+
+               _audit_global_info.audit_phase = 1;
+               response_string = string("{\"status\": \"OK\",\"audit_phase\":\"") +
+                       to_string(_audit_global_info.audit_phase) + string("\",\"records_processed\": ") +
+                                              to_string(0) + string(",\"fee_collected\":") +
+                                              to_string(0) + string("}");
+
+
+               break;
+           }
+           default :{
+               //if anything is out of whack with teh phase values, then reset to phase 1.
+               print("AUDITVOTE -- illegal phase value detected, resetting phase to phase 1.\n");
+               _audit_global_info.audit_phase = 1;
+               break;
+           }
+       }
+
+       print("AUDIT VOTE INFO -- returning response ",response_string,"\n");
+        send_response(response_string.c_str());
+
+    }
+
+    void eosiosystem::system_contract::resetaudit(){
+        eosio_assert( has_auth(TokenContract),
+                     "missing required authority of fio.token account");
+
+        print(" RESET AUDIT -- info the audit has been reset \n");
+
+        _audit_global_info.audit_reset = true;
+    }
+    //end audit machine
+
+
 } /// fio.system
 
 
@@ -455,7 +891,7 @@ EOSIO_DISPATCH( eosiosystem::system_contract,
 (newaccount)(addaction)(remaction)(updateauth)(deleteauth)(linkauth)(unlinkauth)(canceldelay)(onerror)(setabi)
 // fio.system.cpp
 (init)(setnolimits)(addlocked)(addgenlocked)(modgenlocked)(clrgenlocked)(setparams)(setpriv)
-        (rmvproducer)(updtrevision)(newfioacc)
+        (rmvproducer)(updtrevision)(newfioacc)(auditvote)(resetaudit)
 // delegate_bandwidth.cpp
         (updatepower)
 // voting.cpp

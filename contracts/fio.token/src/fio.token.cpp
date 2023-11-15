@@ -417,7 +417,35 @@ namespace eosio {
                      {new_account_name, true}
                     );
         }
-        return new_account_name;
+
+
+        //check if accounts voted, reset the audit if they have
+
+
+         //read voters check if sender or receiver is in the voters table, if so reset the audit
+         auto votersbyowner = voters.get_index<"byowner"_n>();
+         auto votersbyowner_iter = votersbyowner.find(actor.value);
+         bool perfreset = false;
+         if (votersbyowner_iter != votersbyowner.end()){
+             perfreset = true;
+         }
+         else if (accountExists) {
+             votersbyowner_iter = votersbyowner.find(new_account_name.value);
+             if (votersbyowner_iter != votersbyowner.end()) {
+                 perfreset = true;
+             }
+         }
+
+          if(perfreset) {
+              action(
+                      permission_level{get_self(), "active"_n},
+                      SYSTEMACCOUNT,
+                      "resetaudit"_n,
+                      ""
+              ).send();
+          }
+
+         return new_account_name;
     }
 
     void token::transfer(name from,
@@ -478,6 +506,29 @@ namespace eosio {
                        "Insufficient Funds.",
                        ErrorInsufficientUnlockedFunds);
 
+        //read voters check if sender or receiver is in the voters table, if so reset the audit
+        auto votersbyowner = voters.get_index<"byowner"_n>();
+        auto votersbyowner_iter = votersbyowner.find(to.value);
+        bool perfreset = false;
+        if (votersbyowner_iter != votersbyowner.end()){
+            perfreset = true;
+        }
+        else {
+            votersbyowner_iter = votersbyowner.find(from.value);
+            if (votersbyowner_iter != votersbyowner.end()) {
+                perfreset = true;
+            }
+        }
+
+        if(perfreset) {
+            action(
+                    permission_level{get_self(), "active"_n},
+                    SYSTEMACCOUNT,
+                    "resetaudit"_n,
+                    ""
+            ).send();
+        }
+
         auto payer = has_auth(to) ? to : from;
 
         sub_balance(from, quantity);
@@ -519,6 +570,8 @@ namespace eosio {
                     std::make_tuple(actor, TRANSFERPUBKEYRAM)
             ).send();
         }
+
+
 
         const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
                                        to_string(reg_amount) + string("}");
