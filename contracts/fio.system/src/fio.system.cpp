@@ -687,7 +687,7 @@ namespace eosiosystem {
                                        // increase op count by 2 read this voter plus update.
                                        operationcount += 2;
                                    }
-                                   print("AUDIT VOTE INFO --  adding to producer vote for "+voter->owner.to_string()+" \n")
+                                   print("AUDIT VOTE INFO --  adding to producer vote for "+voter->owner.to_string()+" \n");
                                        operationcount += addtoproducervote(voter->owner,
                                                                            bal, voter->producers);
                                        //if its a proxy set the account votable balance to be the usable balance.
