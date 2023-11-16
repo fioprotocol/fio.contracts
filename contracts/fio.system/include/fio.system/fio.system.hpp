@@ -528,7 +528,10 @@ public:
                    const name &actor,
                    const string &tpid);
 
-
+    //testing only DO NOT DELIVER!!!!!
+    [[eosio::action]]
+    void setvoting(const name &voteraccount, const double &last_vote_weight, const double &proxy_vote_weight);
+    //testing only DO NOT DELIVER!!!!!
     // audit machine begin
     [[eosio::action]]
     void auditvote(const name &actor,  const int64_t &max_fee);
