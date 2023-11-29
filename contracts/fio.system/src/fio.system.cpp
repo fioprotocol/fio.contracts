@@ -459,7 +459,7 @@ namespace eosiosystem {
 
         int opcount = 2;
 
-        check(producers.size() > 0,"cannot use empty producer list.");
+        //check(producers.size() > 0,"cannot use empty producer list.");
         check(weight > 0,"cannot use weight less or equal 0.");
 
         auto auditprodbyaccount = _auditproducer.get_index<"byaccount"_n>();
@@ -686,7 +686,8 @@ namespace eosiosystem {
                            uint64_t bal =  eosio::token::computeusablebalance(voter->owner,false, false);
                            // get last vote weight
                            //if the current voter has voted for producers.
-                           if (voter->producers.size() > 0) {
+                          // if (voter->producers.size() > 0) {
+
                                print("AUDIT VOTE INFO --  saw producers size >0 \n");
 
                                //if the voter is not proxying to a proxy. note this should NOT be possible, but
@@ -727,9 +728,10 @@ namespace eosiosystem {
 
                                //only 2 cases are acceptable for voting for producers, if i am voting without any proxy
                                //or if i am a proxy.
-                           }
+                          // }
                            //if its a proxy add the last vote weight to the audit proxy totals
-                           else if (voter->proxy) {
+                          // else
+                               if (voter->proxy) {
                                print("AUDIT VOTE INFO --  processing proxy participant "+voter->owner.to_string()+" \n");
                                //get the proxies voter id from the voters table.
                                auto votersbyaccount = _voters.get_index<"byowner"_n>();
