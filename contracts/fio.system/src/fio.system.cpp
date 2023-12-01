@@ -683,55 +683,49 @@ namespace eosiosystem {
                            //increment operation count +2 cuz we read the table and updated.
                            operationcount += 2;
                        } else {
+                           //get the current votable balance of the account
                            uint64_t bal =  eosio::token::computeusablebalance(voter->owner,false, false);
-                           // get last vote weight
-                           //if the current voter has voted for producers.
-                          // if (voter->producers.size() > 0) {
 
-                               print("AUDIT VOTE INFO --  saw producers size >0 \n");
+                           print("AUDIT VOTE INFO --  saw producers size >0 \n");
 
-                               //if the voter is not proxying to a proxy. note this should NOT be possible, but
-                               // is a good data coherency check on the voters table.
-                               if (!voter->proxy) {
-                                   print("AUDIT VOTE INFO --  saw not proxy \n");
-                                   //check for the known data incoherency of the is auto proxy flag, correct this if its present.
-                                   if(voter->is_auto_proxy){
-                                       print("AUDIT VOTE INFO --  is auto proxy incoherent, resolving incoherency \n");
-                                       //clear the is_auto_proxy
-                                       _voters.modify(voter, _self, [&](struct voter_info &a) {
-                                           a.is_auto_proxy = false;
-                                       });
-                                       // increase op count by 2 read this voter plus update.
-                                       operationcount += 2;
-                                   }
-                                   print("AUDIT VOTE INFO --  adding to producer vote for "+voter->owner.to_string()+" \n");
-                                       operationcount += addtoproducervote(voter->owner,
-                                                                           bal, voter->producers);
-                                       //if its a proxy set the account votable balance to be the usable balance.
-                                       //if it is a proxy also record its vote, if its not longer a proxy then
-                                       //do not record a vote.
-                                       if(voter->is_proxy){
-                                           operationcount += setproxyweight(voter->id, bal, voter->producers);
-                                       }else{ //we will update all proxied vote weights even for proxies that
-                                            //have registered then unregistered.
-                                           if (voter->proxied_vote_weight >0){
-                                               //set the proxy in the table without producers,
-                                               //this voter is not a proxy, so no producers list here.
-                                               //this keeps the proxied vote weight being added into the producer totals
-                                               // in phase 3 of the audit....tricky.
-                                               std::vector <name> emptyprod;
-                                               operationcount += setproxyweight(voter->id, bal, emptyprod);
-                                           }
-                                       }
-                                   _audit_global_info.total_voted_fio += bal;
+                           //if the voter is not proxying to a proxy.
+                           if (!voter->proxy) {
+                               print("AUDIT VOTE INFO --  saw not proxy \n");
+                               //check for the known data incoherency of the is auto proxy flag, correct this if its present.
+                               if(voter->is_auto_proxy){
+                                   print("AUDIT VOTE INFO --  is auto proxy incoherent, resolving incoherency \n");
+                                   //clear the is_auto_proxy
+                                   _voters.modify(voter, _self, [&](struct voter_info &a) {
+                                       a.is_auto_proxy = false;
+                                   });
+                                   // increase op count by 2 read this voter plus update.
+                                   operationcount += 2;
                                }
+                               print("AUDIT VOTE INFO --  adding to producer vote for "+voter->owner.to_string()+" \n");
+                               //if not proxying add the vote power to the producer vote.
+                               operationcount += addtoproducervote(voter->owner,
+                                                                   bal, voter->producers);
+                               //if its a proxy set the account votable balance to be the usable balance.
+                               //if it is a proxy also record its vote, if its not longer a proxy then
+                               //do not record a vote.
+                               if(voter->is_proxy){
+                                   operationcount += setproxyweight(voter->id, bal, voter->producers);
+                               }else{ //we will update all proxied vote weights even for proxies that
+                                    //have registered then unregistered.
+                                   if (voter->proxied_vote_weight >0){
+                                       //set the proxy in the table without producers,
+                                       //this voter is not a proxy, so no producers list here.
+                                       //this keeps the proxied vote weight being added into the producer totals
+                                       // in phase 3 of the audit....tricky.
+                                       std::vector <name> emptyprod;
+                                       operationcount += setproxyweight(voter->id, bal, emptyprod);
+                                   }
+                               }
+                               _audit_global_info.total_voted_fio += bal;
+                           }
 
-                               //only 2 cases are acceptable for voting for producers, if i am voting without any proxy
-                               //or if i am a proxy.
-                          // }
                            //if its a proxy add the last vote weight to the audit proxy totals
-                          // else
-                               if (voter->proxy) {
+                          if (voter->proxy) {
                                print("AUDIT VOTE INFO --  processing proxy participant "+voter->owner.to_string()+" \n");
                                //get the proxies voter id from the voters table.
                                auto votersbyaccount = _voters.get_index<"byowner"_n>();
@@ -844,8 +838,6 @@ namespace eosiosystem {
 
                print("AUDIT VOTE INFO --  writing audit proxy info\n");
                for (auto idx2 = _auditproxy.begin(); idx2 != _auditproxy.end(); idx2++) {
-
-
                    auto voter = _voters.find(idx2->voterid);
                    //if the voter id is not found this is an incoherency in the audit. do not complete.
                    //if this error happens then vote with any account on chain to reset the audit!!!!
@@ -860,7 +852,6 @@ namespace eosiosystem {
                        a.last_vote_weight = last_vote_weight;
                        a.proxied_vote_weight = idx2->proxied_vote_weight;
                    });
-
                }
 
                print("AUDIT VOTE INFO --  writing global info\n");
