@@ -820,6 +820,46 @@ namespace eosiosystem {
         return amount;
     }
 
+    void system_contract::update_last_vote_weight(
+            const name &voter_name) {
+
+        auto votersbyowner = _voters.get_index<"byowner"_n>();
+        auto voter = votersbyowner.find(voter_name.value);
+        check(voter != votersbyowner.end(), "user must vote before last vote weight can be updated");
+        check(voter->producers.size() == 0, "cannot call update_last_vote_weight if producers are voted, use update_votes.");
+        check(!(voter->proxy), "cannot call update_last_vote_weight with proxy set, call update_votes.");
+
+        uint64_t amount = 0;
+        amount = get_votable_balance(voter->owner);
+
+        auto new_vote_weight = (double)amount;
+        if (voter->is_proxy) {
+            new_vote_weight += voter->proxied_vote_weight;
+        }
+
+
+
+        if( voter->last_vote_weight > 0.0 ) {
+            // if(_gstate.total_voted_fio >= voter->last_vote_weight) {
+            _gstate.total_voted_fio -= voter->last_vote_weight;
+            // }else{
+            //     _gstate.total_voted_fio = 0;
+            // }
+        }
+
+        _gstate.total_voted_fio += new_vote_weight;
+
+        if( _gstate.total_voted_fio >= MINVOTEDFIO && _gstate.thresh_voted_fio_time == time_point() ) {
+            _gstate.thresh_voted_fio_time = current_time_point();
+        }
+
+
+        votersbyowner.modify(voter, same_payer, [&](auto &av) {
+            av.last_vote_weight = new_vote_weight;
+        });
+
+    }
+
 
     void system_contract::update_votes(
             const name &voter_name,
@@ -901,6 +941,7 @@ namespace eosiosystem {
                   "invalid proxy specified"); //if ( !voting ) { data corruption } else { wrong vote }
             fio_403_assert(!voting || new_proxy->is_proxy, ErrorProxyNotFound);
             if (new_vote_weight >= 0) {
+                print("EDEDEDEDEDEDEDEDEDEDEDEDEDEDEDEDED increment proxied vote weight");
                 votersbyowner.modify(new_proxy, same_payer, [&](auto &vp) {
                     vp.proxied_vote_weight += new_vote_weight;
                 });

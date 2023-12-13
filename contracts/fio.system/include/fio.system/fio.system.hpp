@@ -591,6 +591,8 @@ private:
 
     void unlock_tokens(const name &actor);
 
+    void update_last_vote_weight(const name &voter);
+
     void update_votes(const name &voter, const name &proxy, const std::vector <name> &producers, const bool &voting);
 
     void propagate_weight_change(const voter_info &voter);

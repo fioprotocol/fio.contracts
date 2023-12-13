@@ -89,6 +89,8 @@ namespace eosiosystem {
 
         if (voter_itr->producers.size() || voter_itr->proxy) {
             update_votes(voter, voter_itr->proxy, voter_itr->producers, false);
+        }else {
+            update_last_vote_weight(voter);
         }
     }
 
