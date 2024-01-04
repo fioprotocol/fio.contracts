@@ -437,6 +437,11 @@ public:
                       const uint32_t &payouts);
 
     [[eosio::action]]
+    void ovrwrtgenlck(const name &owner, const vector<lockperiodv2> &periods,
+                                                    const int64_t &amount,
+                                                    const bool &canvote);
+
+    [[eosio::action]]
     void clrgenlocked(const name &owner);
 
     [[eosio::action]]

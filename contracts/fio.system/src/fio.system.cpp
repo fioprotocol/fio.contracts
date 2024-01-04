@@ -421,6 +421,7 @@ namespace eosiosystem {
         auto locks_by_owner = _generallockedtokens.get_index<"byowner"_n>();
         auto lockiter = locks_by_owner.find(owner.value);
         check(lockiter != locks_by_owner.end(),"error looking up lock owner.");
+
         //call the system contract and update the record.
         locks_by_owner.modify(lockiter, get_self(), [&](auto &av) {
             av.remaining_lock_amount = rem_lock_amount;
@@ -428,6 +429,50 @@ namespace eosiosystem {
             av.payouts_performed = payouts;
             av.periods = periods;
 
+        });
+    }
+
+
+    //overwrite an existing lock, this should only occur when all locking periods are in the past from now.
+    void eosiosystem::system_contract::ovrwrtgenlck(const name &owner, const vector<lockperiodv2> &periods,
+                                                    const int64_t &amount,
+                                                    const bool &canvote) {
+
+        eosio_assert( has_auth(StakingContract) || has_auth(TokenContract),
+                      "missing required authority of fio.staking or fio.token");
+
+        check(is_account(owner),"account must pre exist");
+        check(amount > 0,"cannot add locked token amount less or equal 0.");
+
+        uint64_t tota = 0;
+
+        for(int i=0;i<periods.size();i++){
+            fio_400_assert(periods[i].amount > 0, "unlock_periods", "Invalid unlock periods",
+                           "Invalid amount value in unlock periods", ErrorInvalidUnlockPeriods);
+            fio_400_assert(periods[i].duration > 0, "unlock_periods", "Invalid unlock periods",
+                           "Invalid duration value in unlock periods", ErrorInvalidUnlockPeriods);
+            tota += periods[i].amount;
+            if (i>0){
+                fio_400_assert(periods[i].duration > periods[i-1].duration, "unlock_periods", "Invalid unlock periods",
+                               "Invalid duration value in unlock periods, must be sorted", ErrorInvalidUnlockPeriods);
+            }
+        }
+
+        fio_400_assert(tota == amount, "unlock_periods", "Invalid unlock periods",
+                       "Invalid total amount for unlock periods", ErrorInvalidUnlockPeriods);
+
+        auto locks_by_owner = _generallockedtokens.get_index<"byowner"_n>();
+        auto lockiter = locks_by_owner.find(owner.value);
+        check(lockiter != locks_by_owner.end(),"error looking up lock owner.");
+
+        //call the system contract and update the record.
+        locks_by_owner.modify(lockiter, get_self(), [&](auto &av) {
+            av.lock_amount = amount;
+            av.payouts_performed = 0;
+            av.can_vote = canvote?1:0;
+            av.periods = periods;
+            av.remaining_lock_amount = amount;
+            av.timestamp = now();
         });
     }
 
@@ -901,7 +946,7 @@ EOSIO_DISPATCH( eosiosystem::system_contract,
 //DO NOT DELIVER,TESTING ONLY!!
         (setvoting)
 // fio.system.cpp
-(init)(setnolimits)(addlocked)(addgenlocked)(modgenlocked)(clrgenlocked)(setparams)(setpriv)
+(init)(setnolimits)(addlocked)(addgenlocked)(modgenlocked)(ovrwrtgenlck)(clrgenlocked)(setparams)(setpriv)
         (rmvproducer)(updtrevision)(newfioacc)(auditvote)(resetaudit)
 // delegate_bandwidth.cpp
         (updatepower)
