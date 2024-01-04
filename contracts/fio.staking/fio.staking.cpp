@@ -508,6 +508,7 @@ public:
             }
             else {
 
+                print("EDEDEDEDEDEDEDEDEDEDEDEDEDEDEDEDEDEDEDEDED adding new when one already exists for account ",actor.to_string(),"\n");
                     bool canvote = true;
                     int64_t lockamount = (int64_t)(stakingrewardamount + amount);
 
