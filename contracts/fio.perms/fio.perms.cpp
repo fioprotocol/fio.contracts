@@ -250,12 +250,12 @@ namespace fioio {
             fio_fees(actor, asset(fee_amount, FIOSYMBOL), ADD_PERMISSION_ENDPOINT);
             processbucketrewards(tpid, fee_amount, get_self(), actor);
 
-            if (fee_amount > 0) {
-                INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
+
+            INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
                         (SYSTEMACCOUNT, {{_self, "active"_n}},
                          {actor, true}
                         );
-            }
+
 
             //ram bump
             if (ADDPERMISSIONRAM > 0) {
