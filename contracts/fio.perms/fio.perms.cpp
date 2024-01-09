@@ -251,10 +251,12 @@ namespace fioio {
             processbucketrewards(tpid, fee_amount, get_self(), actor);
 
 
-            INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
+            if (fee_amount > 0) {
+                INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
                         (SYSTEMACCOUNT, {{_self, "active"_n}},
                          {actor, true}
                         );
+            }
 
 
             //ram bump
