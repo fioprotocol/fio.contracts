@@ -533,15 +533,6 @@ namespace eosio {
 
         sub_balance(from, quantity);
         add_balance(to, quantity, payer);
-
-        INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
-                ("eosio"_n, {{_self, "active"_n}},
-                 {from, true}
-                );
-        INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
-                ("eosio"_n, {{_self, "active"_n}},
-                 {to, true}
-                );
     }
 
     void token::trnsfiopubky(const string &payee_public_key,
