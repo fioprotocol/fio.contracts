@@ -10,17 +10,10 @@
 //TESTING ONLY DO NOT DELIVER
 #define REWARDMAX       5000000000            // TESTING ONLY DO NOT DELIVER 5 FIO
 #define FDTNMAXTOMINT   150000000000000         // 150,000 FIO
-// TESTING CODE ONLY UNCOMMENT OPERATIONAL CODE FOR RELEASE
-// TESTING CODE ONLY UNCOMMENT OPERATIONAL CODE FOR RELEASE      #define BPMAXTOMINT     50000000000000          // 50,000  FIO
-// TESTING CODE ONLY UNCOMMENT OPERATIONAL CODE FOR RELEASE
-//TESTING ONLY DO NOT DELIVER TEST SETTING
-#define BPMAXTOMINT     1000000000          // 1  FIO
+#define BPMAXTOMINT     50000000000000          // 50,000  FIO
 #define FDTNMAXRESERVE  181253654000000000      // 181,253,654 FIO
 #define BPMAXRESERVE    20000000000000000       // increase BP reserves FIP-23 to 20,000,000 FIO
-// TESTING CODE ONLY UNCOMMENT OPERATIONAL CODE FOR RELEASE
-// TESTING CODE ONLY UNCOMMENT OPERATIONAL CODE FOR RELEASE
-// TESTING CODE ONLY UNCOMMENT OPERATIONAL CODE FOR RELEASE #define PAYSCHEDTIME    86401    //seconds per day + 1
-#define PAYSCHEDTIME    1  //TEST ONLY DO NOT DELIVER
+#define PAYSCHEDTIME    86401    //seconds per day + 1
 #define PAYABLETPIDS    100
 
 #include "fio.treasury.hpp"
@@ -80,10 +73,8 @@ public:
 
                 //This contract should only be able to iterate throughout the entire tpids table to
                 //to check for rewards once every x blocks.
-                //TESTING ONLY UNCOMMENT FOR RELEASE
-                //TSTING ONLY UNCOMMENT FOR RELEASE
-                // TESTING ONLY UNCOMMENT FOR RELEASE fio_400_assert(now() > state.lasttpidpayout + MINUTE, "tpidclaim", "tpidclaim",
-                //                "No work.", ErrorNoWork);
+                fio_400_assert(now() > state.lasttpidpayout + MINUTE, "tpidclaim", "tpidclaim",
+                                "No work.", ErrorNoWork);
 
                 for (const auto &itr : tpids) {
                         if (itr.rewards >= REWARDMAX) { //100 FIO (100,000,000,000 SUF)

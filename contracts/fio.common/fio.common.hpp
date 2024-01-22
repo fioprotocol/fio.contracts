@@ -33,10 +33,7 @@
 #define MINVOTEDFIO 65'000'000'000000000
 #define MINUTE 60
 #define SECONDSPERHOUR 3600
-//TESTING ONLY uncomment operational code for release
-//TESTING ONLY uncomment operational code for release
-//TESTING ONLY uncomment operational code for release#define SECONDSBETWEENBPCLAIM (SECONDSPERHOUR * 4)
-#define SECONDSBETWEENBPCLAIM (1) //TESTING ONLY DO NOT DELIVER
+#define SECONDSBETWEENBPCLAIM (SECONDSPERHOUR * 4)
 #define YEARDAYS 365
 #define MAXBPS 42
 #define MAXACTIVEBPS 21
