@@ -778,12 +778,7 @@ namespace eosiosystem {
                 }
             }
 
-            //TESTING ONLY BE SURE TO UNCOMMENT operational issueplus210 before release
-            //TESTING ONLY BE SURE TO UNCOMMENT operational issueplus210 before release
-            //TESTING ONLY BE SURE TO UNCOMMENT operational issueplus210 before release
-            //TESTING ONLY DO NOT DELIVER  uint32_t issueplus210 = lockiter->timestamp+(210*SECONDSPERDAY);
-            //TESTING ONLY DO NOT DELIVER
-            uint32_t issueplus210 = lockiter->timestamp+(20);
+            uint32_t issueplus210 = lockiter->timestamp+(210*SECONDSPERDAY);
 
             //if lock type 2 only subtract remaining locked amount if 210 days since launch, and inhibit locking true.
            if (((lockiter->grant_type == 2)&&((present_time > issueplus210)&&lockiter->inhibit_unlocking)) ||

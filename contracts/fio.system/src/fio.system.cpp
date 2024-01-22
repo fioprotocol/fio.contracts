@@ -345,10 +345,7 @@ namespace eosiosystem {
     //use this action to initialize the locked token holders table for the FIO protocol.
     void eosiosystem::system_contract::addlocked(const name &owner, const int64_t &amount,
             const int16_t &locktype) {
-        //TESTING ONLY be sure to uncomment this auth check for release!!!!!!!
-        //TESTING ONLY be sure to uncomment this auth check for release!!!!!!!
-        //TESTING ONLY be sure to uncomment this auth check for release!!!!!!! require_auth(_self);
-
+        require_auth(_self);
 
         check(is_account(owner),"account must pre exist");
         check(amount > 0,"cannot add locked token amount less or equal 0.");
