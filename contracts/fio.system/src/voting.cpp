@@ -657,11 +657,7 @@ namespace eosiosystem {
             });
         }else{
             if((voter_proxy_iter->last_vote_weight > 0)&&!(voter_proxy_iter->proxy)) {
-              //  if(_gstate.total_voted_fio >= voter_proxy_iter->last_vote_weight) {
                     _gstate.total_voted_fio -= voter_proxy_iter->last_vote_weight;
-               // }else{
-                //    _gstate.total_voted_fio = 0;
-               // }
             }
         }
 
@@ -807,7 +803,6 @@ namespace eosiosystem {
         auto locks_by_owner = _generallockedtokens.get_index<"byowner"_n>();
         auto glockiter = locks_by_owner.find(tokenowner.value);
         if(glockiter != locks_by_owner.end()){
-            //if can vote --
             if (glockiter->can_vote == 0){
                 if (amount > glockiter->remaining_lock_amount) {
                     amount =  amount - glockiter->remaining_lock_amount;
@@ -840,11 +835,7 @@ namespace eosiosystem {
 
 
         if( voter->last_vote_weight > 0.0 ) {
-            // if(_gstate.total_voted_fio >= voter->last_vote_weight) {
             _gstate.total_voted_fio -= voter->last_vote_weight;
-            // }else{
-            //     _gstate.total_voted_fio = 0;
-            // }
         }
 
         _gstate.total_voted_fio += new_vote_weight;
@@ -892,11 +883,7 @@ namespace eosiosystem {
         if( !(proxy) ) {
 
             if( voter->last_vote_weight > 0.0 ) {
-               // if(_gstate.total_voted_fio >= voter->last_vote_weight) {
                     _gstate.total_voted_fio -= voter->last_vote_weight;
-               // }else{
-               //     _gstate.total_voted_fio = 0;
-               // }
             }
 
             _gstate.total_voted_fio += new_vote_weight;
@@ -912,24 +899,14 @@ namespace eosiosystem {
             if (voter->proxy) {
                 auto old_proxy = votersbyowner.find(voter->proxy.value);
                 check(old_proxy != votersbyowner.end(), "old proxy not found"); //data corruption
-                //if(old_proxy->proxied_vote_weight >= voter->last_vote_weight) {
                     votersbyowner.modify(old_proxy, same_payer, [&](auto &vp) {
                         vp.proxied_vote_weight -= voter->last_vote_weight;
                     });
-               // }else{
-               //     votersbyowner.modify(old_proxy, same_payer, [&](auto &vp) {
-               //         vp.proxied_vote_weight = 0;
-                //    });
-               // }
                 propagate_weight_change(*old_proxy);
             } else {
                 for (const auto &p : voter->producers) {
                     auto &d = producer_deltas[p];
-                   // if(d.first >= voter->last_vote_weight) {
                         d.first -= voter->last_vote_weight;
-                   // }else{
-                   //     d.first = 0;
-                   // }
                     d.second = false;
                 }
             }
@@ -941,7 +918,6 @@ namespace eosiosystem {
                   "invalid proxy specified"); //if ( !voting ) { data corruption } else { wrong vote }
             fio_403_assert(!voting || new_proxy->is_proxy, ErrorProxyNotFound);
             if (new_vote_weight >= 0) {
-                print("EDEDEDEDEDEDEDEDEDEDEDEDEDEDEDEDED increment proxied vote weight");
                 votersbyowner.modify(new_proxy, same_payer, [&](auto &vp) {
                     vp.proxied_vote_weight += new_vote_weight;
                 });
@@ -1137,13 +1113,6 @@ namespace eosiosystem {
         fio_fees(actor, reg_fee_asset, UNREGISTER_PROXY_ENDPOINT);
         processrewardsnotpid(reg_amount, get_self());
         //end new fees, logic for Mandatory fees.
-
-        /*
-        INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
-                ("eosio"_n, {{_self, "active"_n}},
-                 {actor, false}
-                );
-                */
 
         _audit_global_info.audit_reset = true;
 
@@ -1354,12 +1323,7 @@ namespace eosiosystem {
 
         //adapt the total voted fio.
         if( pitr->last_vote_weight > 0.0 ) {
-           // if(_gstate.total_voted_fio >= pitr->last_vote_weight) {
                 _gstate.total_voted_fio -= pitr->last_vote_weight;
-          //  }else{
-         //       _gstate.total_voted_fio = 0;
-         //   }
-
         }
 
         _gstate.total_voted_fio += new_weight;
