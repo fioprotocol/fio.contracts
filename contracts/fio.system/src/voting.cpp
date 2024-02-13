@@ -105,7 +105,8 @@ namespace eosiosystem {
                 if(fio_address != info.fio_address) info.fio_address = fio_address;
                 if(key != info.producer_public_key) info.producer_public_key = key;
                 if(url != prod->url) info.url = url; 
-                if(location != prod->location) info.location = location; 
+                if(location != prod->location) info.location = location;
+                info.is_active = true;
             });
 
         } else {
