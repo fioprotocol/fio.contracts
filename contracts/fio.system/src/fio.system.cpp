@@ -525,7 +525,7 @@ namespace eosiosystem {
         int opcount = 2;
 
         //check(producers.size() > 0,"cannot use empty producer list.");
-        check(weight > 0,"cannot use weight less or equal 0.");
+        check(weight >= 0,"cannot use weight less or equal 0.");
 
         auto auditprodbyaccount = _auditproducer.get_index<"byaccount"_n>();
 

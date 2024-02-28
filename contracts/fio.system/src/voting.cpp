@@ -658,6 +658,8 @@ namespace eosiosystem {
             });
         }else{
             if((voter_proxy_iter->last_vote_weight > 0)&&!(voter_proxy_iter->proxy)) {
+                print("EDEDEDEDEDEDEDEDEDEDEDEDEEDEDEDED decrement total voted fio vote proxy \n ");
+                print ( "account ",voter_proxy_iter->owner.to_string(), " amount ", voter_proxy_iter->last_vote_weight );
                     _gstate.total_voted_fio -= voter_proxy_iter->last_vote_weight;
             }
         }
@@ -864,12 +866,16 @@ namespace eosiosystem {
         }
 
         if( !(proxy) ) {
-            if (voter->producers.size() > 0) {
+            //if (voter->producers.size() > 0) {
                 if ((voter->last_vote_weight > 0.0)) {
+                    print("EDEDEDEDEDEDEDEDEDEDEDEDEEDEDEDED decrement total voted fio update_votes \n ");
+                    print ( "account ",voter->owner.to_string(), " amount ", voter->last_vote_weight );
                     _gstate.total_voted_fio -= voter->last_vote_weight;
                 }
-            }
+            //}
 
+            print("EDEDEDEDEDEDEDEDEDEDEDEDEEDEDEDED increment total voted fio update_votes \n ");
+            print ( "account ",voter->owner.to_string(), " amount ", new_vote_weight );
             _gstate.total_voted_fio += new_vote_weight;
 
 
@@ -906,7 +912,9 @@ namespace eosiosystem {
                 votersbyowner.modify(new_proxy, same_payer, [&](auto &vp) {
                     vp.proxied_vote_weight += new_vote_weight;
                 });
-                propagate_weight_change(*new_proxy);
+                if(new_proxy->producers.size() > 0) {
+                    propagate_weight_change(*new_proxy);
+                }
             }
         } else {
             if (new_vote_weight >= 0) {
@@ -1219,7 +1227,7 @@ namespace eosiosystem {
                            "Already registered as proxy. ", ErrorPubAddressExist);
             name nm;
 
-            if(pitr->proxy != nm){
+            if(pitr->proxy != nm){ //if the proxy being registered HAD a proxy...we have to subtract the voting power
                 auto pitr_old_proxy = votersbyowner.find(pitr->proxy.value);
                 if(pitr_old_proxy != votersbyowner.end())
                 {
@@ -1239,6 +1247,8 @@ namespace eosiosystem {
                 });
             propagate_weight_change(*pitr);
             //check proxy, propagate proxy weight change.
+
+
 
         } else if (isproxy){  //only do the emplace if isproxy is true,
                               //it makes no sense to emplace a voter record when isproxy is false,
@@ -1307,13 +1317,17 @@ namespace eosiosystem {
         check(pitr != votersbyowner.end(),"voter not found");
 
         //adapt the total voted fio.
-        if (voter.producers.size() > 0) {
+        if (pitr->producers.size() > 0) {
             if ((pitr->last_vote_weight > 0.0)) {
+                print("EDEDEDEDEDEDEDEDEDEDEDEDEEDEDEDED decrement total voted fio propagate weight change \n ");
+                print ( "account ",pitr->owner.to_string(), " amount ", pitr->last_vote_weight );
                 _gstate.total_voted_fio -= pitr->last_vote_weight;
             }
-        }
 
-        _gstate.total_voted_fio += new_weight;
+            print("EDEDEDEDEDEDEDEDEDEDEDEDEEDEDEDED increment total voted fio propagate weight change \n ");
+            print ( "account ",pitr->owner.to_string(), " amount ", new_weight );
+            _gstate.total_voted_fio += new_weight;
+        }
 
 
         if( _gstate.total_voted_fio >= MINVOTEDFIO && _gstate.thresh_voted_fio_time == time_point() ) {
