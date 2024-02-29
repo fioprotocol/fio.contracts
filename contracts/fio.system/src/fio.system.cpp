@@ -786,7 +786,9 @@ namespace eosiosystem {
                                        operationcount += setproxyweight(voter->id, bal, emptyprod);
                                    }
                                }
-                               _audit_global_info.total_voted_fio += bal;
+                               if(voter->producers.size() > 0) {
+                                   _audit_global_info.total_voted_fio += bal;
+                               }
                            }
 
                            //if its a proxy add the last vote weight to the audit proxy totals
@@ -805,12 +807,18 @@ namespace eosiosystem {
                                    operationcount += addproxyweight(proxy_iter->id,
                                                                     voter->last_vote_weight);
                                }
+
+                              //testing setting total in the end
                                if(proxy_iter->is_proxy){
-                                   _audit_global_info.total_voted_fio += bal;
+                                  if(proxy_iter->producers.size() > 0) {
+                                      _audit_global_info.total_voted_fio += bal;
+                                  }
                                }
                                print("AUDIT VOTE INFO -- proxy participant processing completed\n");
                            }else { //just a plain voter voting for no producers.
-                               _audit_global_info.total_voted_fio += bal;
+                              if(voter->producers.size() > 0) {
+                                  _audit_global_info.total_voted_fio += bal;
+                              }
                            }
 
                        }  //end else its not token or address contract account.
