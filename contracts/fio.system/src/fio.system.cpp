@@ -525,7 +525,7 @@ namespace eosiosystem {
         int opcount = 2;
 
         //check(producers.size() > 0,"cannot use empty producer list.");
-        check(weight >= 0,"cannot use weight less or equal 0.");
+        check(weight >= 0,"cannot use weight less than 0. account "+voter.to_string());
 
         auto auditprodbyaccount = _auditproducer.get_index<"byaccount"_n>();
 
@@ -600,7 +600,7 @@ namespace eosiosystem {
         int opcount = 3;
 
         //if any last vote weight is less than 0 fail.
-        check(weight > 0,"cannot use wieight less than 0.");
+        check(weight >= 0,"cannot use proxy weight less than 0 voter id "+to_string(voterid));
 
         auto auditproxybyvoterid = _auditproxy.get_index<"byvotererid"_n>();
         auto auditproxy_iter = auditproxybyvoterid.find(voterid);
