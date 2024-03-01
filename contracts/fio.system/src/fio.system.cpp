@@ -792,7 +792,7 @@ namespace eosiosystem {
                            }
 
                            //if its a proxy add the last vote weight to the audit proxy totals
-                          if (voter->proxy) {
+                           else if (voter->proxy) {
                                print("AUDIT VOTE INFO --  processing proxy participant "+voter->owner.to_string()+" \n");
                                //get the proxies voter id from the voters table.
                                auto votersbyaccount = _voters.get_index<"byowner"_n>();
