@@ -864,14 +864,15 @@ namespace eosiosystem {
             new_vote_weight += voter->proxied_vote_weight;
         }
 
-        if( !(proxy) ) {
-            if (voter->producers.size() > 0) {
-                if ((voter->last_vote_weight > 0.0)) {
-                    print("EDEDEDEDEDEDEDEDEDEDEDEDEEDEDEDED decrement total voted fio update_votes \n ");
-                    print ( "account ",voter->owner.to_string(), " amount ", voter->last_vote_weight );
-                    _gstate.total_voted_fio -= voter->last_vote_weight;
-                }
+        if (voter->producers.size() > 0) {
+            if ((voter->last_vote_weight > 0.0)) {
+                print("EDEDEDEDEDEDEDEDEDEDEDEDEEDEDEDED decrement total voted fio update_votes \n ");
+                print ( "account ",voter->owner.to_string(), " amount ", voter->last_vote_weight );
+                _gstate.total_voted_fio -= voter->last_vote_weight;
             }
+        }
+
+        if( !(proxy) ) {
 
             print("EDEDEDEDEDEDEDEDEDEDEDEDEEDEDEDED increment total voted fio update_votes \n ");
             print ( "account ",voter->owner.to_string(), " amount ", new_vote_weight );
