@@ -656,13 +656,14 @@ namespace eosiosystem {
                 p.id = id;
                 p.owner = actor;
             });
-        }else{
+        }
+        /*else{
             if((voter_proxy_iter->last_vote_weight > 0)&&!(voter_proxy_iter->proxy)) {
                 print("EDEDEDEDEDEDEDEDEDEDEDEDEEDEDEDED decrement total voted fio vote proxy \n ");
                 print ( "account ",voter_proxy_iter->owner.to_string(), " amount ", voter_proxy_iter->last_vote_weight );
                     _gstate.total_voted_fio -= voter_proxy_iter->last_vote_weight;
             }
-        }
+        }*/
 
         //note -- we can call these lock token computations like this
         //only because token locks are exclusive, meaning an account CANNOT have
