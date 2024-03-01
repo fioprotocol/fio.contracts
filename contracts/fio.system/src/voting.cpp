@@ -804,8 +804,6 @@ namespace eosiosystem {
             if (glockiter->can_vote == 0){
                 if (amount > glockiter->remaining_lock_amount) {
                     amount =  amount - glockiter->remaining_lock_amount;
-                }else{
-                    amount = 0;
                 }
             }
         }
@@ -866,13 +864,13 @@ namespace eosiosystem {
         }
 
         if( !(proxy) ) {
-            //if (voter->producers.size() > 0) {
+            if (voter->producers.size() > 0) {
                 if ((voter->last_vote_weight > 0.0)) {
                     print("EDEDEDEDEDEDEDEDEDEDEDEDEEDEDEDED decrement total voted fio update_votes \n ");
                     print ( "account ",voter->owner.to_string(), " amount ", voter->last_vote_weight );
                     _gstate.total_voted_fio -= voter->last_vote_weight;
                 }
-            //}
+            }
 
             print("EDEDEDEDEDEDEDEDEDEDEDEDEEDEDEDED increment total voted fio update_votes \n ");
             print ( "account ",voter->owner.to_string(), " amount ", new_vote_weight );
