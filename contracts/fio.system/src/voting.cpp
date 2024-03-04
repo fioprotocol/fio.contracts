@@ -872,7 +872,7 @@ namespace eosiosystem {
             }
         }
 
-        if( !(proxy) ) {
+        if( !(proxy) && (voter->producers.size() > 0)) {
 
             print("EDEDEDEDEDEDEDEDEDEDEDEDEEDEDEDED increment total voted fio update_votes \n ");
             print ( "account ",voter->owner.to_string(), " amount ", new_vote_weight );
