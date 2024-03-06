@@ -629,21 +629,6 @@ namespace eosiosystem {
         return opcount;
     }
 
-    //DO NOT DELIVER!!!! TESTING ONLY TESTING ONLY
-    [[eosio::action]]
-    void eosiosystem::system_contract::setvoting(const name &voteraccount, const double &last_vote_weight, const double &proxy_vote_weight){
-
-        //if the calling account is in the voters table this is an error.
-        auto votersbyowner = _voters.get_index<"byowner"_n>();
-        auto auditaccount_iter = votersbyowner.find(voteraccount.value);
-        check(auditaccount_iter != votersbyowner.end()," cannot call setvoting using an account that has not voted, please use an account that has voted.\n");
-
-        //set the data
-        votersbyowner.modify(auditaccount_iter, _self, [&](struct voter_info &a) {
-            a.last_vote_weight = last_vote_weight;
-            a.proxied_vote_weight = proxy_vote_weight;
-        });
-    }
 
     //begin audit machine
     // call this action repeatedly and it will progress through the process of auditing the FIO vote.
@@ -808,7 +793,6 @@ namespace eosiosystem {
                                                                     voter->last_vote_weight);
                                }
 
-                              //testing setting total in the end
                                if(proxy_iter->is_proxy){
                                   if(proxy_iter->producers.size() > 0) {
                                       _audit_global_info.total_voted_fio += bal;
@@ -971,8 +955,6 @@ namespace eosiosystem {
 EOSIO_DISPATCH( eosiosystem::system_contract,
 // native.hpp (newaccount definition is actually in fio.system.cpp)
 (newaccount)(addaction)(remaction)(updateauth)(deleteauth)(linkauth)(unlinkauth)(canceldelay)(onerror)(setabi)
-//DO NOT DELIVER,TESTING ONLY!!
-        (setvoting)
 // fio.system.cpp
 (init)(setnolimits)(addlocked)(addgenlocked)(modgenlocked)(ovrwrtgenlck)(clrgenlocked)(setparams)(setpriv)
         (rmvproducer)(updtrevision)(newfioacc)(auditvote)(resetaudit)
