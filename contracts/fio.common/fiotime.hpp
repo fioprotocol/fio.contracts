@@ -16,12 +16,6 @@
 #define DAYS_PER_100Y (365*100 + 24)
 #define DAYS_PER_4Y   (365*4   + 1)
 
-
-#define EPOCH_YR        1970            /* EPOCH = Jan 1 1970 00:00:00 */
-#define LEAPYEAR(year)  (!((year) % 4) && (((year) % 100) || !((year) % 400)))
-#define YEARSIZE(year)  (LEAPYEAR(year) ? 366 : 365)
-
-
 #pragma once
 
 namespace fioio {
@@ -56,8 +50,6 @@ namespace fioio {
 
         return timebuffer;
     }
-
-
 
     int convertfiotime(long long t, struct tm *tm) {
         long long days, secs;
@@ -105,7 +97,7 @@ namespace fioio {
         yday = remdays + 31 + 28 + leap;
         if (yday >= 365 + leap) yday -= 365 + leap;
 
-        years = remyears + (4 * q_cycles) + (100 * c_cycles) + (400 * qc_cycles);
+        years = remyears + 4 * q_cycles + 100 * c_cycles + 400 * qc_cycles;
 
         for (months = 0; days_in_month[months] <= remdays; months++)
             remdays -= days_in_month[months];
@@ -113,19 +105,7 @@ namespace fioio {
         if (years + 2000 > INT_MAX || years + 2000 < INT_MIN)
             return -1;
 
-        // begin BD-4612 this code corrects the bug in the conversion of year, BD-4612
-        long dayno = t / 86400;
-        int year = EPOCH_YR;
-
-        while (dayno >= YEARSIZE(year)) {
-            dayno -= YEARSIZE(year);
-            year++;
-        }
-        long myyear = year;
-
-        tm->tm_year = myyear;
-        //end BD-4612
-
+        tm->tm_year = years + 2000;
         tm->tm_mon = months + 3;
         if (tm->tm_mon >= 12) {
             tm->tm_mon -= 12;
@@ -145,5 +125,4 @@ namespace fioio {
 
         return 0;
     }
-
 }
