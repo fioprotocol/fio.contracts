@@ -6,9 +6,7 @@
  *  @license FIO Foundation ( https://github.com/fioprotocol/fio/blob/master/LICENSE ) Dapix
  */
 
-//TESTINGONLY DO NOT DELIVER #define REWARDMAX       100000000000            // 100 FIO
-//TESTING ONLY DO NOT DELIVER
-#define REWARDMAX       5000000000            // TESTING ONLY DO NOT DELIVER 5 FIO
+#define REWARDMAX       100000000000            // 100 FIO
 #define FDTNMAXTOMINT   150000000000000         // 150,000 FIO
 #define BPMAXTOMINT     50000000000000          // 50,000  FIO
 #define FDTNMAXRESERVE  181253654000000000      // 181,253,654 FIO
