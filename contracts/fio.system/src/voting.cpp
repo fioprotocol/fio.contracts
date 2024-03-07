@@ -859,7 +859,6 @@ namespace eosiosystem {
 
         if (voter->producers.size() > 0) {
             if ((voter->last_vote_weight > 0.0)) {
-                print ( "account ",voter->owner.to_string(), " amount ", voter->last_vote_weight );
                 _gstate.total_voted_fio -= voter->last_vote_weight;
             }
         }
