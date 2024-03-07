@@ -639,7 +639,6 @@ namespace eosiosystem {
     void eosiosystem::system_contract::auditvote(const name &actor,  const int64_t &max_fee){
         string response_string ="";
 
-        print("AUDIT VOTE INFO -- audit vote called \n");
 
         eosio_assert((has_auth(actor)),
                      "missing required authority of actor account");
@@ -651,7 +650,6 @@ namespace eosiosystem {
 
         //get audit state.
        if( _audit_global_info.audit_reset){
-           print(" AUDIT VOTE INFO -- audit reset is set \n");
            _audit_global_info.audit_reset = false;
            _audit_global_info.audit_phase = 1;
 
@@ -663,12 +661,10 @@ namespace eosiosystem {
 
        switch(_audit_global_info.audit_phase){
            case 0: {
-               print("AUDIT VOTE INFO --  ENTERED BEGIN STATE \n");
                _audit_global_info.audit_phase = 1;
                //always fall through to phase 1
            }
            case 1: {
-               print("AUDIT VOTE INFO --  ENTERED CLEAR STATE \n");
                //phase 1 is assumed to execute in one block, if it cannot then phase 4 will also fail to transact,
                // so no number of operation checks are performed on phase 1, we just clear the data.
                //clear all audit_global_info values.
@@ -676,8 +672,6 @@ namespace eosiosystem {
                _audit_global_info.current_proxy_id = 0;
                _audit_global_info.current_voter_id = 0;
                _audit_global_info.total_producer_vote_weight = 0;
-
-               print("AUDIT VOTE INFO --  audit globals cleared\n");
                recordcount = 4;
 
 
@@ -686,17 +680,13 @@ namespace eosiosystem {
                        idx = _auditproducer.erase(idx);
                        recordcount++;
                }
-               print("AUDIT VOTE INFO --  audit producers cleared\n");
                //remove all audit proxy records.
                for (auto idx2 = _auditproxy.begin(); idx2 != _auditproxy.end();) {
                    idx2 = _auditproxy.erase(idx2);
                    recordcount++;
                }
 
-               print("AUDIT VOTE INFO --  audit proxy cleared\n");
-
                _audit_global_info.audit_phase = 2;
-               print("AUDIT VOTE INFO --  setting audit phase to phase 2\n");
                recordcount++;
 
                response_string = string("{\"status\": \"OK\",\"audit_phase\":\"") +
@@ -706,28 +696,23 @@ namespace eosiosystem {
                break;
            }
            case 2: {
-               print("AUDIT VOTE INFO --  ENTERED ANALYZE_VOTES STATE \n");
 
                //first get the index at which to stop, this is the current available primary key value for the voters table.
                uint64_t stopidx = _voters.available_primary_key();
 
                //get the index at which to begin processing.
                uint64_t id = _audit_global_info.current_voter_id;
-               print("AUDIT VOTE INFO --  phase 2 analysis start "+ to_string(id)+"  stop "+to_string(stopidx)+"\n");
                while( id < stopidx) {
-                   print("AUDIT VOTE INFO --  processing voter id "+to_string(id)+" \n");
                    //get the current voter by id from voters table
                    auto voter = _voters.find(id);
                    //if the voter id is not found in the voters table we just go to the next one.
                    //gaps will appear in the voters table as a result of removing address and token contract entries
                    //in the voters table.
                    if (voter != _voters.end()) {
-                       print("AUDIT VOTE INFO --  found voterid "+to_string(id)+"\n");
                        //if the voting account is token or address contracts then remvoe this record from the voters table
                        //as these accounts should not be voting.
                        if( (voter->owner == TokenContract) ||
                                (voter->owner == AddressContract) ){
-                           print("AUDIT VOTE INFO --  removing token or address contract from voters \n");
                            //erase the record.
                            _voters.erase(voter);
                            //increment operation count +2 cuz we read the table and updated.
@@ -736,14 +721,10 @@ namespace eosiosystem {
                            //get the current votable balance of the account
                            uint64_t bal =  eosio::token::computeusablebalance(voter->owner,false, false);
 
-                           print("AUDIT VOTE INFO --  saw producers size >0 \n");
-
                            //if the voter is not proxying to a proxy.
                            if (!voter->proxy) {
-                               print("AUDIT VOTE INFO --  saw not proxy \n");
                                //check for the known data incoherency of the is auto proxy flag, correct this if its present.
                                if(voter->is_auto_proxy){
-                                   print("AUDIT VOTE INFO --  is auto proxy incoherent, resolving incoherency \n");
                                    //clear the is_auto_proxy
                                    _voters.modify(voter, _self, [&](struct voter_info &a) {
                                        a.is_auto_proxy = false;
@@ -751,7 +732,6 @@ namespace eosiosystem {
                                    // increase op count by 2 read this voter plus update.
                                    operationcount += 2;
                                }
-                               print("AUDIT VOTE INFO --  adding to producer vote for "+voter->owner.to_string()+" \n");
                                //if not proxying add the vote power to the producer vote.
                                operationcount += addtoproducervote(voter->owner,
                                                                    bal, voter->producers);
@@ -778,7 +758,6 @@ namespace eosiosystem {
 
                            //if its a proxy add the last vote weight to the audit proxy totals
                            else if (voter->proxy) {
-                               print("AUDIT VOTE INFO --  processing proxy participant "+voter->owner.to_string()+" \n");
                                //get the proxies voter id from the voters table.
                                auto votersbyaccount = _voters.get_index<"byowner"_n>();
                                auto proxy_iter = votersbyaccount.find(voter->proxy.value);
@@ -787,7 +766,6 @@ namespace eosiosystem {
                                //if the proxy isnt in the voters table this is fine,
                                //if the proxy is in the voters table increment the audit proxy totals.
                                if(proxy_iter != votersbyaccount.end()) {
-                                   print("AUDIT VOTE INFO --  adding proxy participant vote weight to proxy summary \n");
                                    //add this voters last vote weight to the audit proxy total.
                                    operationcount += addproxyweight(proxy_iter->id,
                                                                     voter->last_vote_weight);
@@ -798,7 +776,6 @@ namespace eosiosystem {
                                       _audit_global_info.total_voted_fio += bal;
                                   }
                                }
-                               print("AUDIT VOTE INFO -- proxy participant processing completed\n");
                            }else { //just a plain voter voting for no producers.
                               if(voter->producers.size() > 0) {
                                   _audit_global_info.total_voted_fio += bal;
@@ -818,7 +795,6 @@ namespace eosiosystem {
 
                //if we have processed all ids then got to the next phase of the audit.
                if (id >= stopidx) {
-                   print("AUDIT VOTE INFO --  setting audit phase to 3 \n");
                    _audit_global_info.audit_phase = 3;
                }
 
@@ -832,14 +808,11 @@ namespace eosiosystem {
                break;
            }
            case 3: {
-               print("AUDIT VOTE INFO --  ENTERED ANALYZE_PROXIES STATE \n");
                uint64_t stopidx = _auditproxy.available_primary_key();
 
                uint64_t id = _audit_global_info.current_proxy_id;
-               print("AUDIT VOTE INFO --  phase 3 analysis start "+ to_string(id)+"  stop "+to_string(stopidx)+"\n");
 
                while( id < stopidx) {
-                   print("AUDIT VOTE INFO --  processing id "+ to_string(id)+" \n");
                    //get the auditproxy by id from voters table
                    auto audproxy = _auditproxy.find(id);
                    //if this error happens then vote with any account on chain to reset the audit!!!!
@@ -853,7 +826,6 @@ namespace eosiosystem {
                    operationcount += 2;
 
                    if((audproxy->producers.size() > 0) && (audproxy->proxied_vote_weight > 0)) {
-                       print("AUDIT VOTE INFO --  phase 3 adding proxied vote weight for proxy "+ voter->owner.to_string()+"  weight "+to_string(audproxy->proxied_vote_weight)+"\n");
                        operationcount += addtoproducervote(voter->owner,audproxy->proxied_vote_weight, audproxy->producers);
                    }
 
@@ -863,8 +835,6 @@ namespace eosiosystem {
                } //end loop
                _audit_global_info.current_proxy_id = id;
                if (id >= stopidx) {
-                   print("AUDIT VOTE INFO --  setting audit phase 4\n");
-
                    _audit_global_info.audit_phase = 4;
                }
                // Return computed status string.
@@ -876,13 +846,10 @@ namespace eosiosystem {
                break;
            }
            case 4: {
-               print("AUDIT VOTE INFO --  ENTERED FINALIZE STATE \n");
 
                auto producersbyaccount = _producers.get_index<"byowner"_n>();
 
-               print("AUDIT VOTE INFO --  writing audit producer info\n");
                for (auto idx = _auditproducer.begin(); idx != _auditproducer.end(); idx++) {
-                   print("AUDIT VOTE INFO --  writing audit producer "+ idx->account_name.to_string()+"\n");
                    auto producer_iter = producersbyaccount.find(idx->account_name.value);
                    //if the producer is not found, do not complete
                    //if this error happens then vote with any account on chain to reset the audit!!!!
@@ -893,13 +860,11 @@ namespace eosiosystem {
                    });
                }
 
-               print("AUDIT VOTE INFO --  writing audit proxy info\n");
                for (auto idx2 = _auditproxy.begin(); idx2 != _auditproxy.end(); idx2++) {
                    auto voter = _voters.find(idx2->voterid);
                    //if the voter id is not found this is an incoherency in the audit. do not complete.
                    //if this error happens then vote with any account on chain to reset the audit!!!!
                    check (voter != _voters.end(),"failed to find proxy in voters table voterid "+to_string(idx2->voterid)+"\n");
-                   print("AUDIT VOTE INFO --  writing audit proxy "+ voter->owner.to_string()+"\n");
                    //set proxy vote weight. and last vote weight.
                    double last_vote_weight = (double)(idx2->votable_balance);
                    if(voter->is_proxy) {
@@ -911,10 +876,8 @@ namespace eosiosystem {
                    });
                }
 
-               print("AUDIT VOTE INFO --  writing global info\n");
                _gstate.total_voted_fio = _audit_global_info.total_voted_fio;
                _gstate.total_producer_vote_weight =  _audit_global_info.total_producer_vote_weight;
-               print("AUDIT VOTE INFO --  setting audit phase 1\n");
 
                _audit_global_info.audit_phase = 1;
                response_string = string("{\"status\": \"OK\",\"audit_phase\":\"") +
@@ -933,7 +896,6 @@ namespace eosiosystem {
            }
        }
 
-       print("AUDIT VOTE INFO -- returning response ",response_string,"\n");
         send_response(response_string.c_str());
 
     }
@@ -941,9 +903,6 @@ namespace eosiosystem {
     void eosiosystem::system_contract::resetaudit(){
         eosio_assert( has_auth(TokenContract),
                      "missing required authority of fio.token account");
-
-        print(" RESET AUDIT -- info the audit has been reset \n");
-
         _audit_global_info.audit_reset = true;
     }
     //end audit machine
