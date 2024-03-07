@@ -657,13 +657,6 @@ namespace eosiosystem {
                 p.owner = actor;
             });
         }
-        /*else{
-            if((voter_proxy_iter->last_vote_weight > 0)&&!(voter_proxy_iter->proxy)) {
-                print("EDEDEDEDEDEDEDEDEDEDEDEDEEDEDEDED decrement total voted fio vote proxy \n ");
-                print ( "account ",voter_proxy_iter->owner.to_string(), " amount ", voter_proxy_iter->last_vote_weight );
-                    _gstate.total_voted_fio -= voter_proxy_iter->last_vote_weight;
-            }
-        }*/
 
         //note -- we can call these lock token computations like this
         //only because token locks are exclusive, meaning an account CANNOT have
@@ -866,16 +859,12 @@ namespace eosiosystem {
 
         if (voter->producers.size() > 0) {
             if ((voter->last_vote_weight > 0.0)) {
-                print("EDEDEDEDEDEDEDEDEDEDEDEDEEDEDEDED decrement total voted fio update_votes \n ");
                 print ( "account ",voter->owner.to_string(), " amount ", voter->last_vote_weight );
                 _gstate.total_voted_fio -= voter->last_vote_weight;
             }
         }
 
         if( !(proxy) && (producers.size() > 0) ) {
-
-            print("EDEDEDEDEDEDEDEDEDEDEDEDEEDEDEDED increment total voted fio update_votes \n ");
-            print ( "account ",voter->owner.to_string(), " amount ", new_vote_weight );
             _gstate.total_voted_fio += new_vote_weight;
 
 
@@ -1319,13 +1308,8 @@ namespace eosiosystem {
         //adapt the total voted fio.
         if (pitr->producers.size() > 0) {
             if ((pitr->last_vote_weight > 0.0)) {
-                print("EDEDEDEDEDEDEDEDEDEDEDEDEEDEDEDED decrement total voted fio propagate weight change \n ");
-                print ( "account ",pitr->owner.to_string(), " amount ", pitr->last_vote_weight );
                 _gstate.total_voted_fio -= pitr->last_vote_weight;
             }
-
-            print("EDEDEDEDEDEDEDEDEDEDEDEDEEDEDEDED increment total voted fio propagate weight change \n ");
-            print ( "account ",pitr->owner.to_string(), " amount ", new_weight );
             _gstate.total_voted_fio += new_weight;
         }
 
