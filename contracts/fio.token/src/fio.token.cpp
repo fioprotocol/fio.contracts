@@ -57,9 +57,7 @@ namespace eosio {
         add_balance(FIOISSUER, quantity, FIOISSUER);
 
         if (to != FIOISSUER) {
-            SEND_INLINE_ACTION(*this, transfer, {{FIOISSUER, "active"_n}},
-                               {FIOISSUER, to, quantity, memo}
-            );
+            transfer(FIOISSUER, to, quantity, memo);
         }
     }
 
@@ -422,7 +420,8 @@ namespace eosio {
          * we permit the use of transfer from the treasury account to any other accounts.
          * we permit the use of transfer from any other accounts to the treasury account for fees.
          */
-        if (from != SYSTEMACCOUNT && from != TREASURYACCOUNT && from != EscrowContract && from != FIOORACLEContract) {
+        if (from != SYSTEMACCOUNT && from != TREASURYACCOUNT && from != EscrowContract
+        && from != FIOORACLEContract) {
             if(!has_auth(EscrowContract) && !has_auth(FIOORACLEContract)){
                 check(to == TREASURYACCOUNT, "transfer not allowed");
             }

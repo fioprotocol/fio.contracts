@@ -74,10 +74,11 @@ namespace eosiosystem {
 
 
     /**
-     *  This method will create a producer_config and producer_info object for 'producer'
+     *  This method will create a producer_config and producer_info object for 'producer'. Subsequent calls will update the producer fio_address, public key, url and location.
      *
-     *  @pre producer is not already registered
      *  @pre producer to register is an account
+     *  @pre or producer is already registered to be updated with new properties
+     *  @pre fio_address has previously been validated and its owner is authorized signer
      *  @pre authority of producer to register
      *
      */
@@ -92,23 +93,22 @@ namespace eosiosystem {
         auto prod = prodbyowner.find(producer.value);
         uint128_t addresshash = string_to_uint128_hash(fio_address.c_str());
         const auto ct = current_time_point();
-
+        auto key = abieos::string_to_public_key(producer_key);
         if (prod != prodbyowner.end()) {
-            if (prod->is_active) {
-                fio_400_assert(false, "fio_address", fio_address,
-                               "Already registered as producer", ErrorFioNameNotReg);
-            } else {
-                prodbyowner.modify(prod, producer, [&](producer_info &info) {
-                    info.is_active = true;
-                    info.fio_address = fio_address;
-                    info.addresshash = addresshash;
-                    info.producer_public_key = abieos::string_to_public_key(producer_key);
-                    info.url = url;
-                    info.location = location;
-                    if (info.last_claim_time == time_point())
-                        info.last_claim_time = ct;
-                });
-            }
+       
+             if (prod->is_active) {
+                fio_400_assert(fio_address != prod->fio_address || url != prod->url || key != prod->producer_public_key || prod->location != location, "fio_address", fio_address,
+                "Already registered as producer", ErrorFioNameNotReg);
+             }
+
+            prodbyowner.modify(prod, producer, [&](producer_info &info) {
+                if(fio_address != info.fio_address) info.fio_address = fio_address;
+                if(key != info.producer_public_key) info.producer_public_key = key;
+                if(url != prod->url) info.url = url; 
+                if(location != prod->location) info.location = location;
+                info.is_active = true;
+            });
+
         } else {
             uint64_t id = _producers.available_primary_key();
 
@@ -118,7 +118,7 @@ namespace eosiosystem {
                 info.fio_address = fio_address;
                 info.addresshash = addresshash;
                 info.total_votes = 0;
-                info.producer_public_key = abieos::string_to_public_key(producer_key);
+                info.producer_public_key = key;
                 info.is_active = true;
                 info.url = url;
                 info.location = location;
@@ -648,6 +648,10 @@ namespace eosiosystem {
                 p.id = id;
                 p.owner = actor;
             });
+        }else{
+            if((voter_proxy_iter->last_vote_weight > 0)&&!(voter_proxy_iter->proxy)) {
+                _gstate.total_voted_fio -= voter_proxy_iter->last_vote_weight;
+            }
         }
 
         //note -- we can call these lock token computations like this
@@ -1055,6 +1059,11 @@ namespace eosiosystem {
         processrewardsnotpid(reg_amount, get_self());
         //end new fees, logic for Mandatory fees.
 
+        INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
+                ("eosio"_n, {{_self, "active"_n}},
+                 {actor, false}
+                );
+
         const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
                                  to_string(reg_amount) + string("}");
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
@@ -1170,6 +1179,18 @@ namespace eosiosystem {
             fio_400_assert((isproxy != pitr->is_proxy)|| !isproxy, "fio_address", fio_address,
                            "Already registered as proxy. ", ErrorPubAddressExist);
             name nm;
+
+            if(pitr->proxy != nm){
+                auto pitr_old_proxy = votersbyowner.find(pitr->proxy.value);
+                if(pitr_old_proxy != votersbyowner.end())
+                {
+                    votersbyowner.modify(pitr_old_proxy, same_payer, [&](auto &vp) {
+                        vp.proxied_vote_weight -= pitr->last_vote_weight;
+                    });
+                    propagate_weight_change(*pitr_old_proxy);
+                }
+            }
+
             votersbyowner.modify(pitr, same_payer, [&](auto &p) {
                     p.fioaddress = fio_address;
                     p.addresshash = addresshash;

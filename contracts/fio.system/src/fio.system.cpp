@@ -13,6 +13,7 @@
 #include "delegate_bandwidth.cpp"
 #include "voting.cpp"
 #include <fio.address/fio.address.hpp>
+#include <fio.token/fio.token.hpp>
 #include <fio.fee/fio.fee.hpp>
 
 namespace eosiosystem {
@@ -101,6 +102,131 @@ namespace eosiosystem {
         _gstate2.revision = revision;
     }
 
+    //FIP-38 begin
+
+
+
+
+
+
+
+
+
+    void eosiosystem::system_contract::newfioacc(const string &fio_public_key, const authority &owner, const authority &active, const int64_t &max_fee,
+                                                 const name &actor,
+                                                 const string &tpid) {
+
+
+        fio_400_assert(validateTPIDFormat(tpid), "tpid", tpid,
+                       "TPID must be empty or valid FIO address",
+                       ErrorPubKeyValid);
+        fio_400_assert(max_fee >= 0, "max_fee", to_string(max_fee), "Invalid fee value",
+                       ErrorMaxFeeInvalid);
+
+        if (fio_public_key.length() > 0) {
+            fio_400_assert(isPubKeyValid(fio_public_key), "fio_public_key", fio_public_key,
+                           "Invalid FIO Public Key",
+                           ErrorPubKeyValid);
+        }
+
+        string owner_account;
+        key_to_account(fio_public_key, owner_account);
+        name owner_account_name = name(owner_account.c_str());
+
+        eosio_assert(owner_account.length() == 12, "Length of account name should be 12");
+
+        //account should NOT exist, and should NOT be in the FIO account map
+        const bool accountExists = is_account(owner_account_name);
+        auto other = _accountmap.find(owner_account_name.value);
+
+        fio_400_assert(!accountExists, "fio_public_key", fio_public_key,
+                       "Invalid public key used, Account already exists on FIO chain",
+                       ErrorPubAddressExist);
+
+        if (other == _accountmap.end()) { //the name is not in the table. go forth and create the account
+
+            const auto owner_pubkey = abieos::string_to_public_key(fio_public_key);
+
+            eosiosystem::key_weight pubkey_weight = {
+                    .key = owner_pubkey,
+                    .weight = 1,
+            };
+
+            authority owner_auth = owner;
+            if ((owner.accounts.size() == 0)&&(owner.keys.size() == 0)) {
+                owner_auth = authority{1, {pubkey_weight}, {}, {}};
+            }
+
+            authority active_auth = active;
+            if ((active.accounts.size() == 0)&&(active.keys.size()==0)) {
+                active_auth = authority{1, {pubkey_weight}, {}, {}};
+            }
+
+            action(permission_level{SYSTEMACCOUNT, "active"_n},
+                   SYSTEMACCOUNT, "newaccount"_n,
+                   make_tuple(_self, owner_account_name, owner_auth,active_auth)
+            ).send();
+
+            action{
+                    permission_level{_self, "active"_n},
+                    AddressContract,
+                    "bind2eosio"_n,
+                    bind2eosio{
+                            .accountName = owner_account_name,
+                            .public_key = fio_public_key,
+                            .existing = accountExists
+                    }
+            }.send();
+
+        } else {
+            fio_400_assert(accountExists, "fio_public_key", fio_public_key,
+                           "Account does not exist on FIO chain but is bound in accountmap",
+                           ErrorPubAddressExist);
+        }
+
+
+        const uint128_t endpoint_hash = string_to_uint128_hash(NEW_FIO_CHAIN_ACCOUNT_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", NEW_FIO_CHAIN_ACCOUNT_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        const uint64_t reg_amount = fee_iter->suf_amount;
+        const uint64_t fee_type = fee_iter->type;
+
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "unexpected fee type for endpoint new_fio_chain_account, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t) reg_amount, "max_fee", to_string(max_fee),
+                       "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), NEW_FIO_CHAIN_ACCOUNT_ENDPOINT);
+        processbucketrewards(tpid, reg_amount, get_self(), actor);
+
+        if (NEWFIOCHAINACCOUNTRAM > 0) {
+            action(
+                    permission_level{SYSTEMACCOUNT, "active"_n},
+                    "eosio"_n,
+                    "incram"_n,
+                    std::make_tuple(actor, NEWFIOCHAINACCOUNTRAM)
+            ).send();
+        }
+        const string response_string = string("{\"status\": \"OK\",\"account\":\"") +
+                                       owner_account + string("\",\"fee_collected\":") +
+                                       to_string(reg_amount) + string("}");
+
+
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+
+        send_response(response_string.c_str());
+    }
+    //FIP-38 end
+
+
     /**
      *  Called after a new account is created. This code enforces resource-limits rules
      *  for new accounts as well as new account naming conventions.
@@ -178,7 +304,8 @@ namespace eosiosystem {
                       acnt == FIOSYSTEMACCOUNT ||
                       acnt == EscrowContract ||
                       acnt == FIOORACLEContract ||
-                      acnt == FIOACCOUNT),"set abi not permitted." );
+                      acnt == FIOACCOUNT ||
+                      acnt == PERMSACCOUNT),"set abi not permitted." );
 
 
         eosio::multi_index<"abihash"_n, abi_hash> table(_self, _self.value);
@@ -241,7 +368,6 @@ namespace eosiosystem {
         check(amount > 0,"cannot add locked token amount less or equal 0.");
 
         //BD-4082 begin
-
         auto locks_by_owner = _generallockedtokens.get_index<"byowner"_n>();
         auto lockiter = locks_by_owner.find(owner.value);
         bool haslocks = false;
@@ -261,10 +387,8 @@ namespace eosiosystem {
 
         //if previous locks and not all expired then error.
         check((haslocks && allexpired) || lockiter == locks_by_owner.end(),"cannot emplace locks when locks pre-exist.");
-
         //BD-4162 end
         //BD-4082 end
-
 
         _generallockedtokens.emplace(owner, [&](struct locked_tokens_info_v2 &a) {
             a.id = _generallockedtokens.available_primary_key();
@@ -326,8 +450,9 @@ namespace eosiosystem {
 
         eosio_assert((has_auth(AddressContract) || has_auth(TokenContract) || has_auth(TREASURYACCOUNT) ||
                       has_auth(STAKINGACCOUNT) || has_auth(REQOBTACCOUNT) || has_auth(SYSTEMACCOUNT) ||
-                      has_auth(FIOORACLEContract) || has_auth(FeeContract) || has_auth(EscrowContract)),
-                     "missing required authority of fio.address, fio.token, fio.fee, fio.treasury, fio.oracle, fio.escrow, fio.staking, or fio.reqobt");
+                      has_auth(FIOORACLEContract) || has_auth(FeeContract) || has_auth(EscrowContract) ||
+                      has_auth(PERMSACCOUNT)),
+                     "missing required authority of fio.address, fio.token, fio.fee, fio.treasury, fio.oracle, fio.escrow, fio.staking, fio.perms or fio.reqobt");
         check(is_account(owner), "account must pre exist");
         auto locks_by_owner = _generallockedtokens.get_index<"byowner"_n>();
         auto lockiter = locks_by_owner.find(owner.value);
@@ -341,6 +466,7 @@ namespace eosiosystem {
             }
         }
     }
+
 } /// fio.system
 
 
@@ -349,7 +475,7 @@ EOSIO_DISPATCH( eosiosystem::system_contract,
 (newaccount)(addaction)(remaction)(updateauth)(deleteauth)(linkauth)(unlinkauth)(canceldelay)(onerror)(setabi)
 // fio.system.cpp
 (init)(setnolimits)(addlocked)(addgenlocked)(modgenlocked)(clrgenlocked)(setparams)(setpriv)
-        (rmvproducer)(updtrevision)
+        (rmvproducer)(updtrevision)(newfioacc)
 // delegate_bandwidth.cpp
         (updatepower)
 // voting.cpp

@@ -150,7 +150,8 @@ namespace eosiosystem {
                  account == fioio::STAKINGACCOUNT ||
                  account == fioio::FIOACCOUNT ||
                  account == fioio::FIOORACLEContract ||
-                 account == fioio::FIOACCOUNT)
+                 account == fioio::FIOACCOUNT ||
+                 account == fioio::PERMSACCOUNT)
                 ) {
 
                 //get the sizes of the tx.
@@ -163,11 +164,6 @@ namespace eosiosystem {
                 }.send();
             }
 
-            if (permission == fioio::ACTIVE || permission == fioio::OWNER){
-                eosio_assert((auth.keys.size() == 0) || (auth.keys.size() == 1),
-                             "update auth not permitted on owner or active unless keys is empty or has a single entry matching the account public key");
-                //todo add code to check that if there is a single auth key, the key matches the value in the account map.
-            }
 
             fio_400_assert(auth.waits.size() == 0, "authorization_waits", "authorization_waits",
                            "Waits not supported", ErrorNoAuthWaits);

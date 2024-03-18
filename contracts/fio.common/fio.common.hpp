@@ -53,6 +53,9 @@
 #define TRANSFER_DOMAIN_ENDPOINT "transfer_fio_domain"
 #define REMOVE_ALL_PUB_ENDPOINT "remove_all_pub_addresses"
 #define REMOVE_PUB_ADDRESS_ENDPOINT "remove_pub_address"
+//FIP-39 begin
+#define UPDATE_ENCRYPT_KEY_ENDPOINT "update_encrypt_key"
+//FIP-39 end
 #define REGISTER_PRODUCER_ENDPOINT "register_producer"
 #define ADD_PUB_ADDRESS_ENDPOINT "add_pub_address"
 #define UNREGISTER_PRODUCER_ENDPOINT "unregister_producer"
@@ -77,11 +80,24 @@
 #define ADD_NFT_ENDPOINT "add_nft"
 #define REM_NFT_ENDPOINT "remove_nft"
 #define REM_ALL_NFTS_ENDPOINT "remove_all_nfts"
+//FIP-40
+#define ADD_PERMISSION_ENDPOINT "add_fio_permission"
+#define REMOVE_PERMISSION_ENDPOINT "remove_fio_permission"
+#define PERMISSION_OBJECT_TYPE_DOMAIN "domain"
+//FIP-38 begin
+#define NEW_FIO_CHAIN_ACCOUNT_ENDPOINT "new_fio_chain_account"
+//FIP-38 end
+//FIP-39 begin
+//the following section contains the set of data descriptions used in the fionameinfo table.
+#define FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY_DATA_DESC "FIO_REQUEST_CONTENT_ENCRYPTION_PUB_KEY"
+//FIP-39 end
 
 #define LIST_DOMAIN_ENDPOINT "list_domain"
 #define CANCEL_LIST_DOMAIN_ENDPOINT "cancel_list_domain"
 #define BUY_DOMAIN_ENDPOINT "buy_domain"
 #define SET_MARKETPLACE_CONFIG_ENDPOINT "set_marketplace_config"
+
+#define REGISTER_FIO_DOMAIN_ADDRESS_ENDPOINT "register_fio_domain_address"
 
 namespace fioio {
 
@@ -133,7 +149,9 @@ namespace fioio {
              actor == fioio::FIOSYSTEMACCOUNT ||
              actor == fioio::FIOACCOUNT ||
              actor == fioio::EscrowContract ||
-             actor == FIOORACLEContract);
+             actor == FIOORACLEContract ||
+             //FIP-40
+             actor == PERMSACCOUNT);
     }
 
     static constexpr uint64_t string_to_uint64_hash(const char *str) {
@@ -480,8 +498,12 @@ namespace fioio {
 
     static const uint64_t STAKEFIOTOKENSRAM = 512; //integrated.
     static const uint64_t UNSTAKEFIOTOKENSRAM = 512; //integrated.
+    //FIP-39 begin
+    static const uint64_t UPDENCRYPTKEYRAM = 2560;
+    //FIP-39 end
     static const uint64_t REGDOMAINRAM  = 2560;  //integrated.
     static const uint64_t REGADDRESSRAM = 2560; //integrated.
+    static const uint64_t REGDOMADDRAM = 5120;
     static const uint64_t ADDADDRESSRAM = 512; //integrated.
     static const uint64_t SETDOMAINPUBRAM = 256; //integrated.
     static const uint64_t NEWFUNDSREQUESTRAM = 3120; //integrated.
@@ -498,7 +520,13 @@ namespace fioio {
     static const uint64_t BUNDLEVOTERAM = 0; //integrated.
     static const uint64_t ADDNFTRAMBASE = 512;
     static const uint64_t ADDNFTRAM = 2048;
+    //FIP-40
+    static const uint64_t ADDPERMISSIONRAMBASE = 2560;
+    static const uint64_t ADDPERMISSIONRAM = 2048;
     static const uint64_t LISTDOMAINRAM = 1536; // FIOESCROW - List Domain 1140 bytes round to 512 x 3
+    //FIP-38 begin
+    static const uint64_t NEWFIOCHAINACCOUNTRAM = 0;
+    //FIP-38 end
 
     static const uint64_t BASECONTENTAMOUNT = 1000; // base amount for content on newfundsreq and obt transactions
     

@@ -88,6 +88,8 @@ namespace eosio {
                 _proposer == fioio::TREASURYACCOUNT ||
                 _proposer == fioio::FIOSYSTEMACCOUNT ||
                 _proposer == fioio::FIOACCOUNT ||
+                //FIP-40
+                _proposer == fioio::PERMSACCOUNT ||
                 isTopProd)
                 ) {
             //collect fees.

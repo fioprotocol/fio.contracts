@@ -66,6 +66,22 @@ namespace fioio {
         return true;
     }
 
+    inline bool validateFioNameFormatTPID(const FioAddress &fa) {
+        if (fa.domainOnly) {
+                return false;
+        } else {
+            if (fa.fioaddress.size() < 3 || fa.fioaddress.size() > maxFioLen) {
+                return false;
+            }
+            if (!validateCharName(fa.fioname) || !validateCharName(fa.fiodomain)) {
+                return false;
+            };
+        }
+
+        return true;
+    }
+
+
     inline bool validateFioNameFormat(const FioAddress &fa) {
         if (fa.domainOnly) {
             if (fa.fiodomain.size() < 1 || fa.fiodomain.size() > maxFioDomainLen) {
@@ -107,7 +123,7 @@ namespace fioio {
         if (tpid.size() > 0) {
             FioAddress fa;
             getFioAddressStruct(tpid, fa);
-            return validateFioNameFormat(fa);
+            return validateFioNameFormatTPID(fa);
         }
         return true;
     }

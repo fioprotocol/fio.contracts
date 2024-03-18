@@ -45,6 +45,28 @@
       ]
     },
     {
+       "name": "fioname_info_item",
+       "base": "",
+       "fields": [
+         {
+           "name": "id",
+           "type": "uint64"
+         },
+         {
+           "name": "fionameid",
+           "type": "uint64"
+         },
+         {
+           "name": "datadesc",
+           "type": "string"
+         },
+         {
+           "name": "datavalue",
+           "type": "string"
+         }
+       ]
+     },
+    {
       "name": "domain",
       "base": "",
       "fields": [
@@ -129,6 +151,62 @@
         {
           "name": "tpid",
           "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "updcryptkey",
+      "base": "",
+      "fields": [
+        {
+          "name": "fio_address",
+          "type": "string"
+        },
+        {
+          "name": "encrypt_public_key",
+          "type": "string"
+        },
+        {
+          "name": "max_fee",
+          "type": "int64"
+        },
+        {
+          "name": "actor",
+          "type": "name"
+        },
+        {
+          "name": "tpid",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "regdomadd",
+      "base": "",
+      "fields": [
+        {
+          "name": "fio_address",
+          "type": "string"
+        },
+        {
+          "name": "is_public",
+          "type": "int8"
+        },
+        {
+          "name": "owner_fio_public_key",
+          "type": "string"
+        },
+        {
+          "name": "max_fee",
+          "type": "int64"
+        },
+        {
+          "name": "tpid",
+          "type": "string"
+        },
+        {
+          "name": "actor",
+          "type": "name"
         }
       ]
     },
@@ -426,6 +504,20 @@
         }
       ]
     },
+      {
+               "name": "burndomain",
+               "base": "",
+               "fields": [
+               {
+                               "name": "domainname",
+                               "type": "string"
+                             },
+                 {
+                   "name": "domainidx",
+                   "type": "uint64"
+                 }
+               ]
+             },
     {
       "name": "burnexpired",
       "base": "",
@@ -711,6 +803,16 @@
       "ricardian_contract": ""
     },
     {
+      "name": "regdomadd",
+      "type": "regdomadd",
+      "ricardian_contract": ""
+    },
+    {
+       "name": "updcryptkey",
+       "type": "updcryptkey",
+       "ricardian_contract": ""
+    },
+    {
       "name": "renewdomain",
       "type": "renewdomain",
       "ricardian_contract": ""
@@ -720,6 +822,11 @@
       "type": "renewaddress",
       "ricardian_contract": ""
     },
+         {
+           "name": "burndomain",
+           "type": "burndomain",
+           "ricardian_contract": ""
+         },
     {
       "name": "burnexpired",
       "type": "burnexpired",
@@ -792,6 +899,13 @@
       ],
       "type": "fioname"
     },
+     {
+       "name": "fionameinfo",
+       "index_type": "i64",
+       "key_names": [],
+       "key_types": [],
+       "type": "fioname_info_item"
+     },
     {
       "name": "domains",
       "index_type": "i64",
