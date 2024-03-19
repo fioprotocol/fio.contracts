@@ -98,6 +98,7 @@
 #define SET_MARKETPLACE_CONFIG_ENDPOINT "set_marketplace_config"
 
 #define REGISTER_FIO_DOMAIN_ADDRESS_ENDPOINT "register_fio_domain_address"
+#define AUDIT_VOTE_FEE_ENDPOINT "audit_vote"
 
 namespace fioio {
 
@@ -534,7 +535,7 @@ namespace fioio {
     //FIP-38 end
 
     static const uint64_t BASECONTENTAMOUNT = 1000; // base amount for content on newfundsreq and obt transactions
-    
+    static const uint64_t AUDITVOTERAM = 2048;
   
   
 } // namespace fioio

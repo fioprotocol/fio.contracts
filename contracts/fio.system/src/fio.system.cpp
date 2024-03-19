@@ -648,6 +648,25 @@ namespace eosiosystem {
         auto auditaccount_iter = votersbyowner.find(actor.value);
         check(auditaccount_iter == votersbyowner.end()," cannot call auditvote using an account that has voted, please use an account that has not voted.\n");
 
+        //fees and ram bump
+        const uint128_t endpoint_hash = string_to_uint128_hash(AUDIT_VOTE_FEE_ENDPOINT);
+
+        auto fees_by_endpoint = _fiofees.get_index<"byendpoint"_n>();
+        auto fee_iter = fees_by_endpoint.find(endpoint_hash);
+        fio_400_assert(fee_iter != fees_by_endpoint.end(), "endpoint_name", AUDIT_VOTE_FEE_ENDPOINT,
+                       "FIO fee not found for endpoint", ErrorNoEndpoint);
+
+        const uint64_t reg_amount = fee_iter->suf_amount;
+        const uint64_t fee_type = fee_iter->type;
+
+        fio_400_assert(fee_type == 0, "fee_type", to_string(fee_type),
+                       "unexpected fee type for endpoint audit_vote, expected 0",
+                       ErrorNoEndpoint);
+
+        fio_400_assert(max_fee >= (int64_t) reg_amount, "max_fee", to_string(max_fee),
+                       "Fee exceeds supplied maximum.",
+                       ErrorMaxFeeExceeded);
+
         //get audit state.
        if( _audit_global_info.audit_reset){
            _audit_global_info.audit_reset = false;
@@ -692,7 +711,7 @@ namespace eosiosystem {
                response_string = string("{\"status\": \"OK\",\"audit_phase\":\"") +
                                              to_string(_audit_global_info.audit_phase) + string("\",\"records_processed\": ") +
                                              to_string(recordcount) + string(",\"fee_collected\":") +
-                                              to_string(0) + string("}");
+                                              to_string(reg_amount) + string("}");
                break;
            }
            case 2: {
@@ -802,7 +821,7 @@ namespace eosiosystem {
                response_string = string("{\"status\": \"OK\",\"audit_phase\":\"") +
                        to_string(_audit_global_info.audit_phase) + string("\",\"records_processed\": ") +
                                               to_string(recordcount) + string(",\"fee_collected\":") +
-                                              to_string(0) + string("}");
+                                              to_string(reg_amount) + string("}");
 
 
                break;
@@ -841,7 +860,7 @@ namespace eosiosystem {
                response_string = string("{\"status\": \"OK\",\"audit_phase\":\"") +
                                  to_string(_audit_global_info.audit_phase) + string("\",\"records_processed\": ") +
                                  to_string(recordcount) + string(",\"fee_collected\":") +
-                                 to_string(0) + string("}");
+                                 to_string(reg_amount) + string("}");
 
                break;
            }
@@ -883,7 +902,7 @@ namespace eosiosystem {
                response_string = string("{\"status\": \"OK\",\"audit_phase\":\"") +
                        to_string(_audit_global_info.audit_phase) + string("\",\"records_processed\": ") +
                                               to_string(0) + string(",\"fee_collected\":") +
-                                              to_string(0) + string("}");
+                                              to_string(reg_amount) + string("}");
 
 
                break;
@@ -895,6 +914,19 @@ namespace eosiosystem {
                break;
            }
        }
+
+
+        fio_fees(actor, asset(reg_amount, FIOSYMBOL), NEW_FIO_CHAIN_ACCOUNT_ENDPOINT);
+        processbucketrewards("", reg_amount, get_self(), actor);
+
+        if (AUDITVOTERAM > 0) {
+            action(
+                    permission_level{SYSTEMACCOUNT, "active"_n},
+                    "eosio"_n,
+                    "incram"_n,
+                    std::make_tuple(actor, AUDITVOTERAM)
+            ).send();
+        }
 
         send_response(response_string.c_str());
 
