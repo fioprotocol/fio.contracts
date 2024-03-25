@@ -155,9 +155,8 @@ namespace eosio {
         //based on grant type.
         auto lockiter = lockedTokensTable.find(tokenowner.value);
         if (lockiter != lockedTokensTable.end()) {
-            //TEST LOCKED TOKENS uint32_t issueplus210 = lockiter->timestamp+(25*60);
-            uint32_t issueplus210 = lockiter->timestamp + (210 * SECONDSPERDAY);
 
+            uint32_t issueplus210 = lockiter->timestamp + (210 * SECONDSPERDAY);
             if (
                 //if lock type 1 or 2 or 3, 4 and not a fee subtract remaining locked amount from balance
                     (((lockiter->grant_type == 1) || (lockiter->grant_type == 2) || (lockiter->grant_type == 3) ||
@@ -369,6 +368,13 @@ namespace eosio {
                  {actor}
                 );
 
+         //update token locks on receive of tokens
+         if(updatepowerowner) {
+             INLINE_ACTION_SENDER(eosiosystem::system_contract, unlocktokens)
+                     ("eosio"_n, {{_self, "active"_n}},
+                      {new_account_name}
+                     );
+         }
         accounts from_acnts(_self, actor.value);
         const auto acnts_iter = from_acnts.find(FIOSYMBOL.code().raw());
         fio_400_assert(acnts_iter != from_acnts.end(), "amount", to_string(qty.amount),
@@ -408,7 +414,35 @@ namespace eosio {
                      {new_account_name, true}
                     );
         }
-        return new_account_name;
+
+
+        //check if accounts voted, reset the audit if they have
+
+
+         //read voters check if sender or receiver is in the voters table, if so reset the audit
+         auto votersbyowner = voters.get_index<"byowner"_n>();
+         auto votersbyowner_iter = votersbyowner.find(actor.value);
+         bool perfreset = false;
+         if (votersbyowner_iter != votersbyowner.end()){
+             perfreset = true;
+         }
+         else if (accountExists) {
+             votersbyowner_iter = votersbyowner.find(new_account_name.value);
+             if (votersbyowner_iter != votersbyowner.end()) {
+                 perfreset = true;
+             }
+         }
+
+          if(perfreset) {
+              action(
+                      permission_level{get_self(), "active"_n},
+                      SYSTEMACCOUNT,
+                      "resetaudit"_n,
+                      ""
+              ).send();
+          }
+
+         return new_account_name;
     }
 
     void token::transfer(name from,
@@ -469,6 +503,29 @@ namespace eosio {
                        "Insufficient Funds.",
                        ErrorInsufficientUnlockedFunds);
 
+        //read voters check if sender or receiver is in the voters table, if so reset the audit
+        auto votersbyowner = voters.get_index<"byowner"_n>();
+        auto votersbyowner_iter = votersbyowner.find(to.value);
+        bool perfreset = false;
+        if (votersbyowner_iter != votersbyowner.end()){
+            perfreset = true;
+        }
+        else {
+            votersbyowner_iter = votersbyowner.find(from.value);
+            if (votersbyowner_iter != votersbyowner.end()) {
+                perfreset = true;
+            }
+        }
+
+        if(perfreset) {
+            action(
+                    permission_level{get_self(), "active"_n},
+                    SYSTEMACCOUNT,
+                    "resetaudit"_n,
+                    ""
+            ).send();
+        }
+
         auto payer = has_auth(to) ? to : from;
 
         sub_balance(from, quantity);
@@ -510,6 +567,8 @@ namespace eosio {
                     std::make_tuple(actor, TRANSFERPUBKEYRAM)
             ).send();
         }
+
+
 
         const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
                                        to_string(reg_amount) + string("}");

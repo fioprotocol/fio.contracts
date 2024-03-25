@@ -42,6 +42,7 @@ namespace eosio {
         eosiosystem::locked_tokens_table lockedTokensTable;
         eosiosystem::general_locks_table_v2 generalLockTokensTable;
         fioio::account_staking_table accountstaking;
+        eosiosystem::voters_table  voters;
 
     public:
         token(name s, name code, datastream<const char *> ds) : contract(s, code, ds),
@@ -52,6 +53,7 @@ namespace eosio {
                                                                 fiofees(fioio::FeeContract, fioio::FeeContract.value),
                                                                 tpids(TPIDContract, TPIDContract.value),
                                                                 lockedTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
+                                                                voters(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                                                                 generalLockTokensTable(SYSTEMACCOUNT, SYSTEMACCOUNT.value),
                                                                 accountstaking(STAKINGACCOUNT,STAKINGACCOUNT.value){
             fioio::configs_singleton configsSingleton(fioio::FeeContract, fioio::FeeContract.value);

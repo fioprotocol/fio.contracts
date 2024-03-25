@@ -507,19 +507,19 @@ public:
                 ).send();
             }
             else {
+                bool canvote = true;
+                int64_t lockamount = (int64_t)(stakingrewardamount + amount);
 
-                    bool canvote = true;
-                    int64_t lockamount = (int64_t)(stakingrewardamount + amount);
+                vector <eosiosystem::lockperiodv2> periods;
+                eosiosystem::lockperiodv2 period;
+                period.duration = UNSTAKELOCKDURATIONSECONDS;
+                period.amount = lockamount;
+                periods.push_back(period);
 
-                    vector <eosiosystem::lockperiodv2> periods;
-                    eosiosystem::lockperiodv2 period;
-                    period.duration = UNSTAKELOCKDURATIONSECONDS;
-                    period.amount = lockamount;
-                    periods.push_back(period);
-                    INLINE_ACTION_SENDER(eosiosystem::system_contract, addgenlocked)
-                            ("eosio"_n, {{_self, "active"_n}},
-                             {actor, periods, canvote, lockamount}
-                            );
+                INLINE_ACTION_SENDER(eosiosystem::system_contract, ovrwrtgenlck)
+                        ("eosio"_n, {{_self, "active"_n}},
+                         {actor, periods,lockamount,canvote}
+                        );
 
             }
             //BD-3941 end
