@@ -1,5 +1,5 @@
-# FIO
-The Foundation for Interwallet Operability (FIO) or, in short, the FIO Protocol, is an open-source project based on EOSIO 1.8+.
+# FIO.Contracts
+The Foundation for Interwallet Operability (FIO) or, in short, the FIO Protocol, is an open-source project based on EOSIO 1.8+. The smart contracts provide the basic functions of the FIO blockchain automating the execution of "agreements" by the blockchain producers for such things as account creation and use, fees, and voting.
 
 * For information on FIO Protocol, visit [FIO](https://fio.net).
 * For information on the FIO Chain, API, and SDKs, including detailed clone, build and deploy instructions, visit [FIO Protocol Developer Hub](https://dev.fio.net).
@@ -7,9 +7,7 @@ The Foundation for Interwallet Operability (FIO) or, in short, the FIO Protocol,
 * To contribute, please review [Contributing to FIO](CONTRIBUTING.md)
 * To join the community, visit [Discord](https://discord.com/invite/pHBmJCc)
 
-## Contracts
-Smart contracts that provide some of the basic functions of the FIO blockchain
-
+## Contract Summary
 This repository contains examples of these privileged contracts that are useful when deploying, managing, and/or using an FIO blockchain.  They are provided for reference purposes:
 
    * [eosio.bios](./contracts/eosio.bios)
