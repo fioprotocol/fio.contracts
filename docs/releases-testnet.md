@@ -1,6 +1,6 @@
 # Testnet Release History
 
-## v2.10.0-rc-1
+## v2.10.0-rc1
 #### ABI
 | Contract | Hash | Update |
 | -------- | ---- | ------ |
