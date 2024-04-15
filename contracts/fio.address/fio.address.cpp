@@ -932,8 +932,23 @@ namespace fioio {
 
 
 
+//TESTINGONLY DO NOT DELIVER
+        [[eosio::action]]
+        void
+        fmtepochtm(const int64_t &epochtmseconds) {
 
 
+
+            struct tm timeinfo;
+            fioio::convertfiotime(epochtmseconds, &timeinfo);
+            std::string timebuffer = fioio::tmstringformat(timeinfo);
+
+            const string response_string = string("{\"status\": \"OK\",\"timeresult\":\"") +
+                                           timebuffer + string("\"")  + string("}");
+
+            send_response(response_string.c_str());
+        }
+        //TESTINGONLY DO NOT DELIVER
 
 
         [[eosio::action]]
@@ -2731,6 +2746,9 @@ namespace fioio {
     };
 
     EOSIO_DISPATCH(FioNameLookup,(regaddress)(addaddress)(remaddress)(remalladdr)(regdomain)(renewdomain)(renewaddress)
+    //TESTING ONLY DO NOT DELIVER
+            (fmtepochtm)
+            //TESTING ONLY DO NOT deliver
     (setdomainpub)(burnexpired)(burndomain)(decrcounter)(bind2eosio)(burnaddress)(xferdomain)(xferaddress)(addbundles)(xferescrow)
     (addnft)(remnft)(remallnfts)(burnnfts)(regdomadd)(updcryptkey))
 }

@@ -154,6 +154,16 @@
         }
       ]
     },
+         {
+           "name": "fmtepochtm",
+           "base": "",
+           "fields": [
+             {
+               "name": "epochtmseconds",
+               "type": "int64"
+             }
+           ]
+         },
     {
       "name": "updcryptkey",
       "base": "",
