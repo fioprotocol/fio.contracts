@@ -59,7 +59,7 @@ namespace fioio {
 
 
 
-    void dateTimeStructFromEpoch(long epochTime, struct tm& resultTime) {
+    void dateTimeStructFromEpoch(long epochTime, struct tm *resultTime) {
         const long secondsPerDay = 86400;
         const long secondsPerYear = 31536000;
         const long secondsPerLeapYear = 31622400;
@@ -89,12 +89,12 @@ namespace fioio {
         int minute = (remainingSeconds % 3600) / 60;
         int second = remainingSeconds % 60;
         // Populate the tm struct
-        resultTime.tm_sec = second;
-        resultTime.tm_min = minute;
-        resultTime.tm_hour = hour;
-        resultTime.tm_mday = day;
-        resultTime.tm_mon = month - 1;
-        resultTime.tm_year = year - 1900;
+        resultTime->tm_sec = second;
+        resultTime->tm_min = minute;
+        resultTime->tm_hour = hour;
+        resultTime->tm_mday = day;
+        resultTime->tm_mon = month - 1;
+        resultTime->tm_year = year - 1900;
     }
 
 
