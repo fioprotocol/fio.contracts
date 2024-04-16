@@ -87,7 +87,7 @@ namespace fioio {
         int remainingSeconds = epochTime % secondsPerDay;
         int hour = remainingSeconds / 3600;
         int minute = (remainingSeconds % 3600) / 60;
-        int second = remainingSeconds % 60;      /
+        int second = remainingSeconds % 60;      
         // Populate the tm struct
         resultTime.tm_sec = second;
         resultTime.tm_min = minute;
