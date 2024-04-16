@@ -23,9 +23,10 @@ namespace fioio {
     std::string tmstringformat(struct tm timeinfo) {
         std::string timebuffer = to_string(timeinfo.tm_year);
         timebuffer.append("-");
-        if (timeinfo.tm_mon < 10) {
+        if (timeinfo.tm_mon+1 < 10) {
             timebuffer.append("0");
         }
+        //tm_mon is 0 based
         timebuffer.append(to_string(timeinfo.tm_mon+1));
         timebuffer.append("-");
         if (timeinfo.tm_mday < 10) {
@@ -116,20 +117,6 @@ namespace fioio {
         }
 
         tm->tm_mon = tmonth % 12;
-        /*
-        if (tm->tm_mon >= 12) {
-            tm->tm_mon -= 12;
-
-
-            if(tm->tm_mon == 00){ // some unknown but that makes the 12th month 00.
-                tm->tm_mon = 12;
-            }
-        }
-
-        if((tm->tm_mon >= 0) && (tm->tm_mon <= 3)){
-            tm->tm_year++;
-        }
-         */
         tm->tm_mday = remdays + 1;
         tm->tm_wday = wday;
         tm->tm_yday = yday;
