@@ -940,7 +940,8 @@ namespace fioio {
 
 
             struct tm timeinfo;
-            fioio::convertfiotime(epochtmseconds, &timeinfo);
+           // fioio::convertfiotime(epochtmseconds, &timeinfo);
+            fioio::dateTimeStructFromEpoch(epochtmseconds, &timeinfo);
             std::string timebuffer = fioio::tmstringformat(timeinfo);
 
             const string response_string = string("{\"status\": \"OK\",\"timeresult\":\"") +
