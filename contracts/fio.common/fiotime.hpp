@@ -26,7 +26,7 @@ namespace fioio {
         if (timeinfo.tm_mon < 10) {
             timebuffer.append("0");
         }
-        timebuffer.append(to_string(timeinfo.tm_mon));
+        timebuffer.append(to_string(timeinfo.tm_mon+1));
         timebuffer.append("-");
         if (timeinfo.tm_mday < 10) {
             timebuffer.append("0");
@@ -110,7 +110,7 @@ namespace fioio {
             return -1;
 
         tm->tm_year = years + 2000;
-        int tmonth = months+3;
+        int tmonth = months-1+3;
         if (tmonth > 11){
             tm->tm_year = years + 2000 + 1;
         }
