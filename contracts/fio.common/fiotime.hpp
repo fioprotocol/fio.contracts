@@ -52,54 +52,7 @@ namespace fioio {
     }
 
 
- //temporary code for new computations of epoch times
-    bool isLeapYear(int year) {
-        return ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0));
-    }
-
-
-
-    void dateTimeStructFromEpoch(long epochTime, struct tm *resultTime) {
-        const long secondsPerDay = 86400;
-        const long secondsPerYear = 31536000;
-        const long secondsPerLeapYear = 31622400;
-        const long epochYear = 1970;
-        // Calculate year
-        long totalDays = epochTime / secondsPerDay;
-        int year = epochYear + totalDays / 365;
-        int leapYears = (year - epochYear) / 4 - (year - epochYear) / 100 + (year - epochYear) / 400;
-        // Adjust for leap years
-        totalDays -= leapYears;
-        while (totalDays < 0 || (isLeapYear(year + 1) && totalDays >= 366) || (!isLeapYear(year + 1) && totalDays >= 365)) {
-            totalDays -= isLeapYear(year + 1) ? 366 : 365;
-            year++;
-        }
-        // Calculate month and day
-        int daysInMonth[] = {31, 28 + isLeapYear(year), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-        int month = 1;
-        while (totalDays >= daysInMonth[month - 1]) {
-            totalDays -= daysInMonth[month - 1];
-            month++;
-        }
-        // Calculate day
-        int day = totalDays + 1;
-        // Calculate hour, minute, and second
-        int remainingSeconds = epochTime % secondsPerDay;
-        int hour = remainingSeconds / 3600;
-        int minute = (remainingSeconds % 3600) / 60;
-        int second = remainingSeconds % 60;
-        // Populate the tm struct
-        resultTime->tm_sec = second;
-        resultTime->tm_min = minute;
-        resultTime->tm_hour = hour;
-        resultTime->tm_mday = day;
-        resultTime->tm_mon = month - 1;
-        resultTime->tm_year = year - 1900;
-    }
-
-
-
-
+ 
 
 
         int convertfiotime(long long t, struct tm *tm) {
@@ -157,15 +110,26 @@ namespace fioio {
             return -1;
 
         tm->tm_year = years + 2000;
-        tm->tm_mon = months + 3;
+        int tmonth = months+3;
+        if (tmonth > 11){
+            tm->tm_year = years + 2000 + 1;
+        }
+
+        tm->tm_mon = tmonth % 11;
+        /*
         if (tm->tm_mon >= 12) {
             tm->tm_mon -= 12;
-            //tm->tm_year++;
+
 
             if(tm->tm_mon == 00){ // some unknown but that makes the 12th month 00.
                 tm->tm_mon = 12;
             }
         }
+
+        if((tm->tm_mon >= 0) && (tm->tm_mon <= 3)){
+            tm->tm_year++;
+        }
+         */
         tm->tm_mday = remdays + 1;
         tm->tm_wday = wday;
         tm->tm_yday = yday;
