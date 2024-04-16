@@ -52,7 +52,7 @@ namespace fioio {
     }
 
 
- 
+
 
 
         int convertfiotime(long long t, struct tm *tm) {
@@ -115,7 +115,7 @@ namespace fioio {
             tm->tm_year = years + 2000 + 1;
         }
 
-        tm->tm_mon = tmonth % 11;
+        tm->tm_mon = tmonth % 12;
         /*
         if (tm->tm_mon >= 12) {
             tm->tm_mon -= 12;
