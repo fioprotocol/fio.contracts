@@ -154,16 +154,6 @@
         }
       ]
     },
-         {
-           "name": "fmtepochtm",
-           "base": "",
-           "fields": [
-             {
-               "name": "epochtmseconds",
-               "type": "int64"
-             }
-           ]
-         },
     {
       "name": "updcryptkey",
       "base": "",
@@ -787,11 +777,6 @@
       "type": "decrcounter",
       "ricardian_contract": ""
     },
-         {
-           "name": "fmtepochtm",
-           "type": "fmtepochtm",
-           "ricardian_contract": ""
-         },
     {
       "name": "regaddress",
       "type": "regaddress",
