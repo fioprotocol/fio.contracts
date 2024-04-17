@@ -111,7 +111,8 @@ namespace fioio {
             return -1;
 
         tm->tm_year = years + 2000;
-        int tmonth = months-1+3;
+        //ajust month for using march 1 2000 as our leapoch
+        int tmonth = months+2;
         if (tmonth > 11){
             tm->tm_year = years + 2000 + 1;
         }
