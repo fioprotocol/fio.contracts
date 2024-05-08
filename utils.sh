@@ -32,6 +32,7 @@ function setup() {
     fi
     ([[ -d $BUILD_DIR ]]) && execute rm -rf $BUILD_DIR # cleanup old build directory
     execute mkdir -p $BUILD_DIR
+    execute-always mkdir -p ${TEMP_DIR}
     execute-always mkdir -p $FIO_CNTRX_TMP_DIR
     execute mkdir -p $FIO_CNTRX_APTS_DIR
 }
