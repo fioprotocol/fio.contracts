@@ -73,14 +73,6 @@ echo
 echo "Performing OS/System Validation..."
 ([[ $NAME == "Ubuntu" ]] && ([[ "$(echo ${VERSION_ID})" == "18.04" ]] || [[ "$(echo ${VERSION_ID})" == "20.04" ]] || [[ "$(echo ${VERSION_ID})" == "22.04" ]])) || (echo " - You must be running 18.04.x or 20.04.x to install EOSIO." && exit 1)
 
-# Determine FIO install if any; if fio is built and installed, using pinned clang, cmake, etc then we want to use that
-# 1) check -f optarg
-# 2) check $HOME/.fio <- new. load fio env if exists to get fio install dir and cmake
-# 3) others? maybe ask...
-if [[ -z $FIO_INSTALL_DIR ]]; then
-   [[ -d $HOME/.fio ]] && [[ -s "$HOME/.fio/fio.sh" ]] && \. "$HOME/.fio/fio.sh"
-fi
-
 # Set up the working directories for build, etc
 setup
 
@@ -105,14 +97,12 @@ printf "\t=========== Building FIO Contracts ===========\n\n"
 RED='\033[0;31m'
 NC='\033[0m'
 
-CORES=`getconf _NPROCESSORS_ONLN`
-
 mkdir -p build
-pushd build &> /dev/null
+pushd build
 
 ${CMAKE} ../
-make -j${CORES}
-popd &> /dev/null
+make -j${JOBS}
+popd
 
 printf "\t=========== Copying FIO Contracts ABIs ===========\n\n"
 

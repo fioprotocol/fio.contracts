@@ -23,6 +23,14 @@ function execute-without-verbose() {
   VERBOSE=$ORIGINAL_VERBOSE
 }
 
+function pushd () {
+    command pushd "$@" &> /dev/null
+}
+
+function popd () {
+    command popd "$@" &> /dev/null
+}
+
 function setup() {
     if $VERBOSE; then
         echo "VERBOSE: ${VERBOSE}"
@@ -59,6 +67,7 @@ function set-system-vars() {
         export DISK_TOTAL=$(( DISK_TOTAL_KB / 1048576 ))
         export DISK_AVAIL=$(( DISK_AVAIL_KB / 1048576 ))
     fi
+    export CPU_CORES=$(grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu)
     export JOBS=${JOBS:-$(( MEM_GIG > CPU_CORES ? CPU_CORES : MEM_GIG ))}
 }
 
@@ -84,9 +93,10 @@ function is-cmake-built() {
     if [[ -x ${FIO_CNTRX_TMP_DIR}/cmake-${CMAKE_VERSION}/build/bin/cmake ]]; then
         cmake_version=$(${FIO_CNTRX_TMP_DIR}/cmake-${CMAKE_VERSION}/build/bin/cmake --version | grep version | awk '{print $3}')
         if [[ $cmake_version =~ 3.2 ]]; then
-            #cmake_install_location=$(cat ${FIO_CNTRX_TMP_DIR}/cmake-${CMAKE_VERSION}/build/CMakeCache.txt | grep CMAKE_INSTALL_PREFIX | awk -F= '{print $2}')
-            #[[ -x $cmake_install_location/bin/cmake ]]
-            #[[ $? -eq 0 ]] && return
+            #cat ${FIO_CNTRX_TMP_DIR}/llvm4/build/CMakeCache.txt | grep CMAKE_INSTALL_PREFIX | grep ${EOSIO_INSTALL_DIR} >/dev/null
+            #if [[ $? -eq 0 ]]; then
+            #    return
+            #fi
             return
         fi
     fi
