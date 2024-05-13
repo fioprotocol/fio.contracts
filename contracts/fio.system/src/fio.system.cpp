@@ -738,8 +738,8 @@ namespace eosiosystem {
                            operationcount += 2;
                        } else {
                            //get the current votable balance of the account
-                           uint64_t bal =  eosio::token::computeusablebalance(voter->owner,false, false);
-
+                           //uint64_t bal =  eosio::token::computeusablebalance(voter->owner,false, false);
+                           uint64_t bal = get_votable_balance(voter->owner);
                            //if the voter is not proxying to a proxy.
                            if (!voter->proxy) {
                                //check for the known data incoherency of the is auto proxy flag, correct this if its present.
