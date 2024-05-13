@@ -93,7 +93,7 @@ function is-cmake-built() {
     if [[ -x ${FIO_CNTRX_TMP_DIR}/cmake-${CMAKE_VERSION}/build/bin/cmake ]]; then
         cmake_version=$(${FIO_CNTRX_TMP_DIR}/cmake-${CMAKE_VERSION}/build/bin/cmake --version | grep version | awk '{print $3}')
         if [[ $cmake_version =~ 3.2 ]]; then
-            #cat ${FIO_CNTRX_TMP_DIR}/llvm4/build/CMakeCache.txt | grep CMAKE_INSTALL_PREFIX | grep ${EOSIO_INSTALL_DIR} >/dev/null
+            #cat ${FIO_CNTRX_TMP_DIR}/cmake-${CMAKE_VERSION}/build/CMakeCache.txt | grep CMAKE_INSTALL_PREFIX | grep ${EOSIO_INSTALL_DIR} >/dev/null
             #if [[ $? -eq 0 ]]; then
             #    return
             #fi
