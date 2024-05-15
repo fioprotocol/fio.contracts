@@ -92,7 +92,7 @@ fi
 ensure-cmake
 [[ ! -x "${CMAKE}" ]] && echo "CMake not found! Exiting..." && exit 1
 
-ensure-fio.cdt
+ensure-cdt
 if ! hash eosio-cpp 2>/dev/null; then
    echo "The FIO Contract Development Toolkit is not installed. If contract development will be performed, either"
    echo "re-execute this script with the '-t' option or perform the following steps to clone, build and install the"
