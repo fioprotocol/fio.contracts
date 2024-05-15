@@ -44,7 +44,6 @@ function setup() {
     execute-always mkdir -p ${FIO_CNTRX_TMP_DIR}
     execute mkdir -p ${FIO_CNTRX_APTS_DIR}
     execute-always mkdir -p ${FIO_CDT_TMP_DIR}
-    execute mkdir -p ${FIO_CDT_APTS_DIR}
 }
 
 function set-system-vars() {
@@ -129,8 +128,8 @@ function install-cmake() {
 function ensure-fio.cdt() {
     echo
     echo "${COLOR_CYAN}[Ensuring fio.cdt installation]${COLOR_NC}"
-    # if ! hash eosio-cpp; then ...
-    if [[ ! (-d "${FIO_CDT_APTS_DIR}" && -x ${FIO_CDT_APTS_DIR}/bin/eosio-cpp) ]]; then
+    #if [[ ! -d "${FIO_CDT_TMP_DIR}/fio.cdt-${CDT_VERSION}/build/bin/eosio-cpp" ]]; then
+    if ! hash eosio-cpp 2>/dev/null;; then
         if ! is-cdt-built; then
             build-cdt
         fi
@@ -138,7 +137,12 @@ function ensure-fio.cdt() {
         echo " - FIO.CDT successfully installed @ ${FIO_CDT_INSTALL_DIR}"
         echo ""
     else
-        echo " - FIO.CDT found @ ${FIO_CDT_INSTALL_DIR}."
+        [[ ! -z $(command -v eosio-cpp 2>/dev/null) ]]) && cdt_bin=$(command -v cmake 2>/dev/null) && [[ ${cdt_bin} =~ ${FIO_CDT_INSTALL_DIR} ]]
+        if [[ $? -eq 0 ]] then
+            echo " - FIO.CDT found @ ${FIO_CDT_INSTALL_DIR}."
+        else
+            echo " - FIO.CDT found @ ${cdt_bin}."
+        fi
         echo ""
     fi
 }
