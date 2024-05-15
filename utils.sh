@@ -35,14 +35,16 @@ function setup() {
     if $VERBOSE; then
         echo "VERBOSE: ${VERBOSE}"
         echo "TEMP_DIR: ${TEMP_DIR}"
-        echo "FIO_CNTRX_TMP_DIR: $FIO_CNTRX_TMP_DIR"
-        echo "FIO_CNTRX_APTS_DIR: $FIO_CNTRX_APTS_DIR"
+        echo "FIO_CNTRX_TMP_DIR: ${FIO_CNTRX_TMP_DIR}"
+        echo "FIO_CNTRX_APTS_DIR: ${FIO_CNTRX_APTS_DIR}"
     fi
-    ([[ -d $BUILD_DIR ]]) && execute rm -rf $BUILD_DIR # cleanup old build directory
-    execute mkdir -p $BUILD_DIR
+    ([[ -d ${BUILD_DIR} ]]) && execute rm -rf ${BUILD_DIR} # cleanup old build directory
+    execute mkdir -p ${BUILD_DIR}
     execute-always mkdir -p ${TEMP_DIR}
-    execute-always mkdir -p $FIO_CNTRX_TMP_DIR
-    execute mkdir -p $FIO_CNTRX_APTS_DIR
+    execute-always mkdir -p ${FIO_CNTRX_TMP_DIR}
+    execute mkdir -p ${FIO_CNTRX_APTS_DIR}
+    execute-always mkdir -p ${FIO_CDT_TMP_DIR}
+    execute mkdir -p ${FIO_CDT_APTS_DIR}
 }
 
 function set-system-vars() {
@@ -79,7 +81,8 @@ function ensure-cmake() {
             build-cmake
         fi
         install-cmake
-        [[ -z "${CMAKE}" ]] && export CMAKE="${CMAKE_INSTALL_DIR}/bin/cmake"
+        export CMAKE_LOCATION=${CMAKE_INSTALL_DIR}
+        export CMAKE="${CMAKE_INSTALL_DIR}/bin/cmake"
         echo " - CMAKE successfully installed @ ${CMAKE}"
         echo ""
     else
@@ -121,4 +124,56 @@ function install-cmake() {
     execute bash -c "cd $FIO_CNTRX_TMP_DIR/cmake-${CMAKE_VERSION} \
         && cd build \
         && make install"
+}
+
+function ensure-fio.cdt() {
+    echo
+    echo "${COLOR_CYAN}[Ensuring fio.cdt installation]${COLOR_NC}"
+    # if ! hash eosio-cpp; then ...
+    if [[ ! (-d "${FIO_CDT_APTS_DIR}" && -x ${FIO_CDT_APTS_DIR}/bin/eosio-cpp) ]]; then
+        if ! is-cdt-built; then
+            build-cdt
+        fi
+        install-cdt
+        echo " - FIO.CDT successfully installed @ ${FIO_CDT_INSTALL_DIR}"
+        echo ""
+    else
+        echo " - FIO.CDT found @ ${FIO_CDT_INSTALL_DIR}."
+        echo ""
+    fi
+}
+
+# CMake may be built but is it configured for the same install directory??? applies to other repos as well
+function is-cdt-built() {
+    if [[ -x ${FIO_CDT_TMP_DIR}/fio.cdt-${CDT_VERSION}/build/bin/eosio-cpp ]]; then
+        #FIO eosio-cpp version 1.5.0
+        cdt_version=$(${FIO_CDT_TMP_DIR}/fio.cdt-${CDT_VERSION}/build/bin/eosio-cpp --version | grep version | awk '{print $4}')
+        if [[ $cdt_version =~ 1.5 ]]; then
+            #cat ${FIO_CNTRX_TMP_DIR}/cmake-${CMAKE_VERSION}/build/CMakeCache.txt | grep CMAKE_INSTALL_PREFIX | grep ${EOSIO_INSTALL_DIR} >/dev/null
+            #if [[ $? -eq 0 ]]; then
+            #    return
+            #fi
+            return
+        fi
+    fi
+    false
+}
+
+function build-cdt() {
+    echo "Building fio.cdt..."
+    execute bash -c "cd ${FIO_CDT_TMP_DIR} \
+        && rm -rf fio.cdt-${CDT_VERSION} \
+        && git clone https://www.github.com/fioprotocol/fio.cdt.git fio.cdt-${CDT_VERSION} \
+        && cd fio.cdt-${CDT_VERSION} \
+        && git submodule update --init --recursive \
+        && git checkout --recurse-submodules -- . \
+        && rm -rf build \
+        && git checkout feature/bd-4618-ubuntu-upgrade \
+        && ./build.sh -c ${CMAKE_LOCATION}"
+}
+
+function install-cdt() {
+    echo "Installing fio.cdt..."
+    execute bash -c "cd $FIO_CDT_TMP_DIR/fio.cdt-${CDT_VERSION} \
+        && sudo ./install.sh"
 }

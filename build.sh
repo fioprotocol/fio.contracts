@@ -3,23 +3,23 @@
 
 function usage() {
    printf "Usage: $0 OPTION...
-  -f DIR      FIO Install Directory (FIO binary, dependencies). Default: $HOME/fio
+  -c DIR      Directory where CMAKE install is located
    \\n" "$0" 1>&2
    exit 1
 }
 
 TIME_BEGIN=$(date -u +%s)
 if [ $# -ne 0 ]; then
-   while getopts "f:hv" opt; do
+   while getopts "c:hv" opt; do
       case "${opt}" in
-      f)
-         FIO_INSTALL_DIR=$OPTARG
-         ;;
-      h)
-         usage
+      c)
+         CMAKE_LOCATION=$OPTARG
          ;;
       v)
          VERBOSE=true
+         ;;
+      h)
+         usage
          ;;
       ?)
          echo "Invalid Option!" 1>&2
@@ -78,8 +78,8 @@ setup
 
 # CMAKE Installation
 export CMAKE=
-([[ -z "${CMAKE}" ]] && [[ -d $FIO_INSTALL_DIR ]] && [[ -x $FIO_INSTALL_DIR/bin/cmake ]]) && export CMAKE=$FIO_INSTALL_DIR/bin/cmake
-([[ -z "${CMAKE}" ]] && [[ -d $FIO_CNTRX_APTS_DIR ]] && [[ -x $FIO_CNTRX_APTS_DIR/bin/cmake ]]) && export CMAKE=$FIO_CNTRX_APTS_DIR/bin/cmake
+([[ -z "${CMAKE}" ]] && [[ -d ${CMAKE_LOCATION} ]] && [[ -x ${CMAKE_LOCATION}/bin/cmake ]]) && export CMAKE=${CMAKE_LOCATION}/bin/cmake
+([[ -z "${CMAKE}" ]] && [[ -d ${FIO_CNTRX_APTS_DIR} ]] && [[ -x ${FIO_CNTRX_APTS_DIR}/bin/cmake ]]) && export CMAKE=${FIO_CNTRX_APTS_DIR}/bin/cmake && export CMAKE_LOCATION=${FIO_CNTRX_APTS_DIR}
 if [[ $ARCH == "Darwin" ]]; then
    ([[ -z "${CMAKE}" ]] && [[ ! -z $(command -v cmake 2>/dev/null) ]]) && export CMAKE=$(command -v cmake 2>/dev/null) && export CMAKE_CURRENT_VERSION=$($CMAKE --version | grep -E "cmake version[[:blank:]]*" | sed 's/.*cmake version //g')
 
@@ -90,6 +90,20 @@ if [[ $ARCH == "Darwin" ]]; then
    fi
 fi
 ensure-cmake
+[[ ! -x "${CMAKE}" ]] && echo "CMake not found! Exiting..." && exit 1
+
+ensure-fio.cdt
+if ! hash eosio-cpp 2>/dev/null; then
+   echo "The FIO Contract Development Toolkit is not installed. If contract development will be performed, either"
+   echo "re-execute this script with the '-t' option or perform the following steps to clone, build and install the"
+   echo "fio.cdt suite;"
+   echo "  git clone https://www.github.com/fioprotocol/fio.cdt.git"
+   echo "  cd fio.cdt"
+   echo "  git submodule update --init --recursive"
+   echo "  ./build.sh"
+   echo "  sudo ./install.sh"
+   echo
+fi
 
 echo
 printf "\t=========== Building FIO Contracts ===========\n\n"
