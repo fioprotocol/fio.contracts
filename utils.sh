@@ -85,7 +85,7 @@ function ensure-cmake() {
         echo " - CMAKE successfully installed @ ${CMAKE}"
         echo ""
     else
-        echo " - CMAKE found @ ${CMAKE}."
+        echo " - CMAKE found @ ${CMAKE}"
         echo ""
     fi
 }
@@ -139,9 +139,9 @@ function ensure-cdt() {
     else
         [[ ! -z $(command -v eosio-cpp 2>/dev/null) ]] && cdt_bin=$(command -v eosio-cpp 2>/dev/null) && [[ "${cdt_bin}" =~ "${FIO_CDT_INSTALL_DIR}" ]]
         if [[ $? -eq 0 ]]; then
-            echo " - FIO.CDT found @ ${FIO_CDT_INSTALL_DIR}."
+            echo " - FIO.CDT found @ ${FIO_CDT_INSTALL_DIR}"
         else
-            echo " - FIO.CDT found @ ${cdt_bin}."
+            echo " - FIO.CDT found @ ${cdt_bin}"
         fi
         echo ""
     fi
