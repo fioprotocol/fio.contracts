@@ -137,7 +137,7 @@ function ensure-cdt() {
         echo " - FIO.CDT successfully installed @ ${FIO_CDT_INSTALL_DIR}"
         echo ""
     else
-        [[ ! -z $(command -v eosio-cpp 2>/dev/null) ]] && cdt_bin=$(command -v cmake 2>/dev/null) && [[ ${cdt_bin} =~ ${FIO_CDT_INSTALL_DIR} ]]
+        [[ ! -z $(command -v eosio-cpp 2>/dev/null) ]] && cdt_bin=$(command -v eosio-cpp 2>/dev/null) && [[ "${cdt_bin}" =~ "${FIO_CDT_INSTALL_DIR}" ]]
         if [[ $? -eq 0 ]]; then
             echo " - FIO.CDT found @ ${FIO_CDT_INSTALL_DIR}."
         else
