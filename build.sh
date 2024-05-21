@@ -151,4 +151,3 @@ printf "     \\/__/        \\/__/        \\/__/           \n\n${txtrst}"
 
 printf "\\tFor more information:\\n"
 printf "\\tFIO website: https://fio.net\\n"
-

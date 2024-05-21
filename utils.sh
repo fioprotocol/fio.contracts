@@ -35,15 +35,12 @@ function setup() {
     if $VERBOSE; then
         echo "VERBOSE: ${VERBOSE}"
         echo "TEMP_DIR: ${TEMP_DIR}"
-        echo "FIO_CNTRX_TMP_DIR: ${FIO_CNTRX_TMP_DIR}"
         echo "FIO_CNTRX_APTS_DIR: ${FIO_CNTRX_APTS_DIR}"
     fi
     ([[ -d ${BUILD_DIR} ]]) && execute rm -rf ${BUILD_DIR} # cleanup old build directory
     execute mkdir -p ${BUILD_DIR}
     execute-always mkdir -p ${TEMP_DIR}
-    execute-always mkdir -p ${FIO_CNTRX_TMP_DIR}
-    execute mkdir -p ${FIO_CNTRX_APTS_DIR}
-    execute-always mkdir -p ${FIO_CDT_TMP_DIR}
+    execute-always mkdir -p $FIO_CNTRX_APTS_DIR
 }
 
 function set-system-vars() {
@@ -92,13 +89,9 @@ function ensure-cmake() {
 
 # CMake may be built but is it configured for the same install directory??? applies to other repos as well
 function is-cmake-built() {
-    if [[ -x ${FIO_CNTRX_TMP_DIR}/cmake-${CMAKE_VERSION}/build/bin/cmake ]]; then
-        cmake_version=$(${FIO_CNTRX_TMP_DIR}/cmake-${CMAKE_VERSION}/build/bin/cmake --version | grep version | awk '{print $3}')
+    if [[ -x ${TEMP_DIR}/cmake-${CMAKE_VERSION}/build/bin/cmake ]]; then
+        cmake_version=$(${TEMP_DIR}/cmake-${CMAKE_VERSION}/build/bin/cmake --version | grep version | awk '{print $3}')
         if [[ $cmake_version =~ 3.2 ]]; then
-            #cat ${FIO_CNTRX_TMP_DIR}/cmake-${CMAKE_VERSION}/build/CMakeCache.txt | grep CMAKE_INSTALL_PREFIX | grep ${EOSIO_INSTALL_DIR} >/dev/null
-            #if [[ $? -eq 0 ]]; then
-            #    return
-            #fi
             return
         fi
     fi
@@ -107,7 +100,7 @@ function is-cmake-built() {
 
 function build-cmake() {
     echo "Building cmake..."
-    execute bash -c "cd $FIO_CNTRX_TMP_DIR \
+    execute bash -c "cd $TEMP_DIR \
         && rm -rf cmake-${CMAKE_VERSION} \
         && curl -LO https://cmake.org/files/v${CMAKE_VERSION_MAJOR}.${CMAKE_VERSION_MINOR}/cmake-${CMAKE_VERSION}.tar.gz \
         && tar -xzf cmake-${CMAKE_VERSION}.tar.gz \
@@ -120,7 +113,7 @@ function build-cmake() {
 
 function install-cmake() {
     echo "Installing cmake..."
-    execute bash -c "cd $FIO_CNTRX_TMP_DIR/cmake-${CMAKE_VERSION} \
+    execute bash -c "cd $TEMP_DIR/cmake-${CMAKE_VERSION} \
         && cd build \
         && make install"
 }
@@ -128,7 +121,6 @@ function install-cmake() {
 function ensure-cdt() {
     echo
     echo "${COLOR_CYAN}[Ensuring fio.cdt installation]${COLOR_NC}"
-    #if [[ ! -d "${FIO_CDT_TMP_DIR}/fio.cdt-${CDT_VERSION}/build/bin/eosio-cpp" ]]; then
     if ! hash eosio-cpp 2>/dev/null; then
         if ! is-cdt-built; then
             build-cdt
@@ -149,14 +141,10 @@ function ensure-cdt() {
 
 # CMake may be built but is it configured for the same install directory??? applies to other repos as well
 function is-cdt-built() {
-    if [[ -x ${FIO_CDT_TMP_DIR}/fio.cdt-${CDT_VERSION}/build/bin/eosio-cpp ]]; then
+    if [[ -x ${TEMP_DIR}/fio.cdt-${CDT_VERSION}/build/bin/eosio-cpp ]]; then
         #FIO eosio-cpp version 1.5.0
-        cdt_version=$(${FIO_CDT_TMP_DIR}/fio.cdt-${CDT_VERSION}/build/bin/eosio-cpp --version | grep version | awk '{print $4}')
+        cdt_version=$(${TEMP_DIR}/fio.cdt-${CDT_VERSION}/build/bin/eosio-cpp --version | grep version | awk '{print $4}')
         if [[ $cdt_version =~ 1.5 ]]; then
-            #cat ${FIO_CNTRX_TMP_DIR}/cmake-${CMAKE_VERSION}/build/CMakeCache.txt | grep CMAKE_INSTALL_PREFIX | grep ${EOSIO_INSTALL_DIR} >/dev/null
-            #if [[ $? -eq 0 ]]; then
-            #    return
-            #fi
             return
         fi
     fi
@@ -165,7 +153,7 @@ function is-cdt-built() {
 
 function build-cdt() {
     echo "Building fio.cdt..."
-    execute bash -c "cd ${FIO_CDT_TMP_DIR} \
+    execute bash -c "cd ${TEMP_DIR} \
         && rm -rf fio.cdt-${CDT_VERSION} \
         && git clone https://www.github.com/fioprotocol/fio.cdt.git fio.cdt-${CDT_VERSION} \
         && cd fio.cdt-${CDT_VERSION} \
@@ -178,6 +166,6 @@ function build-cdt() {
 
 function install-cdt() {
     echo "Installing fio.cdt..."
-    execute bash -c "cd $FIO_CDT_TMP_DIR/fio.cdt-${CDT_VERSION} \
+    execute bash -c "cd $TEMP_DIR/fio.cdt-${CDT_VERSION} \
         && sudo ./install.sh"
 }

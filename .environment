@@ -16,7 +16,6 @@ else
 fi
 
 export TEMP_DIR="${TEMP_DIR:-${HOME}/tmp}"
-export FIO_CNTRX_TMP_DIR="${FIO_CNTRX_TMP_DIR:-${TEMP_DIR}/fio.cntrx}"
-export FIO_CNTRX_APTS_DIR="${FIO_CNTRX_APTS_DIR:-${FIO_CNTRX_TMP_DIR}/apts}"
+export FIO_CNTRX_APTS_DIR="${FIO_APTS_DIR:-${TEMP_DIR}/fio/apts}"
 
 . ./.build_vars
