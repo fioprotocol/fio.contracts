@@ -153,8 +153,7 @@ function is-cdt-built() {
 function build-cdt() {
     echo "Building fio.cdt..."
     execute bash -c "cd ${TEMP_DIR} \
-        && rm -rf fio.cdt-${CDT_VERSION} \
-        && git clone https://www.github.com/fioprotocol/fio.cdt.git fio.cdt-${CDT_VERSION} \
+        && [[ -d fio.cdt-${CDT_VERSION} ]] || git clone https://www.github.com/fioprotocol/fio.cdt.git fio.cdt-${CDT_VERSION} \
         && cd fio.cdt-${CDT_VERSION} \
         && git submodule update --init --recursive \
         && git checkout --recurse-submodules -- . \
