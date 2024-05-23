@@ -99,15 +99,15 @@ ensure-cmake
 
 ensure-cdt
 if ! hash eosio-cpp 2>/dev/null; then
-   echo "The FIO Contract Development Toolkit is not installed. If contract development will be performed, either"
-   echo "re-execute this script with the '-t' option or perform the following steps to clone, build and install the"
-   echo "fio.cdt suite;"
+   echo "The FIO Contract Development Toolkit is not installed! To build and perform contract development"
+   echo "perform the following steps to clone, build and install the fio.cdt suite;"
    echo "  git clone https://www.github.com/fioprotocol/fio.cdt.git"
    echo "  cd fio.cdt"
    echo "  git submodule update --init --recursive"
    echo "  ./build.sh"
    echo "  sudo ./install.sh"
    echo
+   exit 1
 fi
 
 echo
