@@ -99,7 +99,7 @@ ensure-cmake
 
 ensure-cdt
 if ! hash eosio-cpp 2>/dev/null; then
-   echo "The FIO Contract Development Toolkit is not installed! To build and perform contract development"
+   echo "The FIO Contract Development Toolkit is not installed (not found in PATH)! Either update PATH or"
    echo "perform the following steps to clone, build and install the fio.cdt suite;"
    echo "  git clone https://www.github.com/fioprotocol/fio.cdt.git"
    echo "  cd fio.cdt"
