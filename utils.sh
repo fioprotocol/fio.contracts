@@ -158,7 +158,6 @@ function build-cdt() {
         && git submodule update --init --recursive \
         && git checkout --recurse-submodules -- . \
         && rm -rf build \
-        && git checkout feature/bd-4618-ubuntu-upgrade \
         && ./build.sh -c ${CMAKE_LOCATION}"
 }
 
