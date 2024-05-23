@@ -81,6 +81,7 @@ echo "Performing OS/System Validation..."
 setup
 
 # CMAKE Installation
+# cmake may have been passed as arg to build or previously installed in local apts dir, check these and set if appropriate
 export CMAKE=
 ([[ -z "${CMAKE}" ]] && [[ -d ${CMAKE_LOCATION} ]] && [[ -x ${CMAKE_LOCATION}/bin/cmake ]]) && export CMAKE=${CMAKE_LOCATION}/bin/cmake
 ([[ -z "${CMAKE}" ]] && [[ -d ${FIO_CNTRX_APTS_DIR} ]] && [[ -x ${FIO_CNTRX_APTS_DIR}/bin/cmake ]]) && export CMAKE=${FIO_CNTRX_APTS_DIR}/bin/cmake && export CMAKE_LOCATION=${FIO_CNTRX_APTS_DIR}
