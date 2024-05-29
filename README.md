@@ -39,7 +39,7 @@ The included icons are provided under the same terms as the software and accompa
 ## Build Information
 The build script is located in main directory. Note that smart contracts are NOT installed per say; they are uploaded to the chain via clio, if a development chain, or via a multi-sig if a production chain.
 
-### Build FIO smart contract
+### Build
 The build script is straight-forward; it checks for any dependencies, then builds the contracts, putting the artifacts into the build directory.
 
 To build, first change to the `~/fioprotocol/fio.contracts` folder, then execute the script as follows:
@@ -52,7 +52,7 @@ The build process writes all content to the `build` folder.
 
 ### Dependencies:
 [fio.cdt](https://github.com/fioprotocol/fio.cdt/tree/release/1.5.x)
-fio.cdt, version 1.5.x, must be installed onto the build machine in order for the contracts to successfully build. This can be done by cloning the fio.cdt repo, then running build.sh and install.sh. Note that the fio.cdt artifacts are installed into `/usr/local` under the folder eosio.cdt and links are created to these artifacts in `/usr/local/bin`. Note: fio.cdt is a customized version of eosio.cdt but as such any installed artifacts retain the prefix of eosio.
+fio.cdt, version 1.5.x, must be installed onto the build machine in order for the contracts to successfully build. As such, the fio.contracts build script will automatically install the cdt (contract development toolkit), however, a manual build may be done by cloning the fio.cdt repo, then running build.sh and install.sh. Note that the fio.cdt artifacts are installed into `/usr/local` under the folder eosio.cdt and links are created to these artifacts in `/usr/local/bin`. Note: fio.cdt is a customized version of eosio.cdt but as such any installed artifacts retain the prefix of eosio.
 
 [fio](https://github.com/fioprotocol/fio/)
 While the FIO core blockchain is not a direct dependency of fio.contracts, in order to successfully execute contract functionality, getters may be called that are part of the blockchain. FIO contracts are backward compatible* to multiple versions of the blockchain. The latest release of fio.contracts aligns to the latest release of the fio.blockchain. The latest release may be found [here](https://github.com/fioprotocol/fio/releases).
