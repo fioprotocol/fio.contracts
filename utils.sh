@@ -37,7 +37,7 @@ function setup() {
         echo "TEMP_DIR: ${TEMP_DIR}"
         echo "FIO_CNTRX_APTS_DIR: ${FIO_CNTRX_APTS_DIR}"
     fi
-    ([[ -d ${BUILD_DIR} ]]) && execute rm -rf ${BUILD_DIR} # cleanup old build directory
+    ([[ -d ${BUILD_DIR} ]]) && ${CLEAN} && execute rm -rf ${BUILD_DIR} # cleanup old build directory
     execute mkdir -p ${BUILD_DIR}
     execute-always mkdir -p ${TEMP_DIR}
     execute-always mkdir -p $FIO_CNTRX_APTS_DIR
@@ -78,7 +78,7 @@ function ensure-cmake() {
             build-cmake
         fi
         install-cmake
-        export CMAKE_LOCATION=${CMAKE_INSTALL_DIR}
+        export APTS_DIR=${CMAKE_INSTALL_DIR}
         export CMAKE="${CMAKE_INSTALL_DIR}/bin/cmake"
         echo " - CMAKE successfully installed @ ${CMAKE}"
         echo ""
@@ -158,7 +158,7 @@ function build-cdt() {
         && git submodule update --init --recursive \
         && git checkout --recurse-submodules -- . \
         && rm -rf build \
-        && ./build.sh -c ${CMAKE_LOCATION}"
+        && ./build.sh -a ${APTS_DIR}"
 }
 
 function install-cdt() {

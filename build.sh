@@ -7,13 +7,19 @@ function usage() {
    exit 1
 }
 
-TIME_BEGIN=$(date -u +%s)
+CLEAN=${CLEAN:-false}
 DEBUG=${DEBUG:-false}
+VERBOSE=${VERBOSE:-false}
+
+TIME_BEGIN=$(date -u +%s)
 if [ $# -ne 0 ]; then
-   while getopts "c:dhv" opt; do
+   while getopts "a:cdhv" opt; do
       case "${opt}" in
+      a)
+         APTS_DIR=$OPTARG
+         ;;
       c)
-         CMAKE_LOCATION=$OPTARG
+         CLEAN=true
          ;;
       d)
          DEBUG=true
@@ -41,7 +47,12 @@ if [ $# -ne 0 ]; then
 fi
 
 SCRIPT_VERSION=2.10
+
 export CURRENT_WORKING_DIR=$(pwd) # relative path support
+
+export CLEAN
+export DEBUG
+export VERBOSE
 
 # Obtain dependency versions; Must come first in the script
 . ./.environment
@@ -75,7 +86,7 @@ fi
 
 echo
 echo "Performing OS/System Validation..."
-([[ $NAME == "Ubuntu" ]] && ([[ "$(echo ${VERSION_ID})" == "18.04" ]] || [[ "$(echo ${VERSION_ID})" == "20.04" ]] || [[ "$(echo ${VERSION_ID})" == "22.04" ]])) || (echo " - You must be running 18.04.x or 20.04.x to install EOSIO." && exit 1)
+([[ $NAME == "Ubuntu" ]] && ([[ "$(echo ${VERSION_ID})" == "18.04" ]] || [[ "$(echo ${VERSION_ID})" == "20.04" ]] || [[ "$(echo ${VERSION_ID})" == "22.04" ]])) || (echo " - You must be running 18.04.x, 20.04.x, or 22.04 to build the FIO Contracts." && exit 1)
 
 # Set up the working directories for build, etc
 setup
@@ -83,8 +94,8 @@ setup
 # CMAKE Installation
 # cmake may have been passed as arg to build or previously installed in local apts dir, check these and set if appropriate
 export CMAKE=
-([[ -z "${CMAKE}" ]] && [[ -d ${CMAKE_LOCATION} ]] && [[ -x ${CMAKE_LOCATION}/bin/cmake ]]) && export CMAKE=${CMAKE_LOCATION}/bin/cmake
-([[ -z "${CMAKE}" ]] && [[ -d ${FIO_CNTRX_APTS_DIR} ]] && [[ -x ${FIO_CNTRX_APTS_DIR}/bin/cmake ]]) && export CMAKE=${FIO_CNTRX_APTS_DIR}/bin/cmake && export CMAKE_LOCATION=${FIO_CNTRX_APTS_DIR}
+([[ -z "${CMAKE}" ]] && [[ -d ${APTS_DIR} ]] && [[ -x ${APTS_DIR}/bin/cmake ]]) && export CMAKE=${APTS_DIR}/bin/cmake
+([[ -z "${CMAKE}" ]] && [[ -d ${FIO_CNTRX_APTS_DIR} ]] && [[ -x ${FIO_CNTRX_APTS_DIR}/bin/cmake ]]) && export CMAKE=${FIO_CNTRX_APTS_DIR}/bin/cmake && export APTS_DIR=${FIO_CNTRX_APTS_DIR}
 if [[ $ARCH == "Darwin" ]]; then
    ([[ -z "${CMAKE}" ]] && [[ ! -z $(command -v cmake 2>/dev/null) ]]) && export CMAKE=$(command -v cmake 2>/dev/null) && export CMAKE_CURRENT_VERSION=$($CMAKE --version | grep -E "cmake version[[:blank:]]*" | sed 's/.*cmake version //g')
 
