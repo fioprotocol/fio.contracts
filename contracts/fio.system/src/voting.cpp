@@ -834,6 +834,9 @@ namespace eosiosystem {
             const name &proxy,
             const std::vector <name> &producers,
             const bool &voting) {
+
+        auto votersbyowner = _voters.get_index<"byowner"_n>();
+        auto voter = votersbyowner.find(voter_name.value);
         //validate input
         if (proxy) {
             check(producers.size() == 0, "cannot vote for producers and proxy at same time");
@@ -852,8 +855,7 @@ namespace eosiosystem {
                 check(producers[i - 1] < producers[i], "producer votes must be unique and sorted");
             }
         }
-        auto votersbyowner = _voters.get_index<"byowner"_n>();
-        auto voter = votersbyowner.find(voter_name.value);
+
         check(voter != votersbyowner.end(), "user must vote before votes can be updated");
         check(!proxy || !voter->is_proxy, "account registered as a proxy is not allowed to use a proxy");
 
