@@ -837,6 +837,14 @@ namespace eosiosystem {
         //validate input
         if (proxy) {
             check(producers.size() == 0, "cannot vote for producers and proxy at same time");
+            //if producers are set and a proxy is set. then clear the proxy and the is_auto_proxy
+            if(producers.size() > 0){
+                name noproxy;
+                votersbyowner.modify(voter, same_payer, [&](auto &av) {
+                    av.proxy = noproxy;
+                    av.is_auto_proxy = false;
+                });
+            }
             check(voter_name != proxy, "Invalid or duplicated producers0");
         } else {
             check(producers.size() <= 30, "attempt to vote for too many producers");

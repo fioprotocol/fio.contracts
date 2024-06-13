@@ -418,8 +418,12 @@ namespace eosio {
                         }
 
                     }
-                    //compute the remaining lock amount, for use in incoherency check.
-                    uint64_t computed_remaining_lock_amount = lockiter->lock_amount - computed_amount_unlock;
+
+                    uint64_t computed_remaining_lock_amount = 0;
+                    if(computed_amount_unlock <= lockiter->lock_amount) {
+                        //compute the remaining lock amount, for use in incoherency check.
+                        computed_remaining_lock_amount = lockiter->lock_amount - computed_amount_unlock;
+                    }
 
                     uint64_t unlock_amount = 0;  //the amount to unlock at this time
                     int unlock_periods = 0;     //the number of periods to unlock at this time.
@@ -450,11 +454,15 @@ namespace eosio {
 
                     //sanity check the amount to unlock and remaining lock amount, if they dont pass the sanity check
                     //do not proceed. prevent un-expected side effects of bad data.
-                    check(use_remaining_lock_amount >= unlock_amount,
-                          "computegenerallockedtokens, amount to unlock cannot be greater than remaining lock amount " + actor.to_string() );
+                   // check(use_remaining_lock_amount >= unlock_amount,
+                   //       "computegenerallockedtokens, amount to unlock cannot be greater than remaining lock amount " + actor.to_string() );
 
-                    //compute the present remaining lock amount, subtract the amount to unlock at this time.
-                    use_remaining_lock_amount -= unlock_amount;
+                    if(use_remaining_lock_amount < unlock_amount){
+                        use_remaining_lock_amount = 0;
+                    }else {
+                        //compute the present remaining lock amount, subtract the amount to unlock at this time.
+                        use_remaining_lock_amount -= unlock_amount;
+                    }
 
                     //if there is an amount to unlock, update state with the present lock info.
                     if (((unlock_amount > 0) && doupdate)) {
@@ -464,14 +472,22 @@ namespace eosio {
                         uint64_t amount = my_balance.amount;
 
                         //final sanity check.
-                        check(use_remaining_lock_amount <= amount,
-                              "computegenerallockedtokens, remaining lock amount is larger than balance for " + actor.to_string() );
-                        
-                        //update the locked table.
-                        locks_by_owner.modify(lockiter, SYSTEMACCOUNT, [&](auto &av) {
-                            av.remaining_lock_amount = use_remaining_lock_amount;
-                            av.payouts_performed = number_unlocks;
-                        });
+                       // check(use_remaining_lock_amount <= amount,
+                       //       "computegenerallockedtokens, remaining lock amount is larger than balance for " + actor.to_string() );
+
+                        //if remaining is larger than balance then we need to remove these locks from the system.
+                        //they are incoherent for some reason and we dont want to keep them around any longer.
+                        if(use_remaining_lock_amount > amount){
+                            //delete these locks from the locks by owner!!
+                            locks_by_owner.erase(lockiter);
+                            use_remaining_lock_amount = 0;
+                        }else {
+                            //update the locked table.
+                            locks_by_owner.modify(lockiter, SYSTEMACCOUNT, [&](auto &av) {
+                                av.remaining_lock_amount = use_remaining_lock_amount;
+                                av.payouts_performed = number_unlocks;
+                            });
+                        }
                     }
 
                     return use_remaining_lock_amount;
