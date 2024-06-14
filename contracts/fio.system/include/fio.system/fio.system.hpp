@@ -449,7 +449,7 @@ public:
                                                   const int64_t &amount);
 
     [[eosio::action]]
-    void tvoteproxy(const name &proxy, const string &fio_address, const name &actor)
+    void tvoteproxy(const name &proxy, const string &fio_address, const name &actor);
 
     [[eosio::action]]
     void setnolimits(const name &account);
