@@ -579,7 +579,7 @@ namespace eosiosystem {
         auto votersbyowner = _voters.get_index<"byowner"_n>();
 
         //now look at the actors existing vote, did they have a proxy
-        voter_proxy_iter = votersbyowner.find(actor.value);
+        auto voter_proxy_iter = votersbyowner.find(actor.value);
 
         votersbyowner.modify(voter_proxy_iter, same_payer, [&](auto &av) {
             av.proxy = proxy;
