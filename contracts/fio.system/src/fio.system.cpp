@@ -975,6 +975,8 @@ EOSIO_DISPATCH( eosiosystem::system_contract,
         (regproducer)(regiproducer)(unregprod)(voteproducer)(voteproxy)(inhibitunlck)
         (updlocked)(unlocktokens)(setautoproxy)(crautoproxy)(burnaction)(incram)
         (unregproxy)(regiproxy)(regproxy)
+        //testing testing testing only do not deliver
+        (tvoteproxy)(tgenlocked)
 // producer_pay.cpp
         (onblock)
         (resetclaim)
