@@ -864,7 +864,7 @@ namespace eosiosystem {
         auto voter = votersbyowner.find(voter_name.value);
         //validate input
         if (proxy) {
-            check(producers.size() == 0, "cannot vote for producers and proxy at same time");
+           // check(producers.size() == 0, "cannot vote for producers and proxy at same time");
             //if producers are set and a proxy is set. then clear the proxy and the is_auto_proxy
             if(producers.size() > 0){
                 name noproxy;
