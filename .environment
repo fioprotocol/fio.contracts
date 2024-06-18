@@ -1,0 +1,21 @@
+export SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export REPO_ROOT=$(realpath "${SCRIPT_DIR}")
+export BUILD_DIR="${REPO_ROOT}/build"
+
+export CMAKE_REQUIRED_VERSION=$(cat $REPO_ROOT/CMakeLists.txt | grep -E "^[[:blank:]]*cmake_minimum_required[[:blank:]]*\([[:blank:]]*VERSION" | tail -1 | sed 's/.*VERSION //g' | sed 's/ //g' | sed 's/"//g' | cut -d\) -f1)
+
+export FIO_CNTRX_VERSION_MAJOR=$(cat $REPO_ROOT/CMakeLists.txt | grep -E "^[[:blank:]]*set[[:blank:]]*\([[:blank:]]*VERSION_MAJOR" | tail -1 | sed 's/.*VERSION_MAJOR //g' | sed 's/ //g' | sed 's/"//g' | cut -d\) -f1)
+export FIO_CNTRX_VERSION_MINOR=$(cat $REPO_ROOT/CMakeLists.txt | grep -E "^[[:blank:]]*set[[:blank:]]*\([[:blank:]]*VERSION_MINOR" | tail -1 | sed 's/.*VERSION_MINOR //g' | sed 's/ //g' | sed 's/"//g' | cut -d\) -f1)
+export FIO_CNTRX_VERSION_PATCH=$(cat $REPO_ROOT/CMakeLists.txt | grep -E "^[[:blank:]]*set[[:blank:]]*\([[:blank:]]*VERSION_PATCH" | tail -1 | sed 's/.*VERSION_PATCH //g' | sed 's/ //g' | sed 's/"//g' | cut -d\) -f1)
+export FIO_CNTRX_VERSION_SUFFIX=$(cat $REPO_ROOT/CMakeLists.txt | grep -E "^[[:blank:]]*set[[:blank:]]*\([[:blank:]]*VERSION_SUFFIX" | tail -1 | sed 's/.*VERSION_SUFFIX //g' | sed 's/ //g' | sed 's/"//g' | cut -d\) -f1)
+export FIO_CNTRX_VERSION="${FIO_CNTRX_VERSION_MAJOR}.${FIO_CNTRX_VERSION_MINOR}"
+if [[ -z $FIO_CNTRX_VERSION_SUFFIX ]]; then
+    export FIO_CNTRX_VERSION_FULL="${FIO_CNTRX_VERSION_MAJOR}.${FIO_CNTRX_VERSION_MINOR}.${FIO_CNTRX_VERSION_PATCH}"
+else
+    export FIO_CNTRX_CNTRX_VERSION_FULL="${FIO_CNTRX_VERSION_MAJOR}.${FIO_CNTRX_VERSION_MINOR}.${FIO_CNTRX_VERSION_PATCH}-${FIO_CNTRX_VERSION_SUFFIX}"
+fi
+
+export TEMP_DIR="${TEMP_DIR:-${HOME}/tmp}"
+export FIO_CNTRX_APTS_DIR="${FIO_APTS_DIR:-${TEMP_DIR}/fio/apts}"
+
+. ./.build_vars

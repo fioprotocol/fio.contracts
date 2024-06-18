@@ -298,6 +298,77 @@ indexed_by<"byowner"_n, const_mem_fun<voter_info, uint64_t, &voter_info::by_owne
 
 
 
+//begin audit machine
+/*
+ * This table contains audit totals for the producers in the producers table.
+ */
+struct [[eosio::table, eosio::contract("fio.system")]] audit_producer_info {
+    uint64_t id; //one up id is primary key.
+    name account_name; //this is the account name of the producer.
+    double voted_fio = 0; //this is the fio voted on this producer.
+
+    uint64_t primary_key() const{return id;}
+    uint64_t by_account() const { return account_name.value; }
+
+    EOSLIB_SERIALIZE( audit_producer_info, (id)(account_name)(voted_fio)
+    )
+};
+
+typedef eosio::multi_index<"auditprod"_n, audit_producer_info,
+indexed_by<"byaccount"_n, const_mem_fun<audit_producer_info, uint64_t, &audit_producer_info::by_account>>
+> audit_producer_table;
+
+
+/*
+ * This table contains audit info for proxy voters proxied vote weight.
+ */
+struct [[eosio::table, eosio::contract("fio.system")]] audit_proxy_info {
+    uint64_t id; //one up id is primary key.
+    uint64_t voterid;  //this is id of the voter in the voters table
+    uint64_t votable_balance = 0; //proxy accounts votable balance (not including proxied vote weight)
+    double proxied_vote_weight = 0; //this is the voting power proxied to this proxy
+    std::vector <name> producers; //producers voted for by this proxy.
+
+
+    uint64_t primary_key() const{return id;}
+    uint64_t by_voterid() const {return voterid;}
+
+
+    EOSLIB_SERIALIZE( audit_proxy_info, (id)(voterid)(votable_balance)(proxied_vote_weight)(producers)
+    )
+};
+
+typedef eosio::multi_index<"auditproxy"_n, audit_proxy_info,
+        indexed_by<"byvotererid"_n, const_mem_fun<audit_proxy_info, uint64_t, &audit_proxy_info::by_voterid>>
+> audit_proxy_table;
+
+
+struct [[eosio::table("auditglobal"), eosio::contract("fio.system")]] audit_global_info {
+    audit_global_info() {}
+    int64_t total_voted_fio = 0; //total voted fio
+    bool audit_reset = false; //this flag will be set whenever an action affecting voting power is performed by voting accounts.
+    uint64_t current_proxy_id = 0; //this is the id at which to resume proxy analysis.
+    uint64_t current_voter_id = 0; //this is the id at which to resume voter analysis.
+    uint64_t audit_phase = 0;  //the following phases of the audit are identified
+                               //    0 -- BEGIN initial deployment. being in this phase means no audit activity has occured yet.
+                               //    1 -- CLEAR clear the audit info. remove all data from the audit system.
+                               //    2 -- ANALYZE_VOTES analyze records in the voters table, rollup results into audit data.
+                               //    3 -- ANALYZE_PROXIES analyze proxy voters, rollup results into audit data.
+                               //    4 -- FINALIZE write the audit voting results into FIO state.
+    double total_producer_vote_weight = 0; // this is the total fio voted on producers.
+
+
+
+    EOSLIB_SERIALIZE( audit_global_info,(total_voted_fio)
+            (audit_reset)(current_proxy_id)(current_voter_id)(audit_phase)(total_producer_vote_weight)
+    )
+};
+
+typedef eosio::singleton<"auditglobal"_n, audit_global_info> audit_global_singleton;
+//end audit machine
+
+
+
 typedef eosio::singleton<"global"_n, eosio_global_state> global_state_singleton;
 typedef eosio::singleton<"global2"_n, eosio_global_state2> global_state2_singleton;
 typedef eosio::singleton<"global3"_n, eosio_global_state3> global_state3_singleton;
@@ -326,6 +397,11 @@ private:
     fioio::domains_table _domains;
     fioio::fiofee_table _fiofees;
     fioio::eosio_names_table _accountmap;
+    audit_global_info _audit_global_info;
+    audit_global_singleton _auditglobal;
+    audit_proxy_table _auditproxy;
+    audit_producer_table _auditproducer;
+
 
 public:
     static constexpr eosio::name active_permission{"active"_n};
@@ -361,6 +437,11 @@ public:
                       const uint32_t &payouts);
 
     [[eosio::action]]
+    void ovrwrtgenlck(const name &owner, const vector<lockperiodv2> &periods,
+                                                    const int64_t &amount,
+                                                    const bool &canvote);
+
+    [[eosio::action]]
     void clrgenlocked(const name &owner);
 
     [[eosio::action]]
@@ -389,6 +470,15 @@ public:
 
     void regiproducer(const name &producer, const string &producer_key, const std::string &url, const uint16_t &location,
                       const string &fio_address);
+
+    int addtoproducervote(const name &voter,
+                          const double &weight, const std::vector <name> &producers );
+
+    int setproxyweight(const uint64_t &voterid,
+                       const uint64_t &votable_balance,
+                       const std::vector <name> &producers);
+
+    int addproxyweight(const uint64_t &voterid,const double &weight);
 
     [[eosio::action]]
     void regproducer(const string &fio_address, const string &fio_pub_key, const std::string &url, const uint16_t &location, const name &actor,
@@ -438,13 +528,17 @@ public:
     [[eosio::action]]
     void setpriv(const name &account,const uint8_t &is_priv);
 
-    //FIP-38 begin
     [[eosio::action]]
     void newfioacc(const string &fio_public_key, const authority &owner, const authority &active, const int64_t &max_fee,
                    const name &actor,
                    const string &tpid);
-    //FIP-38 end
 
+    // audit machine begin
+    [[eosio::action]]
+    void auditvote(const name &actor,  const int64_t &max_fee);
+    [[eosio::action]]
+    void resetaudit();
+    //audit machine end
 
     [[eosio::action]]
     void rmvproducer(const name &producer);
@@ -469,6 +563,8 @@ public:
     //FIP-38 begin
     using newfioacc_action = eosio::action_wrapper<"newfioacc"_n, &system_contract::newfioacc>;
     //FIP-38 end
+    using auditvote_action = eosio::action_wrapper<"auditvote"_n, &system_contract::auditvote>;
+    using resetaudit_action = eosio::action_wrapper<"resetaudit"_n, &system_contract::resetaudit>;
 
 private:
 
@@ -495,6 +591,8 @@ private:
     uint64_t get_votable_balance(const name &tokenowner);
 
     void unlock_tokens(const name &actor);
+
+    void update_last_vote_weight(const name &voter);
 
     void update_votes(const name &voter, const name &proxy, const std::vector <name> &producers, const bool &voting);
 

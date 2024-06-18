@@ -228,6 +228,9 @@ namespace eosiosystem {
             ).send();
         }
 
+
+        _audit_global_info.audit_reset = true;
+
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
 
@@ -302,6 +305,8 @@ namespace eosiosystem {
         processrewardsnotpid(reg_amount, get_self());
 
         //end new fees, logic for Mandatory fees.
+
+        _audit_global_info.audit_reset = true;
 
         const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
                                  to_string(reg_amount) + string("}");
@@ -556,6 +561,8 @@ namespace eosiosystem {
             ).send();
         }
 
+        _audit_global_info.audit_reset = true;
+
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
 
@@ -640,6 +647,7 @@ namespace eosiosystem {
 
         std::vector<name> producers{}; // Empty
 
+        //now look at the actors existing vote, did they have a proxy
         voter_proxy_iter = votersbyowner.find(actor.value);
 
         if (voter_proxy_iter == votersbyowner.end()) {
@@ -648,10 +656,6 @@ namespace eosiosystem {
                 p.id = id;
                 p.owner = actor;
             });
-        }else{
-            if((voter_proxy_iter->last_vote_weight > 0)&&!(voter_proxy_iter->proxy)) {
-                _gstate.total_voted_fio -= voter_proxy_iter->last_vote_weight;
-            }
         }
 
         //note -- we can call these lock token computations like this
@@ -696,6 +700,8 @@ namespace eosiosystem {
                     std::make_tuple(actor, VOTEPROXYRAM)
             ).send();
         }
+
+        _audit_global_info.audit_reset = true;
 
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
@@ -769,7 +775,7 @@ namespace eosiosystem {
                 }
             }
 
-           uint32_t issueplus210 = lockiter->timestamp+(210*SECONDSPERDAY);
+            uint32_t issueplus210 = lockiter->timestamp+(210*SECONDSPERDAY);
 
             //if lock type 2 only subtract remaining locked amount if 210 days since launch, and inhibit locking true.
            if (((lockiter->grant_type == 2)&&((present_time > issueplus210)&&lockiter->inhibit_unlocking)) ||
@@ -789,17 +795,37 @@ namespace eosiosystem {
         auto locks_by_owner = _generallockedtokens.get_index<"byowner"_n>();
         auto glockiter = locks_by_owner.find(tokenowner.value);
         if(glockiter != locks_by_owner.end()){
-            //if can vote --
             if (glockiter->can_vote == 0){
                 if (amount > glockiter->remaining_lock_amount) {
                     amount =  amount - glockiter->remaining_lock_amount;
-                }else{
-                    amount = 0;
                 }
             }
         }
 
         return amount;
+    }
+
+    void system_contract::update_last_vote_weight(
+            const name &voter_name) {
+
+        auto votersbyowner = _voters.get_index<"byowner"_n>();
+        auto voter = votersbyowner.find(voter_name.value);
+        check(voter != votersbyowner.end(), "user must vote before last vote weight can be updated");
+        check(voter->producers.size() == 0, "cannot call update_last_vote_weight if producers are voted, use update_votes.");
+        check(!(voter->proxy), "cannot call update_last_vote_weight with proxy set, call update_votes.");
+
+        uint64_t amount = 0;
+        amount = get_votable_balance(voter->owner);
+
+        auto new_vote_weight = (double)amount;
+        if (voter->is_proxy) {
+            new_vote_weight += voter->proxied_vote_weight;
+        }
+
+        votersbyowner.modify(voter, same_payer, [&](auto &av) {
+            av.last_vote_weight = new_vote_weight;
+        });
+
     }
 
 
@@ -831,13 +857,15 @@ namespace eosiosystem {
             new_vote_weight += voter->proxied_vote_weight;
         }
 
-        if( !(proxy) ) {
-
-            if( voter->last_vote_weight > 0.0 ) {
+        if (voter->producers.size() > 0) {
+            if ((voter->last_vote_weight > 0.0)) {
                 _gstate.total_voted_fio -= voter->last_vote_weight;
             }
+        }
 
+        if( !(proxy) && (producers.size() > 0) ) {
             _gstate.total_voted_fio += new_vote_weight;
+
 
             if( _gstate.total_voted_fio >= MINVOTEDFIO && _gstate.thresh_voted_fio_time == time_point() ) {
                 _gstate.thresh_voted_fio_time = current_time_point();
@@ -850,14 +878,14 @@ namespace eosiosystem {
             if (voter->proxy) {
                 auto old_proxy = votersbyowner.find(voter->proxy.value);
                 check(old_proxy != votersbyowner.end(), "old proxy not found"); //data corruption
-                votersbyowner.modify(old_proxy, same_payer, [&](auto &vp) {
-                    vp.proxied_vote_weight -= voter->last_vote_weight;
-                });
+                    votersbyowner.modify(old_proxy, same_payer, [&](auto &vp) {
+                        vp.proxied_vote_weight -= voter->last_vote_weight;
+                    });
                 propagate_weight_change(*old_proxy);
             } else {
                 for (const auto &p : voter->producers) {
                     auto &d = producer_deltas[p];
-                    d.first -= voter->last_vote_weight;
+                        d.first -= voter->last_vote_weight;
                     d.second = false;
                 }
             }
@@ -872,7 +900,9 @@ namespace eosiosystem {
                 votersbyowner.modify(new_proxy, same_payer, [&](auto &vp) {
                     vp.proxied_vote_weight += new_vote_weight;
                 });
-                propagate_weight_change(*new_proxy);
+                if(new_proxy->producers.size() > 0) {
+                    propagate_weight_change(*new_proxy);
+                }
             }
         } else {
             if (new_vote_weight >= 0) {
@@ -994,7 +1024,13 @@ namespace eosiosystem {
                 votersbyowner.modify(itervoter, _self, [&](struct voter_info &a) {
                     a.proxy = proxy;
                 });
+                propagate_weight_change(*itervoter);
             }
+
+            INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
+                    ("eosio"_n, {{_self, "active"_n}},
+                     {owner, false}
+                    );
         }
     }
 
@@ -1059,10 +1095,7 @@ namespace eosiosystem {
         processrewardsnotpid(reg_amount, get_self());
         //end new fees, logic for Mandatory fees.
 
-        INLINE_ACTION_SENDER(eosiosystem::system_contract, updatepower)
-                ("eosio"_n, {{_self, "active"_n}},
-                 {actor, false}
-                );
+        _audit_global_info.audit_reset = true;
 
         const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
                                  to_string(reg_amount) + string("}");
@@ -1141,6 +1174,8 @@ namespace eosiosystem {
                  {actor, false}
                 );
 
+        _audit_global_info.audit_reset = true;
+
         const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
                                  to_string(reg_amount) + string("}");
         if (REGPROXYRAM > 0) {
@@ -1180,7 +1215,7 @@ namespace eosiosystem {
                            "Already registered as proxy. ", ErrorPubAddressExist);
             name nm;
 
-            if(pitr->proxy != nm){
+            if(pitr->proxy != nm){ //if the proxy being registered HAD a proxy...we have to subtract the voting power
                 auto pitr_old_proxy = votersbyowner.find(pitr->proxy.value);
                 if(pitr_old_proxy != votersbyowner.end())
                 {
@@ -1199,6 +1234,10 @@ namespace eosiosystem {
                     p.proxy = nm;
                 });
             propagate_weight_change(*pitr);
+            //check proxy, propagate proxy weight change.
+
+
+
         } else if (isproxy){  //only do the emplace if isproxy is true,
                               //it makes no sense to emplace a voter record when isproxy is false,
                               // this means making a voting record with no votes, and not a proxy,
@@ -1266,11 +1305,13 @@ namespace eosiosystem {
         check(pitr != votersbyowner.end(),"voter not found");
 
         //adapt the total voted fio.
-        if( pitr->last_vote_weight > 0.0 ) {
-            _gstate.total_voted_fio -= pitr->last_vote_weight;
+        if (pitr->producers.size() > 0) {
+            if ((pitr->last_vote_weight > 0.0)) {
+                _gstate.total_voted_fio -= pitr->last_vote_weight;
+            }
+            _gstate.total_voted_fio += new_weight;
         }
 
-        _gstate.total_voted_fio += new_weight;
 
         if( _gstate.total_voted_fio >= MINVOTEDFIO && _gstate.thresh_voted_fio_time == time_point() ) {
             _gstate.thresh_voted_fio_time = current_time_point();

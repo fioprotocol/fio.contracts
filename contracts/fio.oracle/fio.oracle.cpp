@@ -111,6 +111,12 @@ namespace fioio {
                        make_tuple(actor, name{idx->actor}, asset(feeFinal, FIOSYMBOL), string("Token Wrapping Oracle Fee"))
                 ).send();
 
+                //update voting power for receiver
+                action(permission_level{SYSTEMACCOUNT, "active"_n},
+                       SYSTEMACCOUNT, "updatepower"_n,
+                       make_tuple(name{idx->actor}, true)
+                ).send();
+
                 idx++;
             }
 
@@ -430,6 +436,11 @@ namespace fioio {
                 action(permission_level{get_self(), "active"_n},
                        TokenContract, "transfer"_n,
                        make_tuple(actor, name{idx->actor}, asset(feeFinal, FIOSYMBOL), string("Token Wrapping Oracle Fee"))
+                ).send();
+
+                action(permission_level{SYSTEMACCOUNT, "active"_n},
+                       SYSTEMACCOUNT, "updatepower"_n,
+                       make_tuple(name{idx->actor}, true)
                 ).send();
 
                 idx++;
