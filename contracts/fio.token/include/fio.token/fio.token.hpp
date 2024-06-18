@@ -472,8 +472,8 @@ namespace eosio {
                         uint64_t amount = my_balance.amount;
 
                         //final sanity check.
-                       // check(use_remaining_lock_amount <= amount,
-                       //       "computegenerallockedtokens, remaining lock amount is larger than balance for " + actor.to_string() );
+                        check(use_remaining_lock_amount <= amount,
+                              "computegenerallockedtokens, remaining lock amount is larger than balance for " + actor.to_string() );
 
                         //if remaining is larger than balance then we need to remove these locks from the system.
                         //they are incoherent for some reason and we dont want to keep them around any longer.
