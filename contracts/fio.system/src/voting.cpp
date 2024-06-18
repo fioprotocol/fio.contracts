@@ -569,31 +569,6 @@ namespace eosiosystem {
         send_response(response_string.c_str());
     }
 
-    //////////TEST TEST TEST TEST TEST ONLY DO NOT DELIVER!!!!!!!
-    //////////TEST TEST TEST TEST TEST ONLY DO NOT DELIVER!!!!!!!
-    //////////TEST TEST TEST TEST TEST ONLY DO NOT DELIVER!!!!!!!
-    //////////TEST TEST TEST TEST TEST ONLY DO NOT DELIVER!!!!!!!
-    void system_contract::tvoteproxy(const name &proxy, const string &fio_address, const name &actor) {
-        require_auth(actor);
-
-        auto votersbyowner = _voters.get_index<"byowner"_n>();
-
-        //now look at the actors existing vote, did they have a proxy
-        auto voter_proxy_iter = votersbyowner.find(actor.value);
-
-        votersbyowner.modify(voter_proxy_iter, same_payer, [&](auto &av) {
-            av.proxy = proxy;
-            av.is_auto_proxy = true;
-        });
-
-        const string response_string = string("{\"status\": \"OK\"}");
-
-        send_response(response_string.c_str());
-    }
-
-
-
-
     void system_contract::voteproxy(const string &proxy, const string &fio_address, const name &actor, const int64_t &max_fee) {
         require_auth(actor);
 

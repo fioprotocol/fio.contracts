@@ -445,13 +445,6 @@ public:
     void clrgenlocked(const name &owner);
 
     [[eosio::action]]
-    void tgenlocked(const name &owner, const vector<lockperiodv2> &periods, const bool &canvote,
-                                                  const int64_t &amount);
-
-    [[eosio::action]]
-    void tvoteproxy(const name &proxy, const string &fio_address, const name &actor);
-
-    [[eosio::action]]
     void setnolimits(const name &account);
 
     [[eosio::action]]

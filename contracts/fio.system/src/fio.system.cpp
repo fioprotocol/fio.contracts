@@ -365,26 +365,6 @@ namespace eosiosystem {
         send_response(response_string.c_str());
     }
 
-    //////////////TEST TEST TEST TEST TEST ONLY DO NOT DELIVER!!!!
-    //////////////TEST TEST TEST TEST TEST ONLY DO NOT DELIVER!!!!
-    //////////////TEST TEST TEST TEST TEST ONLY DO NOT DELIVER!!!!
-    //////////////TEST TEST TEST TEST TEST ONLY DO NOT DELIVER!!!!
-    void eosiosystem::system_contract::tgenlocked(const name &owner, const vector<lockperiodv2> &periods, const bool &canvote,
-                                                    const int64_t &amount) {
-
-        _generallockedtokens.emplace(owner, [&](struct locked_tokens_info_v2 &a) {
-            a.id = _generallockedtokens.available_primary_key();
-            a.owner_account = owner;
-            a.lock_amount = amount;
-            a.payouts_performed = 0;
-            a.can_vote = canvote?1:0;
-            a.periods = periods;
-            a.remaining_lock_amount = 0;
-            a.timestamp = now();
-        });
-    }
-
-
     void eosiosystem::system_contract::addgenlocked(const name &owner, const vector<lockperiodv2> &periods, const bool &canvote,
             const int64_t &amount) {
 
@@ -975,8 +955,6 @@ EOSIO_DISPATCH( eosiosystem::system_contract,
         (regproducer)(regiproducer)(unregprod)(voteproducer)(voteproxy)(inhibitunlck)
         (updlocked)(unlocktokens)(setautoproxy)(crautoproxy)(burnaction)(incram)
         (unregproxy)(regiproxy)(regproxy)
-        //testing testing testing only do not deliver
-        (tvoteproxy)(tgenlocked)
 // producer_pay.cpp
         (onblock)
         (resetclaim)
