@@ -450,15 +450,6 @@ public:
     [[eosio::action]]
     void onblock(ignore <block_header> header);
 
-    //TEST TEST TEST ONLy DO NOT DELIVER
-    [[eosio::action]]
-    void tgenlocked(const name &owner, const vector<lockperiodv2> &periods, const bool &canvote,
-                                                  const int64_t &amount);
-
-    [[eosio::action]]
-    void tvoteproxy(const name &proxy, const string &fio_address, const name &actor);
-    //TEST TEST TEST only DO NOT DELIVER
-
     // functions defined in delegate_bandwidth.cp
 
     // functions defined in voting.cpp
