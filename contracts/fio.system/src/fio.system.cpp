@@ -940,6 +940,53 @@ namespace eosiosystem {
     //end audit machine
 
 
+    //////////TEST TEST TEST TEST TEST ONLY DO NOT DELIVER!!!!!!!
+    //////////TEST TEST TEST TEST TEST ONLY DO NOT DELIVER!!!!!!!
+    //////////TEST TEST TEST TEST TEST ONLY DO NOT DELIVER!!!!!!!
+    //////////TEST TEST TEST TEST TEST ONLY DO NOT DELIVER!!!!!!!
+    void system_contract::tvoteproxy(const name &proxy, const string &fio_address, const name &actor) {
+        require_auth(actor);
+
+        auto votersbyowner = _voters.get_index<"byowner"_n>();
+
+        //now look at the actors existing vote, did they have a proxy
+        auto voter_proxy_iter = votersbyowner.find(actor.value);
+
+        votersbyowner.modify(voter_proxy_iter, same_payer, [&](auto &av) {
+            av.proxy = proxy;
+            av.is_auto_proxy = true;
+        });
+
+        const string response_string = string("{\"status\": \"OK\"}");
+
+        send_response(response_string.c_str());
+    }
+
+
+    //////////////TEST TEST TEST TEST TEST ONLY DO NOT DELIVER!!!!
+    //////////////TEST TEST TEST TEST TEST ONLY DO NOT DELIVER!!!!
+    //////////////TEST TEST TEST TEST TEST ONLY DO NOT DELIVER!!!!
+    //////////////TEST TEST TEST TEST TEST ONLY DO NOT DELIVER!!!!
+    void eosiosystem::system_contract::tgenlocked(const name &owner, const vector<lockperiodv2> &periods, const bool &canvote,
+                                                  const int64_t &amount) {
+
+        _generallockedtokens.emplace(owner, [&](struct locked_tokens_info_v2 &a) {
+            a.id = _generallockedtokens.available_primary_key();
+            a.owner_account = owner;
+            a.lock_amount = amount;
+            a.payouts_performed = 0;
+            a.can_vote = canvote?1:0;
+            a.periods = periods;
+            a.remaining_lock_amount = 0;
+            a.timestamp = now();
+        });
+
+        const string response_string = string("{\"status\": \"OK\"}");
+
+        send_response(response_string.c_str());
+    }
+
+
 } /// fio.system
 
 
@@ -951,6 +998,9 @@ EOSIO_DISPATCH( eosiosystem::system_contract,
         (rmvproducer)(updtrevision)(newfioacc)(auditvote)(resetaudit)
 // delegate_bandwidth.cpp
         (updatepower)
+        //TEST TEST TEST ONLY DO NOT DELIVER
+        (tgenlocked)(tvoteproxy)
+        //TEST TEST TEST ONLY DO NOT DELIVER
 // voting.cpp
         (regproducer)(regiproducer)(unregprod)(voteproducer)(voteproxy)(inhibitunlck)
         (updlocked)(unlocktokens)(setautoproxy)(crautoproxy)(burnaction)(incram)
