@@ -465,31 +465,21 @@ namespace eosio {
                         use_remaining_lock_amount -= unlock_amount;
                     }
 
-                    //if there is an amount to unlock, update state with the present lock info.
-                    if (((unlock_amount > 0) && doupdate)) {
-                        //get fio balance for this account,
-                        uint32_t present_time = now();
-                        const auto my_balance = eosio::token::get_balance("fio.token"_n, actor, FIOSYMBOL.code());
-                        uint64_t amount = my_balance.amount;
+                    const auto my_balance = eosio::token::get_balance("fio.token"_n, actor, FIOSYMBOL.code());
+                    uint64_t amount = my_balance.amount;
 
-                        //final sanity check.
-                        //BD4643 remove checks and remove locks if they are incoherent instead.
-                       // check(use_remaining_lock_amount <= amount,
-                        //      "computegenerallockedtokens, remaining lock amount is larger than balance for " + actor.to_string() );
-
-                        //if remaining is larger than balance then we need to remove these locks from the system.
-                        //they are incoherent for some reason and we dont want to keep them around any longer.
-                        if(use_remaining_lock_amount > amount){
-                            //delete these locks from the locks by owner!!
-                            locks_by_owner.erase(lockiter);
-                            use_remaining_lock_amount = 0;
-                        }else {
-                            //update the locked table.
-                            locks_by_owner.modify(lockiter, SYSTEMACCOUNT, [&](auto &av) {
-                                av.remaining_lock_amount = use_remaining_lock_amount;
-                                av.payouts_performed = number_unlocks;
-                            });
-                        }
+                    //if remaining is larger than balance then we need to remove these locks from the system.
+                    //they are incoherent for some reason and we dont want to keep them around any longer.
+                    if(use_remaining_lock_amount > amount){
+                        //delete these locks from the locks by owner!!
+                        locks_by_owner.erase(lockiter);
+                        use_remaining_lock_amount = 0;
+                    }else if (((unlock_amount > 0) && doupdate)) {
+                        //update the locked table.
+                        locks_by_owner.modify(lockiter, SYSTEMACCOUNT, [&](auto &av) {
+                            av.remaining_lock_amount = use_remaining_lock_amount;
+                            av.payouts_performed = number_unlocks;
+                        });
                     }
 
                     return use_remaining_lock_amount;
