@@ -455,7 +455,7 @@ public:
                                                   const int64_t &amount);
 
     [[eosio::action]]
-    void system_contract::tvoteproxy(const name &proxy, const string &fio_address, const name &actor);
+    void tvoteproxy(const name &proxy, const string &fio_address, const name &actor);
 
     // functions defined in delegate_bandwidth.cp
 
