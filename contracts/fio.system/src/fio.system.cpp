@@ -939,7 +939,6 @@ namespace eosiosystem {
     }
     //end audit machine
 
-
 } /// fio.system
 
 
