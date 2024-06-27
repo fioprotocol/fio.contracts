@@ -584,7 +584,7 @@ namespace eosio {
     void token::fipxlviii(){
         const string response_string = string("{\"status\": \"OK\",\"total_transferred\":") +
                                        to_string(0) +
-                                       string(,\"status_code\":") + to_string(0) +
+                                       string(",\"status_code\":") + to_string(0) +
                                        string("}");
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
                        "Transaction is too large", ErrorTransactionTooLarge);
