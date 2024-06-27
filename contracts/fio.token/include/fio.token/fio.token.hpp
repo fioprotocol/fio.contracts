@@ -85,6 +85,11 @@ namespace eosio {
                           const name &actor,
                           const string &tpid);
 
+
+        //fip48
+        [[eosio::action]]
+        void fipxlviii();
+
         [[eosio::action]]
         void trnsloctoks(const string &payee_public_key,
                                 const int32_t &can_vote,

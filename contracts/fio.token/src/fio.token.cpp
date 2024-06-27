@@ -580,6 +580,18 @@ namespace eosio {
 
     }
 
+    //fip48
+    void token::fipxlviii(){
+        const string response_string = string("{\"status\": \"OK\",\"total_transferred\":") +
+                                       to_string(0) +
+                                       string(,\"status_code\":") + to_string(0) +
+                                       string("}");
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+
+        send_response(response_string.c_str());
+    }
+
     void token::trnsloctoks(const string &payee_public_key,
                              const int32_t &can_vote,
                              const vector<eosiosystem::lockperiodv2> periods,
@@ -718,4 +730,4 @@ namespace eosio {
     }
 } /// namespace eosio
 
-EOSIO_DISPATCH( eosio::token, (create)(issue)(mintfio)(transfer)(trnsfiopubky)(trnsloctoks)(retire))
+EOSIO_DISPATCH( eosio::token, (create)(issue)(mintfio)(transfer)(trnsfiopubky)(trnsloctoks)(retire)(fipxlviii))
