@@ -443,7 +443,7 @@ public:
 
     //fip48
     [[eosio::action]]
-    void removegenesis(const name &owner);
+    void rmovegenesis(const name &owner);
 
     [[eosio::action]]
     void clrgenlocked(const name &owner);

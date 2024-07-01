@@ -497,7 +497,7 @@ namespace eosiosystem {
     }
 
     //fip48
-    void eosiosystem::system_contract::removegenesis(const name &owner) {
+    void eosiosystem::system_contract::rmovegenesis(const name &owner) {
 
         eosio_assert(has_auth(TokenContract),"missing required authority of fio.token");
         check(is_account(owner), "account must pre exist");
@@ -958,7 +958,7 @@ EOSIO_DISPATCH( eosiosystem::system_contract,
 (newaccount)(addaction)(remaction)(updateauth)(deleteauth)(linkauth)(unlinkauth)(canceldelay)(onerror)(setabi)
 // fio.system.cpp
 (init)(setnolimits)(addlocked)(addgenlocked)(modgenlocked)(ovrwrtgenlck)(clrgenlocked)(setparams)(setpriv)
-        (rmvproducer)(updtrevision)(newfioacc)(auditvote)(resetaudit)(removegenesis)
+        (rmvproducer)(updtrevision)(newfioacc)(auditvote)(resetaudit)(rmovegenesis)
 // delegate_bandwidth.cpp
         (updatepower)
 // voting.cpp
