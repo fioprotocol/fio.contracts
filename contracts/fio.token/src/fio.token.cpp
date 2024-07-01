@@ -653,7 +653,7 @@ namespace eosio {
         sub_balance(from, quantity);
         add_balance(to, quantity, payer);
     }
-}
+
 
     //fip48
     void token::fipxlviii(){
