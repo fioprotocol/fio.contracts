@@ -762,7 +762,8 @@ FIO Public Address (actor name): fidgtwmzrrjq
                              "missing required authority of eosio");
 
  //reallocate for account1
- eosio_assert(has_locked_tokens(fip48account1), "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account1.to_string());
+ const string mssg1 = "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account1.to_string();
+ eosio_assert(has_locked_tokens(fip48account1),mssg1 );
  fip48tokentransfer(fip48account1,fip48account1amount);
  action(
         permission_level{get_self(), "active"_n},
