@@ -496,6 +496,17 @@ namespace eosiosystem {
         });
     }
 
+    //fip48
+    void eosiosystem::system_contract::removegenesis(const name &owner) {
+
+        eosio_assert(has_auth(TokenContract),"missing required authority of fio.token");
+        check(is_account(owner), "account must pre exist");
+        auto lockiter = _lockedtokens.find(owner.value);
+        if (lockiter != locks_by_owner.end()) {
+                _lockedtokens.erase(lockiter);
+        }
+    }
+
 
     //this action will check if all periods are in the past and clear the general locks if all of them are in the past.
     void eosiosystem::system_contract::clrgenlocked(const name &owner) {
@@ -947,7 +958,7 @@ EOSIO_DISPATCH( eosiosystem::system_contract,
 (newaccount)(addaction)(remaction)(updateauth)(deleteauth)(linkauth)(unlinkauth)(canceldelay)(onerror)(setabi)
 // fio.system.cpp
 (init)(setnolimits)(addlocked)(addgenlocked)(modgenlocked)(ovrwrtgenlck)(clrgenlocked)(setparams)(setpriv)
-        (rmvproducer)(updtrevision)(newfioacc)(auditvote)(resetaudit)
+        (rmvproducer)(updtrevision)(newfioacc)(auditvote)(resetaudit)(removegenesis)
 // delegate_bandwidth.cpp
         (updatepower)
 // voting.cpp

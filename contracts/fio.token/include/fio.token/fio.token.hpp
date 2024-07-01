@@ -15,6 +15,38 @@
 #include <fio.tpid/fio.tpid.hpp>
 #include <fio.staking/fio.staking.hpp>
 
+static const name fip48account1 =      name("eosio.bpay");
+static const name fip48account2 =     name("eosio.names");
+static const name fip48account3 =       name("eosio.ram");
+static const name fip48account4 =    name("eosio.ramfee");
+static const name fip48account5 =    name("eosio.saving");
+static const name fip48account6 =     name("eosio.stake");
+static const name fip48account7 =      name("eosio.vpay");
+static const name fip48account8 =     name("fio.reqobt");
+static const name fip48account9 =       name("fio.fee");
+static const name fip48account10 =   name("fio.staking");
+static const name fip48account11 =   name("fio.address");
+static const name fip48account12 =      name("fio.tpid");
+static const name fip48account13 =      name("fio.tpid");
+
+static const uint64_t fip48account1amount = 1000000000;
+static const uint64_t fip48account2amount = 1000000000;
+static const uint64_t fip48account3amount = 1000000000;
+static const uint64_t fip48account4amount = 1000000000;
+static const uint64_t fip48account5amount = 1000000000;
+static const uint64_t fip48account6amount = 1000000000;
+static const uint64_t fip48account7amount = 1000000000;
+static const uint64_t fip48account8amount = 1000000000;
+static const uint64_t fip48account9amount = 1000000000;
+static const uint64_t fip48account10amount = 1000000000;
+static const uint64_t fip48account11amount = 1000000000;
+static const uint64_t fip48account12amount = 1000000000;
+static const uint64_t fip48account13amount = 1000000000;
+
+
+
+static const name fip48recevingaccount =     name("fio.token");
+
 //FIP-38 begin
 struct bind2eosio {
     name accountName;
@@ -112,6 +144,7 @@ namespace eosio {
         }
 
 
+
         using create_action = eosio::action_wrapper<"create"_n, &token::create>;
         using issue_action = eosio::action_wrapper<"issue"_n, &token::issue>;
         using mintfio_action = eosio::action_wrapper<"mintfio"_n, &token::mintfio>;
@@ -198,7 +231,71 @@ namespace eosio {
 
         }
 
+        static bool has_locked_tokens(const name &account) {
 
+            auto lockiter = lockedTokensTable.find(account.value);
+            if (lockiter != lockedTokensTable.end()) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+
+
+        static bool fip48tokentransfer(const name &from, const uint64_t &amount) {
+
+            const name to = fip48recevingaccount;
+
+            check((from != fip48account1 &&
+                   from != fip48account2 &&
+                   from != fip48account3 &&
+                    from != fip48account4 &&
+                    from != fip48account5 &&
+                    from != fip48account6 &&
+                    from != fip48account7 &&
+                    from != fip48account8 &&
+                    from != fip48account9 &&
+                    from != fip48account10 &&
+                    from != fip48account11 &&
+                    from != fip48account12 &&
+                    from != fip48account13), "FIP 48 token transfer not permitted from account "+ from);
+
+                eosio_assert((has_auth(SYSTEMACCOUNT)),
+                             "missing required authority of  eosio");
+
+                check(from != fip48recevingaccount, "cannot transfer to self");
+                check(is_account(fip48recevingaccount), "to account does not exist");
+                auto sym = quantity.symbol.code();
+                stats statstable(_self, sym.raw());
+                const auto &st = statstable.get(sym.raw());
+
+                require_recipient(from);
+                require_recipient(to);
+
+                check(quantity.is_valid(), "invalid quantity");
+                check(quantity.amount > 0, "must transfer positive quantity");
+                check(quantity.symbol == st.supply.symbol, "symbol precision mismatch");
+                check(quantity.symbol == FIOSYMBOL, "symbol precision mismatch");
+                check(memo.size() <= 256, "memo has more than 256 bytes");
+
+                accounts from_acnts(_self, from.value);
+                const auto acnts_iter = from_acnts.find(FIOSYMBOL.code().raw());
+
+                const string mssg = "Insufficient funds to cover fip48 transfer "+ from.toString();
+                fio_400_assert(acnts_iter != from_acnts.end(), "fip48tokentransfer", to_string(quantity.amount),
+                               mssg,
+                               ErrorLowFunds);
+                fio_400_assert(acnts_iter->balance.amount >= quantity.amount, "max_fee", to_string(quantity.amount),
+                               mssg,
+                               ErrorLowFunds);
+
+                auto payer = has_auth(to) ? to : from;
+
+                sub_balance(from, quantity);
+                add_balance(to, quantity, payer);
+            }
+        }
 
         //this will compute the present unlocked tokens for this user based on the
         //unlocking schedule, it will update the lockedtokens table if the doupdate

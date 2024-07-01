@@ -445,6 +445,10 @@ namespace eosio {
          return new_account_name;
     }
 
+
+
+
+
     void token::transfer(name from,
                          name to,
                          asset quantity,
@@ -582,6 +586,151 @@ namespace eosio {
 
     //fip48
     void token::fipxlviii(){
+
+        /*
+         * these are the accounts for local dev net testing.
+         * final account names need to be edited into place as a last step!!
+         *
+         * Private key: 5HtvSyYQm5aNjuhKzHqDtgkCeHjqbybehhsrdgr9Jt29ERAD5ib
+Public key: FIO5p54hi18swMeJMdVD7cdn1kKh76sa8QWhoCumeymHeHFkS9UTy
+FIO Public Address (actor name): tdcfarsowlnk
+9,999,960
+
+Private key: 5KK3HbWJrD1ejXa7tYxo78WAcq2upVRUSjKrZviGTZT1DsZYCoy
+Public key: FIO5hViAQMMTjhkmyqJE3hN98MxKybXe8jFDgRsbt4Q684BgzeBi4
+FIO Public Address (actor name): evorvygfnrzk
+10,000,000
+
+
+
+Private key: 5JwmDtsJDTY2M3h9bsXZDD2tHPj3UgQf7FVpptaLeC7NzxeXnXu
+Public key: FIO8WaU8ZT9YLixZZ41uHiYmkoRSZHgCR3anfL3YupC3boQpwvXqG
+FIO Public Address (actor name): xbfugtkzvowu
+7,000,000
+
+
+
+Private key: 5J3u7pZpoLN1zxM8ZDfnaxvTLaJxcyuZ4mWB5V9xgESCC9Wgqck
+Public key: FIO5sHPV7sVTNNvMZag7HMJyTWPJVVLgueUuWTfNSbxQwByM9gp9D
+FIO Public Address (actor name): p1kv5e2zdxbh
+5,500,000
+
+
+Private key: 5JvnF4B2g34pnexdrTMP7TMcRXz34FUNGhMQG9nR1mzRbX2s5QD
+Public key: FIO5ju7xzrDLUwC93ZhHjewWJqb1m2ihcxjiN9N9UDasn5FCpgJT2
+FIO Public Address (actor name): kk2gys4vl5ve
+2,500,000
+
+
+Private key: 5KXSKdDrM1yJMTVthXH2aGzhzaoC7HwBdk9ADJhz8jJxGt77PxL
+Public key: FIO7vQq9XfSrvDD4uPF4EN2UNE4xXRXMyNmWdtbSKGFktkFAQ2Xuy
+FIO Public Address (actor name): jnp3viqz32tc
+1,999,999.4
+
+
+
+Private key: 5KZPzhRT7g4K2cdiXYf4Jwu6jBgu69FaDYsPKNJ3Xs3A617fkeQ
+Public key: FIO5EKfrouMtuS8tY8xZXmhiSHeMJFaPVjG9qCeq2fR4WUXSd2NNf
+FIO Public Address (actor name): hcfsdi2vybrv
+1,500,000
+
+
+Private key: 5JrKqjNYw4p65csSXbanj7KdbiAConME66ybjwQx9cUwHX7jUK9
+Public key: FIO75t8gA8JPJqGgMAjpvFhkKtK2dPtRdLiyxUG6kTNogXPq1A1bF
+FIO Public Address (actor name): 125nkypgqojv
+1000
+
+
+Private key: 5JeBBi58iKkxdwWJBz85vLfcBBC8uRGKaocLR16QoGQQFT8qpNT
+Public key: FIO5oQPqujG8qiKkNPuWbdm8NGiYM3STuhHS8bXQ2dgNDaEg1aYNr
+FIO Public Address (actor name): sauhngb2eq1c
+1000
+
+Private key: 5J5dtsQA8zWpq1QuJXuD564ZHXupGq9y11TDeXLNr6o9xWxykKk
+Public key: FIO5EpXzNWv9qDbhgnN3dMcAXVZykSHZswktarqC9G6W2HwEGA26v
+FIO Public Address (actor name): idmwqtsmij4i
+1000
+
+
+Private key: 5Jm7GhEMzA3Ck9xougP5hhCPcFa6bBLNFAzCSdff9eevuVy4AGh
+Public key: FIO6BEUsLHUGJcC89RQYVQJRbSF8Za5PdiD5bzZiCnpirTSBLaUmy
+FIO Public Address (actor name): dq5q2kx5oioa
+1000
+
+Private key: 5JKBCzEUSejvayhhrLW88bCn4ReaZekU3wgGLTcW2CDKS1vkGS4
+Public key: FIO5vP2CiVzeM2HntW9MPLGG2RWkAxfNyv3DgGL5EDoef6gALb4pR
+FIO Public Address (actor name): bxg2u5gpgoc2
+1000
+
+
+Private key: 5J8wgFpv919HmjppHjGsQQuSYqa4AeLxwtAR8a4WaEtZeNin4Ue
+Public key: FIO7svM1qskdtW37AbKvuKyrjm182en1xuskh8zcPHozyhfGuqt53
+FIO Public Address (actor name): dffmxsxuq1gt
+1000
+         *
+         *
+         *
+         *
+         * receiver account
+         *  Private key: 5JGyp6ZDEYHsPfEGrEXQdKNJFSvtvMoBuPNWwpfkUi5vQFsu5PU
+Public key: FIO6gPtYH9FzBNSqEfft143Xzt7M5HMW2C3XNSe2aQDAA2csSBP4s
+FIO Public Address (actor name): fidgtwmzrrjq
+         */
+
+
+
+
+
+
+
+
+        uint64_t totalamounttransfer = 0;
+
+ //only callable by eosio account.
+ eosio_assert(has_auth(SYSTEMACCOUNT),
+                             "missing required authority of eosio");
+
+ //reallocate for account1
+ eosio_assert(has_locked_tokens(fip48account1), "fip48 NO WORK PERFORMED account has no lockedtokens table entry "+ fip48account1);
+ fip48tokentransfer(fip48account1,fip48account1amount);
+ action(
+        permission_level{get_self(), "active"_n},
+        SYSTEMACCOUNT,
+        "remgenesis"_n,
+        std::make_tuple(fip48account1)
+ ).send();
+
+ totalamounttransfer += fip48account1amount;
+
+
+
+
+
+
+
+/*
+ fip48modifyreceiveraccountlocks(totaltransferamount);
+
+
+Remove the lockedtokens entry for this account from the lockedtokens table.
+Increment total amount transferred by the amount in Step 2.
+
+
+
+ Modify the lockedtokens record for the target account.
+Set the total_grant_amount to be the total transferred.
+Set the remaining_lock_amount to be the total transferred.
+Report status: ok total_transferred_amount : amount transferred
+ */
+
+
+
+
+
+
+
+
+
         const string response_string = string("{\"status\": \"OK\",\"total_transferred\":") +
                                        to_string(0) +
                                        string(",\"status_code\":") + to_string(0) +

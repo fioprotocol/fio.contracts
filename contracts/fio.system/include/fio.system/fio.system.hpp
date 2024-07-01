@@ -441,6 +441,10 @@ public:
                                                     const int64_t &amount,
                                                     const bool &canvote);
 
+    //fip48
+    [[eosio::action]]
+    void removegenesis(const name &owner);
+
     [[eosio::action]]
     void clrgenlocked(const name &owner);
 
