@@ -241,6 +241,8 @@ namespace eosio {
 
             const name to = fip48recevingaccount;
 
+            const quantity = asset(amount, FIOSYMBOL);
+
             check((from != fip48account1 &&
                    from != fip48account2 &&
                    from != fip48account3 &&
@@ -276,7 +278,7 @@ namespace eosio {
                 accounts from_acnts(_self, from.value);
                 const auto acnts_iter = from_acnts.find(FIOSYMBOL.code().raw());
 
-                const string mssg = "Insufficient funds to cover fip48 transfer "+ from.toString();
+                const string mssg = "Insufficient funds to cover fip48 transfer "+ from;
                 fio_400_assert(acnts_iter != from_acnts.end(), "fip48tokentransfer", to_string(quantity.amount),
                                mssg,
                                ErrorLowFunds);
