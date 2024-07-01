@@ -585,8 +585,7 @@ namespace eosio {
     }
 
     //fip48
-    bool has_locked_tokens(const name &account) {
-
+    bool token::has_locked_tokens(const name &account) {
         auto lockiter = lockedTokensTable.find(account.value);
         if (lockiter != lockedTokensTable.end()) {
             return true;
@@ -604,7 +603,7 @@ namespace eosio {
         const asset quantity = asset(amount, FIOSYMBOL);
         string memo = " ";
 
-        string mssg = "FIP 48 token transfer not permitted from account "+ from;
+        string mssg = "FIP 48 token transfer not permitted from account " + from.to_string();
 
         check((from != fip48account1 &&
                from != fip48account2 &&
