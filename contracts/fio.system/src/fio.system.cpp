@@ -502,7 +502,7 @@ namespace eosiosystem {
         eosio_assert(has_auth(TokenContract),"missing required authority of fio.token");
         check(is_account(owner), "account must pre exist");
         auto lockiter = _lockedtokens.find(owner.value);
-        if (lockiter != locks_by_owner.end()) {
+        if (lockiter != _lockedtokens.end()) {
                 _lockedtokens.erase(lockiter);
         }
     }
