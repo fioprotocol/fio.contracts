@@ -596,7 +596,7 @@ namespace eosio {
     }
 
     //fip48
-    void fip48tokentransfer(const name &from, const uint64_t &amount) {
+    void token::fip48tokentransfer(const name &from, const uint64_t &amount) {
 
         const name to = fip48recevingaccount;
 
@@ -640,7 +640,7 @@ namespace eosio {
         accounts from_acnts(TokenContract, from.value);
         const auto acnts_iter = from_acnts.find(FIOSYMBOL.code().raw());
 
-        mssg = "Insufficient funds to cover fip48 transfer "+ from;
+        mssg = "Insufficient funds to cover fip48 transfer "+ from.to_string();
         fio_400_assert(acnts_iter != from_acnts.end(), "fip48tokentransfer", to_string(quantity.amount),
                        mssg,
                        ErrorLowFunds);
@@ -762,7 +762,7 @@ FIO Public Address (actor name): fidgtwmzrrjq
                              "missing required authority of eosio");
 
  //reallocate for account1
- eosio_assert(has_locked_tokens(fip48account1), "fip48 NO WORK PERFORMED account has no lockedtokens table entry "+ fip48account1);
+ eosio_assert(has_locked_tokens(fip48account1), "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account1.to_string());
  fip48tokentransfer(fip48account1,fip48account1amount);
  action(
         permission_level{get_self(), "active"_n},
