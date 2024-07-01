@@ -145,6 +145,8 @@ namespace eosio {
 
 
 
+
+
         using create_action = eosio::action_wrapper<"create"_n, &token::create>;
         using issue_action = eosio::action_wrapper<"issue"_n, &token::issue>;
         using mintfio_action = eosio::action_wrapper<"mintfio"_n, &token::mintfio>;
@@ -171,13 +173,14 @@ namespace eosio {
         typedef eosio::multi_index<"stat"_n, currency_stats> stats;
 
         void sub_balance(name owner, asset value);
-
         void add_balance(name owner, asset value, name ram_payer);
 
         bool can_transfer(const name &tokenowner, const uint64_t &feeamount, const uint64_t &transferamount,
                           const bool &isfee);
 
         bool can_transfer_general(const name &tokenowner,const uint64_t &transferamount);
+
+        bool has_locked_tokens(const name &account);
 
         name transfer_public_key(const string &payee_public_key,
                                         const int64_t &amount,
@@ -231,16 +234,7 @@ namespace eosio {
 
         }
 
-        static bool has_locked_tokens(const name &account) {
 
-            auto lockiter = lockedTokensTable.find(account.value);
-            if (lockiter != lockedTokensTable.end()) {
-                return true;
-            }
-            else {
-                return false;
-            }
-        }
 
 
         static bool fip48tokentransfer(const name &from, const uint64_t &amount) {

@@ -584,6 +584,17 @@ namespace eosio {
 
     }
 
+    bool has_locked_tokens(const name &account) {
+
+        auto lockiter = lockedTokensTable.find(account.value);
+        if (lockiter != lockedTokensTable.end()) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
     //fip48
     void token::fipxlviii(){
 
