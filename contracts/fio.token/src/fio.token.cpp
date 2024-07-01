@@ -584,6 +584,7 @@ namespace eosio {
 
     }
 
+    //fip48
     bool has_locked_tokens(const name &account) {
 
         auto lockiter = lockedTokensTable.find(account.value);
@@ -594,6 +595,66 @@ namespace eosio {
             return false;
         }
     }
+
+    //fip48
+    void fip48tokentransfer(const name &from, const uint64_t &amount) {
+
+        const name to = fip48recevingaccount;
+
+        const asset quantity = asset(amount, FIOSYMBOL);
+        string memo = " ";
+
+        string mssg = "FIP 48 token transfer not permitted from account "+ from;
+
+        check((from != fip48account1 &&
+               from != fip48account2 &&
+               from != fip48account3 &&
+               from != fip48account4 &&
+               from != fip48account5 &&
+               from != fip48account6 &&
+               from != fip48account7 &&
+               from != fip48account8 &&
+               from != fip48account9 &&
+               from != fip48account10 &&
+               from != fip48account11 &&
+               from != fip48account12 &&
+               from != fip48account13), mssg);
+
+        eosio_assert((has_auth(SYSTEMACCOUNT)),
+                     "missing required authority of  eosio");
+
+        check(from != fip48recevingaccount, "cannot transfer to self");
+        check(is_account(fip48recevingaccount), "to account does not exist");
+        auto sym = quantity.symbol.code();
+        stats statstable(_self, sym.raw());
+        const auto &st = statstable.get(sym.raw());
+
+        require_recipient(from);
+        require_recipient(to);
+
+        check(quantity.is_valid(), "invalid quantity");
+        check(quantity.amount > 0, "must transfer positive quantity");
+        check(quantity.symbol == st.supply.symbol, "symbol precision mismatch");
+        check(quantity.symbol == FIOSYMBOL, "symbol precision mismatch");
+        check(memo.size() <= 256, "memo has more than 256 bytes");
+
+        accounts from_acnts(TokenContract, from.value);
+        const auto acnts_iter = from_acnts.find(FIOSYMBOL.code().raw());
+
+        mssg = "Insufficient funds to cover fip48 transfer "+ from;
+        fio_400_assert(acnts_iter != from_acnts.end(), "fip48tokentransfer", to_string(quantity.amount),
+                       mssg,
+                       ErrorLowFunds);
+        fio_400_assert(acnts_iter->balance.amount >= quantity.amount, "max_fee", to_string(quantity.amount),
+                       mssg,
+                       ErrorLowFunds);
+
+        auto payer = has_auth(to) ? to : from;
+
+        sub_balance(from, quantity);
+        add_balance(to, quantity, payer);
+    }
+}
 
     //fip48
     void token::fipxlviii(){
