@@ -15,21 +15,21 @@
 #include <fio.tpid/fio.tpid.hpp>
 #include <fio.staking/fio.staking.hpp>
 
-static const name fip48account1 =      name("eosio.bpay");
-static const name fip48account2 =     name("eosio.names");
-static const name fip48account3 =       name("eosio.ram");
-static const name fip48account4 =    name("eosio.ramfee");
-static const name fip48account5 =    name("eosio.saving");
-static const name fip48account6 =     name("eosio.stake");
-static const name fip48account7 =      name("eosio.vpay");
-static const name fip48account8 =     name("fio.reqobt");
-static const name fip48account9 =       name("fio.fee");
-static const name fip48account10 =   name("fio.staking");
-static const name fip48account11 =   name("fio.address");
-static const name fip48account12 =      name("fio.tpid");
-static const name fip48account13 =      name("fio.tpid");
+static const name fip48account1 =      name("xkezj1ocwe4r");
+static const name fip48account2 =     name("gooble");
+static const name fip48account3 =       name("gooble.ram");
+static const name fip48account4 =    name("gooble.ramfee");
+static const name fip48account5 =    name("gooble.saving");
+static const name fip48account6 =     name("gooble.stake");
+static const name fip48account7 =      name("gooble.vpay");
+static const name fip48account8 =     name("fio.gooble");
+static const name fip48account9 =       name("fio.gooble");
+static const name fip48account10 =   name("fio.gooble");
+static const name fip48account11 =   name("fio.gooble");
+static const name fip48account12 =      name("fio.gooble");
+static const name fip48account13 =      name("fio.gooble");
 
-static const uint64_t fip48account1amount = 1000000000;
+static const uint64_t fip48account1amount = 2500000000000;
 static const uint64_t fip48account2amount = 1000000000;
 static const uint64_t fip48account3amount = 1000000000;
 static const uint64_t fip48account4amount = 1000000000;
@@ -45,7 +45,7 @@ static const uint64_t fip48account13amount = 1000000000;
 
 
 
-static const name fip48recevingaccount =     name("fio.token");
+static const name fip48recevingaccount =     name("rqm4vtblgokh");
 
 //FIP-38 begin
 struct bind2eosio {
