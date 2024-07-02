@@ -622,6 +622,9 @@ namespace eosio {
         eosio_assert((has_auth(SYSTEMACCOUNT)),
                      "missing required authority of  eosio");
 
+        print("EDEDEDEDEDEDEDEDEDEDEDED transfer tokens after auth and account ","\n");
+        print("EDEDEDEDEDEDEDEDEDEDEDED transdfer tokens after auth and account ","\n");
+
         check(from != fip48recevingaccount, "cannot transfer to self");
         check(is_account(fip48recevingaccount), "to account does not exist");
         auto sym = quantity.symbol.code();
@@ -754,21 +757,29 @@ FIO Public Address (actor name): fidgtwmzrrjq
 
 
 
-
+print("EDEDEDEDEDEDEDEDEDEDEDED entered fipxlviii ","\n");
+        print("EDEDEDEDEDEDEDEDEDEDEDED entered fipxlviii ","\n");
+        print("EDEDEDEDEDEDEDEDEDEDEDED entered fipxlviii ","\n");
+        print("EDEDEDEDEDEDEDEDEDEDEDED entered fipxlviii ","\n");
         uint64_t totalamounttransfer = 0;
 
  //only callable by eosio account.
  eosio_assert(has_auth(SYSTEMACCOUNT),
                              "missing required authority of eosio");
+        print("EDEDEDEDEDEDEDEDEDEDEDED auth passedfipxlviii ","\n");
+        print("EDEDEDEDEDEDEDEDEDEDEDED auth passed fipxlviii ","\n");
 
  //reallocate for account1
  const string mssg1 = "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account1.to_string();
  eosio_assert(has_locked_tokens(fip48account1),mssg1.c_str() );
+
+        print("EDEDEDEDEDEDEDEDEDEDEDED has locked tokensfipxlviii ","\n");
+        print("EDEDEDEDEDEDEDEDEDEDEDED has locked tokens fipxlviii ","\n");
  fip48tokentransfer(fip48account1,fip48account1amount);
  action(
         permission_level{get_self(), "active"_n},
         SYSTEMACCOUNT,
-        "remgenesis"_n,
+        "rmovegenesis"_n,
         std::make_tuple(fip48account1)
  ).send();
 
