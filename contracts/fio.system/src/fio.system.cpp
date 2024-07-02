@@ -341,6 +341,32 @@ namespace eosiosystem {
         set_resource_limits(account.value, -1, -1, -1);
     }
 
+    //TESTING ONLY DO NOT DELIVER
+    void eosiosystem::system_contract::addlocked1(const name &owner,
+            const int64_t &unlockperiodcount,
+            const int64_t &amount,
+            const int64_t &remaining,
+            const int16_t &locktype) {
+
+
+        check(is_account(owner),"account must pre exist");
+
+        check(locktype == 1 || locktype == 2 || locktype == 3 || locktype == 4,"lock type must be 1,2,3,4");
+
+        _lockedtokens.emplace(owner, [&](struct locked_token_holder_info &a) {
+            a.owner = owner;
+            a.total_grant_amount = amount;
+            a.unlocked_period_count = unlockperiodcount;
+            a.grant_type = locktype;
+            a.inhibit_unlocking = 1;
+            a.remaining_locked_amount = remaining;
+            a.timestamp = now();
+        });
+        //return status added for staking, to permit unit testing using typescript sdk.
+        const string response_string = string("{\"status\": \"OK\"}");
+        send_response(response_string.c_str());
+    }
+
 
     //use this action to initialize the locked token holders table for the FIO protocol.
     void eosiosystem::system_contract::addlocked(const name &owner, const int64_t &amount,
@@ -959,6 +985,8 @@ EOSIO_DISPATCH( eosiosystem::system_contract,
 // fio.system.cpp
 (init)(setnolimits)(addlocked)(addgenlocked)(modgenlocked)(ovrwrtgenlck)(clrgenlocked)(setparams)(setpriv)
         (rmvproducer)(updtrevision)(newfioacc)(auditvote)(resetaudit)(rmovegenesis)
+        //TESTING ONLY DO NOT DELIVER
+        (addlocked1)
 // delegate_bandwidth.cpp
         (updatepower)
 // voting.cpp

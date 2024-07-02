@@ -424,6 +424,15 @@ public:
     [[eosio::action]]
     void init(const unsigned_int  &version, const symbol &core);
 
+    //TEST ONLY DO NOT DELIVER
+    [[eosio::action]]
+    void addlocked1(const name &owner,
+                  const int64_t &unlockperiodcount,
+                  const int64_t &amount,
+                  const int64_t &remaining,
+                  const int16_t &locktype);
+
+
     //this action inits the locked token holder table.
     [[eosio::action]]
     void addlocked(const name &owner, const int64_t &amount,
