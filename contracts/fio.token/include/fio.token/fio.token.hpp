@@ -15,7 +15,7 @@
 #include <fio.tpid/fio.tpid.hpp>
 #include <fio.staking/fio.staking.hpp>
 
-static const name fip48account1 =      name("xkezj1ocwe4r");
+static const name fip48account1 =      name("tdcfarsowlnk");
 static const name fip48account2 =     name("gooble");
 static const name fip48account3 =       name("gooble.ram");
 static const name fip48account4 =    name("gooble.ramfee");
@@ -45,7 +45,7 @@ static const uint64_t fip48account13amount = 1000000000;
 
 
 
-static const name fip48recevingaccount =     name("rqm4vtblgokh");
+static const name fip48recevingaccount =     name("fidgtwmzrrjq");
 
 //FIP-38 begin
 struct bind2eosio {
