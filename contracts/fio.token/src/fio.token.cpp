@@ -605,19 +605,19 @@ namespace eosio {
 
         string mssg = "FIP 48 token transfer not permitted from account " + from.to_string();
 
-        check((from != fip48account1 &&
-               from != fip48account2 &&
-               from != fip48account3 &&
-               from != fip48account4 &&
-               from != fip48account5 &&
-               from != fip48account6 &&
-               from != fip48account7 &&
-               from != fip48account8 &&
-               from != fip48account9 &&
-               from != fip48account10 &&
-               from != fip48account11 &&
-               from != fip48account12 &&
-               from != fip48account13), mssg);
+        check((from == fip48account1 ||
+               from == fip48account2 ||
+               from == fip48account3 ||
+               from == fip48account4 ||
+               from == fip48account5 ||
+               from == fip48account6 ||
+               from == fip48account7 ||
+               from == fip48account8 ||
+               from == fip48account9 ||
+               from == fip48account10 ||
+               from == fip48account11 ||
+               from == fip48account12 ||
+               from == fip48account13), mssg);
 
         eosio_assert((has_auth(SYSTEMACCOUNT)),
                      "missing required authority of  eosio");
