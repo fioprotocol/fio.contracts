@@ -765,7 +765,7 @@ print("EDEDEDEDEDEDEDEDEDEDEDED entered fipxlviii ","\n");
 
  //only callable by eosio account.
  //eosio_assert(has_auth(SYSTEMACCOUNT),
-                             "missing required authority of eosio");
+     //                        "missing required authority of eosio");
         print("EDEDEDEDEDEDEDEDEDEDEDED auth passedfipxlviii ","\n");
         print("EDEDEDEDEDEDEDEDEDEDEDED auth passed fipxlviii ","\n");
 
