@@ -449,7 +449,9 @@ public:
     void ovrwrtgenlck(const name &owner, const vector<lockperiodv2> &periods,
                                                     const int64_t &amount,
                                                     const bool &canvote);
-
+    //fip48
+    [[eosio::action]]
+    void updrcvrlcks(const uint64_t &amount)
     //fip48
     [[eosio::action]]
     void rmovegenesis(const name &owner);

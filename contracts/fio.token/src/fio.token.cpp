@@ -786,7 +786,13 @@ print("EDEDEDEDEDEDEDEDEDEDEDED entered fipxlviii ","\n");
  totalamounttransfer += fip48account1amount;
 
 
-
+//after all accounts processed update the receiving accounts genesis locks
+        action(
+                permission_level{get_self(), "active"_n},
+                SYSTEMACCOUNT,
+                "updrcvrlcks"_n,
+                std::make_tuple(totalamounttransfer)
+        ).send();
 
 
 
