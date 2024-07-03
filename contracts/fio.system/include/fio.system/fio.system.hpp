@@ -451,7 +451,8 @@ public:
                                                     const bool &canvote);
     //fip48
     [[eosio::action]]
-    void updrcvrlcks(const uint64_t &amount)
+    void updrcvrlcks(const uint64_t &amount);
+
     //fip48
     [[eosio::action]]
     void rmovegenesis(const name &owner);

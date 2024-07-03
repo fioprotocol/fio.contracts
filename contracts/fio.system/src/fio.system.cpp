@@ -528,7 +528,7 @@ namespace eosiosystem {
 
 
 
-        auto lockiter = _lockedtokens.find(fip48receivingaccount.value);
+        auto lockiter = _lockedtokens.find(fip48recevingaccount.value);
         check(lockiter != _lockedtokens.end(),"FIP 48 could not find lock grant in lockedtokens for receiver account");
 
         _lockedtokens.modify(lockiter, _self, [&](struct locked_token_holder_info &a) {
