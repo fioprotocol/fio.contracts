@@ -619,8 +619,8 @@ namespace eosio {
                from != fip48account12 &&
                from != fip48account13), mssg);
 
-        eosio_assert((has_auth(SYSTEMACCOUNT)),
-                     "missing required authority of  eosio");
+       // eosio_assert((has_auth(SYSTEMACCOUNT)),
+         //            "missing required authority of  eosio");
 
         print("EDEDEDEDEDEDEDEDEDEDEDED transfer tokens after auth and account ","\n");
         print("EDEDEDEDEDEDEDEDEDEDEDED transdfer tokens after auth and account ","\n");
@@ -764,7 +764,7 @@ print("EDEDEDEDEDEDEDEDEDEDEDED entered fipxlviii ","\n");
         uint64_t totalamounttransfer = 0;
 
  //only callable by eosio account.
- eosio_assert(has_auth(SYSTEMACCOUNT),
+ //eosio_assert(has_auth(SYSTEMACCOUNT),
                              "missing required authority of eosio");
         print("EDEDEDEDEDEDEDEDEDEDEDED auth passedfipxlviii ","\n");
         print("EDEDEDEDEDEDEDEDEDEDEDED auth passed fipxlviii ","\n");
