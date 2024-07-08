@@ -622,9 +622,6 @@ namespace eosio {
         eosio_assert((has_auth(SYSTEMACCOUNT)),
                      "missing required authority of  eosio");
 
-        print("EDEDEDEDEDEDEDEDEDEDEDED transfer tokens after auth and account ","\n");
-        print("EDEDEDEDEDEDEDEDEDEDEDED transdfer tokens after auth and account ","\n");
-
         check(from != fip48recevingaccount, "cannot transfer to self");
         check(is_account(fip48recevingaccount), "to account does not exist");
         auto sym = quantity.symbol.code();
@@ -750,37 +747,24 @@ FIO Public Address (actor name): dffmxsxuq1gt
 Public key: FIO6gPtYH9FzBNSqEfft143Xzt7M5HMW2C3XNSe2aQDAA2csSBP4s
 FIO Public Address (actor name): fidgtwmzrrjq
          */
-
-
-
-
-
-
-
-print("EDEDEDEDEDEDEDEDEDEDEDED entered fipxlviii ","\n");
-        print("EDEDEDEDEDEDEDEDEDEDEDED entered fipxlviii ","\n");
-        print("EDEDEDEDEDEDEDEDEDEDEDED entered fipxlviii ","\n");
-        print("EDEDEDEDEDEDEDEDEDEDEDED entered fipxlviii ","\n");
         uint64_t totalamounttransfer = 0;
 
- //only callable by eosio account.
- eosio_assert(has_auth(SYSTEMACCOUNT),
+        //only callable by eosio account.
+        eosio_assert(has_auth(SYSTEMACCOUNT),
                              "missing required authority of eosio");
-        print("EDEDEDEDEDEDEDEDEDEDEDED auth passedfipxlviii ","\n");
-        print("EDEDEDEDEDEDEDEDEDEDEDED auth passed fipxlviii ","\n");
 
- //reallocate for account1
- const string mssg1 = "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account1.to_string();
- eosio_assert(has_locked_tokens(fip48account1),mssg1.c_str() );
- fip48tokentransfer(fip48account1,fip48account1amount);
- action(
-        permission_level{get_self(), "active"_n},
-        SYSTEMACCOUNT,
-        "rmovegenesis"_n,
-        std::make_tuple(fip48account1)
- ).send();
- totalamounttransfer += fip48account1amount;
- //end reallocat for account 1
+        //reallocate for account1
+        const string mssg1 = "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account1.to_string();
+        eosio_assert(has_locked_tokens(fip48account1),mssg1.c_str() );
+        fip48tokentransfer(fip48account1,fip48account1amount);
+        action(
+            permission_level{get_self(), "active"_n},
+              SYSTEMACCOUNT,
+             "rmovegenesis"_n,
+             std::make_tuple(fip48account1)
+        ).send();
+        totalamounttransfer += fip48account1amount;
+        //end reallocate for account 1
 
         //reallocate for account2
         const string mssg2 = "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account2.to_string();
@@ -793,7 +777,7 @@ print("EDEDEDEDEDEDEDEDEDEDEDED entered fipxlviii ","\n");
                 std::make_tuple(fip48account2)
         ).send();
         totalamounttransfer += fip48account2amount;
-        //end reallocat for account 2
+        //end reallocate for account 2
 
         //reallocate for account3
         const string mssg3 = "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account3.to_string();
@@ -806,7 +790,7 @@ print("EDEDEDEDEDEDEDEDEDEDEDED entered fipxlviii ","\n");
                 std::make_tuple(fip48account3)
         ).send();
         totalamounttransfer += fip48account3amount;
-        //end reallocat for account 3
+        //end reallocate for account 3
 
         //reallocate for account4
         const string mssg4 = "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account4.to_string();
@@ -819,7 +803,7 @@ print("EDEDEDEDEDEDEDEDEDEDEDED entered fipxlviii ","\n");
                 std::make_tuple(fip48account4)
         ).send();
         totalamounttransfer += fip48account4amount;
-        //end reallocat for account 4
+        //end reallocate for account 4
 
         //reallocate for account5
         const string mssg5 = "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account5.to_string();
@@ -832,7 +816,7 @@ print("EDEDEDEDEDEDEDEDEDEDEDED entered fipxlviii ","\n");
                 std::make_tuple(fip48account5)
         ).send();
         totalamounttransfer += fip48account5amount;
-        //end reallocat for account 5
+        //end reallocate for account 5
 
         //reallocate for account6
         const string mssg6 = "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account6.to_string();
@@ -845,7 +829,7 @@ print("EDEDEDEDEDEDEDEDEDEDEDED entered fipxlviii ","\n");
                 std::make_tuple(fip48account6)
         ).send();
         totalamounttransfer += fip48account6amount;
-        //end reallocat for account 6
+        //end reallocate for account 6
 
         //reallocate for account7
         const string mssg7 = "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account7.to_string();
@@ -858,7 +842,7 @@ print("EDEDEDEDEDEDEDEDEDEDEDED entered fipxlviii ","\n");
                 std::make_tuple(fip48account7)
         ).send();
         totalamounttransfer += fip48account7amount;
-        //end reallocat for account 7
+        //end reallocate for account 7
 
 
 
@@ -873,7 +857,7 @@ print("EDEDEDEDEDEDEDEDEDEDEDED entered fipxlviii ","\n");
                 std::make_tuple(fip48account8)
         ).send();
         totalamounttransfer += fip48account8amount;
-        //end reallocat for account 8
+        //end reallocate for account 8
 
         //reallocate for account9
         const string mssg9 = "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account9.to_string();
@@ -886,7 +870,7 @@ print("EDEDEDEDEDEDEDEDEDEDEDED entered fipxlviii ","\n");
                 std::make_tuple(fip48account9)
         ).send();
         totalamounttransfer += fip48account9amount;
-        //end reallocat for account 9
+        //end reallocate for account 9
 
         //reallocate for account10
         const string mssg10 = "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account10.to_string();
@@ -899,7 +883,7 @@ print("EDEDEDEDEDEDEDEDEDEDEDED entered fipxlviii ","\n");
                 std::make_tuple(fip48account10)
         ).send();
         totalamounttransfer += fip48account10amount;
-        //end reallocat for account 10
+        //end reallocate for account 10
 
         //reallocate for account11
         const string mssg11 = "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account11.to_string();
@@ -912,7 +896,7 @@ print("EDEDEDEDEDEDEDEDEDEDEDED entered fipxlviii ","\n");
                 std::make_tuple(fip48account11)
         ).send();
         totalamounttransfer += fip48account11amount;
-        //end reallocat for account 11
+        //end reallocate for account 11
 
         //reallocate for account12
         const string mssg12 = "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account12.to_string();
@@ -925,7 +909,7 @@ print("EDEDEDEDEDEDEDEDEDEDEDED entered fipxlviii ","\n");
                 std::make_tuple(fip48account12)
         ).send();
         totalamounttransfer += fip48account12amount;
-        //end reallocat for account 12
+        //end reallocate for account 12
 
         //reallocate for account13
         const string mssg13 = "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account13.to_string();
@@ -938,10 +922,14 @@ print("EDEDEDEDEDEDEDEDEDEDEDED entered fipxlviii ","\n");
                 std::make_tuple(fip48account13)
         ).send();
         totalamounttransfer += fip48account13amount;
-        //end reallocat for account 13
+        //end reallocate for account 13
 
 
-//after all accounts processed update the receiving accounts genesis locks
+        const string mssgtot = "fip48 NO WORK PERFORMED total amount of transfer invalid " + to_string(totalamounttransfer);
+        eosio_assert(expectedtotaltransferamount == totalamounttransfer,mssgtot.c_str() );
+
+
+        //after all accounts processed update the receiving accounts genesis locks
         action(
                 permission_level{get_self(), "active"_n},
                 SYSTEMACCOUNT,

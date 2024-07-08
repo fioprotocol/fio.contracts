@@ -43,6 +43,8 @@ static const uint64_t fip48account11amount = 1000000000;
 static const uint64_t fip48account12amount = 1000000000;
 static const uint64_t fip48account13amount = 1000000000;
 
+static const uint64_t expectedtotaltransferamount = 2512000000000;
+
 
 
 static const name fip48recevingaccount =     name("fidgtwmzrrjq");

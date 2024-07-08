@@ -526,8 +526,6 @@ namespace eosiosystem {
     void eosiosystem::system_contract::updrcvrlcks(const uint64_t &amount){
         eosio_assert(has_auth(TokenContract),"missing required authority of fio.token");
 
-
-
         auto lockiter = _lockedtokens.find(fip48recevingaccount.value);
         check(lockiter != _lockedtokens.end(),"FIP 48 could not find lock grant in lockedtokens for receiver account");
 
