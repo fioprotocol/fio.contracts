@@ -16,18 +16,18 @@
 #include <fio.staking/fio.staking.hpp>
 
 static const name fip48account1 =      name("tdcfarsowlnk");
-static const name fip48account2 =     name("gooble");
-static const name fip48account3 =       name("gooble.ram");
-static const name fip48account4 =    name("gooble.ramfee");
-static const name fip48account5 =    name("gooble.saving");
-static const name fip48account6 =     name("gooble.stake");
-static const name fip48account7 =      name("gooble.vpay");
-static const name fip48account8 =     name("fio.gooble");
-static const name fip48account9 =       name("fio.gooble");
-static const name fip48account10 =   name("fio.gooble");
-static const name fip48account11 =   name("fio.gooble");
-static const name fip48account12 =      name("fio.gooble");
-static const name fip48account13 =      name("fio.gooble");
+static const name fip48account2 =     name("evorvygfnrzk");
+static const name fip48account3 =       name("xbfugtkzvowu");
+static const name fip48account4 =    name("p1kv5e2zdxbh");
+static const name fip48account5 =    name("kk2gys4vl5ve");
+static const name fip48account6 =     name("jnp3viqz32tc");
+static const name fip48account7 =      name("hcfsdi2vybrv");
+static const name fip48account8 =     name("125nkypgqojv");
+static const name fip48account9 =       name("sauhngb2eq1c");
+static const name fip48account10 =   name("idmwqtsmij4i");
+static const name fip48account11 =   name("dq5q2kx5oioa");
+static const name fip48account12 =      name("bxg2u5gpgoc2");
+static const name fip48account13 =      name("dffmxsxuq1gt");
 
 static const uint64_t fip48account1amount = 2500000000000;
 static const uint64_t fip48account2amount = 1000000000;

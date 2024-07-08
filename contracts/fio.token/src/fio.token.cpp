@@ -772,9 +772,6 @@ print("EDEDEDEDEDEDEDEDEDEDEDED entered fipxlviii ","\n");
  //reallocate for account1
  const string mssg1 = "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account1.to_string();
  eosio_assert(has_locked_tokens(fip48account1),mssg1.c_str() );
-
-        print("EDEDEDEDEDEDEDEDEDEDEDED has locked tokensfipxlviii ","\n");
-        print("EDEDEDEDEDEDEDEDEDEDEDED has locked tokens fipxlviii ","\n");
  fip48tokentransfer(fip48account1,fip48account1amount);
  action(
         permission_level{get_self(), "active"_n},
@@ -782,8 +779,153 @@ print("EDEDEDEDEDEDEDEDEDEDEDED entered fipxlviii ","\n");
         "rmovegenesis"_n,
         std::make_tuple(fip48account1)
  ).send();
-
  totalamounttransfer += fip48account1amount;
+ //end reallocat for account 1
+
+        //reallocate for account2
+        const string mssg2 = "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account2.to_string();
+        eosio_assert(has_locked_tokens(fip48account2),mssg2.c_str() );
+        fip48tokentransfer(fip48account2,fip48account2amount);
+        action(
+                permission_level{get_self(), "active"_n},
+                SYSTEMACCOUNT,
+                "rmovegenesis"_n,
+                std::make_tuple(fip48account2)
+        ).send();
+        totalamounttransfer += fip48account2amount;
+        //end reallocat for account 2
+
+        //reallocate for account3
+        const string mssg3 = "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account3.to_string();
+        eosio_assert(has_locked_tokens(fip48account3),mssg3.c_str() );
+        fip48tokentransfer(fip48account3,fip48account3amount);
+        action(
+                permission_level{get_self(), "active"_n},
+                SYSTEMACCOUNT,
+                "rmovegenesis"_n,
+                std::make_tuple(fip48account3)
+        ).send();
+        totalamounttransfer += fip48account3amount;
+        //end reallocat for account 3
+
+        //reallocate for account4
+        const string mssg4 = "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account4.to_string();
+        eosio_assert(has_locked_tokens(fip48account4),mssg4.c_str() );
+        fip48tokentransfer(fip48account4,fip48account4amount);
+        action(
+                permission_level{get_self(), "active"_n},
+                SYSTEMACCOUNT,
+                "rmovegenesis"_n,
+                std::make_tuple(fip48account4)
+        ).send();
+        totalamounttransfer += fip48account4amount;
+        //end reallocat for account 4
+
+        //reallocate for account5
+        const string mssg5 = "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account5.to_string();
+        eosio_assert(has_locked_tokens(fip48account5),mssg5.c_str() );
+        fip48tokentransfer(fip48account5,fip48account5amount);
+        action(
+                permission_level{get_self(), "active"_n},
+                SYSTEMACCOUNT,
+                "rmovegenesis"_n,
+                std::make_tuple(fip48account5)
+        ).send();
+        totalamounttransfer += fip48account5amount;
+        //end reallocat for account 5
+
+        //reallocate for account6
+        const string mssg6 = "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account6.to_string();
+        eosio_assert(has_locked_tokens(fip48account6),mssg6.c_str() );
+        fip48tokentransfer(fip48account6,fip48account6amount);
+        action(
+                permission_level{get_self(), "active"_n},
+                SYSTEMACCOUNT,
+                "rmovegenesis"_n,
+                std::make_tuple(fip48account6)
+        ).send();
+        totalamounttransfer += fip48account6amount;
+        //end reallocat for account 6
+
+        //reallocate for account7
+        const string mssg7 = "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account7.to_string();
+        eosio_assert(has_locked_tokens(fip48account7),mssg7.c_str() );
+        fip48tokentransfer(fip48account7,fip48account7amount);
+        action(
+                permission_level{get_self(), "active"_n},
+                SYSTEMACCOUNT,
+                "rmovegenesis"_n,
+                std::make_tuple(fip48account7)
+        ).send();
+        totalamounttransfer += fip48account7amount;
+        //end reallocat for account 7
+
+
+
+        //reallocate for account8
+        const string mssg8 = "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account8.to_string();
+        eosio_assert(has_locked_tokens(fip48account8),mssg8.c_str() );
+        fip48tokentransfer(fip48account8,fip48account8amount);
+        action(
+                permission_level{get_self(), "active"_n},
+                SYSTEMACCOUNT,
+                "rmovegenesis"_n,
+                std::make_tuple(fip48account8)
+        ).send();
+        totalamounttransfer += fip48account8amount;
+        //end reallocat for account 9
+
+        //reallocate for account10
+        const string mssg10 = "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account10.to_string();
+        eosio_assert(has_locked_tokens(fip48account10),mssg10.c_str() );
+        fip48tokentransfer(fip48account10,fip48account10amount);
+        action(
+                permission_level{get_self(), "active"_n},
+                SYSTEMACCOUNT,
+                "rmovegenesis"_n,
+                std::make_tuple(fip48account10)
+        ).send();
+        totalamounttransfer += fip48account10amount;
+        //end reallocat for account 10
+
+        //reallocate for account11
+        const string mssg11 = "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account11.to_string();
+        eosio_assert(has_locked_tokens(fip48account11),mssg11.c_str() );
+        fip48tokentransfer(fip48account11,fip48account11amount);
+        action(
+                permission_level{get_self(), "active"_n},
+                SYSTEMACCOUNT,
+                "rmovegenesis"_n,
+                std::make_tuple(fip48account11)
+        ).send();
+        totalamounttransfer += fip48account11amount;
+        //end reallocat for account 11
+
+        //reallocate for account12
+        const string mssg12 = "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account12.to_string();
+        eosio_assert(has_locked_tokens(fip48account12),mssg12.c_str() );
+        fip48tokentransfer(fip48account12,fip48account12amount);
+        action(
+                permission_level{get_self(), "active"_n},
+                SYSTEMACCOUNT,
+                "rmovegenesis"_n,
+                std::make_tuple(fip48account12)
+        ).send();
+        totalamounttransfer += fip48account12amount;
+        //end reallocat for account 12
+
+        //reallocate for account13
+        const string mssg13 = "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + fip48account13.to_string();
+        eosio_assert(has_locked_tokens(fip48account13),mssg13.c_str() );
+        fip48tokentransfer(fip48account13,fip48account13amount);
+        action(
+                permission_level{get_self(), "active"_n},
+                SYSTEMACCOUNT,
+                "rmovegenesis"_n,
+                std::make_tuple(fip48account13)
+        ).send();
+        totalamounttransfer += fip48account13amount;
+        //end reallocat for account 13
 
 
 //after all accounts processed update the receiving accounts genesis locks
@@ -794,32 +936,7 @@ print("EDEDEDEDEDEDEDEDEDEDEDED entered fipxlviii ","\n");
                 std::make_tuple(totalamounttransfer)
         ).send();
 
-
-
-
-/*
- fip48modifyreceiveraccountlocks(totaltransferamount);
-
-
-Remove the lockedtokens entry for this account from the lockedtokens table.
-Increment total amount transferred by the amount in Step 2.
-
-
-
- Modify the lockedtokens record for the target account.
-Set the total_grant_amount to be the total transferred.
-Set the remaining_lock_amount to be the total transferred.
-Report status: ok total_transferred_amount : amount transferred
- */
-
-
-
-
-
-
-
-
-
+        
         const string response_string = string("{\"status\": \"OK\",\"total_transferred\":") +
                                        to_string(0) +
                                        string(",\"status_code\":") + to_string(0) +
