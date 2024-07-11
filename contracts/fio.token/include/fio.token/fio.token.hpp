@@ -17,7 +17,7 @@
 
 
 static const struct fip48datainfo{
-    name account = null;
+    name account;
     uint64_t fioamount = 0;
 };
 static const vector<fip48datainfo> fip48reallocationlist = [
