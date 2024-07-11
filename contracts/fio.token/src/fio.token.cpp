@@ -622,7 +622,7 @@ print ("overcome by events!!!");
             const name to = fip48recevingaccount;
             const name from = vectorit->account;
 
-            const asset quantity = asset(vectorit->amount, FIOSYMBOL);
+            const asset quantity = asset(vectorit->fioamount, FIOSYMBOL);
             //todo set the memo correctly
             string memo = " ";
 
@@ -643,12 +643,12 @@ print ("overcome by events!!!");
             accounts from_acnts(TokenContract, from.value);
             const auto acnts_iter = from_acnts.find(FIOSYMBOL.code().raw());
 
-            mssg = "Insufficient funds to cover fip48 transfer "+ from.to_string();
+            const string mssg2 = "Insufficient funds to cover fip48 transfer "+ from.to_string();
             fio_400_assert(acnts_iter != from_acnts.end(), "fip48tokentransfer", to_string(quantity.amount),
-                           mssg,
+                           mssg2,
                            ErrorLowFunds);
             fio_400_assert(acnts_iter->balance.amount >= quantity.amount, "max_fee", to_string(quantity.amount),
-                           mssg,
+                           mssg2,
                            ErrorLowFunds);
 
             auto payer = has_auth(to) ? to : from;
@@ -656,7 +656,7 @@ print ("overcome by events!!!");
             sub_balance(from, quantity);
             add_balance(to, quantity, payer);
 
-            totalamounttransfer += fip48account1amount;
+            totalamounttransfer += vectorit->fioamount;
 
             //end reallocate for account
         }
