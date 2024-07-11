@@ -528,7 +528,7 @@ namespace eosiosystem {
         //for each reallocation account.
         for (auto vectorit = fip48reallocationlist.begin(); vectorit != fip48reallocationlist.end(); ++vectorit)
         {
-            auto realloc_lockiter = _lockedtokens.find(vectorit.account.value);
+            auto realloc_lockiter = _lockedtokens.find(vectorit->account.value);
             check(realloc_lockiter != _lockedtokens.end(),"NOWORK FIP-48 could not find reallocation account in lockedtokens.");
             _lockedtokens.erase(realloc_lockiter);
 
