@@ -522,6 +522,11 @@ namespace eosiosystem {
         });
     }
 
+    //fip48 update genesis locks as per fip 48.
+    void eosiosystem::system_contract::fipxlviiilck(){
+        print("EDEDEDEDEDEDEDED called fipxlviiilck()");
+    }
+
     //fip48 modify receiver genesis locks
     void eosiosystem::system_contract::updrcvrlcks(const uint64_t &amount){
         eosio_assert(has_auth(TokenContract),"missing required authority of fio.token");
@@ -1015,7 +1020,9 @@ EOSIO_DISPATCH( eosiosystem::system_contract,
 (newaccount)(addaction)(remaction)(updateauth)(deleteauth)(linkauth)(unlinkauth)(canceldelay)(onerror)(setabi)
 // fio.system.cpp
 (init)(setnolimits)(addlocked)(addgenlocked)(modgenlocked)(ovrwrtgenlck)(clrgenlocked)(setparams)(setpriv)
-        (rmvproducer)(updtrevision)(newfioacc)(auditvote)(resetaudit)(rmovegenesis)(updrcvrlcks)
+        (rmvproducer)(updtrevision)(newfioacc)(auditvote)(resetaudit)
+        (fipxlviiilck)
+        (rmovegenesis)(updrcvrlcks)
         //TESTING ONLY DO NOT DELIVER
         (addlocked1)
 // delegate_bandwidth.cpp

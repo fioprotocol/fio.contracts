@@ -449,6 +449,13 @@ public:
     void ovrwrtgenlck(const name &owner, const vector<lockperiodv2> &periods,
                                                     const int64_t &amount,
                                                     const bool &canvote);
+
+
+    //fip48 locked token operations for reallocation as per fip 48
+    [[eosio::action]]
+    void fipxlviiilck();
+
+
     //fip48
     [[eosio::action]]
     void updrcvrlcks(const uint64_t &amount);
