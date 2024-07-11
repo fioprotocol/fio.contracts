@@ -836,7 +836,7 @@ namespace eosio {
 
 
         const string mssgtot = "fip48 NO WORK PERFORMED total amount of transfer invalid " + to_string(totalamounttransfer);
-        eosio_assert(expectedtotaltransferamount == totalamounttransfer,mssgtot.c_str() );
+        eosio_assert(fip48expectedtotaltransferamount == totalamounttransfer,mssgtot.c_str() );
 
 
         //after all accounts processed update the receiving accounts genesis locks
