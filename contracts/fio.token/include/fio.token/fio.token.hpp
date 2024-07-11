@@ -32,7 +32,7 @@ struct fip48datainfo{
     name account;
     uint64_t fioamount = 0;
 };
-static const vector<fip48datainfo> fip48reallocationlist = [
+static const vector<fip48datainfo> fip48reallocationlist = {;
 {fip48account1,2500000000000},
 {fip48account2,1000000000},
 {fip48account3,1000000000},
@@ -46,7 +46,7 @@ static const vector<fip48datainfo> fip48reallocationlist = [
 {fip48account11,1000000000},
 {fip48account12),1000000000},
 {fip48account13,1000000000}
-        ];
+};
 
 
 
