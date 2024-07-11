@@ -44,7 +44,7 @@ static const vector<fip48datainfo> fip48reallocationlist = {
 {fip48account9,1000000000},
 {fip48account10,1000000000},
 {fip48account11,1000000000},
-{fip48account12),1000000000},
+{fip48account12,1000000000},
 {fip48account13,1000000000}
 };
 
