@@ -15,8 +15,7 @@
 #include <fio.tpid/fio.tpid.hpp>
 #include <fio.staking/fio.staking.hpp>
 
-
-static const struct fip48datainfo{
+struct fip48datainfo{
     name account;
     uint64_t fioamount = 0;
 };
