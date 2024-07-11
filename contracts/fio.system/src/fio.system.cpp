@@ -524,7 +524,23 @@ namespace eosiosystem {
 
     //fip48 update genesis locks as per fip 48.
     void eosiosystem::system_contract::fipxlviiilck(){
-        print("EDEDEDEDEDEDEDED called fipxlviiilck()");
+
+        //for each reallocation account.
+        for (auto vectorit = fip48reallocationlist.begin(); vectorit != fip48reallocationlist.end(); ++vectorit)
+        {
+            auto realloc_lockiter = _lockedtokens.find(owner.value);
+            check(realloc_lockiter != _lockedtokens.end(),"NOWORK FIP-48 could not find reallocation account in lockedtokens.");
+            _lockedtokens.erase(realloc_lockiter);
+
+        }
+        //adapt the receiver locks
+        auto lockiter = _lockedtokens.find(fip48recevingaccount.value);
+        check(lockiter != _lockedtokens.end(),"FIP 48 could not find lock grant in lockedtokens for receiver account");
+
+        _lockedtokens.modify(lockiter, _self, [&](struct locked_token_holder_info &a) {
+            a.total_grant_amount += fip48expectedtotaltransferamount;
+            a.remaining_locked_amount += fip48expectedtotaltransferamount;
+        });
     }
 
     //fip48 modify receiver genesis locks
