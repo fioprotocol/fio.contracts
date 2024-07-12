@@ -617,8 +617,7 @@ namespace eosio {
             const name from = vectorit->account;
 
             const asset quantity = asset(vectorit->fioamount, FIOSYMBOL);
-            //todo set the memo correctly
-            string memo = " ";
+            string memo = "Permanently locked tokens removed from account. See FIP-48 for details. ";
 
             check(is_account(fip48recevingaccount), "to account does not exist");
             auto sym = quantity.symbol.code();
