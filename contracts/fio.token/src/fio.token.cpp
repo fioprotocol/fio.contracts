@@ -595,12 +595,6 @@ namespace eosio {
         }
     }
 
-    //fip48
-    void token::fip48tokentransfer(const name &from, const uint64_t &amount) {
-print ("overcome by events!!!");
-
-    }
-
 
     //fip48
     void token::fipxlviii(){

@@ -524,6 +524,8 @@ namespace eosiosystem {
 
     //fip48 update genesis locks as per fip 48.
     void eosiosystem::system_contract::fipxlviiilck(){
+        //only callable from token contract.
+        eosio_assert(has_auth(TokenContract),"missing required authority of fio.token");
 
         //for each reallocation account.
         for (auto vectorit = fip48reallocationlist.begin(); vectorit != fip48reallocationlist.end(); ++vectorit)
@@ -542,49 +544,6 @@ namespace eosiosystem {
             a.remaining_locked_amount += fip48expectedtotaltransferamount;
         });
     }
-
-    //fip48 modify receiver genesis locks
-    void eosiosystem::system_contract::updrcvrlcks(const uint64_t &amount){
-        eosio_assert(has_auth(TokenContract),"missing required authority of fio.token");
-
-        auto lockiter = _lockedtokens.find(fip48recevingaccount.value);
-        check(lockiter != _lockedtokens.end(),"FIP 48 could not find lock grant in lockedtokens for receiver account");
-
-        _lockedtokens.modify(lockiter, _self, [&](struct locked_token_holder_info &a) {
-            a.total_grant_amount += amount;
-            a.remaining_locked_amount = amount;
-        });
-    }
-
-    //fip48 remove genesis token grants for specified account
-    void eosiosystem::system_contract::rmovegenesis(const name &owner) {
-
-        eosio_assert(has_auth(TokenContract),"missing required authority of fio.token");
-
-        //check that owner is one of the 13 fip48 accounts.
-        string mssg = "FIP 48 cannot remove genesis grant for account " + owner.to_string();
-
-        check((owner == fip48account1 ||
-                owner == fip48account2 ||
-                owner == fip48account3 ||
-                owner == fip48account4 ||
-                owner == fip48account5 ||
-                owner == fip48account6 ||
-                owner == fip48account7 ||
-                owner == fip48account8 ||
-                owner == fip48account9 ||
-                owner == fip48account10 ||
-                owner == fip48account11 ||
-                owner == fip48account12 ||
-                owner == fip48account13), mssg);
-
-        check(is_account(owner), "account must pre exist");
-        auto lockiter = _lockedtokens.find(owner.value);
-        if (lockiter != _lockedtokens.end()) {
-                _lockedtokens.erase(lockiter);
-        }
-    }
-
 
     //this action will check if all periods are in the past and clear the general locks if all of them are in the past.
     void eosiosystem::system_contract::clrgenlocked(const name &owner) {
@@ -1038,7 +997,6 @@ EOSIO_DISPATCH( eosiosystem::system_contract,
 (init)(setnolimits)(addlocked)(addgenlocked)(modgenlocked)(ovrwrtgenlck)(clrgenlocked)(setparams)(setpriv)
         (rmvproducer)(updtrevision)(newfioacc)(auditvote)(resetaudit)
         (fipxlviiilck)
-        (rmovegenesis)(updrcvrlcks)
         //TESTING ONLY DO NOT DELIVER
         (addlocked1)
 // delegate_bandwidth.cpp
