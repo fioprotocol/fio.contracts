@@ -40,7 +40,7 @@ static const vector<fip48datainfo> fip48reallocationlist = {
  *
  */
 };
-static const uint64_t fip48expectedtotaltransferamount = 2512000000000
+static const uint64_t fip48expectedtotaltransferamount = 2512000000000;
 static const name fip48recevingaccount =     name("pkfbwyi2qzii");
 
 //FIP-38 begin
