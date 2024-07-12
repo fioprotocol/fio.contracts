@@ -21,26 +21,27 @@ struct fip48datainfo{
     uint64_t fioamount = 0;
 };
 static const vector<fip48datainfo> fip48reallocationlist = {
-{name("tdcfarsowlnk"),2500000000000},
-{name("evorvygfnrzk"),1000000000},
-{name("xbfugtkzvowu"),1000000000},
-{name("p1kv5e2zdxbh"),1000000000},
-{name("kk2gys4vl5ve"),1000000000},
-{name("jnp3viqz32tc"),1000000000},
-{name("hcfsdi2vybrv"),1000000000},
-{name("125nkypgqojv"),1000000000},
-{name("sauhngb2eq1c"),1000000000},
-{name("idmwqtsmij4i"),1000000000},
-{name("dq5q2kx5oioa"),1000000000},
-{name("bxg2u5gpgoc2"),1000000000},
-{name("dffmxsxuq1gt"),1000000000}
+{name("xkezj1ocwe4r"),2500000000000},
+{name("mck32myftiau"),1000000000},
+{name("hjvwdy5p4zvs"),1000000000},
+{name("2mskjvkhj334"),1000000000},
+{name("oadme4v54cly"),1000000000},
+{name("jsniuyaaeblr"),1000000000},
+{name("nadppzyxtxjx"),1000000000},
+{name("zvt11xu5czlk"),1000000000},
+{name("dioxleem5hmr"),1000000000},
+{name("iud1tjwtt2ey"),1000000000},
+{name("xgyg22tfizja"),1000000000},
+{name("4urqjmtfvmjj"),1000000000},
+{name("deq54dxuyquh"),1000000000}
+
+
+/*
+ *
+ */
 };
-
-static const uint64_t fip48expectedtotaltransferamount = 2512000000000;
-
-
-
-static const name fip48recevingaccount =     name("fidgtwmzrrjq");
+static const uint64_t fip48expectedtotaltransferamount = 2512000000000
+static const name fip48recevingaccount =     name("pkfbwyi2qzii");
 
 //FIP-38 begin
 struct bind2eosio {
