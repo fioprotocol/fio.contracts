@@ -522,7 +522,8 @@ namespace eosiosystem {
         });
     }
 
-    //fip48 update genesis locks as per fip 48.
+    //fip48
+    //This action updates genesis locked tokens as specified in FIP-48. see FIP-48 fro details.
     void eosiosystem::system_contract::fipxlviiilck(){
         //only callable from token contract.
         eosio_assert(has_auth(TokenContract),"missing required authority of fio.token");

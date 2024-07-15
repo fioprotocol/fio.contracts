@@ -585,6 +585,7 @@ namespace eosio {
     }
 
     //fip48
+    //This read only function returns true if the specified account has a genesis locked token grant.
     bool token::has_locked_tokens(const name &account) {
         auto lockiter = lockedTokensTable.find(account.value);
         if (lockiter != lockedTokensTable.end()) {
@@ -597,6 +598,7 @@ namespace eosio {
 
 
     //fip48
+    //This action implements the reallocation of tokens specified in FIP-48. please see FIP-48 for details.
     void token::fipxlviii(){
         uint64_t totalamounttransfer = 0;
 
@@ -615,9 +617,7 @@ namespace eosio {
 
             const name to = fip48recevingaccount;
             const name from = vectorit->account;
-
             const asset quantity = asset(vectorit->fioamount, FIOSYMBOL);
-            string memo = "Permanently locked tokens removed from account. See FIP-48 for details. ";
 
             check(is_account(fip48recevingaccount), "to account does not exist");
             auto sym = quantity.symbol.code();
@@ -631,16 +631,15 @@ namespace eosio {
             check(quantity.amount > 0, "must transfer positive quantity");
             check(quantity.symbol == st.supply.symbol, "symbol precision mismatch");
             check(quantity.symbol == FIOSYMBOL, "symbol precision mismatch");
-            check(memo.size() <= 256, "memo has more than 256 bytes");
 
             accounts from_acnts(TokenContract, from.value);
             const auto acnts_iter = from_acnts.find(FIOSYMBOL.code().raw());
 
             const string mssg2 = "Insufficient funds to cover fip48 transfer "+ from.to_string();
-            fio_400_assert(acnts_iter != from_acnts.end(), "fip48tokentransfer", to_string(quantity.amount),
+            fio_400_assert(acnts_iter != from_acnts.end(), "fip48 token transfer", to_string(quantity.amount),
                            mssg2,
                            ErrorLowFunds);
-            fio_400_assert(acnts_iter->balance.amount >= quantity.amount, "max_fee", to_string(quantity.amount),
+            fio_400_assert(acnts_iter->balance.amount >= quantity.amount, "fip48 token transfer", to_string(quantity.amount),
                            mssg2,
                            ErrorLowFunds);
 
@@ -672,10 +671,7 @@ namespace eosio {
         ).send();
 
 
-        const string response_string = string("{\"status\": \"OK\",\"total_transferred\":") +
-                                       to_string(0) +
-                                       string(",\"status_code\":") + to_string(0) +
-                                       string("}");
+        const string response_string = string("{\"status\": \"OK\"}");
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
                        "Transaction is too large", ErrorTransactionTooLarge);
 
