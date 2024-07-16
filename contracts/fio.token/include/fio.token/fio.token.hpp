@@ -135,8 +135,15 @@ namespace eosio {
 
         static asset get_balance(name token_contract_account, name owner, symbol_code sym_code) {
                 accounts accountstable(token_contract_account, owner.value);
-                const auto &ac = accountstable.get(sym_code.raw());
-                return ac.balance;
+                //check if its there!!
+              //  const auto &ac = accountstable.get(sym_code.raw());
+              auto aciter = accountstable.find(sym_code.raw());
+              if(aciter == accountstable.end()){
+                  return asset(0,sym_code.raw());
+              }else{
+                  return iter->balance;
+              }
+              //  return ac.balance;
         }
 
 
