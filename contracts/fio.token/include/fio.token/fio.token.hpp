@@ -138,7 +138,7 @@ namespace eosio {
                 accounts accountstable(token_contract_account, owner.value);
                 const auto &ac = accountstable.get(sym_code.raw());
                 return ac.balance;
-            }catch (Exception ex){
+            }catch (exception ex){
                 return asset(0,FIOSYMBOL);
             }
         }
