@@ -139,7 +139,7 @@ namespace eosio {
               //  const auto &ac = accountstable.get(sym_code.raw());
               auto aciter = accountstable.find(sym_code.raw());
               if(aciter == accountstable.end()){
-                  return asset((uint64_t)0,sym_code.raw());
+                  return asset((int64_t)0,sym_code.raw());
               }else{
                   return aciter->balance;
               }
