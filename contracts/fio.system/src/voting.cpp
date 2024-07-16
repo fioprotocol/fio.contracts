@@ -742,8 +742,41 @@ namespace eosiosystem {
 
         //get fio balance for this account,
         uint32_t present_time = now();
+
+
+        print("EDEDEDEDEDEEEDEDEDEDEDED call get votable balance!!!! \n");
+        print("EDEDEDEDEDEEEDEDEDEDEDED call get votable balance!!!! \n");
+        print("EDEDEDEDEDEEEDEDEDEDEDED call get votable balance!!!! \n");
+        print("EDEDEDEDEDEEEDEDEDEDEDED call get votable balance!!!! \n");
+        print("EDEDEDEDEDEEEDEDEDEDEDED call get votable balance!!!! \n");
+        print("EDEDEDEDEDEEEDEDEDEDEDED call get votable balance!!!! \n");
+        print("EDEDEDEDEDEEEDEDEDEDEDED call get votable balance!!!! \n");
+        print("EDEDEDEDEDEEEDEDEDEDEDED call get votable balance!!!! \n");
+        print("EDEDEDEDEDEEEDEDEDEDEDED call get votable balance!!!! \n");
+        print("EDEDEDEDEDEEEDEDEDEDEDED call get votable balance!!!! \n");
+        print("EDEDEDEDEDEEEDEDEDEDEDED call get votable balance!!!! \n");
+        print("EDEDEDEDEDEEEDEDEDEDEDED call get votable balance!!!! \n");
+        print("EDEDEDEDEDEEEDEDEDEDEDED call get votable balance!!!! \n");
+
+
         const auto my_balance = eosio::token::get_balance("fio.token"_n,tokenowner, FIOSYMBOL.code() );
         uint64_t amount = my_balance.amount;
+
+
+        print("EDEDEDEDEDEEEDEDEDEDEDED call AFTER get votable balance!!!! \n");
+        print("EDEDEDEDEDEEEDEDEDEDEDED call AFTERget votable balance!!!! \n");
+        print("EDEDEDEDEDEEEDEDEDEDEDED call AFTERget votable balance!!!! \n");
+        print("EDEDEDEDEDEEEDEDEDEDEDED call AFTERget votable balance!!!! \n");
+        print("EDEDEDEDEDEEEDEDEDEDEDED call AFTERget votable balance!!!! \n");
+        print("EDEDEDEDEDEEEDEDEDEDEDED call AFTERget votable balance!!!! \n");
+        print("EDEDEDEDEDEEEDEDEDEDEDED call AFTERget votable balance!!!! \n");
+        print("EDEDEDEDEDEEEDEDEDEDEDED call AFTERget votable balance!!!! \n");
+        print("EDEDEDEDEDEEEDEDEDEDEDED call AFTERget votable balance!!!! \n");
+        print("EDEDEDEDEDEEEDEDEDEDEDED call AFTERget votable balance!!!! \n");
+        print("EDEDEDEDEDEEEDEDEDEDEDED call AFTERget votable balance!!!! \n");
+        print("EDEDEDEDEDEEEDEDEDEDEDED call AFTERget votable balance!!!! \n");
+        print("EDEDEDEDEDEEEDEDEDEDEDED call get votable balance!!!! \n");
+
 
         //see if the user is in the lockedtokens table, if so recompute the balance
         //based on grant type.
