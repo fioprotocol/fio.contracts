@@ -759,8 +759,13 @@ namespace eosiosystem {
         print("EDEDEDEDEDEEEDEDEDEDEDED call get votable balance!!!! \n");
 
 
-        const auto my_balance = eosio::token::get_balance("fio.token"_n,tokenowner, FIOSYMBOL.code() );
-        uint64_t amount = my_balance.amount;
+        uint64_t amount = 0;
+        try {
+            const auto my_balance = eosio::token::get_balance("fio.token"_n, tokenowner, FIOSYMBOL.code());
+            amount = my_balance.amount;
+        }catch (exception ex) {
+            //swallow!!
+        }
 
 
         print("EDEDEDEDEDEEEDEDEDEDEDED call AFTER get votable balance!!!! \n");

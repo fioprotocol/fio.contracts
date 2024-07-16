@@ -134,13 +134,9 @@ namespace eosio {
         }
 
         static asset get_balance(name token_contract_account, name owner, symbol_code sym_code) {
-            try {
                 accounts accountstable(token_contract_account, owner.value);
                 const auto &ac = accountstable.get(sym_code.raw());
                 return ac.balance;
-            }catch (exception ex){
-                return asset(0,FIOSYMBOL);
-            }
         }
 
 
