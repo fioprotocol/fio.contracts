@@ -135,7 +135,8 @@ namespace eosio {
 
         static asset get_balance(name token_contract_account, name owner, symbol_code sym_code) {
                 accounts accountstable(token_contract_account, owner.value);
-                //check if its there!!
+              //remove this because fio makes new accounts with no entry in the table for the account.
+              //instead, use find, check if its there, if not return 0.
               //  const auto &ac = accountstable.get(sym_code.raw());
               auto aciter = accountstable.find(sym_code.raw());
               if(aciter == accountstable.end()){
@@ -143,7 +144,6 @@ namespace eosio {
               }else{
                   return aciter->balance;
               }
-              //  return ac.balance;
         }
 
 
