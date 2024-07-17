@@ -21,19 +21,19 @@ struct fip48datainfo{
     uint64_t fioamount = 0;
 };
 static const vector<fip48datainfo> fip48reallocationlist = {
-{name("xkezj1ocwe4r"),2500000000000},
-{name("mck32myftiau"),1000000000},
-{name("hjvwdy5p4zvs"),1000000000},
-{name("2mskjvkhj334"),1000000000},
-{name("oadme4v54cly"),1000000000},
-{name("jsniuyaaeblr"),1000000000},
-{name("nadppzyxtxjx"),1000000000},
-{name("zvt11xu5czlk"),1000000000},
-{name("dioxleem5hmr"),1000000000},
-{name("iud1tjwtt2ey"),1000000000},
-{name("xgyg22tfizja"),1000000000},
-{name("4urqjmtfvmjj"),1000000000},
-{name("deq54dxuyquh"),1000000000}
+{name("xkezj1ocwe4r"),9999960000000000},
+{name("mck32myftiau"),10000000000000000},
+{name("hjvwdy5p4zvs"),7000000000000000},
+{name("2mskjvkhj334"),5500000000000000},
+{name("oadme4v54cly"),2500000000000000},
+{name("jsniuyaaeblr"),1999999400000000},
+{name("nadppzyxtxjx"),1500000000000000},
+{name("zvt11xu5czlk"),1000000000000},
+{name("dioxleem5hmr"),1000000000000},
+{name("iud1tjwtt2ey"),1000000000000},
+{name("xgyg22tfizja"),1000000000000},
+{name("4urqjmtfvmjj"),1000000000000},
+{name("deq54dxuyquh"),1000000000000}
 
 
 /*
