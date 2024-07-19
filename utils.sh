@@ -78,7 +78,6 @@ function ensure-cmake() {
             build-cmake
         fi
         install-cmake
-        export APTS_DIR=${CMAKE_INSTALL_DIR}
         export CMAKE="${CMAKE_INSTALL_DIR}/bin/cmake"
         echo " - CMAKE successfully installed @ ${CMAKE}"
         echo ""
@@ -151,6 +150,7 @@ function is-cdt-built() {
 }
 
 function build-cdt() {
+    [[ -z $APTS_DIR ]] && APTS_DIR=${FIO_CNTRX_APTS_DIR}
     echo "Building fio.cdt..."
     execute bash -c "cd ${TEMP_DIR} \
         && [[ -d fio.cdt-${CDT_VERSION} ]] || git clone https://www.github.com/fioprotocol/fio.cdt.git fio.cdt-${CDT_VERSION} \

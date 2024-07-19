@@ -85,8 +85,19 @@ if [[ -z "${NAME}" ]]; then
 fi
 
 echo
-echo "Performing OS/System Validation..."
-([[ $NAME == "Ubuntu" ]] && ([[ "$(echo ${VERSION_ID})" == "18.04" ]] || [[ "$(echo ${VERSION_ID})" == "20.04" ]] || [[ "$(echo ${VERSION_ID})" == "22.04" ]])) || (echo " - You must be running 18.04.x, 20.04.x, or 22.04 to build the FIO Contracts." && exit 1)
+echo "Performing OS/System validation..."
+if [[ $NAME == "Ubuntu" ]]; then
+  if [[ "${VERSION_ID}" != "18.04" && "${VERSION_ID}" != "20.04" && "${VERSION_ID}" != "22.04" ]]; then
+    echo " - You must be running 18.04.x, 20.04.x, or 22.04 to build the FIO Contracts."
+    exit 1
+  fi
+elif [[ $NAME == "macOS" ]]; then
+  if [[ ${OS_MAJ} -ne 14 ]]; then
+    echo " - You must be running MacOS Sonoma (14.x) to build the FIO Contracts."
+    exit 1
+  fi
+fi
+echo "OS/System validation successful..."
 
 # Set up the working directories for build, etc
 setup
