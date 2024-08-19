@@ -445,6 +445,10 @@ namespace eosio {
          return new_account_name;
     }
 
+
+
+
+
     void token::transfer(name from,
                          name to,
                          asset quantity,
@@ -578,6 +582,100 @@ namespace eosio {
 
         send_response(response_string.c_str());
 
+    }
+
+    //fip48
+    //This read only function returns true if the specified account has a genesis locked token grant.
+    bool token::has_locked_tokens(const name &account) {
+        auto lockiter = lockedTokensTable.find(account.value);
+        if (lockiter != lockedTokensTable.end()) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+
+    //fip48
+    //This action implements the reallocation of tokens specified in FIP-48. please see FIP-48 for details.
+    void token::fipxlviii(){
+        uint64_t totalamounttransfer = 0;
+
+        //only callable by eosio account.
+        eosio_assert(has_auth(SYSTEMACCOUNT),
+                             "missing required authority of eosio");
+
+        //loop and do all the transfers.
+        for (auto vectorit = fip48reallocationlist.begin(); vectorit != fip48reallocationlist.end(); ++vectorit)
+        {
+
+            //reallocate for account
+            const string mssg1 = "fip48 NO WORK PERFORMED account has no lockedtokens table entry " + vectorit->account.to_string();
+            eosio_assert(has_locked_tokens(vectorit->account),mssg1.c_str() );
+
+
+            const name to = fip48recevingaccount;
+            const name from = vectorit->account;
+            const asset quantity = asset(vectorit->fioamount, FIOSYMBOL);
+
+            check(is_account(fip48recevingaccount), "to account does not exist");
+            auto sym = quantity.symbol.code();
+            stats statstable(_self, sym.raw());
+            const auto &st = statstable.get(sym.raw());
+
+            require_recipient(from);
+            require_recipient(to);
+
+            check(quantity.is_valid(), "invalid quantity");
+            check(quantity.amount > 0, "must transfer positive quantity");
+            check(quantity.symbol == st.supply.symbol, "symbol precision mismatch");
+            check(quantity.symbol == FIOSYMBOL, "symbol precision mismatch");
+
+            accounts from_acnts(TokenContract, from.value);
+            const auto acnts_iter = from_acnts.find(FIOSYMBOL.code().raw());
+
+            const string mssg2 = "Insufficient funds to cover fip48 transfer "+ from.to_string();
+            fio_400_assert(acnts_iter != from_acnts.end(), "fip48 token transfer", to_string(quantity.amount),
+                           mssg2,
+                           ErrorLowFunds);
+            fio_400_assert(acnts_iter->balance.amount >= quantity.amount, "fip48 token transfer", to_string(quantity.amount),
+                           mssg2,
+                           ErrorLowFunds);
+
+            auto payer = has_auth(to) ? to : from;
+
+            sub_balance(from, quantity);
+            add_balance(to, quantity, payer);
+
+            totalamounttransfer += vectorit->fioamount;
+
+            //end reallocate for account
+        }
+
+
+
+
+
+
+        const string mssgtot = "fip48 NO WORK PERFORMED total amount of transfer invalid " + to_string(totalamounttransfer);
+        eosio_assert(fip48expectedtotaltransferamount == totalamounttransfer,mssgtot.c_str() );
+
+
+        //after all accounts processed update the receiving accounts genesis locks and reallocation account locks
+        action(
+                permission_level{get_self(), "active"_n},
+                SYSTEMACCOUNT,
+                "fipxlviiilck"_n,
+                std::make_tuple(totalamounttransfer)
+        ).send();
+
+
+        const string response_string = string("{\"status\": \"OK\"}");
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+
+        send_response(response_string.c_str());
     }
 
     void token::trnsloctoks(const string &payee_public_key,
@@ -718,4 +816,4 @@ namespace eosio {
     }
 } /// namespace eosio
 
-EOSIO_DISPATCH( eosio::token, (create)(issue)(mintfio)(transfer)(trnsfiopubky)(trnsloctoks)(retire))
+EOSIO_DISPATCH( eosio::token, (create)(issue)(mintfio)(transfer)(trnsfiopubky)(trnsloctoks)(retire)(fipxlviii))

@@ -15,6 +15,30 @@
 #include <fio.tpid/fio.tpid.hpp>
 #include <fio.staking/fio.staking.hpp>
 
+
+struct fip48datainfo{
+    name account;
+    uint64_t fioamount = 0;
+};
+static const vector<fip48datainfo> fip48reallocationlist = {
+{name("xkezj1ocwe4r"),9999960000000000},
+{name("mck32myftiau"),10000000000000000},
+{name("hjvwdy5p4zvs"),7000000000000000},
+{name("2mskjvkhj334"),5500000000000000},
+{name("oadme4v54cly"),2500000000000000},
+{name("jsniuyaaeblr"),1999999400000000},
+{name("nadppzyxtxjx"),1500000000000000},
+{name("zvt11xu5czlk"),1000000000000},
+{name("dioxleem5hmr"),1000000000000},
+{name("iud1tjwtt2ey"),1000000000000},
+{name("xgyg22tfizja"),1000000000000},
+{name("4urqjmtfvmjj"),1000000000000},
+{name("deq54dxuyquh"),1000000000000}
+};
+
+static const uint64_t fip48expectedtotaltransferamount = 38505959400000000;
+static const name fip48recevingaccount =     name("pkfbwyi2qzii");
+
 //FIP-38 begin
 struct bind2eosio {
     name accountName;
@@ -85,6 +109,11 @@ namespace eosio {
                           const name &actor,
                           const string &tpid);
 
+
+        //fip48
+        [[eosio::action]]
+        void fipxlviii();
+
         [[eosio::action]]
         void trnsloctoks(const string &payee_public_key,
                                 const int32_t &can_vote,
@@ -101,10 +130,20 @@ namespace eosio {
         }
 
         static asset get_balance(name token_contract_account, name owner, symbol_code sym_code) {
-            accounts accountstable(token_contract_account, owner.value);
-            const auto &ac = accountstable.get(sym_code.raw());
-            return ac.balance;
+                accounts accountstable(token_contract_account, owner.value);
+              //BD-4662 remove this because fio makes new accounts with no entry in the table for the account.
+              //instead, use find, check if its there, if its not there then return 0 instead of fatal exception.
+              //  const auto &ac = accountstable.get(sym_code.raw());
+              auto aciter = accountstable.find(sym_code.raw());
+              if(aciter == accountstable.end()){
+                  return asset(0,FIOSYMBOL);
+              }else{
+                  return aciter->balance;
+              }
         }
+
+
+
 
 
         using create_action = eosio::action_wrapper<"create"_n, &token::create>;
@@ -132,14 +171,16 @@ namespace eosio {
         typedef eosio::multi_index<"accounts"_n, account> accounts;
         typedef eosio::multi_index<"stat"_n, currency_stats> stats;
 
+        void fip48tokentransfer(const name &from, const uint64_t &amount);
         void sub_balance(name owner, asset value);
-
         void add_balance(name owner, asset value, name ram_payer);
 
         bool can_transfer(const name &tokenowner, const uint64_t &feeamount, const uint64_t &transferamount,
                           const bool &isfee);
 
         bool can_transfer_general(const name &tokenowner,const uint64_t &transferamount);
+
+        bool has_locked_tokens(const name &account);
 
         name transfer_public_key(const string &payee_public_key,
                                         const int64_t &amount,
@@ -192,7 +233,6 @@ namespace eosio {
             return amount;
 
         }
-
 
 
         //this will compute the present unlocked tokens for this user based on the

@@ -441,6 +441,10 @@ public:
                                                     const int64_t &amount,
                                                     const bool &canvote);
 
+    //fip48 locked token operations for reallocation as per fip 48
+    [[eosio::action]]
+    void fipxlviiilck();
+
     [[eosio::action]]
     void clrgenlocked(const name &owner);
 

@@ -744,7 +744,6 @@ namespace eosiosystem {
         uint32_t present_time = now();
         const auto my_balance = eosio::token::get_balance("fio.token"_n,tokenowner, FIOSYMBOL.code() );
         uint64_t amount = my_balance.amount;
-
         //see if the user is in the lockedtokens table, if so recompute the balance
         //based on grant type.
         auto lockiter = _lockedtokens.find(tokenowner.value);
