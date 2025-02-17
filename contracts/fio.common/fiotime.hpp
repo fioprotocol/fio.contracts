@@ -23,10 +23,11 @@ namespace fioio {
     std::string tmstringformat(struct tm timeinfo) {
         std::string timebuffer = to_string(timeinfo.tm_year);
         timebuffer.append("-");
-        if (timeinfo.tm_mon < 10) {
+        if (timeinfo.tm_mon+1 < 10) {
             timebuffer.append("0");
         }
-        timebuffer.append(to_string(timeinfo.tm_mon));
+        //tm_mon is 0 based
+        timebuffer.append(to_string(timeinfo.tm_mon+1));
         timebuffer.append("-");
         if (timeinfo.tm_mday < 10) {
             timebuffer.append("0");
@@ -51,7 +52,11 @@ namespace fioio {
         return timebuffer;
     }
 
-    int convertfiotime(long long t, struct tm *tm) {
+
+
+
+
+        int convertfiotime(long long t, struct tm *tm) {
         long long days, secs;
         int remdays, remsecs, remyears;
         int qc_cycles, c_cycles, q_cycles;
@@ -106,15 +111,13 @@ namespace fioio {
             return -1;
 
         tm->tm_year = years + 2000;
-        tm->tm_mon = months + 3;
-        if (tm->tm_mon >= 12) {
-            tm->tm_mon -= 12;
-            //tm->tm_year++;
-
-            if(tm->tm_mon == 00){ // some unknown but that makes the 12th month 00.
-                tm->tm_mon = 12;
-            }
+        //ajust month for using march 1 2000 as our leapoch
+        int tmonth = months+2;
+        if (tmonth > 11){
+            tm->tm_year = years + 2000 + 1;
         }
+
+        tm->tm_mon = tmonth % 12;
         tm->tm_mday = remdays + 1;
         tm->tm_wday = wday;
         tm->tm_yday = yday;
