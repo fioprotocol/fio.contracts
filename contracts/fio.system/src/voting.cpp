@@ -744,7 +744,6 @@ namespace eosiosystem {
         uint32_t present_time = now();
         const auto my_balance = eosio::token::get_balance("fio.token"_n,tokenowner, FIOSYMBOL.code() );
         uint64_t amount = my_balance.amount;
-
         //see if the user is in the lockedtokens table, if so recompute the balance
         //based on grant type.
         auto lockiter = _lockedtokens.find(tokenowner.value);
@@ -834,9 +833,20 @@ namespace eosiosystem {
             const name &proxy,
             const std::vector <name> &producers,
             const bool &voting) {
+
+        auto votersbyowner = _voters.get_index<"byowner"_n>();
+        auto voter = votersbyowner.find(voter_name.value);
         //validate input
         if (proxy) {
-            check(producers.size() == 0, "cannot vote for producers and proxy at same time");
+           // check(producers.size() == 0, "cannot vote for producers and proxy at same time");
+            //if producers are set and a proxy is set. then clear the proxy and the is_auto_proxy
+            if(producers.size() > 0){
+                name noproxy;
+                votersbyowner.modify(voter, same_payer, [&](auto &av) {
+                    av.proxy = noproxy;
+                    av.is_auto_proxy = false;
+                });
+            }
             check(voter_name != proxy, "Invalid or duplicated producers0");
         } else {
             check(producers.size() <= 30, "attempt to vote for too many producers");
@@ -844,8 +854,7 @@ namespace eosiosystem {
                 check(producers[i - 1] < producers[i], "producer votes must be unique and sorted");
             }
         }
-        auto votersbyowner = _voters.get_index<"byowner"_n>();
-        auto voter = votersbyowner.find(voter_name.value);
+
         check(voter != votersbyowner.end(), "user must vote before votes can be updated");
         check(!proxy || !voter->is_proxy, "account registered as a proxy is not allowed to use a proxy");
 

@@ -341,7 +341,6 @@ namespace eosiosystem {
         set_resource_limits(account.value, -1, -1, -1);
     }
 
-
     //use this action to initialize the locked token holders table for the FIO protocol.
     void eosiosystem::system_contract::addlocked(const name &owner, const int64_t &amount,
             const int16_t &locktype) {
@@ -496,6 +495,29 @@ namespace eosiosystem {
         });
     }
 
+    //fip48
+    //This action updates genesis locked tokens as specified in FIP-48. see FIP-48 fro details.
+    void eosiosystem::system_contract::fipxlviiilck(){
+        //only callable from token contract.
+        eosio_assert(has_auth(TokenContract),"missing required authority of fio.token");
+
+        //for each reallocation account.
+        for (auto vectorit = fip48reallocationlist.begin(); vectorit != fip48reallocationlist.end(); ++vectorit)
+        {
+            auto realloc_lockiter = _lockedtokens.find(vectorit->account.value);
+            check(realloc_lockiter != _lockedtokens.end(),"NOWORK FIP-48 could not find reallocation account in lockedtokens.");
+            _lockedtokens.erase(realloc_lockiter);
+
+        }
+        //adapt the receiver locks
+        auto lockiter = _lockedtokens.find(fip48recevingaccount.value);
+        check(lockiter != _lockedtokens.end(),"FIP 48 could not find lock grant in lockedtokens for receiver account");
+
+        _lockedtokens.modify(lockiter, _self, [&](struct locked_token_holder_info &a) {
+            a.total_grant_amount += fip48expectedtotaltransferamount;
+            a.remaining_locked_amount += fip48expectedtotaltransferamount;
+        });
+    }
 
     //this action will check if all periods are in the past and clear the general locks if all of them are in the past.
     void eosiosystem::system_contract::clrgenlocked(const name &owner) {
@@ -738,7 +760,7 @@ namespace eosiosystem {
                            operationcount += 2;
                        } else {
                            //get the current votable balance of the account
-                           uint64_t bal =  eosio::token::computeusablebalance(voter->owner,false, false);
+                           uint64_t bal = get_votable_balance(voter->owner);
 
                            //if the voter is not proxying to a proxy.
                            if (!voter->proxy) {
@@ -939,7 +961,6 @@ namespace eosiosystem {
     }
     //end audit machine
 
-
 } /// fio.system
 
 
@@ -949,6 +970,7 @@ EOSIO_DISPATCH( eosiosystem::system_contract,
 // fio.system.cpp
 (init)(setnolimits)(addlocked)(addgenlocked)(modgenlocked)(ovrwrtgenlck)(clrgenlocked)(setparams)(setpriv)
         (rmvproducer)(updtrevision)(newfioacc)(auditvote)(resetaudit)
+        (fipxlviiilck)
 // delegate_bandwidth.cpp
         (updatepower)
 // voting.cpp

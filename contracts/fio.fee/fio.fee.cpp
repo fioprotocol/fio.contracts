@@ -548,6 +548,10 @@ namespace fioio {
                 const int64_t &bytesize
         ) {
             require_auth(account);
+            fio_400_assert(end_point == "msig_propose" || end_point == "auth_update", "endpoint_name", end_point,
+                           "FIO fee not found for endpoint", ErrorNoFeesFoundForEndpoint);
+            fio_400_assert(bytesize > 0, "bytesize", to_string(bytesize), "FIO fee invalid for 0 byte size", ErrorFeeInvalid);
+
             //begin new fees, logic for Mandatory fees.
             const uint128_t endpoint_hash = fioio::string_to_uint128_hash(end_point.c_str());
 

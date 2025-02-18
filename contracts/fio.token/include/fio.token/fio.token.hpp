@@ -15,6 +15,30 @@
 #include <fio.tpid/fio.tpid.hpp>
 #include <fio.staking/fio.staking.hpp>
 
+
+struct fip48datainfo{
+    name account;
+    uint64_t fioamount = 0;
+};
+static const vector<fip48datainfo> fip48reallocationlist = {
+{name("xkezj1ocwe4r"),9999960000000000},
+{name("mck32myftiau"),10000000000000000},
+{name("hjvwdy5p4zvs"),7000000000000000},
+{name("2mskjvkhj334"),5500000000000000},
+{name("oadme4v54cly"),2500000000000000},
+{name("jsniuyaaeblr"),1999999400000000},
+{name("nadppzyxtxjx"),1500000000000000},
+{name("zvt11xu5czlk"),1000000000000},
+{name("dioxleem5hmr"),1000000000000},
+{name("iud1tjwtt2ey"),1000000000000},
+{name("xgyg22tfizja"),1000000000000},
+{name("4urqjmtfvmjj"),1000000000000},
+{name("deq54dxuyquh"),1000000000000}
+};
+
+static const uint64_t fip48expectedtotaltransferamount = 38505959400000000;
+static const name fip48recevingaccount =     name("pkfbwyi2qzii");
+
 //FIP-38 begin
 struct bind2eosio {
     name accountName;
@@ -85,6 +109,11 @@ namespace eosio {
                           const name &actor,
                           const string &tpid);
 
+
+        //fip48
+        [[eosio::action]]
+        void fipxlviii();
+
         [[eosio::action]]
         void trnsloctoks(const string &payee_public_key,
                                 const int32_t &can_vote,
@@ -101,10 +130,20 @@ namespace eosio {
         }
 
         static asset get_balance(name token_contract_account, name owner, symbol_code sym_code) {
-            accounts accountstable(token_contract_account, owner.value);
-            const auto &ac = accountstable.get(sym_code.raw());
-            return ac.balance;
+                accounts accountstable(token_contract_account, owner.value);
+              //BD-4662 remove this because fio makes new accounts with no entry in the table for the account.
+              //instead, use find, check if its there, if its not there then return 0 instead of fatal exception.
+              //  const auto &ac = accountstable.get(sym_code.raw());
+              auto aciter = accountstable.find(sym_code.raw());
+              if(aciter == accountstable.end()){
+                  return asset(0,FIOSYMBOL);
+              }else{
+                  return aciter->balance;
+              }
         }
+
+
+
 
 
         using create_action = eosio::action_wrapper<"create"_n, &token::create>;
@@ -132,14 +171,16 @@ namespace eosio {
         typedef eosio::multi_index<"accounts"_n, account> accounts;
         typedef eosio::multi_index<"stat"_n, currency_stats> stats;
 
+        void fip48tokentransfer(const name &from, const uint64_t &amount);
         void sub_balance(name owner, asset value);
-
         void add_balance(name owner, asset value, name ram_payer);
 
         bool can_transfer(const name &tokenowner, const uint64_t &feeamount, const uint64_t &transferamount,
                           const bool &isfee);
 
         bool can_transfer_general(const name &tokenowner,const uint64_t &transferamount);
+
+        bool has_locked_tokens(const name &account);
 
         name transfer_public_key(const string &payee_public_key,
                                         const int64_t &amount,
@@ -192,7 +233,6 @@ namespace eosio {
             return amount;
 
         }
-
 
 
         //this will compute the present unlocked tokens for this user based on the
@@ -418,8 +458,12 @@ namespace eosio {
                         }
 
                     }
-                    //compute the remaining lock amount, for use in incoherency check.
-                    uint64_t computed_remaining_lock_amount = lockiter->lock_amount - computed_amount_unlock;
+
+                    uint64_t computed_remaining_lock_amount = 0;
+                    if(computed_amount_unlock <= lockiter->lock_amount) {
+                        //compute the remaining lock amount, for use in incoherency check.
+                        computed_remaining_lock_amount = lockiter->lock_amount - computed_amount_unlock;
+                    }
 
                     uint64_t unlock_amount = 0;  //the amount to unlock at this time
                     int unlock_periods = 0;     //the number of periods to unlock at this time.
@@ -450,23 +494,27 @@ namespace eosio {
 
                     //sanity check the amount to unlock and remaining lock amount, if they dont pass the sanity check
                     //do not proceed. prevent un-expected side effects of bad data.
-                    check(use_remaining_lock_amount >= unlock_amount,
-                          "computegenerallockedtokens, amount to unlock cannot be greater than remaining lock amount " + actor.to_string() );
+                    //BD4643 remove checks and remove locks if they are incoherent instead.
+                   // check(use_remaining_lock_amount >= unlock_amount,
+                   //       "computegenerallockedtokens, amount to unlock cannot be greater than remaining lock amount " + actor.to_string() );
 
-                    //compute the present remaining lock amount, subtract the amount to unlock at this time.
-                    use_remaining_lock_amount -= unlock_amount;
+                    if(use_remaining_lock_amount < unlock_amount){
+                        use_remaining_lock_amount = 0;
+                    }else {
+                        //compute the present remaining lock amount, subtract the amount to unlock at this time.
+                        use_remaining_lock_amount -= unlock_amount;
+                    }
 
-                    //if there is an amount to unlock, update state with the present lock info.
-                    if (((unlock_amount > 0) && doupdate)) {
-                        //get fio balance for this account,
-                        uint32_t present_time = now();
-                        const auto my_balance = eosio::token::get_balance("fio.token"_n, actor, FIOSYMBOL.code());
-                        uint64_t amount = my_balance.amount;
+                    const auto my_balance = eosio::token::get_balance("fio.token"_n, actor, FIOSYMBOL.code());
+                    uint64_t amount = my_balance.amount;
 
-                        //final sanity check.
-                        check(use_remaining_lock_amount <= amount,
-                              "computegenerallockedtokens, remaining lock amount is larger than balance for " + actor.to_string() );
-                        
+                    //if remaining is larger than balance then we need to remove these locks from the system.
+                    //they are incoherent for some reason and we dont want to keep them around any longer.
+                    if(use_remaining_lock_amount > amount){
+                        //delete these locks from the locks by owner!!
+                        locks_by_owner.erase(lockiter);
+                        use_remaining_lock_amount = 0;
+                    }else if (((unlock_amount > 0) && doupdate)) {
                         //update the locked table.
                         locks_by_owner.modify(lockiter, SYSTEMACCOUNT, [&](auto &av) {
                             av.remaining_lock_amount = use_remaining_lock_amount;
