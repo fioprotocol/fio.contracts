@@ -685,18 +685,19 @@ namespace eosio {
                      "missing required authority of eosio");
 
         // Contract account validation
-        eosio_assert(get_self() == TokenContract,
-                     "fipliii must be called on fio.token contract");
+        check(get_self() == TokenContract,
+              "fipliii must be called on fio.token contract");
+
+        // Re-execution guard
+        fip53state_table fip53_guard(get_self(), get_self().value);
+        if (!fip53_guard.exists()) {
+            fip53_guard.set(fioio::fip53state{false}, get_self());
+        }
+        check(!fip53_guard.get().executed, "fip53 has already been executed");
 
         // Recipient account validation
         check(is_account(fip53receivingaccount),
               "fip53 receiving account does not exist");
-
-        // Bounty capacity check
-        bounties_table bounties(TPIDContract, TPIDContract.value);
-        check(bounties.exists(), "fip53 bounties table not found");
-        check(fip53mintamount <= MAXBOUNTYTOKENSTOMINT - bounties.get().tokensminted,
-              "quantity exceeds available bounty tokens supply");
 
         // Mint and transfer via "issue" action (includes 1B supply cap validation)
         action(
@@ -707,7 +708,12 @@ namespace eosio {
                        string("minted tokens for fip53"))
         ).send();
 
+        fip53_guard.set(fioio::fip53state{true}, get_self());
+
         const string response_string = string("{\"status\": \"OK\"}");
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+
         send_response(response_string.c_str());
     }
 

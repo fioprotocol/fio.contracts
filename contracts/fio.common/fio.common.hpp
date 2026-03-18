@@ -276,6 +276,13 @@ namespace fioio {
 
     typedef singleton<"bounties"_n, bounty> bounties_table;
 
+    // FIP-53 execution guard
+    struct [[eosio::table]] fip53state {
+        bool executed = false;
+        EOSLIB_SERIALIZE(fip53state, (executed))
+    };
+    typedef singleton<"fip53state"_n, fip53state> fip53state_table;
+
     //this will call update tpid in the tpid contract,
     //add the info to the tpid table for this TPID and also set up the auto proxy if needed.
     void set_auto_proxy(const string &tpid, const uint64_t &amount, const name &auth, const name &actor){
