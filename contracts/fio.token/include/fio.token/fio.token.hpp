@@ -39,6 +39,9 @@ static const vector<fip48datainfo> fip48reallocationlist = {
 static const uint64_t fip48expectedtotaltransferamount = 38505959400000000;
 static const name fip48recevingaccount =     name("pkfbwyi2qzii");
 
+static const uint64_t fip53mintamount = 50000000000000000; // 50,000,000 FIO in SUFs
+static const name fip53receivingaccount = name("pkfbwyi2qzii");
+
 //FIP-38 begin
 struct bind2eosio {
     name accountName;
@@ -113,6 +116,10 @@ namespace eosio {
         //fip48
         [[eosio::action]]
         void fipxlviii();
+
+        //fip53
+        [[eosio::action]]
+        void fipliii();
 
         [[eosio::action]]
         void trnsloctoks(const string &payee_public_key,
