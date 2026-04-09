@@ -28,7 +28,7 @@
 #define SECONDSPERDAY  86400
 #define DOMAINWAITFORBURNDAYS  90 * SECONDSPERDAY
 #define ADDRESSWAITFORBURNDAYS  365 * SECONDSPERDAY
-#define MAXBOUNTYTOKENSTOMINT 125000000000000000
+#define MAXBOUNTYTOKENSTOMINT 75000000000000000
 //#define MINVOTEDFIO 10'000'000'000000000 //TESTNET ONLY
 #define MINVOTEDFIO 65'000'000'000000000
 #define MINUTE 60
@@ -275,6 +275,13 @@ namespace fioio {
     };
 
     typedef singleton<"bounties"_n, bounty> bounties_table;
+
+    // FIP-53 execution guard
+    struct [[eosio::table]] fip53state {
+        bool executed = false;
+        EOSLIB_SERIALIZE(fip53state, (executed))
+    };
+    typedef singleton<"fip53state"_n, fip53state> fip53state_table;
 
     //this will call update tpid in the tpid contract,
     //add the info to the tpid table for this TPID and also set up the auto proxy if needed.

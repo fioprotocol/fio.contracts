@@ -46,7 +46,7 @@ if [ $# -ne 0 ]; then
    done
 fi
 
-SCRIPT_VERSION=2.10
+SCRIPT_VERSION=2.12
 
 export CURRENT_WORKING_DIR=$(pwd) # relative path support
 

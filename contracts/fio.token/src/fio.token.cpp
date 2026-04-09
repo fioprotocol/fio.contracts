@@ -678,6 +678,45 @@ namespace eosio {
         send_response(response_string.c_str());
     }
 
+    //fip53
+    void token::fipliii() {
+        // Authorization: only callable by eosio (BP msig)
+        eosio_assert(has_auth(SYSTEMACCOUNT),
+                     "missing required authority of eosio");
+
+        // Contract account validation
+        check(get_self() == TokenContract,
+              "fipliii must be called on fio.token contract");
+
+        // Re-execution guard
+        fip53state_table fip53_guard(get_self(), get_self().value);
+        if (!fip53_guard.exists()) {
+            fip53_guard.set(fioio::fip53state{false}, get_self());
+        }
+        check(!fip53_guard.get().executed, "fip53 has already been executed");
+
+        // Recipient account validation
+        check(is_account(fip53receivingaccount),
+              "fip53 receiving account does not exist");
+
+        // Mint and transfer via "issue" action (includes 1B supply cap validation)
+        action(
+            permission_level{SYSTEMACCOUNT, "active"_n},
+            TokenContract, "issue"_n,
+            make_tuple(fip53receivingaccount,
+                       asset(fip53mintamount, FIOSYMBOL),
+                       string("minted tokens for fip53"))
+        ).send();
+
+        fip53_guard.set(fioio::fip53state{true}, get_self());
+
+        const string response_string = string("{\"status\": \"OK\"}");
+        fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
+                       "Transaction is too large", ErrorTransactionTooLarge);
+
+        send_response(response_string.c_str());
+    }
+
     void token::trnsloctoks(const string &payee_public_key,
                              const int32_t &can_vote,
                              const vector<eosiosystem::lockperiodv2> periods,
@@ -816,4 +855,4 @@ namespace eosio {
     }
 } /// namespace eosio
 
-EOSIO_DISPATCH( eosio::token, (create)(issue)(mintfio)(transfer)(trnsfiopubky)(trnsloctoks)(retire)(fipxlviii))
+EOSIO_DISPATCH( eosio::token, (create)(issue)(mintfio)(transfer)(trnsfiopubky)(trnsloctoks)(retire)(fipxlviii)(fipliii))
