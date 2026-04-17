@@ -88,10 +88,12 @@ namespace eosiosystem {
     //todo need to write remove producer tests!!!!
     void eosiosystem::system_contract::rmvproducer(const name &producer) {
         require_auth(_self);
-        auto prod = _producers.find(producer.value);
-        check(prod->owner == producer,"producer not found");
-        check(prod != _producers.end(), "producer not found");
-        _producers.modify(prod, same_payer, [&](auto &p) {
+        // producers table's primary key is `id` (auto-increment); look up by owner via the byowner secondary index.
+        auto idx = _producers.get_index<"byowner"_n>();
+        auto prod = idx.find(producer.value);
+        check(prod != idx.end(), "producer not found");
+        check(prod->owner == producer, "producer not found");
+        idx.modify(prod, same_payer, [&](auto &p) {
             p.deactivate();
         });
 
