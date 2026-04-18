@@ -228,9 +228,6 @@ namespace eosiosystem {
             ).send();
         }
 
-
-        _audit_global_info.audit_reset = true;
-
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
 
@@ -305,8 +302,6 @@ namespace eosiosystem {
         processrewardsnotpid(reg_amount, get_self());
 
         //end new fees, logic for Mandatory fees.
-
-        _audit_global_info.audit_reset = true;
 
         const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
                                  to_string(reg_amount) + string("}");
@@ -561,8 +556,6 @@ namespace eosiosystem {
             ).send();
         }
 
-        _audit_global_info.audit_reset = true;
-
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
 
@@ -700,8 +693,6 @@ namespace eosiosystem {
                     std::make_tuple(actor, VOTEPROXYRAM)
             ).send();
         }
-
-        _audit_global_info.audit_reset = true;
 
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
           "Transaction is too large", ErrorTransactionTooLarge);
@@ -909,9 +900,7 @@ namespace eosiosystem {
                 votersbyowner.modify(new_proxy, same_payer, [&](auto &vp) {
                     vp.proxied_vote_weight += new_vote_weight;
                 });
-                if(new_proxy->producers.size() > 0) {
-                    propagate_weight_change(*new_proxy);
-                }
+                propagate_weight_change(*new_proxy);
             }
         } else {
             if (new_vote_weight >= 0) {
@@ -1104,8 +1093,6 @@ namespace eosiosystem {
         processrewardsnotpid(reg_amount, get_self());
         //end new fees, logic for Mandatory fees.
 
-        _audit_global_info.audit_reset = true;
-
         const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
                                  to_string(reg_amount) + string("}");
         fio_400_assert(transaction_size() <= MAX_TRX_SIZE, "transaction_size", std::to_string(transaction_size()),
@@ -1183,8 +1170,6 @@ namespace eosiosystem {
                  {actor, false}
                 );
 
-        _audit_global_info.audit_reset = true;
-
         const string response_string = string("{\"status\": \"OK\",\"fee_collected\":") +
                                  to_string(reg_amount) + string("}");
         if (REGPROXYRAM > 0) {
@@ -1241,6 +1226,7 @@ namespace eosiosystem {
                     p.is_proxy = isproxy;
                     p.is_auto_proxy = false;
                     p.proxy = nm;
+                    p.proxied_vote_weight = 0;
                 });
             propagate_weight_change(*pitr);
             //check proxy, propagate proxy weight change.
