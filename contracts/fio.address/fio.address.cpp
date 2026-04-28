@@ -928,14 +928,6 @@ namespace fioio {
         //FIP-39 end
 
 
-
-
-
-
-
-
-
-
         [[eosio::action]]
         void
         regaddress(const string &fio_address, const string &owner_fio_public_key, const int64_t &max_fee,
